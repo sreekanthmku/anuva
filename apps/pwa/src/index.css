@@ -21,6 +21,16 @@
 }
 
 @layer base {
+  /** Hide scrollbars app-wide; scrolling still works (touch, wheel, keys) */
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
   html.dark {
     color-scheme: dark;
   }
