@@ -1,0 +1,26 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+.vite/
+.cache/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# System/editor files
+.DS_Store
+.idea/
+.vscode/

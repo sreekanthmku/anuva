@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/** Full viewport on mobile: stable small viewport + dynamic when supported */
+@layer utilities {
+  .min-h-mobile {
+    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer base {
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: rgba(167, 139, 250, 0.2);
+    font-family: 'Geist', -apple-system, system-ui, sans-serif;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: geometricPrecision;
+    background: #141219;
+    color: #e6e0ea;
+  }
+}
