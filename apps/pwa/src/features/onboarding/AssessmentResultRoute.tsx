@@ -10,7 +10,7 @@ export default function AssessmentResultRoute() {
 
   return (
     <main className="min-h-mobile overflow-auto bg-surface text-on-surface">
-      <AssessmentResultNavBar onBack={() => navigate('/')} />
+      <AssessmentResultNavBar onBack={() => navigate('/assessment')} />
       <AssessmentResultSummary riskItems={riskPills} />
 
       <section className="px-[22px] pb-[18px] pt-1">

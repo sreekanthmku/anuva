@@ -12,12 +12,16 @@ import LibraryRoute from '../features/core/LibraryRoute';
 import AnonymousQARoute from '../features/core/AnonymousQARoute';
 import ConsultationBookingRoute from '../features/core/ConsultationBookingRoute';
 import ProfileRoute from '../features/core/ProfileRoute';
+import LoginRoute from '../features/auth/LoginRoute';
+import SplashRoute from '../features/auth/SplashRoute';
 
 export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AssessmentRoute />} />
+        <Route path="/" element={<SplashRoute />} />
+        <Route path="/login" element={<LoginRoute />} />
+        <Route path="/assessment" element={<AssessmentRoute />} />
         <Route path="/assessment-result" element={<AssessmentResultRoute />} />
         <Route path="/subscription" element={<SubscriptionRoute />} />
         <Route path="/anu-greeting" element={<AnuGreetingRoute />} />

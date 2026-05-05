@@ -58,8 +58,8 @@ export default function AssessmentRoute() {
       </section>
 
       <section
-        className="relative z-10 mt-6 flex min-h-[calc(100svh-308px)] flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-[22px] pb-[22px] pt-[26px]"
-        style={{ minHeight: 'calc(100dvh - 308px)' }}
+        className="relative z-10 mt-6 flex min-h-[calc(100svh-288px)] flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-[22px] pb-[22px] pt-[26px]"
+        style={{ minHeight: 'calc(100dvh - 288px)' }}
       >
         <div className="mb-[22px] flex items-center justify-between">
           <StepDots total={totalSteps} current={step} />

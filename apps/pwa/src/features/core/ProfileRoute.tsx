@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { clearSession } from '../auth/session';
 import { BottomNav } from './components/BottomNav';
 
 const menuRows: { label: string; hint: string }[] = [
@@ -84,6 +85,10 @@ export default function ProfileRoute() {
 
         <button
           type="button"
+          onClick={() => {
+            clearSession();
+            navigate('/login', { replace: true });
+          }}
           className="mt-4 w-full rounded-full border border-border-default bg-transparent px-[22px] py-3.5 text-[13px] font-medium text-on-surface-variant"
           style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
         >
