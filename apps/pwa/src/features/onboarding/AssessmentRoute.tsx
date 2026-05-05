@@ -1,32 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { AnswerOption } from './components/AnswerOption';
+import { QuestionTitle } from './components/QuestionTitle';
 import { StepDots } from './components/StepDots';
 import { TrustStrip } from './components/TrustStrip';
 import { useAssessmentFlow } from './hooks/useAssessmentFlow';
-
-function renderQuestionTitle(prompt: string) {
-  const words = prompt.split(' ');
-  const lastWord = words.pop();
-  const leadingWords = words.join(' ');
-
-  return (
-    <>
-      {leadingWords}{' '}
-      <em
-        className="not-italic text-primary"
-        style={{
-          fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
-          fontStyle: 'italic',
-          fontWeight: 400,
-          fontVariationSettings: '"opsz" 144',
-          letterSpacing: '-0.02em',
-        }}
-      >
-        {lastWord}
-      </em>
-    </>
-  );
-}
 
 export default function AssessmentRoute() {
   const navigate = useNavigate();
@@ -110,7 +87,7 @@ export default function AssessmentRoute() {
             fontVariationSettings: '"opsz" 144',
           }}
         >
-          {renderQuestionTitle(question.prompt)}
+          <QuestionTitle prompt={question.prompt} />
         </h1>
 
         <div className="flex flex-1 flex-col gap-2">
