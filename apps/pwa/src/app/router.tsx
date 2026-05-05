@@ -11,6 +11,7 @@ import CareDirectionRoute from '../features/core/CareDirectionRoute';
 import LibraryRoute from '../features/core/LibraryRoute';
 import AnonymousQARoute from '../features/core/AnonymousQARoute';
 import ConsultationBookingRoute from '../features/core/ConsultationBookingRoute';
+import ProfileRoute from '../features/core/ProfileRoute';
 
 export function AppRouter() {
   return (
@@ -28,6 +29,7 @@ export function AppRouter() {
         <Route path="/library" element={<LibraryRoute />} />
         <Route path="/qa" element={<AnonymousQARoute />} />
         <Route path="/booking" element={<ConsultationBookingRoute />} />
+        <Route path="/profile" element={<ProfileRoute />} />
       </Routes>
     </BrowserRouter>
   );

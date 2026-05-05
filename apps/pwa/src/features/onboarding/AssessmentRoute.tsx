@@ -24,13 +24,13 @@ export default function AssessmentRoute() {
   };
 
   return (
-    <main className="relative min-h-mobile overflow-hidden bg-surface text-on-surface">
+    <main className="relative min-h-mobile overflow-hidden bg-surface pt-[100px] text-on-surface">
       <div
         className="pointer-events-none absolute left-1/2 top-[-180px] h-[460px] w-[460px] -translate-x-1/2 rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(206, 189, 255, 0.15) 0%, transparent 60%)' }}
       />
 
-      <section className="relative z-10 flex flex-col items-center px-6 pt-8">
+      <section className="relative z-10 flex flex-col items-center px-6 pt-0">
         <img src="/anu.png" alt="Anuva logo" className="h-20 w-20 object-contain" />
         <p
           className="mt-3 text-[22px] tracking-[0.18em] text-on-surface"
@@ -58,8 +58,8 @@ export default function AssessmentRoute() {
       </section>
 
       <section
-        className="relative z-10 mt-6 flex min-h-[calc(100svh-168px)] flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-[22px] pb-[22px] pt-[26px]"
-        style={{ minHeight: 'calc(100dvh - 168px)' }}
+        className="relative z-10 mt-6 flex min-h-[calc(100svh-308px)] flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-[22px] pb-[22px] pt-[26px]"
+        style={{ minHeight: 'calc(100dvh - 308px)' }}
       >
         <div className="mb-[22px] flex items-center justify-between">
           <StepDots total={totalSteps} current={step} />

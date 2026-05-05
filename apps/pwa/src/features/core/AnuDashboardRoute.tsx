@@ -1,3 +1,4 @@
+import { NavLink } from 'react-router-dom';
 import { BottomNav } from './components/BottomNav';
 
 const quickLogItems = [
@@ -25,8 +26,10 @@ export default function AnuDashboardRoute() {
               ANUVA
             </span>
           </div>
-          <span
-            className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border text-[14px] text-primary"
+          <NavLink
+            to="/profile"
+            aria-label="Open profile"
+            className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border text-[14px] text-primary transition-opacity hover:opacity-90"
             style={{
               background: '#1d1a21',
               borderColor: 'rgba(148, 142, 157, 0.35)',
@@ -35,7 +38,7 @@ export default function AnuDashboardRoute() {
             }}
           >
             P
-          </span>
+          </NavLink>
         </header>
 
         <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">

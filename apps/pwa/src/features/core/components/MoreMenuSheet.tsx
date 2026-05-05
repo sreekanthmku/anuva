@@ -8,6 +8,7 @@ export type MoreMenuItem = {
 };
 
 const items: MoreMenuItem[] = [
+  { num: '08', to: '/profile', label: 'Profile' },
   { num: '09', to: '/care', label: 'Care Direction' },
   { num: '10', to: '/library', label: 'Library' },
   { num: '11', to: '/qa', label: 'Anonymous Q&A' },

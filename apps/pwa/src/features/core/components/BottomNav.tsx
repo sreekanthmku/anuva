@@ -9,7 +9,7 @@ type NavItem = {
   isMore?: boolean;
 };
 
-const moreRelatedPaths = ['/care', '/library', '/qa', '/booking'];
+const moreRelatedPaths = ['/care', '/library', '/qa', '/booking', '/profile'];
 
 const navItems: NavItem[] = [
   { to: '/home', label: 'Home', icon: 'home' },
