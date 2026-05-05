@@ -13,7 +13,7 @@ const scoreDash = (score / 100) * circumference;
 
 export default function AnuDashboardRoute() {
   return (
-    <main className="min-h-mobile overflow-auto bg-surface pb-28 pt-[70px] text-on-surface">
+    <main className="min-h-mobile overflow-auto bg-surface pb-28 pt-[40px] text-on-surface">
       <section className="px-[22px] pb-[14px]">
         <header className="mb-[18px] flex items-center justify-between">
           <div className="flex items-center gap-2">
