@@ -1,13 +1,7 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrustStrip } from '../onboarding/components/TrustStrip';
 import { isLoggedIn, tryLogin } from './session';
-
-function userAvatarGlyph(username: string): string {
-  const t = username.trim();
-  if (!t) return '?';
-  return t[0]!.toUpperCase();
-}
 
 export default function LoginRoute() {
   const navigate = useNavigate();
@@ -18,8 +12,6 @@ export default function LoginRoute() {
   useEffect(() => {
     if (isLoggedIn()) navigate('/home', { replace: true });
   }, [navigate]);
-
-  const avatarLetter = useMemo(() => userAvatarGlyph(username), [username]);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -32,29 +24,20 @@ export default function LoginRoute() {
   }
 
   return (
-    <main className="relative min-h-mobile overflow-hidden bg-surface text-on-surface">
+    <main className="relative min-h-mobile overflow-hidden bg-surface pt-[80px] text-on-surface">
       <div
         className="pointer-events-none absolute left-1/2 top-[-180px] h-[460px] w-[460px] -translate-x-1/2 rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(206, 189, 255, 0.15) 0%, transparent 60%)' }}
       />
 
-      <section className="relative z-10 flex flex-col items-center px-6 pt-8">
-        <div className="flex items-end justify-center gap-5">
-          <div className="flex flex-col items-center">
-            <img src="/anu.png" alt="Anuva logo" className="h-20 w-20 object-contain" />
-            <span
-              className="mt-2 text-[10px] uppercase tracking-[0.14em] text-outline"
-              style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
-            >
-              ANU
-            </span>
-          </div>
+      <section className="relative z-10 flex flex-col items-center px-6 pt-0">
+        <div className="flex flex-col items-center">
+          <img src="/anu.png" alt="Anuva logo" className="h-20 w-20 object-contain" />
           <span
-            className="mb-1 text-[34px] leading-none text-primary"
-            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 500 }}
-            aria-hidden
+            className="mt-2 text-[10px] uppercase tracking-[0.14em] text-outline"
+            style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
           >
-            {avatarLetter}
+            ANU
           </span>
         </div>
         <p
