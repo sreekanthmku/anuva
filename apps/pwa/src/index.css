@@ -27,6 +27,7 @@
 
   html {
     height: 100%;
+    overscroll-behavior: none;
   }
 
   body {
@@ -34,7 +35,7 @@
     min-height: 100vh;
     min-height: 100svh;
     min-height: 100dvh;
-    overscroll-behavior-y: contain;
+    overscroll-behavior: none;
     -webkit-tap-highlight-color: rgba(167, 139, 250, 0.2);
     font-family: 'Geist', -apple-system, system-ui, sans-serif;
     font-weight: 400;
@@ -42,5 +43,21 @@
     text-rendering: geometricPrecision;
     background: #141219;
     color: #e6e0ea;
+  }
+
+  #root {
+    overscroll-behavior: none;
+  }
+
+  /** PWA: stop elastic pull / rubber-band on scroll containers (iOS, Chrome) */
+  main {
+    overscroll-behavior: none;
+  }
+
+  @supports selector(:has(*)) {
+    [class~='overflow-y-auto'],
+    [class~='overflow-auto'] {
+      overscroll-behavior: none;
+    }
   }
 }
