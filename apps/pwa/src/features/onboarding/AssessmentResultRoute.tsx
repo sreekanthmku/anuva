@@ -9,7 +9,7 @@ export default function AssessmentResultRoute() {
   const navigate = useNavigate();
 
   return (
-    <main className="min-h-mobile overflow-auto bg-surface text-on-surface">
+    <main className="min-h-mobile overflow-auto bg-surface pt-[40px] text-on-surface">
       <AssessmentResultNavBar onBack={() => navigate('/assessment')} />
       <AssessmentResultSummary riskItems={riskPills} />
 

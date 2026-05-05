@@ -4,7 +4,7 @@ type AssessmentResultNavBarProps = {
 
 export function AssessmentResultNavBar({ onBack }: AssessmentResultNavBarProps) {
   return (
-    <section className="flex items-center justify-between px-[22px] pb-2.5 pt-3.5">
+    <section className="flex items-center justify-between px-[22px] pb-2.5 pt-0">
       <button
         type="button"
         onClick={onBack}

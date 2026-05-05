@@ -41,8 +41,8 @@ export default function SubscriptionRoute() {
   const selectedPlan: Plan = useMemo(() => plans.find((plan) => plan.id === selectedPlanId) ?? plans[1]!, [selectedPlanId]);
 
   return (
-    <main className="min-h-mobile overflow-auto bg-surface text-on-surface">
-      <section className="flex items-center justify-between px-[22px] pb-2.5 pt-3.5">
+    <main className="min-h-mobile overflow-auto bg-surface pt-[40px] text-on-surface">
+      <section className="flex items-center justify-between px-[22px] pb-2.5 pt-0">
         <button
           type="button"
           onClick={() => navigate('/assessment-result')}
