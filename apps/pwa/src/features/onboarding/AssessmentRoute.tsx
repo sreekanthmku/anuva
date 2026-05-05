@@ -25,13 +25,15 @@ export default function AssessmentRoute() {
 
   return (
     <main className="relative min-h-mobile overflow-hidden bg-surface pt-[100px] text-on-surface">
-      <div
-        className="pointer-events-none absolute left-1/2 top-[-180px] h-[460px] w-[460px] -translate-x-1/2 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(206, 189, 255, 0.15) 0%, transparent 60%)' }}
-      />
-
       <section className="relative z-10 flex flex-col items-center px-6 pt-0">
-        <img src="/anu.png" alt="Anuva logo" className="h-20 w-20 object-contain" />
+        <div className="relative">
+          <div
+            className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(206, 189, 255, 0.15) 0%, transparent 60%)' }}
+            aria-hidden
+          />
+          <img src="/anu.png" alt="Anuva logo" className="relative z-10 h-20 w-20 object-contain" />
+        </div>
         <p
           className="mt-3 text-[22px] tracking-[0.18em] text-on-surface"
           style={{
