@@ -1,11 +1,16 @@
 import { RiskIndicatorGrid } from './RiskIndicatorGrid';
 import type { RiskPill } from '../data/assessmentResult';
+import type { AssessmentOutcomeStatus } from '../data/assessmentOutcome';
 
 type AssessmentResultSummaryProps = {
+  score: number;
+  status: AssessmentOutcomeStatus;
   riskItems: RiskPill[];
 };
 
-export function AssessmentResultSummary({ riskItems }: AssessmentResultSummaryProps) {
+export function AssessmentResultSummary({ score, status, riskItems }: AssessmentResultSummaryProps) {
+  const isInControl = status === 'in_control';
+
   return (
     <section className="px-[22px] pb-[18px] pt-2">
       <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/15 px-3 py-1.5">
@@ -18,25 +23,51 @@ export function AssessmentResultSummary({ riskItems }: AssessmentResultSummaryPr
         </span>
       </div>
 
-      <h1
-        className="mb-2.5 text-[32px] leading-[1.1] tracking-[-0.03em] text-on-surface"
-        style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontVariationSettings: '"opsz" 144' }}
-      >
-        Strong indicators of{' '}
-        <em
-          className="not-italic text-primary"
-          style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}
-        >
-          perimenopause
-        </em>{' '}
-        detected.
-      </h1>
-      <p
-        className="mb-[18px] text-[13px] leading-[1.55] text-on-surface-variant"
-        style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
-      >
-        Based on your responses, you&apos;re likely in early-stage transition. Clinically common for women 42-50.
-      </p>
+      {isInControl ? (
+        <>
+          <h1
+            className="mb-2.5 text-[32px] leading-[1.1] tracking-[-0.03em] text-on-surface"
+            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontVariationSettings: '"opsz" 144' }}
+          >
+            Everything is in{' '}
+            <em
+              className="not-italic text-primary"
+              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}
+            >
+              control
+            </em>
+            .
+          </h1>
+          <p
+            className="mb-[18px] text-[13px] leading-[1.55] text-on-surface-variant"
+            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+          >
+            Your assessment score is {score}. Check back after 3 months.
+          </p>
+        </>
+      ) : (
+        <>
+          <h1
+            className="mb-2.5 text-[32px] leading-[1.1] tracking-[-0.03em] text-on-surface"
+            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontVariationSettings: '"opsz" 144' }}
+          >
+            Strong indicators of{' '}
+            <em
+              className="not-italic text-primary"
+              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}
+            >
+              perimenopause
+            </em>{' '}
+            detected.
+          </h1>
+          <p
+            className="mb-[18px] text-[13px] leading-[1.55] text-on-surface-variant"
+            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+          >
+            Based on your responses, you&apos;re likely in early-stage transition. Clinically common for women 42-50.
+          </p>
+        </>
+      )}
 
       <RiskIndicatorGrid items={riskItems} />
     </section>

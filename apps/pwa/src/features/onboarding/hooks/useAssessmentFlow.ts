@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { assessmentQuestions } from '../data/assessmentQuestions';
+import { getAssessmentOutcome, scoreAssessmentQuestions } from '../data/assessmentOutcome';
 
 type AnswersMap = Record<number, number | undefined>;
 
@@ -18,6 +19,8 @@ export function useAssessmentFlow() {
 
   const canContinue = selectedIndex !== undefined;
   const isLastStep = step === assessmentQuestions.length - 1;
+  const score = useMemo(() => scoreAssessmentQuestions(answers, assessmentQuestions), [answers]);
+  const outcome = useMemo(() => getAssessmentOutcome(score), [score]);
 
   const selectOption = (optionIndex: number) => {
     setAnswers((prev) => ({ ...prev, [step]: optionIndex }));
@@ -36,8 +39,9 @@ export function useAssessmentFlow() {
     progressLabel,
     canContinue,
     isLastStep,
+    score,
+    outcome,
     selectOption,
     goNext,
   };
 }
-

@@ -27,7 +27,7 @@ function Eyebrow({ children, mint = false }: { children: string; mint?: boolean 
 
 export default function LibraryRoute() {
   return (
-    <main className="min-h-mobile overflow-auto bg-surface pb-28 text-on-surface">
+    <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface px-[22px] pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
         <Eyebrow mint>Library</Eyebrow>
         <h1

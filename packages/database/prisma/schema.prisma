@@ -7,8 +7,445 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Example {
+// ─────────────────────────────────────────────
+// Auth & user
+// ─────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions          Session[]
+  healthProfile     HealthProfile?
+  assessments       Assessment[]
+  subscription      Subscription?
+  wellnessSnapshots WellnessSnapshot[]
+  symptomLogs       SymptomLog[]
+  weeklyReports     WeeklyReport[]
+  userCarePaths     UserCarePath[]
+  journeyStages     CareJourneyStage[]
+  consultations     Consultation[]
+  questions         AnonymousQuestion[]
+  chatThreads       ChatThread[]
+}
+
+model Session {
   id        String   @id @default(cuid())
-  name      String
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
   createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum MenopauseStage {
+  premenopause
+  perimenopause
+  menopause
+  postmenopause
+}
+
+model HealthProfile {
+  id             String          @id @default(cuid())
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth    DateTime?
+  menopauseStage MenopauseStage?
+  cycleStartDate DateTime?
+  updatedAt      DateTime        @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// Onboarding assessment
+// ─────────────────────────────────────────────
+
+model AssessmentQuestion {
+  id      String              @id @default(cuid())
+  key     String              @unique
+  prompt  String
+  order   Int
+  options AssessmentOption[]
+  answers AssessmentAnswer[]
+}
+
+model AssessmentOption {
+  id         String             @id @default(cuid())
+  questionId String
+  question   AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label      String
+  score      Int
+  order      Int
+
+  @@index([questionId])
+}
+
+enum AssessmentStatus {
+  in_control
+  further_assessment
+}
+
+model Assessment {
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score       Int
+  threshold   Int                @default(8)
+  status      AssessmentStatus
+  completedAt DateTime           @default(now())
+  answers     AssessmentAnswer[]
+
+  @@index([userId])
+}
+
+model AssessmentAnswer {
+  id           String             @id @default(cuid())
+  assessmentId String
+  assessment   Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     AssessmentQuestion @relation(fields: [questionId], references: [id])
+  optionIndex  Int
+  optionLabel  String
+  score        Int
+
+  @@unique([assessmentId, questionId])
+  @@index([assessmentId])
+}
+
+// ─────────────────────────────────────────────
+// Subscription
+// ─────────────────────────────────────────────
+
+enum SubscriptionPlan {
+  monthly
+  annual
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  canceled
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  userId    String             @unique
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      SubscriptionPlan
+  status    SubscriptionStatus @default(active)
+  startedAt DateTime           @default(now())
+  renewsAt  DateTime?
+}
+
+// ─────────────────────────────────────────────
+// Dashboard
+// ─────────────────────────────────────────────
+
+model WellnessSnapshot {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime @db.Date
+  balanceScore Int
+  summary      String?
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model DailyInsight {
+  id         String   @id @default(cuid())
+  date       DateTime @db.Date
+  body       String
+  authorName String?
+  source     String?
+  createdAt  DateTime @default(now())
+
+  @@index([date])
+}
+
+// ─────────────────────────────────────────────
+// Symptom tracking
+// ─────────────────────────────────────────────
+
+enum SymptomCategory {
+  vasomotor
+  sleep
+  mood
+  lifestyle
+}
+
+model Symptom {
+  id       String              @id @default(cuid())
+  key      String              @unique
+  label    String
+  category SymptomCategory
+  active   Boolean             @default(true)
+  entries  SymptomLogEntry[]
+}
+
+model SymptomLog {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime          @db.Date
+  intensity Int // 1-7 overall intensity
+  note      String?
+  createdAt DateTime          @default(now())
+  entries   SymptomLogEntry[]
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model SymptomLogEntry {
+  id        String     @id @default(cuid())
+  logId     String
+  log       SymptomLog @relation(fields: [logId], references: [id], onDelete: Cascade)
+  symptomId String
+  symptom   Symptom    @relation(fields: [symptomId], references: [id])
+
+  @@unique([logId, symptomId])
+  @@index([logId])
+}
+
+// ─────────────────────────────────────────────
+// Weekly report
+// ─────────────────────────────────────────────
+
+model WeeklyReport {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart DateTime        @db.Date
+  weekEnd   DateTime        @db.Date
+  cohort    String? // e.g. "women 42-50 early perimenopause"
+  createdAt DateTime        @default(now())
+  metrics   WeeklyMetric[]
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+}
+
+enum MetricKind {
+  benchmark
+  stat
+}
+
+model WeeklyMetric {
+  id          String       @id @default(cuid())
+  reportId    String
+  report      WeeklyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  kind        MetricKind
+  label       String
+  value       Float
+  unit        String?
+  delta       String?
+  cohortMedup Float? // cohort median for benchmark bars
+  trend       Int[] // sparkline series for stat cards
+
+  @@index([reportId])
+}
+
+// ─────────────────────────────────────────────
+// Care direction
+// ─────────────────────────────────────────────
+
+model CarePath {
+  id          String         @id @default(cuid())
+  key         String         @unique
+  label       String
+  tag         String?
+  description String?
+  users       UserCarePath[]
+}
+
+enum CarePathStatus {
+  recommended
+  selected
+  active
+  completed
+}
+
+model UserCarePath {
+  id         String         @id @default(cuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  carePathId String
+  carePath   CarePath       @relation(fields: [carePathId], references: [id])
+  status     CarePathStatus @default(recommended)
+  focusTags  String[]
+  createdAt  DateTime       @default(now())
+
+  @@unique([userId, carePathId])
+  @@index([userId])
+}
+
+enum JourneyStageStatus {
+  done
+  active
+  upcoming
+}
+
+model CareJourneyStage {
+  id     String             @id @default(cuid())
+  userId String
+  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stage  String
+  status JourneyStageStatus @default(upcoming)
+  order  Int
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────
+// Specialists & booking
+// ─────────────────────────────────────────────
+
+model Specialist {
+  id             String                    @id @default(cuid())
+  key            String                    @unique // gynec | psych | nutri | riz
+  name           String
+  subtitle       String?
+  role           String?
+  specialization String?
+  summary        String?
+  experience     String?
+  tag            String?
+  imageUrl       String?
+  active         Boolean                   @default(true)
+  qualifications SpecialistQualification[]
+  consultations  Consultation[]
+}
+
+model SpecialistQualification {
+  id           String     @id @default(cuid())
+  specialistId String
+  specialist   Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  label        String
+
+  @@index([specialistId])
+}
+
+enum ConsultationStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+model Consultation {
+  id           String             @id @default(cuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialistId String
+  specialist   Specialist         @relation(fields: [specialistId], references: [id])
+  scheduledAt  DateTime
+  status       ConsultationStatus @default(pending)
+  isFree       Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+
+  @@index([userId])
+  @@index([specialistId])
+}
+
+// ─────────────────────────────────────────────
+// Library
+// ─────────────────────────────────────────────
+
+model Article {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  category    String
+  title       String
+  excerpt     String?
+  body        String?
+  readMinutes Int?
+  authorName  String?
+  featured    Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([category])
+}
+
+model Masterclass {
+  id          String   @id @default(cuid())
+  title       String
+  scheduledAt DateTime
+  isFree      Boolean  @default(true)
+  isLive      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// Anonymous Q&A
+// ─────────────────────────────────────────────
+
+enum QuestionStatus {
+  pending
+  answered
+}
+
+model AnonymousQuestion {
+  id        String         @id @default(cuid())
+  userId    String? // nullable: anonymity preserved
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  topic     String
+  body      String
+  status    QuestionStatus @default(pending)
+  createdAt DateTime       @default(now())
+  answers   ExpertAnswer[]
+
+  @@index([topic])
+  @@index([status])
+}
+
+model ExpertAnswer {
+  id         String            @id @default(cuid())
+  questionId String
+  question   AnonymousQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  expertName String
+  expertRole String?
+  body       String
+  verified   Boolean           @default(false)
+  answeredAt DateTime          @default(now())
+
+  @@index([questionId])
+}
+
+// ─────────────────────────────────────────────
+// Anu chat
+// ─────────────────────────────────────────────
+
+enum ChatRole {
+  user
+  anu
+}
+
+model ChatThread {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  messages  ChatMessage[]
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String     @id @default(cuid())
+  threadId  String
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role      ChatRole
+  body      String
+  createdAt DateTime   @default(now())
+
+  @@index([threadId])
 }

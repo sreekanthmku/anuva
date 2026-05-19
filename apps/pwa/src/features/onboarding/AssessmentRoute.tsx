@@ -7,7 +7,7 @@ import { useAssessmentFlow } from './hooks/useAssessmentFlow';
 
 export default function AssessmentRoute() {
   const navigate = useNavigate();
-  const { step, question, totalSteps, selectedIndex, progressLabel, canContinue, isLastStep, selectOption, goNext } =
+  const { step, question, totalSteps, selectedIndex, progressLabel, canContinue, isLastStep, score, outcome, selectOption, goNext } =
     useAssessmentFlow();
 
   if (!question) {
@@ -17,7 +17,19 @@ export default function AssessmentRoute() {
   const handleContinue = () => {
     if (!canContinue) return;
     if (isLastStep) {
-      navigate('/assessment-result');
+      const result = {
+        score,
+        threshold: outcome.threshold,
+        status: outcome.status,
+      } as const;
+
+      try {
+        window.sessionStorage.setItem('anuva-assessment-result', JSON.stringify(result));
+      } catch {
+        /* ignore */
+      }
+
+      navigate('/assessment-result', { state: result });
       return;
     }
     goNext();
@@ -129,4 +141,3 @@ export default function AssessmentRoute() {
     </main>
   );
 }
-

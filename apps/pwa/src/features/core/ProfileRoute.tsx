@@ -13,7 +13,7 @@ export default function ProfileRoute() {
   const navigate = useNavigate();
 
   return (
-    <main className="min-h-mobile overflow-auto bg-surface pb-28 text-on-surface">
+    <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 bg-surface px-[22px] pb-4 pt-[max(0.875rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
         <div className="flex items-center justify-between">
           <button

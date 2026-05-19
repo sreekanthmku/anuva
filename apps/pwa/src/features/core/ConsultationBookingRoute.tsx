@@ -14,7 +14,7 @@ export default function ConsultationBookingRoute() {
 
   if (booking.phase === 'confirmed' && booking.pickedDateId && booking.pickedTimeId) {
     return (
-      <main className="min-h-mobile overflow-auto bg-surface pb-28 text-on-surface">
+      <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
         <BookingConfirmedView
           specialistLabel={booking.specialistLabel}
           dateYmd={booking.pickedDateId}
@@ -27,7 +27,7 @@ export default function ConsultationBookingRoute() {
   }
 
   return (
-    <main className="min-h-mobile overflow-auto bg-surface pb-28 text-on-surface">
+    <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <BookingFormHeader />
 
       <SpecialistPicker specialists={specialists} value={booking.specialist} onChange={booking.setSpecialist} />

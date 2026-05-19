@@ -31,7 +31,7 @@ function Eyebrow({ children, tone = 'muted', className = '' }: { children: React
 
 export default function WeeklyReportRoute() {
   return (
-    <main className="min-h-mobile overflow-auto bg-surface pb-28 text-on-surface">
+    <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
         <div className="px-[22px] pb-[22px] pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Eyebrow tone="mint">Week 1 · May 1 – 7</Eyebrow>

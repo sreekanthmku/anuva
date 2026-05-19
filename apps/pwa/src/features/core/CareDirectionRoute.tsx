@@ -38,7 +38,7 @@ export default function CareDirectionRoute() {
   const [activePath, setActivePath] = useState<PathId>('combined');
 
   return (
-    <main className="min-h-mobile overflow-auto bg-surface pb-28 text-on-surface">
+    <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface px-[22px] pb-[22px] pt-[max(0.875rem,env(safe-area-inset-top))] text-center shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
         <div className="mb-3.5 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/15 px-3 py-1">
           <span className="h-1 w-1 rounded-full bg-primary shadow-[0_0_8px_#cebdff]" />
