@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/auth-context';
 import { assessmentPath } from './config/assessmentView';
 import { AssessmentResultCTA } from './components/AssessmentResultCTA';
 import { AssessmentResultNavBar } from './components/AssessmentResultNavBar';
@@ -7,6 +9,7 @@ import { NextStepsCard } from './components/NextStepsCard';
 import { controlNextSteps, nextSteps, riskPills } from './data/assessmentResult';
 import type { AssessmentOutcome, AssessmentOutcomeStatus } from './data/assessmentOutcome';
 import type { RiskPill } from './data/assessmentResult';
+import { persistOnboardingCompletionIfAuthenticated } from './persistOnboardingCompletion';
 
 type AssessmentResultRouteState = AssessmentOutcome | null;
 
@@ -23,6 +26,11 @@ const readStoredOutcome = (): AssessmentResultRouteState => {
 export default function AssessmentResultRoute() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, refreshUser } = useAuth();
+
+  useEffect(() => {
+    persistOnboardingCompletionIfAuthenticated(user, refreshUser);
+  }, [user, refreshUser]);
 
   const state = (location.state as AssessmentResultRouteState) ?? readStoredOutcome();
   const score = state?.score ?? 0;

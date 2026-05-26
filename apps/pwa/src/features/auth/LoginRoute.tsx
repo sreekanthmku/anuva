@@ -1,6 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { assessmentPath } from '../onboarding/config/assessmentView';
 import { TrustStrip } from '../onboarding/components/TrustStrip';
 import { useAuth } from './auth-context';
 import { getPostAuthPath } from './postAuthPath';
@@ -129,12 +128,6 @@ export default function LoginRoute() {
             />
             <img src="/anu.png" alt="Anuva logo" className="relative z-10 h-20 w-20 object-contain" />
           </div>
-          <span
-            className="mt-2 text-[10px] uppercase tracking-[0.14em] text-outline"
-            style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
-          >
-            ANU
-          </span>
         </div>
         <p
           className="mt-4 text-[22px] tracking-[0.18em] text-on-surface"
@@ -222,10 +215,6 @@ export default function LoginRoute() {
               </p>
             )}
 
-            <div className="mb-4 mt-2">
-              <TrustStrip />
-            </div>
-
             <button
               type="submit"
               disabled={isSubmitting || otp.length !== 6}
@@ -234,6 +223,10 @@ export default function LoginRoute() {
             >
               {isSubmitting ? 'Verifying...' : 'Verify OTP'}
             </button>
+
+            <div className="mt-4">
+              <TrustStrip />
+            </div>
 
             <button
               type="button"
@@ -315,10 +308,6 @@ export default function LoginRoute() {
               </p>
             )}
 
-            <div className="mb-4 mt-2">
-              <TrustStrip />
-            </div>
-
             <button
               type="submit"
               disabled={isSubmitting}
@@ -328,14 +317,9 @@ export default function LoginRoute() {
               {isSubmitting ? 'Sending OTP...' : 'Send OTP'}
             </button>
 
-            <button
-              type="button"
-              onClick={() => navigate(assessmentPath())}
-              className="mt-3 w-full bg-transparent py-3 text-[13px] font-medium text-on-surface-variant"
-              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
-            >
-              Continue without login
-            </button>
+            <div className="mt-4">
+              <TrustStrip />
+            </div>
           </form>
         )}
       </section>

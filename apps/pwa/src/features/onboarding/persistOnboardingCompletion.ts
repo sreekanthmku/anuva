@@ -1,11 +1,11 @@
-import type { AuthStatus } from '../auth/auth-context';
+import type { AuthUser } from '@anuva/shared';
 import { completeOnboarding } from '../auth/session';
 
 export function persistOnboardingCompletionIfAuthenticated(
-  status: AuthStatus,
+  user: AuthUser | null,
   refreshUser: () => Promise<void>,
 ): void {
-  if (status !== 'authenticated') {
+  if (!user || user.onboardingCompleted) {
     return;
   }
 

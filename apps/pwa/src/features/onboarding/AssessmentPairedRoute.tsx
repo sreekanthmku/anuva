@@ -9,7 +9,7 @@ import { persistOnboardingCompletionIfAuthenticated } from './persistOnboardingC
 
 export default function AssessmentPairedRoute() {
   const navigate = useNavigate();
-  const { status, refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const {
     step,
     questions,
@@ -45,7 +45,7 @@ export default function AssessmentPairedRoute() {
         /* ignore */
       }
 
-      persistOnboardingCompletionIfAuthenticated(status, refreshUser);
+      persistOnboardingCompletionIfAuthenticated(user, refreshUser);
       navigate('/assessment-result', { state: result });
       return;
     }
