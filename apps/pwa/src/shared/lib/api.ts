@@ -14,7 +14,9 @@ function toAbsoluteUrl(input: RequestInfo | URL): RequestInfo | URL {
     return input;
   }
 
-  return `${API_BASE_URL}${input}`;
+  // Dev vite proxy strips /api before forwarding; remote API routes omit /api prefix.
+  const path = input.replace(/^\/api(?=\/|$)/, '') || '/';
+  return `${API_BASE_URL}${path}`;
 }
 
 export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {

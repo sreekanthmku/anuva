@@ -68,6 +68,10 @@ export const authSessionResponseSchema = z.object({
 
 export type AuthSessionResponse = z.infer<typeof authSessionResponseSchema>;
 
+export const completeOnboardingResponseSchema = authUserSchema;
+
+export type CompleteOnboardingResponse = z.infer<typeof completeOnboardingResponseSchema>;
+
 export const logoutResponseSchema = z.object({
   ok: z.literal(true),
 });

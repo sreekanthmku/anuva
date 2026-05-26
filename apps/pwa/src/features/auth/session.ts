@@ -26,6 +26,12 @@ export async function fetchCurrentUser(): Promise<AuthUser> {
   return apiFetch<AuthUser>('/api/auth/me');
 }
 
+export async function completeOnboarding(): Promise<AuthUser> {
+  return apiFetch<AuthUser>('/api/onboarding/complete', {
+    method: 'POST',
+  });
+}
+
 export async function logoutSession(): Promise<void> {
   let fcmToken: string | undefined;
   try {

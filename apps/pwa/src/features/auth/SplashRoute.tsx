@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './auth-context';
+import { getPostAuthPath } from './postAuthPath';
 
 const SPLASH_MS = 2000;
 
 export default function SplashRoute() {
   const navigate = useNavigate();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
 
   useEffect(() => {
     if (status === 'loading') {
@@ -14,10 +15,10 @@ export default function SplashRoute() {
     }
 
     const id = window.setTimeout(() => {
-      navigate(status === 'authenticated' ? '/home' : '/login', { replace: true });
+      navigate(status === 'authenticated' && user ? getPostAuthPath(user) : '/login', { replace: true });
     }, SPLASH_MS);
     return () => window.clearTimeout(id);
-  }, [navigate, status]);
+  }, [navigate, status, user]);
 
   return (
     <main className="relative flex min-h-mobile flex-col items-center justify-center overflow-hidden bg-surface px-6 text-on-surface">

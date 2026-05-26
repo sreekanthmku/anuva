@@ -384,7 +384,6 @@ app.post('/auth/verify-otp', async (req, res, next) => {
           phone,
           name: validated.name?.trim(),
           phoneVerifiedAt: now,
-          onboardingCompleted: true,
         },
       });
     } else if (!user.phoneVerifiedAt) {
@@ -429,6 +428,26 @@ app.get('/auth/me', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     res.json(authUserSchema.parse(serializeUser(user)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/onboarding/complete', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+
+    if (user.onboardingCompleted) {
+      res.json(authUserSchema.parse(serializeUser(user)));
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { onboardingCompleted: true },
+    });
+
+    res.json(authUserSchema.parse(serializeUser(updated)));
   } catch (e) {
     next(e);
   }

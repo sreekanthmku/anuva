@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { assessmentPath } from '../onboarding/config/assessmentView';
 import { TrustStrip } from '../onboarding/components/TrustStrip';
 import { useAuth } from './auth-context';
+import { getPostAuthPath } from './postAuthPath';
 import { requestOtp, verifyOtp } from './session';
 
 type AuthMode = 'login' | 'signup';
@@ -17,7 +18,7 @@ function getErrorMessage(error: unknown): string {
 
 export default function LoginRoute() {
   const navigate = useNavigate();
-  const { status, setAuthenticatedSession } = useAuth();
+  const { status, user, setAuthenticatedSession } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -30,10 +31,10 @@ export default function LoginRoute() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      navigate('/home', { replace: true });
+    if (status === 'authenticated' && user) {
+      navigate(getPostAuthPath(user), { replace: true });
     }
-  }, [navigate, status]);
+  }, [navigate, status, user]);
 
   useEffect(() => {
     if (!challengeId) {
@@ -106,7 +107,7 @@ export default function LoginRoute() {
       });
 
       setAuthenticatedSession(session);
-      navigate('/home', { replace: true });
+      navigate(getPostAuthPath(session.user), { replace: true });
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {

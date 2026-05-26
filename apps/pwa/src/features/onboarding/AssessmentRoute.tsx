@@ -1,12 +1,15 @@
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/auth-context';
 import { AnswerOption } from './components/AnswerOption';
 import { QuestionTitle } from './components/QuestionTitle';
 import { StepDots } from './components/StepDots';
 import { TrustStrip } from './components/TrustStrip';
 import { useAssessmentFlow } from './hooks/useAssessmentFlow';
+import { persistOnboardingCompletionIfAuthenticated } from './persistOnboardingCompletion';
 
 export default function AssessmentRoute() {
   const navigate = useNavigate();
+  const { status, refreshUser } = useAuth();
   const { step, question, totalSteps, selectedIndex, progressLabel, canContinue, isLastStep, score, outcome, selectOption, goNext } =
     useAssessmentFlow();
 
@@ -29,6 +32,7 @@ export default function AssessmentRoute() {
         /* ignore */
       }
 
+      persistOnboardingCompletionIfAuthenticated(status, refreshUser);
       navigate('/assessment-result', { state: result });
       return;
     }

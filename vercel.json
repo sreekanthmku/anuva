@@ -4,6 +4,9 @@
   "installCommand": "pnpm install",
   "buildCommand": "pnpm turbo run build --filter=@anuva/pwa",
   "outputDirectory": "apps/pwa/dist",
+  "env": {
+    "VITE_API_URL": "https://api.anuvawellness.com"
+  },
   "routes": [
     { "handle": "filesystem" },
     { "src": "/firebase-messaging-sw.js", "dest": "/firebase-messaging-sw.js" },
