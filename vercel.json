@@ -1,15 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
   "installCommand": "pnpm install",
   "buildCommand": "pnpm turbo run build --filter=@anuva/pwa",
   "outputDirectory": "apps/pwa/dist",
   "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
-    }
+    { "handle": "filesystem" },
+    { "src": "/firebase-messaging-sw.js", "dest": "/firebase-messaging-sw.js" },
+    { "src": "/firebase-config.js", "dest": "/firebase-config.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }

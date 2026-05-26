@@ -7,7 +7,7 @@ export type ConsultationBookingPhase = 'form' | 'confirmed';
 
 export function useConsultationBooking() {
   const [phase, setPhase] = useState<ConsultationBookingPhase>('form');
-  const [specialist, setSpecialist] = useState<SpecialistId>('gynec');
+  const [specialist, setSpecialist] = useState<SpecialistId>('psych');
   const [datePageStartOffset, setDatePageStartOffset] = useState(0);
   const dateSlots = useMemo(
     () => dateSlotsFromTodayOffset(datePageStartOffset, DATES_PER_PAGE),

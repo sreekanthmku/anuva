@@ -1,5 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { BottomNav } from './components/BottomNav';
+import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
+import { NotificationSyncBanner } from './components/NotificationSyncBanner';
+import { useHomeNotificationPrompt } from './hooks/useHomeNotificationPrompt';
 
 const quickLogItems = [
   { label: 'Hot flash', sub: 'Log now', tone: '#F87171', count: '2 TODAY' },
@@ -13,9 +16,25 @@ const circumference = 2 * Math.PI * 42;
 const scoreDash = (score / 100) * circumference;
 
 export default function AnuDashboardRoute() {
+  const notificationPrompt = useHomeNotificationPrompt();
+
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 pt-[40px] text-on-surface">
+      <NotificationPermissionDialog
+        open={notificationPrompt.open}
+        isRegistering={notificationPrompt.isRegistering}
+        onAccept={notificationPrompt.accept}
+        onDismiss={notificationPrompt.dismiss}
+      />
       <section className="px-[22px] pb-[14px]">
+        {notificationPrompt.syncMessage && (
+          <NotificationSyncBanner
+            message={notificationPrompt.syncMessage}
+            onRetry={notificationPrompt.retrySync}
+            onDismiss={notificationPrompt.clearSyncMessage}
+          />
+        )}
+
         <header className="mb-[18px] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src="/anu.png" alt="Anuva logo" className="h-5 w-5 object-contain" />

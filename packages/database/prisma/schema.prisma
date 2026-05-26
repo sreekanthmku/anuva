@@ -12,14 +12,17 @@ datasource db {
 // ─────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  phone               String    @unique
+  name                String?
+  email               String?   @unique
+  phoneVerifiedAt     DateTime?
+  onboardingCompleted Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   sessions          Session[]
+  otpChallenges     OtpChallenge[]
   healthProfile     HealthProfile?
   assessments       Assessment[]
   subscription      Subscription?
@@ -31,17 +34,76 @@ model User {
   consultations     Consultation[]
   questions         AnonymousQuestion[]
   chatThreads       ChatThread[]
+  fcmTokens         FcmToken[]
+}
+
+enum FcmPlatform {
+  WEB
+  ANDROID
+  IOS
+}
+
+enum FcmTokenStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model FcmToken {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String         @unique
+  platform  FcmPlatform
+  status    FcmTokenStatus @default(ACTIVE)
+  deviceId  String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([userId, status])
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  tokenHash   String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   @@index([userId])
+}
+
+enum OtpChallengePurpose {
+  login
+  signup
+}
+
+enum OtpChallengeStatus {
+  pending
+  verified
+  expired
+  failed
+}
+
+model OtpChallenge {
+  id                String             @id @default(cuid())
+  phone             String
+  userId            String?
+  user              User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  purpose           OtpChallengePurpose
+  provider          String
+  providerSessionId String
+  status            OtpChallengeStatus @default(pending)
+  attemptCount      Int                @default(0)
+  expiresAt         DateTime
+  verifiedAt        DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([phone, createdAt])
+  @@index([userId])
+  @@index([status, expiresAt])
 }
 
 enum MenopauseStage {

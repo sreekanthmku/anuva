@@ -1,13 +1,46 @@
-import { defineConfig } from 'vite';
+import { writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, '../..');
+
+function writeFirebaseWebConfig(env: Record<string, string>) {
+  const config = {
+    apiKey: env.VITE_FIREBASE_API_KEY || '',
+    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || '',
+    projectId: env.VITE_FIREBASE_PROJECT_ID || '',
+    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+    appId: env.VITE_FIREBASE_APP_ID || '',
+  };
+
+  writeFileSync(
+    path.join(__dirname, 'public/firebase-config.js'),
+    `self.FIREBASE_WEB_CONFIG = ${JSON.stringify(config)};\n`,
+  );
+}
+
+function firebaseWebConfigPlugin(): Plugin {
+  return {
+    name: 'anuva-firebase-config',
+    config(_config, { mode }) {
+      writeFirebaseWebConfig(loadEnv(mode, repoRoot, ''));
+    },
+  };
+}
+
 export default defineConfig({
+  // Monorepo: root .env holds VITE_FIREBASE_* and VITE_API_URL
+  envDir: repoRoot,
   plugins: [
+    firebaseWebConfigPlugin(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'firebase-config.js'],
       manifest: {
         name: 'Anuva',
         short_name: 'Anuva',

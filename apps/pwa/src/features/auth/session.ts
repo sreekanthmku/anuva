@@ -1,39 +1,50 @@
-const AUTH_STORAGE_KEY = 'anuva-auth';
+import type {
+  AuthSessionResponse,
+  AuthUser,
+  RequestOtpBody,
+  RequestOtpResponse,
+  VerifyOtpBody,
+} from '@anuva/shared';
+import { apiFetch } from '../../shared/lib/api';
+import { getOrCreateDeviceId } from '../../lib/notifications/deviceId';
 
-export function getSessionUsername(): string | null {
-  try {
-    return localStorage.getItem(AUTH_STORAGE_KEY);
-  } catch {
-    return null;
-  }
+export async function requestOtp(body: RequestOtpBody): Promise<RequestOtpResponse> {
+  return apiFetch<RequestOtpResponse>('/api/auth/request-otp', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
-export function isLoggedIn(): boolean {
-  return getSessionUsername() !== null;
+export async function verifyOtp(body: VerifyOtpBody): Promise<AuthSessionResponse> {
+  return apiFetch<AuthSessionResponse>('/api/auth/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
-export function setSession(username: string): void {
+export async function fetchCurrentUser(): Promise<AuthUser> {
+  return apiFetch<AuthUser>('/api/auth/me');
+}
+
+export async function logoutSession(): Promise<void> {
+  let fcmToken: string | undefined;
   try {
-    localStorage.setItem(AUTH_STORAGE_KEY, username);
+    fcmToken = localStorage.getItem('anuva-fcm-token') ?? undefined;
   } catch {
     /* ignore */
   }
-}
 
-export function clearSession(): void {
+  await apiFetch('/api/auth/logout', {
+    method: 'POST',
+    body: JSON.stringify({
+      deviceId: getOrCreateDeviceId(),
+      ...(fcmToken ? { fcmToken } : {}),
+    }),
+  });
+
   try {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem('anuva-fcm-token');
   } catch {
     /* ignore */
   }
-}
-
-/** Demo credentials: username and password both `anuva`. */
-export function tryLogin(username: string, password: string): boolean {
-  const u = username.trim().toLowerCase();
-  if (u === 'anuva' && password === 'anuva') {
-    setSession(u);
-    return true;
-  }
-  return false;
 }

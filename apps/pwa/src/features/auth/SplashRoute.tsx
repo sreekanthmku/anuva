@@ -1,17 +1,23 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './auth-context';
 
 const SPLASH_MS = 2000;
 
 export default function SplashRoute() {
   const navigate = useNavigate();
+  const { status } = useAuth();
 
   useEffect(() => {
+    if (status === 'loading') {
+      return undefined;
+    }
+
     const id = window.setTimeout(() => {
-      navigate('/login', { replace: true });
+      navigate(status === 'authenticated' ? '/home' : '/login', { replace: true });
     }, SPLASH_MS);
     return () => window.clearTimeout(id);
-  }, [navigate]);
+  }, [navigate, status]);
 
   return (
     <main className="relative flex min-h-mobile flex-col items-center justify-center overflow-hidden bg-surface px-6 text-on-surface">

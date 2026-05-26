@@ -1,27 +1,120 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { assessmentPath } from '../onboarding/config/assessmentView';
 import { TrustStrip } from '../onboarding/components/TrustStrip';
-import { isLoggedIn, tryLogin } from './session';
+import { useAuth } from './auth-context';
+import { requestOtp, verifyOtp } from './session';
+
+type AuthMode = 'login' | 'signup';
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return 'Something went wrong. Please try again.';
+}
 
 export default function LoginRoute() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
+  const { status, setAuthenticatedSession } = useAuth();
+  const [mode, setMode] = useState<AuthMode>('login');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [maskedPhone, setMaskedPhone] = useState('');
+  const [resendAvailableAt, setResendAvailableAt] = useState<number | null>(null);
+  const [clock, setClock] = useState(Date.now());
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (isLoggedIn()) navigate('/home', { replace: true });
-  }, [navigate]);
-
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(false);
-    if (tryLogin(username, password)) {
+    if (status === 'authenticated') {
       navigate('/home', { replace: true });
+    }
+  }, [navigate, status]);
+
+  useEffect(() => {
+    if (!challengeId) {
+      return undefined;
+    }
+
+    const id = window.setInterval(() => setClock(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [challengeId]);
+
+  const resendCountdown = useMemo(() => {
+    if (!resendAvailableAt) {
+      return 0;
+    }
+
+    return Math.max(0, Math.ceil((resendAvailableAt - clock) / 1000));
+  }, [clock, resendAvailableAt]);
+
+  function resetOtpStep(nextMode?: AuthMode) {
+    setChallengeId(null);
+    setMaskedPhone('');
+    setOtp('');
+    setResendAvailableAt(null);
+    setErrorMessage(null);
+
+    if (nextMode) {
+      setMode(nextMode);
+    }
+  }
+
+  async function handleRequestOtp(event: FormEvent) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await requestOtp({
+        purpose: mode,
+        phone,
+        name: mode === 'signup' ? name : undefined,
+      });
+
+      setChallengeId(response.challengeId);
+      setMaskedPhone(response.maskedPhone);
+      setPhone(response.phone);
+      setResendAvailableAt(Date.now() + response.resendAfterSeconds * 1000);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleVerifyOtp(event: FormEvent) {
+    event.preventDefault();
+    if (!challengeId) {
       return;
     }
-    setError(true);
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const session = await verifyOtp({
+        challengeId,
+        purpose: mode,
+        phone,
+        otp,
+        name: mode === 'signup' ? name : undefined,
+      });
+
+      setAuthenticatedSession(session);
+      navigate('/home', { replace: true });
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   }
+
+  const inOtpStep = challengeId !== null;
 
   return (
     <main className="relative min-h-mobile overflow-hidden bg-surface pt-[80px] text-on-surface">
@@ -63,7 +156,7 @@ export default function LoginRoute() {
             letterSpacing: '-0.02em',
           }}
         >
-          Sign in to continue
+          {inOtpStep ? 'Enter the 6-digit OTP to continue' : mode === 'login' ? 'Login with your phone number' : 'Create your account with name and phone'}
         </p>
       </section>
 
@@ -71,79 +164,179 @@ export default function LoginRoute() {
         className="relative z-10 mt-6 flex min-h-[calc(100svh-220px)] flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-[22px] pb-[22px] pt-[26px]"
         style={{ minHeight: 'calc(100dvh - 220px)' }}
       >
-        <div
-          className="mb-5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary"
-          style={{ fontFamily: '"Geist Mono", ui-monospace, monospace', fontWeight: 400 }}
-        >
-          <span className="h-px w-3 bg-primary/60" />
-          Welcome back
-        </div>
-
-        <form onSubmit={onSubmit} className="flex flex-1 flex-col">
-          <label className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-            Username
-          </label>
-          <input
-            type="text"
-            name="username"
-            autoComplete="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="mb-4 w-full rounded-starchart-lg border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
-            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
-            placeholder="anuva"
-          />
-
-          <label className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-            Password
-          </label>
-          <input
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mb-2 w-full rounded-starchart-lg border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
-            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
-            placeholder="••••••"
-          />
-
-          {error && (
-            <p className="mb-3 text-[13px] text-error" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-              Username or password is incorrect.
-            </p>
-          )}
-
-          <div className="mb-4 mt-2">
-            <TrustStrip />
+        {!inOtpStep && (
+          <div className="mb-5 grid grid-cols-2 rounded-full border border-border-default bg-surface-container-low p-1">
+            {(['login', 'signup'] as const).map((option) => {
+              const active = mode === option;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => resetOtpStep(option)}
+                  className="rounded-full px-4 py-2.5 text-[12px] uppercase tracking-[0.12em] transition-colors"
+                  style={{
+                    fontFamily: '"Geist Mono", ui-monospace, monospace',
+                    background: active ? '#e2c62d' : 'transparent',
+                    color: active ? '#322f37' : '#948e9d',
+                  }}
+                >
+                  {option === 'login' ? 'Login' : 'Sign up'}
+                </button>
+              );
+            })}
           </div>
+        )}
 
-          <button
-            type="submit"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface"
-            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif', fontWeight: 500, letterSpacing: '-0.005em' }}
-          >
-            Sign in
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M5 12h14M13 6l6 6-6 6"
-                stroke="#322f37"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+        {inOtpStep ? (
+          <form onSubmit={handleVerifyOtp} className="flex flex-1 flex-col">
+            <div
+              className="mb-5 rounded-[24px] border border-border-default bg-surface-container-low px-4 py-4"
+              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            >
+              <p className="text-[12px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                OTP sent
+              </p>
+              <p className="mt-2 text-[15px] text-on-surface">We sent a verification code to {maskedPhone}.</p>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => navigate('/assessment')}
-            className="mt-3 w-full bg-transparent py-3 text-[13px] font-medium text-on-surface-variant"
-            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
-          >
-            New here? Start assessment
-          </button>
-        </form>
+            <label className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+              6-digit OTP
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={otp}
+              onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              className="mb-2 w-full rounded-starchart-lg border border-border-default bg-surface-container-low px-4 py-3.5 text-[18px] tracking-[0.35em] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+              style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+              placeholder="123456"
+            />
+
+            {errorMessage && (
+              <p className="mb-3 text-[13px] text-error" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                {errorMessage}
+              </p>
+            )}
+
+            <div className="mb-4 mt-2">
+              <TrustStrip />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting || otp.length !== 6}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface disabled:opacity-60"
+              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif', fontWeight: 500, letterSpacing: '-0.005em' }}
+            >
+              {isSubmitting ? 'Verifying...' : 'Verify OTP'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => resetOtpStep()}
+              className="mt-3 w-full bg-transparent py-3 text-[13px] font-medium text-on-surface-variant"
+              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            >
+              Change phone number
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                void requestOtp({
+                  purpose: mode,
+                  phone,
+                  name: mode === 'signup' ? name : undefined,
+                })
+                  .then((response) => {
+                    setChallengeId(response.challengeId);
+                    setMaskedPhone(response.maskedPhone);
+                    setPhone(response.phone);
+                    setResendAvailableAt(Date.now() + response.resendAfterSeconds * 1000);
+                    setErrorMessage(null);
+                  })
+                  .catch((error) => {
+                    setErrorMessage(getErrorMessage(error));
+                  });
+              }}
+              disabled={isSubmitting || resendCountdown > 0}
+              className="mt-1 w-full bg-transparent py-3 text-[13px] font-medium text-primary disabled:text-outline"
+              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            >
+              {resendCountdown > 0 ? `Resend OTP in ${resendCountdown}s` : 'Resend OTP'}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleRequestOtp} className="flex flex-1 flex-col">
+            {mode === 'signup' && (
+              <>
+                <label className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                  Full name
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="mb-4 w-full rounded-starchart-lg border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+                  style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                  placeholder="Enter your name"
+                />
+              </>
+            )}
+
+            <label className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+              Phone number
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              autoComplete="tel"
+              inputMode="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              className="mb-2 w-full rounded-starchart-lg border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+              placeholder="+91 98765 43210"
+            />
+
+            <p className="mb-4 text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+              {mode === 'login' ? 'Use the phone number linked to your account.' : 'We will verify this number with a one-time password.'}
+            </p>
+
+            {errorMessage && (
+              <p className="mb-3 text-[13px] text-error" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                {errorMessage}
+              </p>
+            )}
+
+            <div className="mb-4 mt-2">
+              <TrustStrip />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface disabled:opacity-60"
+              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif', fontWeight: 500, letterSpacing: '-0.005em' }}
+            >
+              {isSubmitting ? 'Sending OTP...' : 'Send OTP'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate(assessmentPath())}
+              className="mt-3 w-full bg-transparent py-3 text-[13px] font-medium text-on-surface-variant"
+              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            >
+              Continue without login
+            </button>
+          </form>
+        )}
       </section>
     </main>
   );

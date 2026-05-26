@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
+import { assessmentPath } from './config/assessmentView';
 import { AssessmentResultCTA } from './components/AssessmentResultCTA';
 import { AssessmentResultNavBar } from './components/AssessmentResultNavBar';
 import { AssessmentResultSummary } from './components/AssessmentResultSummary';
@@ -39,7 +40,7 @@ export default function AssessmentResultRoute() {
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pt-[40px] text-on-surface">
-      <AssessmentResultNavBar onBack={() => navigate('/assessment')} />
+      <AssessmentResultNavBar onBack={() => navigate(assessmentPath())} />
       <AssessmentResultSummary score={score} status={status} riskItems={summaryItems} />
 
       <section className="px-[22px] pb-[18px] pt-1">
