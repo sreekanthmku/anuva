@@ -10,6 +10,9 @@
     "db:migrate": "pnpm --filter @anuva/database db:migrate",
     "db:push": "pnpm --filter @anuva/database db:push"
   },
+  "prisma": {
+    "seed": "npm exec --workspace @anuva/api -- tsx apps/api/src/seed-booking.ts"
+  },
   "devDependencies": {
     "@eslint/js": "^9.16.0",
     "eslint": "^9.16.0",
