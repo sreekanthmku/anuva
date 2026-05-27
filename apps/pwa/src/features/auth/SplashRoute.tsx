@@ -32,9 +32,8 @@ export default function SplashRoute() {
         <p
           className="text-[26px] tracking-[0.2em] text-on-surface"
           style={{
-            fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+            fontFamily: '"DM Sans", sans-serif',
             fontWeight: 400,
-            fontVariationSettings: '"opsz" 144',
           }}
         >
           ANUVA
@@ -42,10 +41,9 @@ export default function SplashRoute() {
         <p
           className="mt-2 text-[12px] italic text-primary"
           style={{
-            fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+            fontFamily: '"DM Sans", sans-serif',
             fontStyle: 'italic',
             fontWeight: 400,
-            fontVariationSettings: '"opsz" 144',
             letterSpacing: '-0.02em',
           }}
         >

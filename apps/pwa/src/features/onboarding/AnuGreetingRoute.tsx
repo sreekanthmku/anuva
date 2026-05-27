@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/auth-context';
+import { assessmentPath } from './config/assessmentView';
 
 const sevenDayPlan = [
   { phase: 'Today', action: 'ANU learns about you', eta: 'Today' },
@@ -10,6 +12,7 @@ const sevenDayPlan = [
 
 export default function AnuGreetingRoute() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [pulse, setPulse] = useState(0);
 
   useEffect(() => {
@@ -19,6 +22,12 @@ export default function AnuGreetingRoute() {
 
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (user && !user.onboardingCompleted) {
+      navigate(assessmentPath(), { replace: true });
+    }
+  }, [navigate, user]);
 
   return (
     <main className="relative min-h-mobile overflow-hidden bg-surface text-on-surface">
@@ -58,8 +67,7 @@ export default function AnuGreetingRoute() {
         </p>
 
         <p
-          className="mt-[18px] px-2 text-center text-[22px] leading-[1.4] text-on-surface"
-          style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+          className="font-display mt-[18px] px-2 text-center text-[22px] leading-[1.4] text-on-surface"
         >
           &quot;I&apos;ll be here every day — to listen, to learn what works for your body, and to quietly guide you toward rest.&quot;
         </p>
@@ -125,4 +133,3 @@ export default function AnuGreetingRoute() {
     </main>
   );
 }
-

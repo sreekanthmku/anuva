@@ -199,9 +199,10 @@ model Subscription {
   id        String             @id @default(cuid())
   userId    String             @unique
   user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan      SubscriptionPlan
+  plan      SubscriptionPlan?
   status    SubscriptionStatus @default(active)
   startedAt DateTime           @default(now())
+  trialEndsAt DateTime?
   renewsAt  DateTime?
 }
 
@@ -384,6 +385,7 @@ model Specialist {
   active         Boolean                   @default(true)
   qualifications SpecialistQualification[]
   consultations  Consultation[]
+  slots          ConsultationSlot[]
 }
 
 model SpecialistQualification {
@@ -412,9 +414,25 @@ model Consultation {
   status       ConsultationStatus @default(pending)
   isFree       Boolean            @default(true)
   createdAt    DateTime           @default(now())
+  slot         ConsultationSlot?
 
   @@index([userId])
   @@index([specialistId])
+}
+
+model ConsultationSlot {
+  id             String        @id @default(cuid())
+  specialistId   String
+  specialist     Specialist    @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  startsAt       DateTime
+  endsAt         DateTime
+  isBooked       Boolean       @default(false)
+  consultationId String?       @unique
+  consultation   Consultation? @relation(fields: [consultationId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+
+  @@unique([specialistId, startsAt])
+  @@index([specialistId, startsAt])
 }
 
 // ─────────────────────────────────────────────

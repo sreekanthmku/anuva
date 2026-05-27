@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
+import { startTrial } from '../auth/session';
 import { assessmentPath } from './config/assessmentView';
 import { AssessmentResultCTA } from './components/AssessmentResultCTA';
 import { AssessmentResultNavBar } from './components/AssessmentResultNavBar';
@@ -27,6 +28,7 @@ export default function AssessmentResultRoute() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, refreshUser } = useAuth();
+  const [isStartingTrial, setIsStartingTrial] = useState(false);
 
   useEffect(() => {
     persistOnboardingCompletionIfAuthenticated(user, refreshUser);
@@ -44,7 +46,29 @@ export default function AssessmentResultRoute() {
       ]
     : riskPills;
   const steps = isInControl ? controlNextSteps : nextSteps;
-  const primaryDestination = isInControl ? '/home' : '/subscription';
+  async function handlePrimaryAction() {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    if (user.hasActiveAccess) {
+      navigate('/anu-greeting');
+      return;
+    }
+
+    setIsStartingTrial(true);
+    try {
+      await startTrial();
+      await refreshUser();
+      navigate('/anu-greeting');
+    } catch (error) {
+      console.error(error);
+      navigate('/subscription');
+    } finally {
+      setIsStartingTrial(false);
+    }
+  }
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pt-[40px] text-on-surface">
@@ -53,7 +77,7 @@ export default function AssessmentResultRoute() {
 
       <section className="px-[22px] pb-[18px] pt-1">
         <NextStepsCard steps={steps} />
-        <AssessmentResultCTA status={status} onPrimary={() => navigate(primaryDestination)} />
+        <AssessmentResultCTA onPrimary={() => void handlePrimaryAction()} isSubmitting={isStartingTrial} />
       </section>
     </main>
   );

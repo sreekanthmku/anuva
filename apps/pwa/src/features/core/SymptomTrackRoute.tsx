@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 
 type CategoryKey = 'vaso' | 'sleep' | 'mood' | 'life';
@@ -34,9 +35,11 @@ function Eyebrow({ children, colorClass = 'text-outline' }: { children: ReactNod
 }
 
 export default function SymptomTrackRoute() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [selections, setSelections] = useState<Selections>(initialSelections);
   const [intensity, setIntensity] = useState(4);
+  const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
 
   const toggle = (cat: CategoryKey, id: string) => {
     setSelections((prev) => {
@@ -52,14 +55,13 @@ export default function SymptomTrackRoute() {
         <div className="px-[22px] pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Eyebrow colorClass="text-primary">Day 8 · Week 2</Eyebrow>
           <h1
-            className="mb-[18px] text-[30px] leading-[1.05] text-on-surface"
-            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+            className="font-display mb-[18px] text-[30px] leading-[1.05] text-on-surface"
           >
             How was your{' '}
             <em className="not-italic text-primary" style={{ fontStyle: 'italic', fontWeight: 300 }}>
               today
             </em>
-            , Priya?
+            {`, ${firstName}?`}
           </h1>
 
           <div className="flex justify-between gap-1.5">
@@ -125,7 +127,6 @@ export default function SymptomTrackRoute() {
             <Eyebrow>Overall intensity</Eyebrow>
             <span
               className="text-[22px] text-on-surface"
-              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 600, fontVariationSettings: '"opsz" 96' }}
             >
               {intensity}
               <span className="text-[14px] font-normal text-outline">/7</span>

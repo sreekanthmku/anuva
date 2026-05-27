@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 
 type PathId = 'diet' | 'psych' | 'gynec' | 'combined';
@@ -34,8 +35,10 @@ function Eyebrow({ children, mint = false }: { children: string; mint?: boolean 
 }
 
 export default function CareDirectionRoute() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [activePath, setActivePath] = useState<PathId>('combined');
+  const firstName = user?.name?.trim().split(/\s+/)[0] || 'you';
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
@@ -47,11 +50,10 @@ export default function CareDirectionRoute() {
           </span>
         </div>
         <h1
-          className="mb-2 text-[28px] leading-[1.15] text-on-surface"
-          style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+          className="font-display mb-2 text-[28px] leading-[1.15] text-on-surface"
         >
           We&apos;ve found the right{' '}
-          <em className="not-italic text-primary" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}>
+          <em className="not-italic text-primary" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}>
             direction
           </em>{' '}
           for you.
@@ -66,13 +68,12 @@ export default function CareDirectionRoute() {
           className="rounded-[24px] border border-border-default bg-gradient-to-br from-surface-raised to-deep-space p-[22px]"
           style={{ boxShadow: '0 12px 32px rgba(0,0,0,0.45)' }}
         >
-          <Eyebrow mint>Recommended for Priya</Eyebrow>
+          <Eyebrow mint>{`Recommended for ${firstName}`}</Eyebrow>
           <h2
-            className="mb-4 text-[26px] leading-[1.15] text-on-surface"
-            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+            className="font-display mb-4 text-[26px] leading-[1.15] text-on-surface"
           >
             Combined:{' '}
-            <em className="not-italic text-primary" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}>
+            <em className="not-italic text-primary" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}>
               Gynec + Nutrition
             </em>
           </h2>
@@ -116,7 +117,7 @@ export default function CareDirectionRoute() {
                   className="mb-1.5 text-[22px]"
                   style={{
                     color: isActive ? '#cebdff' : '#e6e0ea',
-                    fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+                    fontFamily: '"DM Sans", sans-serif',
                   }}
                 >
                   {p.glyph}

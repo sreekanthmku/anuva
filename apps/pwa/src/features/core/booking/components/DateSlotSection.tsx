@@ -82,8 +82,7 @@ export function DateSlotSection({
               <div
                 className="mt-0.5 text-[22px] font-semibold tabular-nums"
                 style={{
-                  fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
-                  fontVariationSettings: '"opsz" 96',
+                  fontFamily: '"DM Sans", sans-serif',
                   color: sel ? '#322f37' : '#e6e0ea',
                 }}
               >

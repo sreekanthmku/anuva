@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
+import { assessmentPath } from '../onboarding/config/assessmentView';
 import { useAuth } from './auth-context';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
 
   if (status === 'loading') {
     return (
@@ -11,7 +12,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
         <div>
           <p
             className="text-[22px] tracking-[0.16em] text-on-surface"
-            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400 }}
+            style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 400 }}
           >
             ANUVA
           </p>
@@ -25,6 +26,14 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (status === 'anonymous') {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!user?.onboardingCompleted) {
+    return <Navigate to={assessmentPath()} replace />;
+  }
+
+  if (!user?.hasActiveAccess) {
+    return <Navigate to="/subscription" replace />;
   }
 
   return <>{children}</>;

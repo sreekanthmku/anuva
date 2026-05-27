@@ -6,8 +6,15 @@ import '@fontsource/geist/500.css';
 import '@fontsource/geist/600.css';
 import '@fontsource/geist-mono/400.css';
 import '@fontsource/geist-mono/500.css';
-import '@fontsource-variable/fraunces/opsz.css';
-import '@fontsource-variable/fraunces/opsz-italic.css';
+import '@fontsource/dm-sans/300.css';
+import '@fontsource/dm-sans/400.css';
+import '@fontsource/dm-sans/500.css';
+import '@fontsource/dm-sans/600.css';
+import '@fontsource/dm-sans/700.css';
+import '@fontsource/dm-sans/300-italic.css';
+import '@fontsource/dm-sans/400-italic.css';
+import '@fontsource/dm-sans/500-italic.css';
+import '@fontsource/dm-sans/700-italic.css';
 import App from './App';
 import './index.css';
 

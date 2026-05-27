@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
 import { NotificationSyncBanner } from './components/NotificationSyncBanner';
@@ -15,8 +17,39 @@ const score = 72;
 const circumference = 2 * Math.PI * 42;
 const scoreDash = (score / 100) * circumference;
 
+function getTimeGreeting(date = new Date()) {
+  const hour = date.getHours();
+
+  if (hour >= 5 && hour < 12) {
+    return 'Good morning';
+  }
+
+  if (hour >= 12 && hour < 17) {
+    return 'Good afternoon';
+  }
+
+  if (hour >= 17 && hour < 21) {
+    return 'Good evening';
+  }
+
+  return 'Good night';
+}
+
 export default function AnuDashboardRoute() {
+  const { user } = useAuth();
   const notificationPrompt = useHomeNotificationPrompt();
+  const [greeting, setGreeting] = useState(() => getTimeGreeting());
+  const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
+  const profileInitial = firstName.charAt(0).toUpperCase() || 'U';
+
+  useEffect(() => {
+    const updateGreeting = () => setGreeting(getTimeGreeting());
+
+    updateGreeting();
+    const intervalId = window.setInterval(updateGreeting, 60_000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 pt-[40px] text-on-surface">
@@ -40,7 +73,7 @@ export default function AnuDashboardRoute() {
             <img src="/anu.png" alt="Anuva logo" className="h-5 w-5 object-contain" />
             <span
               className="text-[16px] tracking-[0.16em] text-on-surface"
-              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 500 }}
+              style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 500 }}
             >
               ANUVA
             </span>
@@ -52,25 +85,24 @@ export default function AnuDashboardRoute() {
             style={{
               background: '#1d1a21',
               borderColor: 'rgba(148, 142, 157, 0.35)',
-              fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+              fontFamily: '"DM Sans", sans-serif',
               fontWeight: 500,
             }}
           >
-            P
+            {profileInitial}
           </NavLink>
         </header>
 
         <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
           <span className="h-px w-3 bg-primary/60" />
-          <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Good morning</span>
+          <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>{greeting}</span>
         </div>
 
         <h1
-          className="mb-2.5 text-[44px] leading-[0.95] text-on-surface"
-          style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+          className="font-display mb-2.5 text-[34px] leading-[1] text-on-surface"
         >
           <em className="not-italic text-primary" style={{ fontStyle: 'italic', fontWeight: 300 }}>
-            Priya
+            {firstName}
           </em>
         </h1>
 
@@ -113,7 +145,6 @@ export default function AnuDashboardRoute() {
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span
                 className="text-[30px] leading-none text-on-surface"
-                style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 500, fontVariationSettings: '"opsz" 96' }}
               >
                 {score}
               </span>
@@ -130,7 +161,7 @@ export default function AnuDashboardRoute() {
             </div>
             <p
               className="mb-2 text-[18px] leading-[1.25] text-on-surface"
-              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}
+              style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
             >
               Steady, with gentle friction.
             </p>
@@ -159,7 +190,7 @@ export default function AnuDashboardRoute() {
               </div>
               <p
                 className="text-[16px] leading-[1.4] text-on-surface"
-                style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}
+                style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
               >
                 &quot;You logged two hot flashes yesterday. Want me to suggest a 3-minute cooling ritual for tonight?&quot;
               </p>
@@ -209,13 +240,56 @@ export default function AnuDashboardRoute() {
         </div>
       </section>
 
+      <section className="px-[22px] pt-4">
+        <article
+          className="overflow-hidden rounded-[28px] border px-5 py-5"
+          style={{
+            background: 'linear-gradient(145deg, rgba(36, 25, 47, 0.96), rgba(24, 18, 37, 0.98))',
+            borderColor: 'rgba(206, 189, 255, 0.18)',
+            boxShadow: '0 16px 40px rgba(0,0,0,0.32)',
+          }}
+        >
+          <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]" style={{ color: '#dbc839' }}>
+            <span className="h-px w-3 bg-[#dbc839]/70" />
+            <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Next step required</span>
+          </div>
+
+          <p
+            className="max-w-[24ch] text-[17px] leading-[1.4] text-on-surface"
+            style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}
+          >
+            Let&apos;s go deeper with your assessment
+          </p>
+
+          <p
+            className="mt-3 max-w-[28ch] text-[12px] leading-[1.5]"
+            style={{ color: '#b5acbf', fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+          >
+            Your detailed assessment helps ANU personalise your care path. Takes about 8 minutes.
+          </p>
+
+          <button
+            type="button"
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface"
+            style={{
+              fontFamily: '"Geist", -apple-system, system-ui, sans-serif',
+              fontWeight: 500,
+              letterSpacing: '-0.005em',
+            }}
+          >
+            Start detailed assessment
+            <span aria-hidden="true">→</span>
+          </button>
+        </article>
+      </section>
+
       <section className="px-[22px] pb-[22px] pt-4">
         <article className="rounded-[24px] border px-[18px] py-4" style={{ background: 'rgba(219, 200, 57, 0.16)', borderColor: 'rgba(219, 200, 57, 0.3)' }}>
           <div className="mb-2.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]" style={{ color: '#dbc839' }}>
             <span className="h-px w-3 bg-[#dbc839]/70" />
             <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Today&apos;s insight</span>
           </div>
-          <p className="text-[17px] leading-[1.4] text-on-surface" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}>
+          <p className="text-[17px] leading-[1.4] text-on-surface" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}>
             Cooling the bedroom to 22°C before sleep can reduce night sweats by up to 40%.
           </p>
           <div className="mt-3 flex items-center justify-between">

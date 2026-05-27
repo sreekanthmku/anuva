@@ -104,7 +104,7 @@ export default function ProfileRoute() {
             style={{
               background: '#1d1a21',
               borderColor: 'rgba(148, 142, 157, 0.35)',
-              fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+              fontFamily: '"DM Sans", sans-serif',
               fontWeight: 500,
             }}
             aria-hidden
@@ -113,8 +113,7 @@ export default function ProfileRoute() {
           </span>
           <div className="min-w-0">
             <h1
-              className="text-[24px] leading-tight text-on-surface"
-              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+              className="font-display text-[24px] leading-tight text-on-surface"
             >
               {displayName}
             </h1>

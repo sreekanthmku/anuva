@@ -20,7 +20,7 @@ export function RiskIndicatorGrid({ items }: RiskIndicatorGridProps) {
           </div>
           <p
             className="text-[16px]"
-            style={{ color: item.color, fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 500 }}
+            style={{ color: item.color, fontFamily: '"DM Sans", sans-serif', fontWeight: 500 }}
           >
             {item.value}
           </p>

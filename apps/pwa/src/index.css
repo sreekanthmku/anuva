@@ -18,6 +18,10 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  .font-display {
+    font-family: 'DM Sans', sans-serif;
+  }
 }
 
 @layer base {

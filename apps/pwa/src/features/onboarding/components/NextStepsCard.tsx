@@ -15,7 +15,7 @@ export function NextStepsCard({ steps }: NextStepsCardProps) {
           <div key={step[0]} className="flex items-start gap-3.5">
             <span
               className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border border-primary bg-primary/15 text-[12px] text-primary"
-              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 500 }}
+              style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 500 }}
             >
               {String(index + 1).padStart(2, '0')}
             </span>

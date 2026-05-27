@@ -13,11 +13,10 @@ export function BookingFormHeader() {
         </span>
       </div>
       <h1
-        className="mb-1.5 max-w-[22rem] text-[28px] leading-[1.15] text-on-surface"
-        style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+        className="font-display mb-1.5 max-w-[22rem] text-[28px] leading-[1.15] text-on-surface"
       >
         Book with a{' '}
-        <em className="not-italic text-primary" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}>
+        <em className="not-italic text-primary" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}>
           specialist
         </em>
       </h1>

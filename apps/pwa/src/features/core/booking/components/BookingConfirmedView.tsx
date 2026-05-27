@@ -19,11 +19,10 @@ export function BookingConfirmedView({ specialistLabel, dateYmd, timeLabel, onBa
         <img src="/anu.png" alt="ANU" className="h-[72px] w-[72px] object-contain" />
       </div>
       <h1
-        className="mb-2 max-w-[18rem] text-[26px] leading-[1.15] text-on-surface"
-        style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+        className="font-display mb-2 max-w-[18rem] text-[26px] leading-[1.15] text-on-surface"
       >
         Your consult is{' '}
-        <em className="not-italic text-primary" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}>
+        <em className="not-italic text-primary" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}>
           booked
         </em>
         .

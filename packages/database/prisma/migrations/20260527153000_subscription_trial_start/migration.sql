@@ -1,0 +1,5 @@
+ALTER TABLE "Subscription"
+ALTER COLUMN "plan" DROP NOT NULL;
+
+ALTER TABLE "Subscription"
+ADD COLUMN "trialEndsAt" TIMESTAMP(3);

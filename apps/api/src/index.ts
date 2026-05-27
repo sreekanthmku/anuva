@@ -11,13 +11,24 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '@anuva/database';
 import {
+  activateOneDaySubscriptionResponseSchema,
   authSessionResponseSchema,
   authUserSchema,
+  consultationBookingResponseSchema,
+  consultationSlotsQuerySchema,
+  consultationSlotsResponseSchema,
+  consultationSpecialistsResponseSchema,
+  createConsultationBookingBodySchema,
+  createConsultationSlotsBodySchema,
+  createConsultationSlotsResponseSchema,
+  deleteConsultationSlotParamsSchema,
+  deleteConsultationSlotResponseSchema,
   logoutResponseSchema,
   registerFcmBodySchema,
   registerFcmResponseSchema,
   requestOtpBodySchema,
   pushBroadcastResponseSchema,
+  startTrialResponseSchema,
   unregisterFcmBodySchema,
   unregisterFcmResponseSchema,
   requestOtpResponseSchema,
@@ -25,6 +36,7 @@ import {
   type AuthUser,
 } from '@anuva/shared';
 import { ZodError } from 'zod';
+import { BOOKABLE_DOCTOR_KEYS, ensureBookingCatalog } from './bookingCatalog.js';
 import { sendPushToAllTokens } from './fcm.js';
 
 const app = express();
@@ -38,7 +50,13 @@ const OTP_MAX_SENDS_PER_15_MINUTES = Number(process.env.OTP_MAX_SENDS_PER_15_MIN
 const OTP_MAX_VERIFY_ATTEMPTS = Number(process.env.OTP_MAX_VERIFY_ATTEMPTS || 5);
 const TWOFACTOR_BASE_URL = process.env.TWOFACTOR_BASE_URL || 'https://2factor.in/API/V1';
 const TWOFACTOR_OTP_TEMPLATE_NAME = process.env.TWOFACTOR_OTP_TEMPLATE_NAME?.trim() || '';
+const FREE_TRIAL_DAYS = Math.max(1, Number(process.env.FREE_TRIAL_DAYS || 14));
 const SESSION_COOKIE_SECURE = process.env.SESSION_COOKIE_SECURE === 'true';
+const SESSION_COOKIE_DOMAIN = process.env.SESSION_COOKIE_DOMAIN?.trim() || undefined;
+const SESSION_COOKIE_SAME_SITE = (process.env.SESSION_COOKIE_SAME_SITE?.trim().toLowerCase() || 'lax') as
+  | 'lax'
+  | 'strict'
+  | 'none';
 const PUSH_BROADCAST_SECRET = process.env.PUSH_BROADCAST_SECRET?.trim() || '';
 
 app.use(cors({ origin: true, credentials: true }));
@@ -93,6 +111,21 @@ function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
+function localYmd(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseYmdAtLocalMidnight(ymd: string): Date {
+  const [year, month, day] = ymd.split('-').map(Number);
+  if (!year || !month || !day) {
+    throw new HttpError(400, 'Invalid date.');
+  }
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
 function sha256(value: string): string {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
@@ -117,23 +150,83 @@ function getSessionToken(req: Request): string | null {
   return cookies[SESSION_COOKIE_NAME] || null;
 }
 
-function setSessionCookie(res: Response, token: string, expiresAt: Date): void {
-  res.cookie(SESSION_COOKIE_NAME, token, {
+function getSessionCookieOptions(expiresAt?: Date) {
+  const secure = SESSION_COOKIE_SAME_SITE === 'none' ? true : SESSION_COOKIE_SECURE;
+
+  return {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: SESSION_COOKIE_SECURE,
-    expires: expiresAt,
+    sameSite: SESSION_COOKIE_SAME_SITE,
+    secure,
+    ...(SESSION_COOKIE_DOMAIN ? { domain: SESSION_COOKIE_DOMAIN } : {}),
+    ...(expiresAt ? { expires: expiresAt } : {}),
     path: '/',
-  });
+  } as const;
+}
+
+function setSessionCookie(res: Response, token: string, expiresAt: Date): void {
+  res.cookie(SESSION_COOKIE_NAME, token, getSessionCookieOptions(expiresAt));
 }
 
 function clearSessionCookie(res: Response): void {
-  res.clearCookie(SESSION_COOKIE_NAME, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: SESSION_COOKIE_SECURE,
-    path: '/',
-  });
+  res.clearCookie(SESSION_COOKIE_NAME, getSessionCookieOptions());
+}
+
+function setNoStoreHeaders(res: Response): void {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+}
+
+type UserWithSubscription = {
+  id: string;
+  phone: string;
+  name: string | null;
+  email: string | null;
+  onboardingCompleted: boolean;
+  phoneVerifiedAt: Date | null;
+  createdAt: Date;
+  subscription?: {
+    plan: 'monthly' | 'annual' | null;
+    status: 'trialing' | 'active' | 'past_due' | 'canceled';
+    startedAt: Date;
+    trialEndsAt: Date | null;
+    renewsAt: Date | null;
+  } | null;
+};
+
+function getSubscriptionAccessState(subscription: UserWithSubscription['subscription']) {
+  const now = new Date();
+
+  if (!subscription) {
+    return {
+      hasActiveAccess: false,
+      trialAvailable: true,
+      requiresPayment: false,
+    };
+  }
+
+  if (subscription.status === 'active') {
+    return {
+      hasActiveAccess: true,
+      trialAvailable: false,
+      requiresPayment: false,
+    };
+  }
+
+  if (subscription.status === 'trialing') {
+    const hasActiveTrial = !!subscription.trialEndsAt && subscription.trialEndsAt > now;
+    return {
+      hasActiveAccess: hasActiveTrial,
+      trialAvailable: false,
+      requiresPayment: !hasActiveTrial,
+    };
+  }
+
+  return {
+    hasActiveAccess: false,
+    trialAvailable: false,
+    requiresPayment: true,
+  };
 }
 
 function serializeUser(user: {
@@ -144,16 +237,50 @@ function serializeUser(user: {
   onboardingCompleted: boolean;
   phoneVerifiedAt: Date | null;
   createdAt: Date;
+  subscription?: UserWithSubscription['subscription'];
 }): AuthUser {
+  const access = getSubscriptionAccessState(user.subscription ?? null);
+
   return authUserSchema.parse({
     id: user.id,
     phone: user.phone,
     name: user.name,
     email: user.email,
     onboardingCompleted: user.onboardingCompleted,
+    subscriptionPlan: user.subscription?.plan ?? null,
+    subscriptionStatus: user.subscription?.status ?? null,
+    subscriptionStartedAt: user.subscription?.startedAt.toISOString() ?? null,
+    trialEndsAt: user.subscription?.trialEndsAt?.toISOString() ?? null,
+    renewsAt: user.subscription?.renewsAt?.toISOString() ?? null,
+    hasActiveAccess: access.hasActiveAccess,
+    trialAvailable: access.trialAvailable,
+    requiresPayment: access.requiresPayment,
     phoneVerifiedAt: user.phoneVerifiedAt?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
   });
+}
+
+async function loadUserWithSubscription(userId: string): Promise<UserWithSubscription> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      subscription: {
+        select: {
+          plan: true,
+          status: true,
+          startedAt: true,
+          trialEndsAt: true,
+          renewsAt: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    throw new HttpError(404, 'User not found.');
+  }
+
+  return user;
 }
 
 function getTwoFactorApiKey(): string {
@@ -218,7 +345,11 @@ async function requireCurrentUser(req: Request) {
 
   const session = await prisma.session.findUnique({
     where: { tokenHash: sha256(sessionToken) },
-    include: { user: true },
+    select: {
+      id: true,
+      userId: true,
+      expiresAt: true,
+    },
   });
 
   if (!session || session.expiresAt <= new Date()) {
@@ -230,7 +361,7 @@ async function requireCurrentUser(req: Request) {
     data: { lastSeenAt: new Date() },
   });
 
-  return session.user;
+  return loadUserWithSubscription(session.userId);
 }
 
 function requireBroadcastSecret(req: Request) {
@@ -244,12 +375,294 @@ function requireBroadcastSecret(req: Request) {
   }
 }
 
+function isBookableDoctorKey(key: string): boolean {
+  return BOOKABLE_DOCTOR_KEYS.has(key);
+}
+
+async function readyBookingCatalog() {
+  await ensureBookingCatalog(prisma);
+}
+
+function serializeSpecialist(specialist: {
+  key: string;
+  name: string;
+  subtitle: string | null;
+  role: string | null;
+  specialization: string | null;
+  summary: string | null;
+  experience: string | null;
+  tag: string | null;
+  imageUrl: string | null;
+  qualifications: { label: string }[];
+}) {
+  const bookable = isBookableDoctorKey(specialist.key);
+
+  return {
+    key: specialist.key,
+    name: specialist.name,
+    subtitle: specialist.subtitle,
+    role: specialist.role,
+    specialization: specialist.specialization,
+    summary: specialist.summary,
+    experience: specialist.experience,
+    tag: specialist.tag,
+    imageUrl: specialist.imageUrl,
+    qualifications: specialist.qualifications.map((qualification) => qualification.label),
+    bookable,
+    bookingDisabledReason: bookable ? null : 'Booking for this specialist is coming soon.',
+  };
+}
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/consultations/specialists', async (_req, res, next) => {
+  try {
+    await readyBookingCatalog();
+
+    const specialists = await prisma.specialist.findMany({
+      where: { active: true },
+      include: {
+        qualifications: {
+          orderBy: { label: 'asc' },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    res.json(
+      consultationSpecialistsResponseSchema.parse(
+        specialists.map((specialist) => serializeSpecialist(specialist)),
+      ),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/consultations/slots', async (req, res, next) => {
+  try {
+    await readyBookingCatalog();
+
+    const parsed = consultationSlotsQuerySchema.parse(req.query);
+    const specialist = await prisma.specialist.findUnique({
+      where: { key: parsed.specialistKey },
+      select: { id: true, key: true, active: true },
+    });
+
+    if (!specialist || !specialist.active) {
+      throw new HttpError(404, 'Specialist not found.');
+    }
+
+    if (!isBookableDoctorKey(specialist.key)) {
+      throw new HttpError(400, 'Booking is not available for this specialist yet.');
+    }
+
+    const rangeStart = parseYmdAtLocalMidnight(parsed.from);
+    const rangeEnd = addDays(rangeStart, parsed.days);
+    const now = new Date();
+    const slotLowerBound = rangeStart.getTime() > now.getTime() ? rangeStart : now;
+
+    const slots = await prisma.consultationSlot.findMany({
+      where: {
+        specialistId: specialist.id,
+        isBooked: false,
+        startsAt: { gte: slotLowerBound, lt: rangeEnd },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+
+    const groups = new Map<string, { date: string; slots: { id: string; startsAt: string; endsAt: string }[] }>();
+
+    for (const slot of slots) {
+      const date = localYmd(slot.startsAt);
+      const current = groups.get(date) ?? { date, slots: [] };
+      current.slots.push({
+        id: slot.id,
+        startsAt: slot.startsAt.toISOString(),
+        endsAt: slot.endsAt.toISOString(),
+      });
+      groups.set(date, current);
+    }
+
+    res.json(
+      consultationSlotsResponseSchema.parse({
+        specialistKey: specialist.key,
+        from: parsed.from,
+        days: parsed.days,
+        dates: Array.from(groups.values()),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/consultations/book', async (req, res, next) => {
+  try {
+    await readyBookingCatalog();
+
+    const user = await requireCurrentUser(req);
+    const parsed = createConsultationBookingBodySchema.parse(req.body);
+
+    const booked = await prisma.$transaction(async (tx) => {
+      const slot = await tx.consultationSlot.findUnique({
+        where: { id: parsed.slotId },
+        include: { specialist: true },
+      });
+
+      if (!slot) {
+        throw new HttpError(404, 'Slot not found.');
+      }
+
+      if (!isBookableDoctorKey(slot.specialist.key)) {
+        throw new HttpError(400, 'Booking is not available for this specialist yet.');
+      }
+
+      if (slot.isBooked || slot.consultationId) {
+        throw new HttpError(409, 'This slot has already been booked.');
+      }
+
+      if (slot.startsAt <= new Date()) {
+        throw new HttpError(400, 'This slot is no longer available.');
+      }
+
+      const consultation = await tx.consultation.create({
+        data: {
+          userId: user.id,
+          specialistId: slot.specialistId,
+          scheduledAt: slot.startsAt,
+          status: 'confirmed',
+          isFree: true,
+        },
+      });
+
+      const updated = await tx.consultationSlot.updateMany({
+        where: {
+          id: slot.id,
+          isBooked: false,
+          consultationId: null,
+        },
+        data: {
+          isBooked: true,
+          consultationId: consultation.id,
+        },
+      });
+
+      if (updated.count !== 1) {
+        throw new HttpError(409, 'This slot has already been booked.');
+      }
+
+      return {
+        consultationId: consultation.id,
+        specialistKey: slot.specialist.key,
+        specialistName: slot.specialist.name,
+        startsAt: slot.startsAt.toISOString(),
+        endsAt: slot.endsAt.toISOString(),
+      };
+    });
+
+    res.json(consultationBookingResponseSchema.parse(booked));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/consultations/slots', async (req, res, next) => {
+  try {
+    await readyBookingCatalog();
+
+    const parsed = createConsultationSlotsBodySchema.parse(req.body);
+    const specialist = await prisma.specialist.findUnique({
+      where: { key: parsed.specialistKey },
+      select: { id: true, key: true, active: true },
+    });
+
+    if (!specialist || !specialist.active) {
+      throw new HttpError(404, 'Specialist not found.');
+    }
+
+    if (!isBookableDoctorKey(specialist.key)) {
+      throw new HttpError(400, 'Slots can only be created for doctor specialists.');
+    }
+
+    const now = new Date();
+    const data = parsed.slots.map((slot) => {
+      const startsAt = new Date(slot.startsAt);
+      const endsAt = new Date(slot.endsAt);
+
+      if (!(startsAt < endsAt)) {
+        throw new HttpError(400, 'Each slot must end after it starts.');
+      }
+
+      if (startsAt <= now) {
+        throw new HttpError(400, 'Slots must be in the future.');
+      }
+
+      return {
+        specialistId: specialist.id,
+        startsAt,
+        endsAt,
+      };
+    });
+
+    const created = await prisma.consultationSlot.createMany({
+      data,
+      skipDuplicates: true,
+    });
+
+    res.json(
+      createConsultationSlotsResponseSchema.parse({
+        ok: true,
+        createdCount: created.count,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.delete('/consultations/slots/:id', async (req, res, next) => {
+  try {
+    await readyBookingCatalog();
+
+    const parsed = deleteConsultationSlotParamsSchema.parse(req.params);
+    const slot = await prisma.consultationSlot.findUnique({
+      where: { id: parsed.id },
+      select: {
+        id: true,
+        isBooked: true,
+        consultationId: true,
+        startsAt: true,
+      },
+    });
+
+    if (!slot) {
+      throw new HttpError(404, 'Slot not found.');
+    }
+
+    if (slot.isBooked || slot.consultationId) {
+      throw new HttpError(400, 'Booked slots cannot be deleted.');
+    }
+
+    if (slot.startsAt <= new Date()) {
+      throw new HttpError(400, 'Past slots cannot be deleted.');
+    }
+
+    await prisma.consultationSlot.delete({
+      where: { id: slot.id },
+    });
+
+    res.json(deleteConsultationSlotResponseSchema.parse({ ok: true }));
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.post('/auth/request-otp', async (req, res, next) => {
   try {
+    setNoStoreHeaders(res);
     const parsed = requestOtpBodySchema.parse(req.body);
     const phone = normalizePhone(parsed.phone);
     const now = new Date();
@@ -322,6 +735,7 @@ app.post('/auth/request-otp', async (req, res, next) => {
 
 app.post('/auth/verify-otp', async (req, res, next) => {
   try {
+    setNoStoreHeaders(res);
     const validated = verifyOtpBodySchema.parse(req.body);
     const phone = normalizePhone(validated.phone);
 
@@ -426,6 +840,7 @@ app.post('/auth/verify-otp', async (req, res, next) => {
 
 app.get('/auth/me', async (req, res, next) => {
   try {
+    setNoStoreHeaders(res);
     const user = await requireCurrentUser(req);
     res.json(authUserSchema.parse(serializeUser(user)));
   } catch (e) {
@@ -447,7 +862,84 @@ app.post('/onboarding/complete', async (req, res, next) => {
       data: { onboardingCompleted: true },
     });
 
-    res.json(authUserSchema.parse(serializeUser(updated)));
+    res.json(authUserSchema.parse(serializeUser(await loadUserWithSubscription(updated.id))));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/subscription/start-trial', async (req, res, next) => {
+  try {
+    setNoStoreHeaders(res);
+    const user = await requireCurrentUser(req);
+
+    if (!user.onboardingCompleted) {
+      throw new HttpError(400, 'Complete onboarding before starting your trial.');
+    }
+
+    if (!user.subscription) {
+      const now = new Date();
+      await prisma.subscription.create({
+        data: {
+          userId: user.id,
+          status: 'trialing',
+          startedAt: now,
+          trialEndsAt: addDays(now, FREE_TRIAL_DAYS),
+        },
+      });
+
+      res.json(startTrialResponseSchema.parse(serializeUser(await loadUserWithSubscription(user.id))));
+      return;
+    }
+
+    if (user.subscription.status === 'trialing') {
+      res.json(startTrialResponseSchema.parse(serializeUser(user)));
+      return;
+    }
+
+    if (user.subscription.status === 'active') {
+      res.json(startTrialResponseSchema.parse(serializeUser(user)));
+      return;
+    }
+
+    throw new HttpError(409, 'Your free trial has already ended. Please choose a plan to continue.');
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/subscription/activate-one-day', async (req, res, next) => {
+  try {
+    setNoStoreHeaders(res);
+    const user = await requireCurrentUser(req);
+
+    if (!user.onboardingCompleted) {
+      throw new HttpError(400, 'Complete onboarding before activating access.');
+    }
+
+    const now = new Date();
+    const trialEndsAt = addDays(now, 1);
+
+    await prisma.subscription.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        status: 'trialing',
+        startedAt: now,
+        trialEndsAt,
+      },
+      update: {
+        status: 'trialing',
+        startedAt: now,
+        trialEndsAt,
+      },
+    });
+
+    res.json(
+      activateOneDaySubscriptionResponseSchema.parse(
+        serializeUser(await loadUserWithSubscription(user.id)),
+      ),
+    );
   } catch (e) {
     next(e);
   }
@@ -455,6 +947,7 @@ app.post('/onboarding/complete', async (req, res, next) => {
 
 app.post('/auth/logout', async (req, res, next) => {
   try {
+    setNoStoreHeaders(res);
     const sessionToken = getSessionToken(req);
     let userId: string | null = null;
 
@@ -598,6 +1091,15 @@ app.use(
   }
 );
 
-app.listen(port, () => {
-  console.log(`API listening on http://localhost:${port}`);
+async function startServer() {
+  await readyBookingCatalog();
+
+  app.listen(port, () => {
+    console.log(`API listening on http://localhost:${port}`);
+  });
+}
+
+startServer().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });

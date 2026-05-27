@@ -36,11 +36,10 @@ export default function WeeklyReportRoute() {
         <div className="px-[22px] pb-[22px] pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Eyebrow tone="mint">Week 1 · May 1 – 7</Eyebrow>
           <h1
-            className="mb-1.5 text-[30px] leading-[1.1] text-on-surface"
-            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+            className="font-display mb-1.5 text-[30px] leading-[1.1] text-on-surface"
           >
             Your first{' '}
-            <em className="not-italic text-primary" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}>
+            <em className="not-italic text-primary" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}>
               benchmark
             </em>
           </h1>
@@ -83,7 +82,6 @@ export default function WeeklyReportRoute() {
                 <div className="flex items-baseline gap-1">
                   <span
                     className="text-[24px] leading-none text-on-surface"
-                    style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 600, fontVariationSettings: '"opsz" 96' }}
                   >
                     {m.num}
                   </span>
@@ -134,7 +132,7 @@ export default function WeeklyReportRoute() {
           </div>
           <p
             className="text-[17px] leading-[1.4] text-on-surface"
-            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}
+            style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
           >
             &quot;You&apos;re showing the classic pattern of early perimenopause — and you&apos;re already ahead of 60% of your cohort on sleep recovery. Shall we discuss a care
             path?&quot;

@@ -7,41 +7,41 @@ export function localYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** 30-minute slots from 10:00 to 16:30 (last slot ends at 17:00). */
-export function consultationTimeSlots(): { id: string; label: string }[] {
-  const out: { id: string; label: string }[] = [];
-  const startMin = 10 * 60;
-  const endMin = 17 * 60;
-  for (let t = startMin; t + 30 <= endMin; t += 30) {
-    const h = Math.floor(t / 60);
-    const m = t % 60;
-    const id = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    const d = new Date(2000, 0, 1, h, m);
-    const label = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
-    out.push({ id, label });
-  }
-  return out;
+export function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
 }
 
-export function dateSlotsFromTodayOffset(
-  firstDayOffset: number,
-  count: number,
-): { id: string; dayNum: number; monthLabel: string; weekdayLabel: string }[] {
-  const out: { id: string; dayNum: number; monthLabel: string; weekdayLabel: string }[] = [];
+export function dateAtLocalNoonFromTodayOffset(firstDayOffset: number): Date {
   const anchor = new Date();
   anchor.setHours(12, 0, 0, 0);
   anchor.setDate(anchor.getDate() + firstDayOffset);
-  for (let i = 0; i < count; i++) {
-    const d = new Date(anchor);
-    d.setDate(anchor.getDate() + i);
-    out.push({
-      id: localYmd(d),
-      dayNum: d.getDate(),
-      monthLabel: d.toLocaleDateString(undefined, { month: 'short' }),
-      weekdayLabel: d.toLocaleDateString(undefined, { weekday: 'short' }),
-    });
+  return anchor;
+}
+
+export function bookingDateCard(ymd: string): { id: string; dayNum: number; monthLabel: string; weekdayLabel: string } {
+  const [y, m, d] = ymd.split('-').map(Number);
+  if (!y || !m || !d) {
+    return {
+      id: ymd,
+      dayNum: 0,
+      monthLabel: '',
+      weekdayLabel: '',
+    };
   }
-  return out;
+  const date = new Date(y, m - 1, d, 12, 0, 0, 0);
+  return {
+    id: ymd,
+    dayNum: date.getDate(),
+    monthLabel: date.toLocaleDateString(undefined, { month: 'short' }),
+    weekdayLabel: date.toLocaleDateString(undefined, { weekday: 'short' }),
+  };
+}
+
+export function formatBookingTimeLabel(iso: string): string {
+  const date = new Date(iso);
+  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 export function formatBookingDateLong(ymd: string): string {

@@ -53,9 +53,8 @@ export default function AssessmentRoute() {
         <p
           className="mt-3 text-[22px] tracking-[0.18em] text-on-surface"
           style={{
-            fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+            fontFamily: '"DM Sans", sans-serif',
             fontWeight: 400,
-            fontVariationSettings: '"opsz" 144',
             letterSpacing: '0.18em',
           }}
         >
@@ -64,10 +63,9 @@ export default function AssessmentRoute() {
         <p
           className="mt-0.5 text-[13px] italic tracking-normal text-primary"
           style={{
-            fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+            fontFamily: '"DM Sans", sans-serif',
             fontStyle: 'italic',
             fontWeight: 400,
-            fontVariationSettings: '"opsz" 144',
             letterSpacing: '-0.02em',
           }}
         >
@@ -98,11 +96,10 @@ export default function AssessmentRoute() {
         </div>
 
         <h1
-          className="mb-[22px] text-[28px] leading-[1.15] tracking-[-0.025em] text-on-surface"
+          className="font-display mb-[22px] text-[28px] leading-[1.15] tracking-[-0.025em] text-on-surface"
           style={{
-            fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+            fontFamily: '"DM Sans", sans-serif',
             fontWeight: 400,
-            fontVariationSettings: '"opsz" 144',
           }}
         >
           <QuestionTitle prompt={question.prompt} />

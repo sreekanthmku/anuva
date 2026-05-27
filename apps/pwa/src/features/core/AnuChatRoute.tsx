@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 
 type ChatMessage = {
@@ -7,23 +8,23 @@ type ChatMessage = {
   text: string;
 };
 
-const initialMessages: ChatMessage[] = [
-  {
-    from: 'anu',
-    text: 'Good morning, Priya. I noticed your sleep was interrupted twice last night. Would you like to talk about it?',
-  },
-  { from: 'user', text: 'I woke up drenched around 3am.' },
-  {
-    from: 'anu',
-    text: 'That sounds exhausting. A hot flash during REM is common in early perimenopause - not dangerous, but worth tracking. Want me to log it and suggest a cooling ritual for tonight?',
-  },
-];
-
 const quickReplies = ['Yes, log it', 'Tell me more', 'What helps most?', 'Should I see a doctor?'];
 
 export default function AnuChatRoute() {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    {
+      from: 'anu',
+      text: `Good morning, ${firstName}. I noticed your sleep was interrupted twice last night. Would you like to talk about it?`,
+    },
+    { from: 'user', text: 'I woke up drenched around 3am.' },
+    {
+      from: 'anu',
+      text: 'That sounds exhausting. A hot flash during REM is common in early perimenopause - not dangerous, but worth tracking. Want me to log it and suggest a cooling ritual for tonight?',
+    },
+  ]);
   const [input, setInput] = useState('');
   const messageListRef = useRef<HTMLElement | null>(null);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
@@ -82,7 +83,7 @@ export default function AnuChatRoute() {
           </div>
 
           <div className="flex-1">
-            <p className="text-[17px] text-on-surface" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 500 }}>
+            <p className="text-[17px] text-on-surface" style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 500 }}>
               ANU
             </p>
             <p className="text-[10px] uppercase tracking-[0.08em] text-primary" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
@@ -179,4 +180,3 @@ export default function AnuChatRoute() {
     </main>
   );
 }
-

@@ -31,11 +31,10 @@ export default function LibraryRoute() {
       <header className="sticky top-0 z-30 shrink-0 bg-surface px-[22px] pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
         <Eyebrow mint>Library</Eyebrow>
         <h1
-          className="text-[32px] leading-[1.05] text-on-surface"
-          style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+          className="font-display text-[32px] leading-[1.05] text-on-surface"
         >
           Know your{' '}
-          <em className="not-italic font-light text-primary" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}>
+          <em className="not-italic font-light text-primary" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}>
             body
           </em>
           .
@@ -67,11 +66,10 @@ export default function LibraryRoute() {
           <div className="mt-3.5">
             <Eyebrow mint>This week&apos;s feature · 9 min</Eyebrow>
             <h2
-              className="mb-2 text-[22px] leading-[1.2] text-on-surface"
-              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+              className="font-display mb-2 text-[22px] leading-[1.2] text-on-surface"
             >
               The{' '}
-              <em className="not-italic text-primary" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}>
+              <em className="not-italic text-primary" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}>
                 forty-something
               </em>{' '}
               edit: what your body actually needs.
@@ -122,7 +120,7 @@ export default function LibraryRoute() {
             </div>
             <div
               className="text-base font-medium leading-tight text-on-surface"
-              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif' }}
+              style={{ fontFamily: '"DM Sans", sans-serif' }}
             >
               Sleep as medicine
             </div>
@@ -146,7 +144,7 @@ export default function LibraryRoute() {
                 <div
                   className="flex h-14 w-14 shrink-0 items-center justify-center rounded-starchart-lg border border-border-default bg-surface-container-low"
                   style={{
-                    fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+                    fontFamily: '"DM Sans", sans-serif',
                     fontSize: 22,
                     color: c,
                   }}
@@ -162,7 +160,7 @@ export default function LibraryRoute() {
                   </div>
                   <h3
                     className="mb-0.5 text-[15px] font-medium leading-tight text-on-surface"
-                    style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif' }}
+                    style={{ fontFamily: '"DM Sans", sans-serif' }}
                   >
                     {a.title}
                   </h3>

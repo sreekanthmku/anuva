@@ -132,9 +132,8 @@ export default function LoginRoute() {
         <p
           className="mt-4 text-[22px] tracking-[0.18em] text-on-surface"
           style={{
-            fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+            fontFamily: '"DM Sans", sans-serif',
             fontWeight: 400,
-            fontVariationSettings: '"opsz" 144',
             letterSpacing: '0.18em',
           }}
         >
@@ -143,10 +142,9 @@ export default function LoginRoute() {
         <p
           className="mt-0.5 text-[13px] italic tracking-normal text-primary"
           style={{
-            fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+            fontFamily: '"DM Sans", sans-serif',
             fontStyle: 'italic',
             fontWeight: 400,
-            fontVariationSettings: '"opsz" 144',
             letterSpacing: '-0.02em',
           }}
         >

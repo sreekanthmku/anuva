@@ -44,11 +44,10 @@ export default function AnonymousQARoute() {
       <header className="sticky top-0 z-30 shrink-0 bg-surface px-[22px] pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
         <Eyebrow mint>Ask the experts</Eyebrow>
         <h1
-          className="max-w-[20rem] text-[30px] leading-[1.1] text-on-surface"
-          style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+          className="font-display max-w-[20rem] text-[30px] leading-[1.1] text-on-surface"
         >
           Anonymous.{' '}
-          <em className="not-italic font-light text-primary" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}>
+          <em className="not-italic font-light text-primary" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}>
             Always.
           </em>
         </h1>
@@ -135,13 +134,13 @@ export default function AnonymousQARoute() {
               <div className="mb-3 flex items-start gap-2">
                 <span
                   className="shrink-0 text-[22px] font-medium italic leading-none text-primary"
-                  style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif' }}
+                  style={{ fontFamily: '"DM Sans", sans-serif' }}
                 >
                   Q.
                 </span>
                 <p
                   className="flex-1 text-[15px] font-medium leading-[1.35] text-on-surface"
-                  style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif' }}
+                  style={{ fontFamily: '"DM Sans", sans-serif' }}
                 >
                   {qa.q}
                 </p>

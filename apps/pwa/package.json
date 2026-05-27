@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@anuva/shared": "workspace:*",
-    "@fontsource-variable/fraunces": "^5.2.9",
+    "@fontsource/dm-sans": "^5.2.5",
     "@fontsource/geist": "^5.2.8",
     "@fontsource/geist-mono": "^5.2.7",
     "firebase": "^12.13.0",

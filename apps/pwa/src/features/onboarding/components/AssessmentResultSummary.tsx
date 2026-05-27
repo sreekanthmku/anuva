@@ -26,13 +26,12 @@ export function AssessmentResultSummary({ score, status, riskItems }: Assessment
       {isInControl ? (
         <>
           <h1
-            className="mb-2.5 text-[32px] leading-[1.1] tracking-[-0.03em] text-on-surface"
-            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontVariationSettings: '"opsz" 144' }}
+            className="font-display mb-2.5 text-[32px] leading-[1.1] tracking-[-0.03em] text-on-surface"
           >
             Everything is in{' '}
             <em
               className="not-italic text-primary"
-              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}
+              style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
             >
               control
             </em>
@@ -48,20 +47,21 @@ export function AssessmentResultSummary({ score, status, riskItems }: Assessment
       ) : (
         <>
           <h1
-            className="mb-2.5 text-[32px] leading-[1.1] tracking-[-0.03em] text-on-surface"
-            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontVariationSettings: '"opsz" 144' }}
+            className="font-display mb-2.5 text-[28px] leading-[1.05] tracking-[-0.03em] text-on-surface"
           >
-            Strong indicators of{' '}
-            <em
-              className="not-italic text-primary"
-              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}
-            >
-              perimenopause
-            </em>{' '}
-            detected.
+            <span className="block font-normal">Strong indicators of</span>
+            <span className="block font-bold">
+              <em
+                className="not-italic text-primary"
+                style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 700 }}
+              >
+                perimenopause
+              </em>{' '}
+              detected.
+            </span>
           </h1>
           <p
-            className="mb-[18px] text-[13px] leading-[1.55] text-on-surface-variant"
+            className="mb-[18px] text-[16px] leading-[1.6] text-on-surface-variant"
             style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
           >
             Based on your responses, you&apos;re likely in early-stage transition. Clinically common for women 42-50.

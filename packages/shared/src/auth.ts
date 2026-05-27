@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 export const authPurposeSchema = z.enum(['login', 'signup']);
+export const subscriptionPlanSchema = z.enum(['monthly', 'annual']);
+export const subscriptionStatusSchema = z.enum(['trialing', 'active', 'past_due', 'canceled']);
+export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>;
+export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
 export const requestOtpBodySchema = z
   .object({
@@ -55,6 +59,14 @@ export const authUserSchema = z.object({
   name: z.string().nullable(),
   email: z.string().email().nullable(),
   onboardingCompleted: z.boolean(),
+  subscriptionPlan: subscriptionPlanSchema.nullable(),
+  subscriptionStatus: subscriptionStatusSchema.nullable(),
+  subscriptionStartedAt: z.string().datetime().nullable(),
+  trialEndsAt: z.string().datetime().nullable(),
+  renewsAt: z.string().datetime().nullable(),
+  hasActiveAccess: z.boolean(),
+  trialAvailable: z.boolean(),
+  requiresPayment: z.boolean(),
   phoneVerifiedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
 });
@@ -77,3 +89,11 @@ export const logoutResponseSchema = z.object({
 });
 
 export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
+
+export const startTrialResponseSchema = authUserSchema;
+
+export type StartTrialResponse = z.infer<typeof startTrialResponseSchema>;
+
+export const activateOneDaySubscriptionResponseSchema = authUserSchema;
+
+export type ActivateOneDaySubscriptionResponse = z.infer<typeof activateOneDaySubscriptionResponseSchema>;

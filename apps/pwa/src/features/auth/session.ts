@@ -1,8 +1,10 @@
 import type {
+  ActivateOneDaySubscriptionResponse,
   AuthSessionResponse,
   AuthUser,
   RequestOtpBody,
   RequestOtpResponse,
+  StartTrialResponse,
   VerifyOtpBody,
 } from '@anuva/shared';
 import { apiFetch } from '../../shared/lib/api';
@@ -23,11 +25,25 @@ export async function verifyOtp(body: VerifyOtpBody): Promise<AuthSessionRespons
 }
 
 export async function fetchCurrentUser(): Promise<AuthUser> {
-  return apiFetch<AuthUser>('/api/auth/me');
+  return apiFetch<AuthUser>('/api/auth/me', {
+    cache: 'no-store',
+  });
 }
 
 export async function completeOnboarding(): Promise<AuthUser> {
   return apiFetch<AuthUser>('/api/onboarding/complete', {
+    method: 'POST',
+  });
+}
+
+export async function startTrial(): Promise<StartTrialResponse> {
+  return apiFetch<StartTrialResponse>('/api/subscription/start-trial', {
+    method: 'POST',
+  });
+}
+
+export async function activateOneDaySubscription(): Promise<ActivateOneDaySubscriptionResponse> {
+  return apiFetch<ActivateOneDaySubscriptionResponse>('/api/subscription/activate-one-day', {
     method: 'POST',
   });
 }

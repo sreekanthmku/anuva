@@ -65,7 +65,7 @@ export function NotificationPermissionDialog({
         <h2
           id="notification-prompt-title"
           className="mb-2 text-[20px] leading-tight text-on-surface"
-          style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400 }}
+          style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 400 }}
         >
           Stay in the loop?
         </h2>

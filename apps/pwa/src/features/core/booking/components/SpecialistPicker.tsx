@@ -1,15 +1,15 @@
+import type { ConsultationSpecialist } from '@anuva/shared';
 import { useEffect, useState } from 'react';
-import type { SpecialistId, SpecialistOption } from '../specialists';
 import { BookingEyebrow } from './BookingEyebrow';
 
 type SpecialistPickerProps = {
-  specialists: SpecialistOption[];
-  value: SpecialistId;
-  onChange: (id: SpecialistId) => void;
+  specialists: ConsultationSpecialist[];
+  value: string | null;
+  onChange: (id: string) => void;
 };
 
 export function SpecialistPicker({ specialists: items, value, onChange }: SpecialistPickerProps) {
-  const [detailsOpenFor, setDetailsOpenFor] = useState<SpecialistOption | null>(null);
+  const [detailsOpenFor, setDetailsOpenFor] = useState<ConsultationSpecialist | null>(null);
 
   return (
     <>
@@ -17,15 +17,17 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
         <BookingEyebrow>Choose specialist</BookingEyebrow>
         <div className="flex flex-col gap-2">
           {items.map((s) => {
-            const sel = value === s.id;
+            const sel = value === s.key;
+            const disabled = !s.bookable;
 
             return (
               <div
-                key={s.id}
+                key={s.key}
                 className="overflow-hidden rounded-starchart-lg border transition-colors"
                 style={{
-                  backgroundColor: sel ? '#2E2A6E' : '#141219',
+                  backgroundColor: sel ? '#2E2A6E' : disabled ? '#18151f' : '#141219',
                   borderColor: sel ? '#cebdff' : 'rgba(167, 139, 250, 0.2)',
+                  opacity: disabled ? 0.82 : 1,
                 }}
               >
                 <div className="flex items-stretch gap-2 p-3.5">
@@ -33,27 +35,34 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
                     type="button"
                     onClick={() => setDetailsOpenFor(s)}
                     className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border-default bg-primary/10 p-0 text-[12px] text-primary"
-                    aria-label={`View details for ${s.title}`}
+                    aria-label={`View details for ${s.name}`}
                   >
-                    {s.imageSrc ? (
+                    {s.imageUrl ? (
                       <img
-                        src={s.imageSrc}
-                        alt={s.imageAlt ?? s.title}
+                        src={s.imageUrl}
+                        alt={s.name}
                         className="h-11 w-11 shrink-0 rounded-full border border-border-default object-cover"
                       />
                     ) : (
-                      getInitials(s.title)
+                      getInitials(s.name)
                     )}
                   </button>
 
-                  <button type="button" onClick={() => onChange(s.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!disabled) onChange(s.key);
+                    }}
+                    disabled={disabled}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-not-allowed"
+                  >
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className="text-base font-medium text-on-surface"
-                          style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif' }}
+                          style={{ fontFamily: '"DM Sans", sans-serif' }}
                         >
-                          {s.title}
+                          {s.name}
                         </span>
                         {s.tag && (
                           <span
@@ -69,8 +78,13 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
                         )}
                       </div>
                       <div className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                        {s.sub}
+                        {s.subtitle}
                       </div>
+                      {disabled && (
+                        <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-primary" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                          {s.bookingDisabledReason ?? 'Coming soon'}
+                        </div>
+                      )}
                     </div>
                     {sel && (
                       <div className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-primary">
@@ -93,7 +107,7 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
 }
 
 type SpecialistDetailsModalProps = {
-  specialist: SpecialistOption | null;
+  specialist: ConsultationSpecialist | null;
   onClose: () => void;
 };
 
@@ -136,17 +150,17 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
           <div className="flex items-start gap-3.5">
             <div
               className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/30 bg-primary/10 text-[18px] text-primary"
-              style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif' }}
+              style={{ fontFamily: '"DM Sans", sans-serif' }}
               aria-hidden="true"
             >
-              {specialist.imageSrc ? (
+              {specialist.imageUrl ? (
                 <img
-                  src={specialist.imageSrc}
-                  alt={specialist.imageAlt ?? specialist.title}
+                  src={specialist.imageUrl}
+                  alt={specialist.name}
                   className="h-full w-full object-cover"
                 />
               ) : (
-                getInitials(specialist.title)
+                getInitials(specialist.name)
               )}
             </div>
             <div className="min-w-0 flex-1">
@@ -154,9 +168,9 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
                 <h2
                   id="specialist-details-title"
                   className="text-[20px] leading-tight text-on-surface"
-                  style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400 }}
+                  style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 400 }}
                 >
-                  {specialist.title}
+                  {specialist.name}
                 </h2>
                 {specialist.tag && (
                   <span
@@ -172,7 +186,7 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
                 )}
               </div>
               <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                {specialist.role ?? specialist.sub}
+                {specialist.role ?? specialist.subtitle}
               </p>
             </div>
           </div>

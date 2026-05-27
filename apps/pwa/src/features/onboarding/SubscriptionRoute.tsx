@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/auth-context';
+import { activateOneDaySubscription } from '../auth/session';
+import { assessmentPath } from './config/assessmentView';
 
 type Plan = {
   id: 'monthly' | 'annual' | 'family';
@@ -36,9 +39,36 @@ const includedItems = [
 
 export default function SubscriptionRoute() {
   const navigate = useNavigate();
+  const { user, refreshUser } = useAuth();
   const [selectedPlanId, setSelectedPlanId] = useState<Plan['id']>('annual');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const selectedPlan: Plan = useMemo(() => plans.find((plan) => plan.id === selectedPlanId) ?? plans[1]!, [selectedPlanId]);
+  const isTrialAvailable = !!user?.trialAvailable;
+  const trialDays = Number(import.meta.env.VITE_FREE_TRIAL_DAYS || '14');
+
+  useEffect(() => {
+    if (user && !user.onboardingCompleted) {
+      navigate(assessmentPath(), { replace: true });
+    }
+  }, [navigate, user]);
+
+  async function handlePrimaryAction() {
+    if (user?.hasActiveAccess) {
+      navigate('/home');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await activateOneDaySubscription();
+      await refreshUser();
+      navigate('/home');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <main className="min-h-mobile overflow-auto bg-surface pt-[40px] text-on-surface">
@@ -61,20 +91,23 @@ export default function SubscriptionRoute() {
         </div>
 
         <h1
-          className="mb-2 text-[30px] leading-[1.1] tracking-[-0.03em] text-on-surface"
-          style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 400, fontVariationSettings: '"opsz" 144' }}
+          className="font-display mb-2 text-[30px] leading-[1.1] tracking-[-0.03em] text-on-surface"
         >
-          Begin your full{' '}
+          {isTrialAvailable ? 'Begin your full ' : 'Continue your full '}
           <em
             className="not-italic text-primary"
-            style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontStyle: 'italic' }}
+            style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
           >
             Anuva
           </em>{' '}
           experience.
         </h1>
         <p className="text-[13px] leading-[1.5] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-          7-day free trial. No charge until day 8. Cancel with a tap.
+          {isTrialAvailable
+            ? `${trialDays}-day free trial. No payment needed today.`
+            : user?.requiresPayment
+              ? 'Your free trial has ended. Choose a plan to continue.'
+              : 'Your access is active. You can continue into the app.'}
         </p>
       </section>
 
@@ -132,7 +165,7 @@ export default function SubscriptionRoute() {
 
               <span className="flex-1">
                 <span className="flex items-baseline gap-2">
-                  <span className="text-[18px] text-on-surface" style={{ fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif', fontWeight: 500 }}>
+                  <span className="text-[18px] text-on-surface" style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 500 }}>
                     {plan.label}
                   </span>
                   <span className="text-[10px] uppercase tracking-[0.08em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
@@ -151,9 +184,8 @@ export default function SubscriptionRoute() {
                 className="text-[22px]"
                 style={{
                   color: isSelected ? '#cebdff' : '#e6e0ea',
-                  fontFamily: '"Fraunces Variable", "Fraunces", Georgia, serif',
+                  fontFamily: '"DM Sans", sans-serif',
                   fontWeight: 500,
-                  fontVariationSettings: '"opsz" 96',
                 }}
               >
                 {plan.price}
@@ -164,7 +196,7 @@ export default function SubscriptionRoute() {
       </section>
 
       <section className="flex flex-wrap justify-center gap-1.5 px-[22px] pb-2 pt-4">
-        {['DPDP', '7-Day Trial', 'Free Consult'].map((badge) => (
+        {['DPDP', `${trialDays}-Day Trial`, 'Free Consult'].map((badge) => (
           <span
             key={badge}
             className="rounded-full border border-border-default bg-surface-container-low px-2.5 py-1 text-[9.5px] uppercase tracking-[0.1em] text-on-surface"
@@ -178,11 +210,12 @@ export default function SubscriptionRoute() {
       <section className="px-[22px] pb-[22px] pt-2.5">
         <button
           type="button"
-          onClick={() => navigate('/anu-greeting')}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface"
+          onClick={() => void handlePrimaryAction()}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface disabled:opacity-60"
+          disabled={isSubmitting}
           style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif', letterSpacing: '-0.005em' }}
         >
-          Start Free Trial · {selectedPlan.label}
+          {user?.hasActiveAccess ? 'Continue to Anuva' : isSubmitting ? 'Activating...' : 'Activate 1-Day Access'}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M5 12h14M13 6l6 6-6 6" stroke="#322f37" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -191,10 +224,11 @@ export default function SubscriptionRoute() {
           className="mt-2.5 text-center text-[10.5px] leading-[1.5] text-outline"
           style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
         >
-          No charge for 7 days. We&apos;ll remind you 2 days before any payment.
+          {user?.hasActiveAccess
+            ? 'Your access is already active.'
+            : 'This button activates 1 day of access and then takes you into the app.'}
         </p>
       </section>
     </main>
   );
 }
-
