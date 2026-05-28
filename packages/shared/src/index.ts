@@ -72,3 +72,18 @@ export {
   type DeleteConsultationSlotParams,
   type DeleteConsultationSlotResponse,
 } from './booking.js';
+
+export {
+  cycleSetupBodySchema,
+  cycleSettingsBodySchema,
+  logPeriodBodySchema,
+  endPeriodBodySchema,
+  periodLogSchema,
+  cycleStateResponseSchema,
+  type CycleSetupBody,
+  type CycleSettingsBody,
+  type LogPeriodBody,
+  type EndPeriodBody,
+  type CycleStateResponse,
+  type PeriodLogEntry,
+} from './cycle.js';

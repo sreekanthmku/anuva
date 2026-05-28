@@ -73,3 +73,25 @@
     overscroll-behavior: none;
   }
 }
+
+/* Cycle tracker slider thumb */
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: #cebdff;
+  border: 2px solid #1d1a21;
+  box-shadow: 0 0 0 3px rgba(206, 189, 255, 0.25);
+  cursor: pointer;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: #cebdff;
+  border: 2px solid #1d1a21;
+  box-shadow: 0 0 0 3px rgba(206, 189, 255, 0.25);
+  cursor: pointer;
+}

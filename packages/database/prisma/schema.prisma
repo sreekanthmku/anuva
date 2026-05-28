@@ -35,6 +35,8 @@ model User {
   questions         AnonymousQuestion[]
   chatThreads       ChatThread[]
   fcmTokens         FcmToken[]
+  cycleSettings     CycleSettings?
+  periodLogs        PeriodLog[]
 }
 
 enum FcmPlatform {
@@ -528,4 +530,29 @@ model ChatMessage {
   createdAt DateTime   @default(now())
 
   @@index([threadId])
+}
+
+// ─────────────────────────────────────────────
+// Cycle tracking
+// ─────────────────────────────────────────────
+
+model CycleSettings {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycleLength  Int      @default(28)
+  periodLength Int      @default(5)
+  updatedAt    DateTime @updatedAt
+}
+
+model PeriodLog {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startDate DateTime  @db.Date
+  endDate   DateTime? @db.Date
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, startDate])
+  @@index([userId])
 }

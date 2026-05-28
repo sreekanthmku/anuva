@@ -4,7 +4,9 @@ import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
 import { NotificationSyncBanner } from './components/NotificationSyncBanner';
+import { CycleTrackerSheet } from './components/CycleTrackerSheet';
 import { useHomeNotificationPrompt } from './hooks/useHomeNotificationPrompt';
+import { useCycleTracker } from './hooks/useCycleTracker';
 import {
   getCalibrationProgress,
   getJourneyDay,
@@ -12,12 +14,12 @@ import {
   isWellnessCalibrating,
 } from './wellnessCalibration';
 
-const quickLogItems = [
-  { label: 'Hot flash', sub: 'Log now', tone: '#F87171', count: '2 TODAY' },
-  { label: 'Sleep', sub: 'Rate last night', tone: '#cebdff' },
-  { label: 'Mood', sub: 'How are you?', tone: '#dbc839' },
-  { label: 'Cycle', sub: 'Day 24', tone: '#e2c62d' },
-];
+const PHASE_COLORS: Record<string, string> = {
+  period: '#F87171',
+  follicular: '#cebdff',
+  ovulatory: '#e2c62d',
+  luteal: '#7dd3fc',
+};
 
 const score = 72;
 const circumference = 2 * Math.PI * 42;
@@ -45,6 +47,8 @@ export default function AnuDashboardRoute() {
   const { user } = useAuth();
   const notificationPrompt = useHomeNotificationPrompt();
   const [greeting, setGreeting] = useState(() => getTimeGreeting());
+  const [cycleOpen, setCycleOpen] = useState(false);
+  const cycle = useCycleTracker();
   const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
   const profileInitial = firstName.charAt(0).toUpperCase() || 'U';
   const trialStartedAt = getTrialStartDate(user);
@@ -272,24 +276,57 @@ export default function AnuDashboardRoute() {
         </div>
 
         <div className="grid grid-cols-2 gap-2.5">
-          {quickLogItems.map((item) => (
-            <article key={item.label} className="rounded-[20px] border border-border-default bg-surface-container-low p-[14px]">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="h-[30px] w-[30px] rounded-full" style={{ background: item.tone }} />
-                {item.count && (
-                  <span className="text-[9.5px] uppercase tracking-[0.08em] text-error" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-                    {item.count}
-                  </span>
-                )}
-              </div>
-              <p className="text-[13px] font-medium text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                {item.label}
-              </p>
-              <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                {item.sub}
-              </p>
-            </article>
-          ))}
+          {/* Hot flash */}
+          <article className="rounded-[20px] border border-border-default bg-surface-container-low p-[14px]">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="h-[30px] w-[30px] rounded-full" style={{ background: '#F87171' }} />
+              <span className="text-[9.5px] uppercase tracking-[0.08em] text-error" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                2 TODAY
+              </span>
+            </div>
+            <p className="text-[13px] font-medium text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Hot flash</p>
+            <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Log now</p>
+          </article>
+
+          {/* Sleep */}
+          <article className="rounded-[20px] border border-border-default bg-surface-container-low p-[14px]">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="h-[30px] w-[30px] rounded-full" style={{ background: '#cebdff' }} />
+            </div>
+            <p className="text-[13px] font-medium text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Sleep</p>
+            <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Rate last night</p>
+          </article>
+
+          {/* Mood */}
+          <article className="rounded-[20px] border border-border-default bg-surface-container-low p-[14px]">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="h-[30px] w-[30px] rounded-full" style={{ background: '#dbc839' }} />
+            </div>
+            <p className="text-[13px] font-medium text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Mood</p>
+            <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>How are you?</p>
+          </article>
+
+          {/* Cycle — live data */}
+          <button
+            type="button"
+            onClick={() => setCycleOpen(true)}
+            className="rounded-[20px] border border-border-default bg-surface-container-low p-[14px] text-left transition-opacity active:opacity-80"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <span
+                className="h-[30px] w-[30px] rounded-full"
+                style={{ background: cycle.data?.phase ? PHASE_COLORS[cycle.data.phase] : '#e2c62d' }}
+              />
+            </div>
+            <p className="text-[13px] font-medium text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Cycle</p>
+            <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+              {cycle.loading
+                ? '…'
+                : cycle.data?.currentCycleDay != null
+                  ? `Day ${cycle.data.currentCycleDay}`
+                  : 'Set up'}
+            </p>
+          </button>
         </div>
       </section>
 
@@ -355,6 +392,17 @@ export default function AnuDashboardRoute() {
           </div>
         </article>
       </section>
+
+      <CycleTrackerSheet
+        open={cycleOpen}
+        onClose={() => setCycleOpen(false)}
+        cycleData={cycle.data}
+        loading={cycle.loading}
+        onSetup={cycle.setup}
+        onLogPeriod={cycle.logPeriod}
+        onEndPeriod={cycle.endPeriod}
+        onUpdateSettings={cycle.updateSettings}
+      />
 
       <BottomNav />
     </main>

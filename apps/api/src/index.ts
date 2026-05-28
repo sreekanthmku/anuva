@@ -33,11 +33,17 @@ import {
   unregisterFcmResponseSchema,
   requestOtpResponseSchema,
   verifyOtpBodySchema,
+  cycleSetupBodySchema,
+  cycleSettingsBodySchema,
+  logPeriodBodySchema,
+  endPeriodBodySchema,
+  cycleStateResponseSchema,
   type AuthUser,
 } from '@anuva/shared';
 import { ZodError } from 'zod';
 import { BOOKABLE_DOCTOR_KEYS, ensureBookingCatalog } from './bookingCatalog.js';
 import { sendPushToAllTokens } from './fcm.js';
+import { computeAvgPeriodLength, computeCycleState } from './cycleCalc.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -1069,6 +1075,136 @@ app.get('/push/hello-world', async (req, res, next) => {
       next(new HttpError(503, e.message));
       return;
     }
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
+// Cycle tracking
+// ─────────────────────────────────────────────
+
+async function getCycleData(userId: string) {
+  const [settings, periods] = await Promise.all([
+    prisma.cycleSettings.findUnique({ where: { userId } }),
+    prisma.periodLog.findMany({
+      where: { userId },
+      orderBy: { startDate: 'desc' },
+      take: 12,
+    }),
+  ]);
+  return { settings, periods };
+}
+
+function serializePeriodLog(p: { id: string; startDate: Date; endDate: Date | null }) {
+  return {
+    id: p.id,
+    startDate: p.startDate.toISOString().split('T')[0]!,
+    endDate: p.endDate ? p.endDate.toISOString().split('T')[0]! : null,
+  };
+}
+
+app.get('/cycle', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { settings, periods } = await getCycleData(user.id);
+    const cycleLength = settings?.cycleLength ?? 28;
+    const periodLength = settings?.periodLength ?? 5;
+    const serializedPeriods = periods.map(serializePeriodLog);
+    const avgPeriodLength = computeAvgPeriodLength(serializedPeriods);
+    const computed = computeCycleState(serializedPeriods, cycleLength, avgPeriodLength ?? periodLength);
+    res.json(
+      cycleStateResponseSchema.parse({
+        settings: settings ? { cycleLength: settings.cycleLength, periodLength: settings.periodLength } : null,
+        ...computed,
+        avgPeriodLength,
+        recentPeriods: serializedPeriods,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/cycle/setup', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { lastPeriodStart, cycleLength, periodLength } = cycleSetupBodySchema.parse(req.body);
+
+    await prisma.$transaction([
+      prisma.cycleSettings.upsert({
+        where: { userId: user.id },
+        create: { userId: user.id, cycleLength, periodLength },
+        update: { cycleLength, periodLength },
+      }),
+      prisma.periodLog.upsert({
+        where: { userId_startDate: { userId: user.id, startDate: new Date(lastPeriodStart) } },
+        create: { userId: user.id, startDate: new Date(lastPeriodStart) },
+        update: {},
+      }),
+    ]);
+
+    const { settings, periods } = await getCycleData(user.id);
+    const serializedPeriods = periods.map(serializePeriodLog);
+    const avgPeriodLength = computeAvgPeriodLength(serializedPeriods);
+    const computed = computeCycleState(serializedPeriods, settings!.cycleLength, avgPeriodLength ?? settings!.periodLength);
+    res.status(201).json(
+      cycleStateResponseSchema.parse({
+        settings: { cycleLength: settings!.cycleLength, periodLength: settings!.periodLength },
+        ...computed,
+        avgPeriodLength,
+        recentPeriods: serializedPeriods,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.put('/cycle/settings', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { cycleLength, periodLength } = cycleSettingsBodySchema.parse(req.body);
+    await prisma.cycleSettings.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, cycleLength, periodLength },
+      update: { cycleLength, periodLength },
+    });
+    res.json({ cycleLength, periodLength });
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/cycle/period', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { startDate } = logPeriodBodySchema.parse(req.body);
+    const log = await prisma.periodLog.upsert({
+      where: { userId_startDate: { userId: user.id, startDate: new Date(startDate) } },
+      create: { userId: user.id, startDate: new Date(startDate) },
+      update: {},
+    });
+    res.status(201).json(serializePeriodLog(log));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.patch('/cycle/period/:id', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { id } = req.params;
+    const { endDate } = endPeriodBodySchema.parse(req.body);
+    const existing = await prisma.periodLog.findUnique({ where: { id } });
+    if (!existing || existing.userId !== user.id) {
+      throw new HttpError(404, 'Period log not found.');
+    }
+    const updated = await prisma.periodLog.update({
+      where: { id },
+      data: { endDate: new Date(endDate) },
+    });
+    res.json(serializePeriodLog(updated));
+  } catch (e) {
     next(e);
   }
 });
