@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { DPDP_ACT_URL } from '../../shared/lib/dpdp';
 import { useAuth } from '../auth/auth-context';
 import { activateOneDaySubscription } from '../auth/session';
 import { assessmentPath } from './config/assessmentView';
@@ -36,6 +37,21 @@ const includedItems = [
   'Monthly masterclass access',
   'DPDP-compliant, encrypted',
 ];
+
+function renderIncludedItem(item: string) {
+  if (item !== 'DPDP-compliant, encrypted') {
+    return item;
+  }
+
+  return (
+    <>
+      <a href={DPDP_ACT_URL} target="_blank" rel="noopener noreferrer" className="text-inherit no-underline">
+        DPDP-compliant
+      </a>
+      , encrypted
+    </>
+  );
+}
 
 export default function SubscriptionRoute() {
   const navigate = useNavigate();
@@ -124,7 +140,7 @@ export default function SubscriptionRoute() {
                   <path d="M5 12l5 5L20 7" stroke="#cebdff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span className="text-[11.5px] leading-[1.35] text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                  {item}
+                  {renderIncludedItem(item)}
                 </span>
               </div>
             ))}
@@ -196,15 +212,38 @@ export default function SubscriptionRoute() {
       </section>
 
       <section className="flex flex-wrap justify-center gap-1.5 px-[22px] pb-2 pt-4">
-        {['DPDP', `${trialDays}-Day Trial`, 'Free Consult'].map((badge) => (
-          <span
-            key={badge}
-            className="rounded-full border border-border-default bg-surface-container-low px-2.5 py-1 text-[9.5px] uppercase tracking-[0.1em] text-on-surface"
-            style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
-          >
-            {badge}
-          </span>
-        ))}
+        {(
+          [
+            { key: 'dpdp', label: 'DPDP', href: DPDP_ACT_URL },
+            { key: 'trial', label: `${trialDays}-Day Trial` },
+            { key: 'consult', label: 'Free Consult' },
+          ] as const
+        ).map((badge) => {
+          const className =
+            'rounded-full border border-border-default bg-surface-container-low px-2.5 py-1 text-[9.5px] uppercase tracking-[0.1em] text-on-surface';
+          const style = { fontFamily: '"Geist Mono", ui-monospace, monospace' };
+
+          if ('href' in badge && badge.href) {
+            return (
+              <a
+                key={badge.key}
+                href={badge.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${className} no-underline`}
+                style={style}
+              >
+                {badge.label}
+              </a>
+            );
+          }
+
+          return (
+            <span key={badge.key} className={className} style={style}>
+              {badge.label}
+            </span>
+          );
+        })}
       </section>
 
       <section className="px-[22px] pb-[22px] pt-2.5">

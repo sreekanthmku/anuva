@@ -130,11 +130,11 @@ export default function LoginRoute() {
           </div>
         </div>
         <p
-          className="mt-4 text-[22px] tracking-[0.18em] text-on-surface"
+          className="mt-4 text-[16px] tracking-[0.16em] text-on-surface"
           style={{
             fontFamily: '"DM Sans", sans-serif',
             fontWeight: 400,
-            letterSpacing: '0.18em',
+            letterSpacing: '0.16em',
           }}
         >
           ANUVA
@@ -312,7 +312,7 @@ export default function LoginRoute() {
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface disabled:opacity-60"
               style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif', fontWeight: 500, letterSpacing: '-0.005em' }}
             >
-              {isSubmitting ? 'Sending OTP...' : 'Send OTP'}
+              {isSubmitting ? 'Sending OTP...' : mode === 'signup' ? 'Begin My Wellness Journey' : 'Send OTP'}
             </button>
 
             <div className="mt-4">

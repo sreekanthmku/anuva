@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { enablePushNotifications, needsPushRegistrationRetry, syncFcmTokenIfGranted } from '../../lib/firebase';
+import { DPDP_ACT_URL } from '../../shared/lib/dpdp';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 
@@ -139,7 +140,24 @@ export default function ProfileRoute() {
                     {row.label}
                   </span>
                   <span className="text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                    {row.id === 'notifications' ? notificationStatusHint() : row.hint}
+                    {row.id === 'notifications' ? (
+                      notificationStatusHint()
+                    ) : row.label === 'Privacy & data' ? (
+                      <>
+                        <a
+                          href={DPDP_ACT_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-inherit no-underline"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          DPDP
+                        </a>
+                        {' · export or delete'}
+                      </>
+                    ) : (
+                      row.hint
+                    )}
                   </span>
                 </button>
               </li>

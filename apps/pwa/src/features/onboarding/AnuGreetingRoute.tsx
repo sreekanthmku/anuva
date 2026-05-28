@@ -1,19 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getTrialStartDate } from '../core/wellnessCalibration';
 import { useAuth } from '../auth/auth-context';
 import { assessmentPath } from './config/assessmentView';
 
-const sevenDayPlan = [
-  { phase: 'Today', action: 'ANU learns about you', eta: 'Today' },
-  { phase: 'Days 2-6', action: 'Daily symptom tracking', eta: 'This week' },
-  { phase: 'Day 7', action: 'Your first benchmark report', eta: 'Next Sun' },
-  { phase: 'Week 2', action: 'Matched care path unlocks', eta: 'May 12' },
-];
+const BENCHMARK_DAY_OFFSET = 7;
+const CARE_PATH_DAY_OFFSET = 14;
+
+function startOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function addCalendarDays(from: Date, days: number): Date {
+  const d = startOfDay(from);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function formatBenchmarkDay(date: Date): string {
+  const weekday = date.toLocaleDateString('en-IN', { weekday: 'short' });
+  return `Next ${weekday}`;
+}
+
+/** Month + day, e.g. May 12 */
+function formatCarePathDate(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function buildSevenDayPlan(trialStartedAt?: string) {
+  const start = startOfDay(trialStartedAt ? new Date(trialStartedAt) : new Date());
+
+  return [
+    { phase: 'Today', action: 'ANU learns about you', eta: 'Today' },
+    { phase: 'Days 2-6', action: 'Daily symptom tracking', eta: 'This week' },
+    {
+      phase: 'Day 7',
+      action: 'Your first benchmark report',
+      eta: formatBenchmarkDay(addCalendarDays(start, BENCHMARK_DAY_OFFSET)),
+    },
+    {
+      phase: 'Week 2',
+      action: 'Matched care path unlocks',
+      eta: formatCarePathDate(addCalendarDays(start, CARE_PATH_DAY_OFFSET)),
+    },
+  ];
+}
 
 export default function AnuGreetingRoute() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [pulse, setPulse] = useState(0);
+  const sevenDayPlan = useMemo(() => buildSevenDayPlan(getTrialStartDate(user)), [user]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -35,17 +74,6 @@ export default function AnuGreetingRoute() {
         className="pointer-events-none absolute left-1/2 top-[100px] h-[380px] w-[380px] -translate-x-1/2 rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(206, 189, 255, 0.2) 0%, transparent 55%)' }}
       />
-
-      <section className="relative z-10 flex justify-end px-[22px] pb-0 pt-3.5">
-        <button
-          type="button"
-          onClick={() => navigate('/home')}
-          className="bg-transparent p-0 text-[11px] uppercase tracking-[0.15em] text-outline"
-          style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
-        >
-          Skip
-        </button>
-      </section>
 
       <section className="relative z-10 flex flex-1 flex-col items-center px-6 pb-[22px] pt-5">
         <div

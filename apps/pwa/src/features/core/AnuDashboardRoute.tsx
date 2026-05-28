@@ -5,6 +5,12 @@ import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
 import { NotificationSyncBanner } from './components/NotificationSyncBanner';
 import { useHomeNotificationPrompt } from './hooks/useHomeNotificationPrompt';
+import {
+  getCalibrationProgress,
+  getJourneyDay,
+  getTrialStartDate,
+  isWellnessCalibrating,
+} from './wellnessCalibration';
 
 const quickLogItems = [
   { label: 'Hot flash', sub: 'Log now', tone: '#F87171', count: '2 TODAY' },
@@ -41,6 +47,15 @@ export default function AnuDashboardRoute() {
   const [greeting, setGreeting] = useState(() => getTimeGreeting());
   const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
   const profileInitial = firstName.charAt(0).toUpperCase() || 'U';
+  const trialStartedAt = getTrialStartDate(user);
+  const isCalibrating = isWellnessCalibrating(trialStartedAt);
+  const calibration = trialStartedAt ? getCalibrationProgress(trialStartedAt) : null;
+  const memberDay = trialStartedAt ? getJourneyDay(trialStartedAt) : null;
+  const memberWeek = memberDay !== null ? Math.floor(memberDay / 7) + 1 : null;
+  const calibrationArc =
+    calibration && circumference > 0
+      ? (calibration.day / calibration.totalDays) * circumference
+      : 0;
 
   useEffect(() => {
     const updateGreeting = () => setGreeting(getTimeGreeting());
@@ -93,22 +108,23 @@ export default function AnuDashboardRoute() {
           </NavLink>
         </header>
 
-        <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
-          <span className="h-px w-3 bg-primary/60" />
-          <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>{greeting}</span>
+        <div className="mb-2.5 flex flex-wrap items-baseline gap-x-2">
+          <span
+            className="text-[10px] uppercase tracking-[0.18em] text-primary"
+            style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+          >
+            {greeting},
+          </span>
+          <h1 className="font-display text-[34px] leading-[1] text-on-surface">
+            <em className="not-italic text-primary" style={{ fontStyle: 'italic', fontWeight: 300 }}>
+              {firstName}
+            </em>
+          </h1>
         </div>
-
-        <h1
-          className="font-display mb-2.5 text-[34px] leading-[1] text-on-surface"
-        >
-          <em className="not-italic text-primary" style={{ fontStyle: 'italic', fontWeight: 300 }}>
-            {firstName}
-          </em>
-        </h1>
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[10.5px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-            Day 8 · Week 2
+            {memberDay !== null && memberWeek ? `Day ${memberDay} · Week ${memberWeek}` : 'Day 0 · Week 1'}
           </span>
           <span className="text-outline/40">·</span>
           <span
@@ -135,46 +151,83 @@ export default function AnuDashboardRoute() {
                 cy="48"
                 r="42"
                 fill="none"
-                stroke="#cebdff"
+                stroke={isCalibrating ? '#948e9d' : '#cebdff'}
                 strokeWidth="6"
-                strokeDasharray={`${scoreDash} ${circumference}`}
+                strokeDasharray={`${isCalibrating ? calibrationArc : scoreDash} ${circumference}`}
                 strokeLinecap="round"
                 transform="rotate(-90 48 48)"
+                opacity={isCalibrating ? 0.85 : 1}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span
-                className="text-[30px] leading-none text-on-surface"
-              >
-                {score}
-              </span>
-              <span className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-                balance
-              </span>
+              {isCalibrating ? (
+                <>
+                  <span
+                    className="text-[22px] leading-none text-on-surface"
+                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                  >
+                    {calibration ? `${calibration.day}/${calibration.totalDays}` : '—'}
+                  </span>
+                  <span className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                    calibrating
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-[30px] leading-none text-on-surface">{score}</span>
+                  <span className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                    balance
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
           <div className="flex-1">
             <div className="mb-1.5 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary">
               <span className="h-px w-3 bg-primary/60" />
-              <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Today&apos;s wellness</span>
-            </div>
-            <p
-              className="mb-2 text-[18px] leading-[1.25] text-on-surface"
-              style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
-            >
-              Steady, with gentle friction.
-            </p>
-            <div className="flex flex-wrap gap-2.5">
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-primary" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Sleep +12%
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-error" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                <span className="h-1.5 w-1.5 rounded-full bg-error" />
-                Hot flashes ↑
+              <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                {isCalibrating ? 'Your first week' : "Today's wellness"}
               </span>
             </div>
+            {isCalibrating ? (
+              <>
+                <p
+                  className="mb-2 text-[18px] leading-[1.25] text-on-surface"
+                  style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
+                >
+                  We&apos;re learning your rhythm.
+                </p>
+                {calibration && (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border-default bg-surface-container-low px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] text-outline"
+                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                  >
+                    Day {calibration.day} of {calibration.totalDays}
+                    {calibration.daysRemaining > 0 ? ` · ${calibration.daysRemaining}d left` : ''}
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                <p
+                  className="mb-2 text-[18px] leading-[1.25] text-on-surface"
+                  style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
+                >
+                  Steady, with gentle friction.
+                </p>
+                <div className="flex flex-wrap gap-2.5">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] text-primary" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    Sleep +12%
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-[11px] text-error" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-error" />
+                    Hot flashes ↑
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </article>
       </section>

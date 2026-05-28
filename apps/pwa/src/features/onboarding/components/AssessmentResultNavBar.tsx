@@ -4,7 +4,7 @@ type AssessmentResultNavBarProps = {
 
 export function AssessmentResultNavBar({ onBack }: AssessmentResultNavBarProps) {
   return (
-    <section className="flex items-center justify-between px-[22px] pb-2.5 pt-0">
+    <section className="px-[22px] pb-2.5 pt-0">
       <button
         type="button"
         onClick={onBack}
@@ -13,7 +13,6 @@ export function AssessmentResultNavBar({ onBack }: AssessmentResultNavBarProps) 
       >
         ← Back
       </button>
-      <img src="/anu.png" alt="Anuva logo" className="h-5 w-5 object-contain" />
     </section>
   );
 }

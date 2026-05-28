@@ -18,7 +18,7 @@ export const controlPills: RiskPill[] = [
 
 export const nextSteps: [string, string][] = [
   ['Meet ANU', 'Your personal wellness companion'],
-  ['7 days of tracking', 'Build a personalised benchmark'],
+  ['14 days of tracking', 'Build a personalised benchmark'],
   ['Weekly report', 'Clinical insight in plain language'],
   ['Care path', 'Matched specialist · free first consult'],
 ];

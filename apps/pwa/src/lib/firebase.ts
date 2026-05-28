@@ -56,27 +56,52 @@ async function getFirebaseMessaging(): Promise<Messaging | null> {
 const FCM_SW_URL = '/firebase-messaging-sw.js';
 const FCM_SW_SCOPE = '/firebase-cloud-messaging-push-scope/';
 
-/** Dedicated FCM service worker (separate scope so it does not conflict with the Vite PWA workbox SW). */
+/** True when the registration is actually running our FCM SW script (not the workbox `/` SW). */
+function isFcmRegistration(registration: ServiceWorkerRegistration | undefined): registration is ServiceWorkerRegistration {
+  if (!registration) {
+    return false;
+  }
+  const worker = registration.active ?? registration.waiting ?? registration.installing;
+  return Boolean(worker?.scriptURL.endsWith(FCM_SW_URL));
+}
+
+async function waitForActivation(registration: ServiceWorkerRegistration): Promise<void> {
+  if (registration.active) {
+    return;
+  }
+  const worker = registration.installing ?? registration.waiting;
+  if (!worker) {
+    return;
+  }
+  await new Promise<void>((resolve) => {
+    worker.addEventListener('statechange', () => {
+      if (worker.state === 'activated') {
+        resolve();
+      }
+    });
+  });
+}
+
+/**
+ * Dedicated FCM service worker (separate scope so it does not conflict with the Vite PWA workbox SW).
+ *
+ * `navigator.serviceWorker.getRegistration(scope)` returns the registration whose scope *contains*
+ * the URL — and the workbox SW at `/` contains `/firebase-cloud-messaging-push-scope/`. So a bare
+ * `getRegistration` hands back the workbox SW (no push handler) and the FCM token gets bound to it,
+ * which silently drops every notification. Only accept a registration actually running our FCM SW
+ * script; otherwise register it explicitly.
+ */
 async function getFcmServiceWorkerRegistration(): Promise<ServiceWorkerRegistration> {
   if (!('serviceWorker' in navigator)) {
     throw new Error('Service workers are not supported.');
   }
 
-  let registration = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
-  if (!registration) {
-    registration = await navigator.serviceWorker.register(FCM_SW_URL, { scope: FCM_SW_SCOPE });
-  }
+  const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
+  const registration = isFcmRegistration(existing)
+    ? existing
+    : await navigator.serviceWorker.register(FCM_SW_URL, { scope: FCM_SW_SCOPE });
 
-  if (registration.installing) {
-    await new Promise<void>((resolve) => {
-      const worker = registration!.installing;
-      worker?.addEventListener('statechange', () => {
-        if (worker.state === 'activated') {
-          resolve();
-        }
-      });
-    });
-  }
+  await waitForActivation(registration);
 
   return registration;
 }
