@@ -59,6 +59,7 @@ export const authUserSchema = z.object({
   name: z.string().nullable(),
   email: z.string().email().nullable(),
   onboardingCompleted: z.boolean(),
+  detailedAssessmentStatus: z.enum(['not_started', 'in_progress', 'completed']),
   subscriptionPlan: subscriptionPlanSchema.nullable(),
   subscriptionStatus: subscriptionStatusSchema.nullable(),
   subscriptionStartedAt: z.string().datetime().nullable(),

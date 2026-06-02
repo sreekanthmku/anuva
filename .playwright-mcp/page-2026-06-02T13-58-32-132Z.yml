@@ -1,0 +1,213 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - main [ref=e4]:
+      - generic [ref=e54]:
+        - complementary [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e58]:
+              - link [ref=e59] [cursor=pointer]:
+                - /url: /home
+                - generic [ref=e60]:
+                  - img [ref=e61]
+                  - img [ref=e63]
+              - menubar [ref=e66]:
+                - menuitem "Add new item" [ref=e67]:
+                  - button "Add new item" [ref=e69] [cursor=pointer]:
+                    - img [ref=e71]
+              - button "Open command palette" [ref=e74] [cursor=pointer]:
+                - img [ref=e76]
+              - button "Toggle sidebar" [ref=e81] [cursor=pointer]:
+                - img [ref=e83]
+            - generic [ref=e91]:
+              - menuitem "Overview" [ref=e93] [cursor=pointer]:
+                - img [ref=e95]
+                - generic [ref=e100]: Overview
+              - menuitem "Chat" [ref=e102] [cursor=pointer]:
+                - img [ref=e104]
+                - generic [ref=e106]:
+                  - generic [ref=e107]: Chat
+                  - generic [ref=e108]: beta
+            - generic [ref=e110]:
+              - menuitem "Templates" [ref=e112] [cursor=pointer]:
+                - img [ref=e114]
+                - generic [ref=e120]: Templates
+              - menuitem "Insights" [ref=e122] [cursor=pointer]:
+                - img [ref=e124]
+                - generic [ref=e127]: Insights
+              - menuitem "Help" [ref=e129] [cursor=pointer]:
+                - img [ref=e131]
+                - generic [ref=e136]: Help
+                - img [ref=e137]
+              - menuitem "Settings" [ref=e140] [cursor=pointer]:
+                - img [ref=e142]
+                - generic [ref=e147]: Settings
+                - img [ref=e148]
+        - main [ref=e150]:
+          - generic [ref=e153]:
+            - heading "Welcome, Sreekanth!" [level=1] [ref=e154]
+            - generic [ref=e155]:
+              - generic [ref=e156]:
+                - generic [ref=e157]:
+                  - heading "Start with a template" [level=2] [ref=e158]
+                  - link "See more templates" [ref=e159] [cursor=pointer]:
+                    - /url: https://n8n.io/workflows/?utm_source=n8n_app&utm_medium=template_library&utm_instance=https%3A%2F%2Fn8n.leaveazy.com%2F&utm_n8n_version=2.10.2&utm_awc=0
+                    - generic [ref=e161]: See more templates
+                - generic [ref=e352]:
+                  - generic [ref=e356] [cursor=pointer]:
+                    - generic [ref=e357]: Build your first AI agent
+                    - generic [ref=e358]:
+                      - img "Lucas Peyrin" [ref=e359]
+                      - generic [ref=e360]: Lucas Peyrin
+                      - generic [ref=e361]:
+                        - img [ref=e362]
+                        - generic [ref=e364]: Verified
+                    - generic [ref=e365]:
+                      - generic [ref=e367]:
+                        - img [ref=e368]
+                        - generic [ref=e372]: 5 min setup
+                      - generic [ref=e373]:
+                        - generic [ref=e376]:
+                          - img
+                        - generic [ref=e379]:
+                          - img
+                  - generic [ref=e383] [cursor=pointer]:
+                    - generic [ref=e384]: Generate AI videos from scripts with DeepSeek, TTS, and Together.ai
+                    - generic [ref=e385]:
+                      - img "Lakindu Siriwardana" [ref=e386]
+                      - generic [ref=e387]: Lakindu Siriwardana
+                      - generic [ref=e388]:
+                        - img [ref=e389]
+                        - generic [ref=e391]: Verified
+                    - generic [ref=e392]:
+                      - generic [ref=e394]:
+                        - img [ref=e395]
+                        - generic [ref=e399]: 14 min setup
+                      - generic [ref=e400]:
+                        - generic [ref=e403]:
+                          - img
+                        - generic [ref=e406]:
+                          - img
+                  - generic [ref=e410] [cursor=pointer]:
+                    - generic [ref=e411]: Automate Gmail inbox organization with rule-based categorization and smart actions
+                    - generic [ref=e412]:
+                      - img "Solido AI" [ref=e413]
+                      - generic [ref=e414]: Solido AI
+                      - generic [ref=e415]:
+                        - img [ref=e416]
+                        - generic [ref=e418]: Verified
+                    - generic [ref=e419]:
+                      - generic [ref=e421]:
+                        - img [ref=e422]
+                        - generic [ref=e426]: 5 min setup
+                      - generic [ref=e427]:
+                        - generic [ref=e430]:
+                          - img
+                        - generic [ref=e433]:
+                          - img
+                  - generic [ref=e437] [cursor=pointer]:
+                    - generic [ref=e438]: Auto-generate Instagram content schedule with GPT-4, Apify, and Google Sheets
+                    - generic [ref=e439]:
+                      - img "keisha kalra" [ref=e440]
+                      - generic [ref=e441]: keisha kalra
+                      - generic [ref=e442]:
+                        - img [ref=e443]
+                        - generic [ref=e445]: Verified
+                    - generic [ref=e446]:
+                      - generic [ref=e448]:
+                        - img [ref=e449]
+                        - generic [ref=e453]: 5 min setup
+                      - generic [ref=e454]:
+                        - generic [ref=e457]:
+                          - img
+                        - generic [ref=e460]:
+                          - img
+                  - generic [ref=e464] [cursor=pointer]:
+                    - generic [ref=e465]: AI-powered social media content generator with strategic approach using GPT-4 models
+                    - generic [ref=e466]:
+                      - img "inderjeet Bhambra" [ref=e467]
+                      - generic [ref=e468]: inderjeet Bhambra
+                      - generic [ref=e469]:
+                        - img [ref=e470]
+                        - generic [ref=e472]: Verified
+                    - generic [ref=e473]:
+                      - generic [ref=e475]:
+                        - img [ref=e476]
+                        - generic [ref=e480]: 8 min setup
+                      - generic [ref=e481]:
+                        - generic [ref=e484]:
+                          - img
+                        - generic [ref=e487]:
+                          - img
+                  - generic [ref=e491] [cursor=pointer]:
+                    - generic [ref=e492]: Automated Gmail classification & response system with GPT and WhatsApp alerts
+                    - generic [ref=e493]:
+                      - img "Nabin Bhandari" [ref=e494]
+                      - generic [ref=e495]: Nabin Bhandari
+                      - generic [ref=e496]:
+                        - img [ref=e497]
+                        - generic [ref=e499]: Verified
+                    - generic [ref=e500]:
+                      - generic [ref=e502]:
+                        - img [ref=e503]
+                        - generic [ref=e507]: 11 min setup
+                      - generic [ref=e508]:
+                        - generic [ref=e511]:
+                          - img
+                        - generic [ref=e514]:
+                          - img
+              - generic [ref=e344]: or
+              - button "Start from scratch" [ref=e346] [cursor=pointer]:
+                - generic [ref=e347]:
+                  - img [ref=e348]
+                  - text: Start from scratch
+    - complementary
+  - dialog "Settings" [ref=e516]:
+    - generic [ref=e520]:
+      - menuitem "Usage and plan" [ref=e522] [cursor=pointer]:
+        - img [ref=e524]
+        - generic [ref=e527]: Usage and plan
+      - menuitem "Personal" [ref=e529] [cursor=pointer]:
+        - img [ref=e531]
+        - generic [ref=e537]: Personal
+      - menuitem "Users" [ref=e539] [cursor=pointer]:
+        - img [ref=e541]
+        - generic [ref=e546]: Users
+      - menuitem "Project roles" [ref=e548] [cursor=pointer]:
+        - img [ref=e550]
+        - generic [ref=e555]: Project roles
+      - menuitem "n8n API" [ref=e557] [cursor=pointer]:
+        - img [ref=e559]
+        - generic [ref=e562]: n8n API
+      - menuitem "External Secrets" [ref=e564] [cursor=pointer]:
+        - img [ref=e566]
+        - generic [ref=e579]: External Secrets
+      - menuitem "Environments" [ref=e581] [cursor=pointer]:
+        - img [ref=e583]
+        - generic [ref=e589]: Environments
+      - menuitem "SSO" [ref=e591] [cursor=pointer]:
+        - img [ref=e593]
+        - generic [ref=e599]: SSO
+      - menuitem "Security & policies" [ref=e601] [cursor=pointer]:
+        - img [ref=e603]
+        - generic [ref=e606]: Security & policies
+      - menuitem "LDAP" [ref=e608] [cursor=pointer]:
+        - img [ref=e610]
+        - generic [ref=e617]: LDAP
+      - menuitem "Log Streaming" [ref=e619] [cursor=pointer]:
+        - img [ref=e621]
+        - generic [ref=e624]: Log Streaming
+      - menuitem "Community nodes" [ref=e626] [cursor=pointer]:
+        - img [ref=e628]
+        - generic [ref=e633]: Community nodes
+      - menuitem "Migration Report" [ref=e635] [cursor=pointer]:
+        - img [ref=e637]
+        - generic [ref=e640]: Migration Report
+      - menuitem "Instance-level MCP" [ref=e642] [cursor=pointer]:
+        - img [ref=e644]
+        - generic [ref=e648]: Instance-level MCP
+      - menuitem "Chat" [ref=e650] [cursor=pointer]:
+        - img [ref=e652]
+        - generic [ref=e655]: Chat
+      - menuitem "Sign out" [ref=e658] [cursor=pointer]:
+        - img [ref=e660]
+        - generic [ref=e663]: Sign out

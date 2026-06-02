@@ -1,0 +1,77 @@
+- generic [ref=e3]:
+  - main [ref=e4]:
+    - generic [ref=e664]:
+      - complementary [ref=e665]:
+        - generic [ref=e666]:
+          - generic [ref=e667] [cursor=pointer]:
+            - img [ref=e669]
+            - generic [ref=e671]: Settings
+          - generic [ref=e672]:
+            - menuitem "Usage and plan" [ref=e674] [cursor=pointer]:
+              - img [ref=e676]
+              - generic [ref=e679]: Usage and plan
+            - menuitem "Personal" [ref=e681] [cursor=pointer]:
+              - img [ref=e683]
+              - generic [ref=e689]: Personal
+            - menuitem "Users" [ref=e691] [cursor=pointer]:
+              - img [ref=e693]
+              - generic [ref=e698]: Users
+            - menuitem "Project roles" [ref=e700] [cursor=pointer]:
+              - img [ref=e702]
+              - generic [ref=e707]: Project roles
+            - menuitem "n8n API" [ref=e709] [cursor=pointer]:
+              - img [ref=e711]
+              - generic [ref=e714]: n8n API
+            - menuitem "External Secrets" [ref=e716] [cursor=pointer]:
+              - img [ref=e718]
+              - generic [ref=e731]: External Secrets
+            - menuitem "Environments" [ref=e733] [cursor=pointer]:
+              - img [ref=e735]
+              - generic [ref=e741]: Environments
+            - menuitem "SSO" [ref=e743] [cursor=pointer]:
+              - img [ref=e745]
+              - generic [ref=e751]: SSO
+            - menuitem "Security & policies" [ref=e753] [cursor=pointer]:
+              - img [ref=e755]
+              - generic [ref=e758]: Security & policies
+            - menuitem "LDAP" [ref=e760] [cursor=pointer]:
+              - img [ref=e762]
+              - generic [ref=e769]: LDAP
+            - menuitem "Log Streaming" [ref=e771] [cursor=pointer]:
+              - img [ref=e773]
+              - generic [ref=e776]: Log Streaming
+            - menuitem "Community nodes" [ref=e778] [cursor=pointer]:
+              - img [ref=e780]
+              - generic [ref=e785]: Community nodes
+            - menuitem "Migration Report" [ref=e787] [cursor=pointer]:
+              - img [ref=e789]
+              - generic [ref=e792]: Migration Report
+            - menuitem "Instance-level MCP" [ref=e794] [cursor=pointer]:
+              - img [ref=e796]
+              - generic [ref=e800]: Instance-level MCP
+            - menuitem "Chat" [ref=e802] [cursor=pointer]:
+              - img [ref=e804]
+              - generic [ref=e807]: Chat
+          - generic [ref=e811] [cursor=pointer]: Version 2.10.2
+      - main [ref=e812]:
+        - generic [ref=e816]:
+          - generic [ref=e817]:
+            - generic [ref=e819]: Instance-level MCP
+            - generic [ref=e820]:
+              - generic [ref=e821]:
+                - generic [ref=e823]: Disabled
+                - generic [ref=e825]:
+                  - switch
+              - button "Connection details" [disabled] [ref=e828]:
+                - generic [ref=e829]: Connection details
+          - generic [ref=e831]:
+            - img [ref=e833]
+            - generic [ref=e837]: Connect AI assistants to your workflows
+            - generic [ref=e839]: Let MCP clients like Claude, Lovable, and other AI tools discover and execute your n8n workflows
+            - button "Enable MCP access" [ref=e840] [cursor=pointer]:
+              - generic [ref=e842]: Enable MCP access
+            - generic [ref=e844]:
+              - text: Read our docs to
+              - link "learn more" [ref=e845] [cursor=pointer]:
+                - /url: https://docs.n8n.io/advanced-ai/accessing-n8n-mcp-server
+  - complementary

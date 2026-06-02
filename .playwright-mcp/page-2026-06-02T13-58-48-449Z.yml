@@ -1,0 +1,112 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - main [ref=e4]:
+      - generic [ref=e664]:
+        - complementary [ref=e665]:
+          - generic [ref=e666]:
+            - generic [ref=e667] [cursor=pointer]:
+              - img [ref=e669]
+              - generic [ref=e671]: Settings
+            - generic [ref=e672]:
+              - menuitem "Usage and plan" [ref=e674] [cursor=pointer]:
+                - img [ref=e676]
+                - generic [ref=e679]: Usage and plan
+              - menuitem "Personal" [ref=e681] [cursor=pointer]:
+                - img [ref=e683]
+                - generic [ref=e689]: Personal
+              - menuitem "Users" [ref=e691] [cursor=pointer]:
+                - img [ref=e693]
+                - generic [ref=e698]: Users
+              - menuitem "Project roles" [ref=e700] [cursor=pointer]:
+                - img [ref=e702]
+                - generic [ref=e707]: Project roles
+              - menuitem "n8n API" [ref=e709] [cursor=pointer]:
+                - img [ref=e711]
+                - generic [ref=e714]: n8n API
+              - menuitem "External Secrets" [ref=e716] [cursor=pointer]:
+                - img [ref=e718]
+                - generic [ref=e731]: External Secrets
+              - menuitem "Environments" [ref=e733] [cursor=pointer]:
+                - img [ref=e735]
+                - generic [ref=e741]: Environments
+              - menuitem "SSO" [ref=e743] [cursor=pointer]:
+                - img [ref=e745]
+                - generic [ref=e751]: SSO
+              - menuitem "Security & policies" [ref=e753] [cursor=pointer]:
+                - img [ref=e755]
+                - generic [ref=e758]: Security & policies
+              - menuitem "LDAP" [ref=e760] [cursor=pointer]:
+                - img [ref=e762]
+                - generic [ref=e769]: LDAP
+              - menuitem "Log Streaming" [ref=e771] [cursor=pointer]:
+                - img [ref=e773]
+                - generic [ref=e776]: Log Streaming
+              - menuitem "Community nodes" [ref=e778] [cursor=pointer]:
+                - img [ref=e780]
+                - generic [ref=e785]: Community nodes
+              - menuitem "Migration Report" [ref=e787] [cursor=pointer]:
+                - img [ref=e789]
+                - generic [ref=e792]: Migration Report
+              - menuitem "Instance-level MCP" [ref=e794] [cursor=pointer]:
+                - img [ref=e796]
+                - generic [ref=e800]: Instance-level MCP
+              - menuitem "Chat" [ref=e802] [cursor=pointer]:
+                - img [ref=e804]
+                - generic [ref=e807]: Chat
+            - generic [ref=e811] [cursor=pointer]: Version 2.10.2
+        - main [ref=e812]:
+          - generic [ref=e816]:
+            - generic [ref=e817]:
+              - generic [ref=e818]:
+                - generic [ref=e819]: Instance-level MCP
+                - generic [ref=e846]:
+                  - generic [ref=e847]: Let MCP clients like Claude, Lovable, and other AI tools discover and execute your n8n workflows.
+                  - link "Learn more" [ref=e848] [cursor=pointer]:
+                    - /url: https://docs.n8n.io/advanced-ai/accessing-n8n-mcp-server
+                    - generic [ref=e850]: Learn more
+              - generic [ref=e820]:
+                - generic [ref=e821]:
+                  - generic [ref=e823]: Enabled
+                  - generic [ref=e825]:
+                    - switch [checked]
+                - button "Connection details" [expanded] [ref=e828] [cursor=pointer]:
+                  - generic [ref=e829]: Connection details
+            - generic [ref=e851]:
+              - generic [ref=e852]:
+                - generic [ref=e854]:
+                  - generic [ref=e857] [cursor=pointer]: Workflows
+                  - generic [ref=e860] [cursor=pointer]: Connected clients
+                - button [ref=e863] [cursor=pointer]:
+                  - img [ref=e865]
+              - main [ref=e870]:
+                - table [ref=e876]:
+                  - rowgroup [ref=e877]:
+                    - row "Name Location Description" [ref=e878]:
+                      - columnheader "Name" [ref=e879]
+                      - columnheader "Location" [ref=e880]
+                      - columnheader "Description" [ref=e881]
+                      - columnheader [ref=e882]
+                  - rowgroup [ref=e883]:
+                    - row "No workflows enabled Add compatible workflows so MCP clients can discover and execute them Enable workflows" [ref=e884]:
+                      - cell "No workflows enabled Add compatible workflows so MCP clients can discover and execute them Enable workflows" [ref=e885]:
+                        - generic [ref=e886]:
+                          - generic [ref=e887]: No workflows enabled
+                          - generic [ref=e888]: Add compatible workflows so MCP clients can discover and execute them
+                          - button "Enable workflows" [ref=e889] [cursor=pointer]:
+                            - generic [ref=e891]: Enable workflows
+    - complementary
+  - dialog "Connection details" [ref=e893]:
+    - generic [ref=e897]:
+      - banner [ref=e898]:
+        - radiogroup [ref=e899]:
+          - radio "OAuth" [checked] [ref=e900]:
+            - generic [ref=e901] [cursor=pointer]: OAuth
+          - radio "Access token" [ref=e902]:
+            - generic [ref=e903] [cursor=pointer]: Access token
+      - main [ref=e904]:
+        - generic [ref=e906]:
+          - generic [ref=e908]: Server URL
+          - generic [ref=e909]:
+            - textbox [ref=e913]: https://n8n.leaveazy.com/mcp-server/http
+            - button [ref=e916] [cursor=pointer]:
+              - img [ref=e918]

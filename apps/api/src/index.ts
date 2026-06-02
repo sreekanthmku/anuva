@@ -38,6 +38,10 @@ import {
   logPeriodBodySchema,
   endPeriodBodySchema,
   cycleStateResponseSchema,
+  saveDetailedAssessmentBodySchema,
+  submitDetailedAssessmentBodySchema,
+  detailedAssessmentStateResponseSchema,
+  detailedAssessmentQuestionKeys,
   type AuthUser,
 } from '@anuva/shared';
 import { ZodError } from 'zod';
@@ -198,6 +202,9 @@ type UserWithSubscription = {
     trialEndsAt: Date | null;
     renewsAt: Date | null;
   } | null;
+  detailedAssessment?: {
+    status: 'in_progress' | 'completed';
+  } | null;
 };
 
 function getSubscriptionAccessState(subscription: UserWithSubscription['subscription']) {
@@ -244,6 +251,7 @@ function serializeUser(user: {
   phoneVerifiedAt: Date | null;
   createdAt: Date;
   subscription?: UserWithSubscription['subscription'];
+  detailedAssessment?: UserWithSubscription['detailedAssessment'];
 }): AuthUser {
   const access = getSubscriptionAccessState(user.subscription ?? null);
 
@@ -253,6 +261,7 @@ function serializeUser(user: {
     name: user.name,
     email: user.email,
     onboardingCompleted: user.onboardingCompleted,
+    detailedAssessmentStatus: user.detailedAssessment?.status ?? 'not_started',
     subscriptionPlan: user.subscription?.plan ?? null,
     subscriptionStatus: user.subscription?.status ?? null,
     subscriptionStartedAt: user.subscription?.startedAt.toISOString() ?? null,
@@ -277,6 +286,11 @@ async function loadUserWithSubscription(userId: string): Promise<UserWithSubscri
           startedAt: true,
           trialEndsAt: true,
           renewsAt: true,
+        },
+      },
+      detailedAssessment: {
+        select: {
+          status: true,
         },
       },
     },
@@ -1204,6 +1218,102 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
       data: { endDate: new Date(endDate) },
     });
     res.json(serializePeriodLog(updated));
+  } catch (e) {
+    next(e);
+  }
+});
+
+type DetailedAssessmentWithAnswers = {
+  status: 'in_progress' | 'completed';
+  completedAt: Date | null;
+  answers: { questionKey: string; value: string }[];
+};
+
+function serializeDetailedAssessment(assessment: DetailedAssessmentWithAnswers | null) {
+  const answers: Record<string, string> = {};
+  if (assessment) {
+    for (const answer of assessment.answers) {
+      answers[answer.questionKey] = answer.value;
+    }
+  }
+  return detailedAssessmentStateResponseSchema.parse({
+    status: assessment?.status ?? 'not_started',
+    completedAt: assessment?.completedAt?.toISOString() ?? null,
+    answers,
+  });
+}
+
+/** Keep only answers whose key exists in the shared question catalog. */
+function filterValidAnswers(answers: { questionKey: string; value: string }[]) {
+  return answers.filter((answer) => detailedAssessmentQuestionKeys.has(answer.questionKey));
+}
+
+async function upsertDetailedAnswers(userId: string, answers: { questionKey: string; value: string }[]) {
+  const assessment = await prisma.detailedAssessment.upsert({
+    where: { userId },
+    create: { userId },
+    update: {},
+    select: { id: true },
+  });
+
+  const valid = filterValidAnswers(answers);
+  if (valid.length > 0) {
+    await prisma.$transaction(
+      valid.map((answer) =>
+        prisma.detailedAnswer.upsert({
+          where: { assessmentId_questionKey: { assessmentId: assessment.id, questionKey: answer.questionKey } },
+          create: { assessmentId: assessment.id, questionKey: answer.questionKey, value: answer.value },
+          update: { value: answer.value },
+        }),
+      ),
+    );
+  }
+
+  return assessment.id;
+}
+
+app.get('/detailed-assessment', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const assessment = await prisma.detailedAssessment.findUnique({
+      where: { userId: user.id },
+      select: { status: true, completedAt: true, answers: { select: { questionKey: true, value: true } } },
+    });
+    res.json(serializeDetailedAssessment(assessment));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.put('/detailed-assessment', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { answers } = saveDetailedAssessmentBodySchema.parse(req.body);
+    await upsertDetailedAnswers(user.id, answers);
+    const assessment = await prisma.detailedAssessment.findUnique({
+      where: { userId: user.id },
+      select: { status: true, completedAt: true, answers: { select: { questionKey: true, value: true } } },
+    });
+    res.json(serializeDetailedAssessment(assessment));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/detailed-assessment/submit', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { answers } = submitDetailedAssessmentBodySchema.parse(req.body);
+    await upsertDetailedAnswers(user.id, answers);
+    await prisma.detailedAssessment.update({
+      where: { userId: user.id },
+      data: { status: 'completed', completedAt: new Date() },
+    });
+    const assessment = await prisma.detailedAssessment.findUnique({
+      where: { userId: user.id },
+      select: { status: true, completedAt: true, answers: { select: { questionKey: true, value: true } } },
+    });
+    res.json(serializeDetailedAssessment(assessment));
   } catch (e) {
     next(e);
   }

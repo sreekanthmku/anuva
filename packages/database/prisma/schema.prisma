@@ -35,8 +35,9 @@ model User {
   questions         AnonymousQuestion[]
   chatThreads       ChatThread[]
   fcmTokens         FcmToken[]
-  cycleSettings     CycleSettings?
-  periodLogs        PeriodLog[]
+  cycleSettings      CycleSettings?
+  periodLogs         PeriodLog[]
+  detailedAssessment DetailedAssessment?
 }
 
 enum FcmPlatform {
@@ -555,4 +556,35 @@ model PeriodLog {
 
   @@unique([userId, startDate])
   @@index([userId])
+}
+
+// ─────────────────────────────────────────────
+// Detailed assessment (Perimenopause Health Questionnaire)
+// ─────────────────────────────────────────────
+
+enum DetailedAssessmentStatus {
+  in_progress
+  completed
+}
+
+model DetailedAssessment {
+  id          String                   @id @default(cuid())
+  userId      String                   @unique
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      DetailedAssessmentStatus @default(in_progress)
+  startedAt   DateTime                 @default(now())
+  completedAt DateTime?
+  updatedAt   DateTime                 @updatedAt
+  answers     DetailedAnswer[]
+}
+
+model DetailedAnswer {
+  id           String             @id @default(cuid())
+  assessmentId String
+  assessment   DetailedAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionKey  String
+  value        String
+
+  @@unique([assessmentId, questionKey])
+  @@index([assessmentId])
 }

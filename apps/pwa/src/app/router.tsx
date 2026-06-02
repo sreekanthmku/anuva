@@ -5,6 +5,7 @@ import AssessmentResultRoute from '../features/onboarding/AssessmentResultRoute'
 import AnuGreetingRoute from '../features/onboarding/AnuGreetingRoute';
 import SubscriptionRoute from '../features/onboarding/SubscriptionRoute';
 import AnuDashboardRoute from '../features/core/AnuDashboardRoute';
+import DetailedAssessmentRoute from '../features/core/DetailedAssessmentRoute';
 import AnuChatRoute from '../features/core/AnuChatRoute';
 import SymptomTrackRoute from '../features/core/SymptomTrackRoute';
 import WeeklyReportRoute from '../features/core/WeeklyReportRoute';
@@ -33,6 +34,14 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <AnuDashboardRoute />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/detailed-assessment"
+          element={
+            <ProtectedRoute>
+              <DetailedAssessmentRoute />
             </ProtectedRoute>
           }
         />

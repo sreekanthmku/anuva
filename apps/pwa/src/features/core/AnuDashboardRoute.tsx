@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
@@ -45,6 +45,9 @@ function getTimeGreeting(date = new Date()) {
 
 export default function AnuDashboardRoute() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const detailedStatus = user?.detailedAssessmentStatus ?? 'not_started';
+  const detailedCompleted = detailedStatus === 'completed';
   const notificationPrompt = useHomeNotificationPrompt();
   const [greeting, setGreeting] = useState(() => getTimeGreeting());
   const [cycleOpen, setCycleOpen] = useState(false);
@@ -330,48 +333,51 @@ export default function AnuDashboardRoute() {
         </div>
       </section>
 
-      <section className="px-[22px] pt-4">
-        <article
-          className="overflow-hidden rounded-[28px] border px-5 py-5"
-          style={{
-            background: 'linear-gradient(145deg, rgba(36, 25, 47, 0.96), rgba(24, 18, 37, 0.98))',
-            borderColor: 'rgba(206, 189, 255, 0.18)',
-            boxShadow: '0 16px 40px rgba(0,0,0,0.32)',
-          }}
-        >
-          <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]" style={{ color: '#dbc839' }}>
-            <span className="h-px w-3 bg-[#dbc839]/70" />
-            <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Next step required</span>
-          </div>
-
-          <p
-            className="max-w-[24ch] text-[17px] leading-[1.4] text-on-surface"
-            style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}
-          >
-            Let&apos;s go deeper with your assessment
-          </p>
-
-          <p
-            className="mt-3 max-w-[28ch] text-[12px] leading-[1.5]"
-            style={{ color: '#b5acbf', fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
-          >
-            Your detailed assessment helps ANU personalise your care path. Takes about 8 minutes.
-          </p>
-
-          <button
-            type="button"
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface"
+      {!detailedCompleted && (
+        <section className="px-[22px] pt-4">
+          <article
+            className="overflow-hidden rounded-[28px] border px-5 py-5"
             style={{
-              fontFamily: '"Geist", -apple-system, system-ui, sans-serif',
-              fontWeight: 500,
-              letterSpacing: '-0.005em',
+              background: 'linear-gradient(145deg, rgba(36, 25, 47, 0.96), rgba(24, 18, 37, 0.98))',
+              borderColor: 'rgba(206, 189, 255, 0.18)',
+              boxShadow: '0 16px 40px rgba(0,0,0,0.32)',
             }}
           >
-            Start detailed assessment
-            <span aria-hidden="true">→</span>
-          </button>
-        </article>
-      </section>
+            <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]" style={{ color: '#dbc839' }}>
+              <span className="h-px w-3 bg-[#dbc839]/70" />
+              <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Next step required</span>
+            </div>
+
+            <p
+              className="max-w-[24ch] text-[17px] leading-[1.4] text-on-surface"
+              style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}
+            >
+              Let&apos;s go deeper with your assessment
+            </p>
+
+            <p
+              className="mt-3 max-w-[28ch] text-[12px] leading-[1.5]"
+              style={{ color: '#b5acbf', fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            >
+              Your detailed assessment helps ANU personalise your care path. Takes about 8 minutes.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => navigate('/detailed-assessment')}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface"
+              style={{
+                fontFamily: '"Geist", -apple-system, system-ui, sans-serif',
+                fontWeight: 500,
+                letterSpacing: '-0.005em',
+              }}
+            >
+              {detailedStatus === 'in_progress' ? 'Resume detailed assessment' : 'Start detailed assessment'}
+              <span aria-hidden="true">→</span>
+            </button>
+          </article>
+        </section>
+      )}
 
       <section className="px-[22px] pb-[22px] pt-4">
         <article className="rounded-[24px] border px-[18px] py-4" style={{ background: 'rgba(219, 200, 57, 0.16)', borderColor: 'rgba(219, 200, 57, 0.3)' }}>
