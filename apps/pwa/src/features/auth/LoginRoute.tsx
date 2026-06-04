@@ -117,7 +117,7 @@ export default function LoginRoute() {
   const inOtpStep = challengeId !== null;
 
   return (
-    <main className="relative min-h-mobile overflow-hidden bg-surface pt-[80px] text-on-surface">
+    <main className="relative min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pt-[80px] text-on-surface">
       <section className="relative z-10 flex flex-col items-center px-6 pt-0">
         <div className="flex flex-col items-center">
           <div className="relative">

@@ -1,26 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CycleStateResponse } from '@anuva/shared';
-
-type Phase = NonNullable<CycleStateResponse['phase']>;
+import { CycleTrackerSummary } from './CycleTrackerSummary';
+import { CYCLE_LENGTH_DEFAULT, isCycleTrackerReady } from './cycleTrackerDisplay';
 
 const CYCLE_MIN = 21;
 const CYCLE_MAX = 45;
-const CYCLE_DEFAULT = 28;
+const CYCLE_DEFAULT = CYCLE_LENGTH_DEFAULT;
 const PERIOD_MIN = 1;
 const PERIOD_MAX = 10;
 const PERIOD_DEFAULT = 5;
-
-const PHASE_CONFIG: Record<Phase, { label: string; color: string; bg: string; border: string }> = {
-  period: { label: 'Period', color: '#F87171', bg: 'rgba(248,113,113,0.15)', border: 'rgba(248,113,113,0.3)' },
-  follicular: { label: 'Follicular', color: '#cebdff', bg: 'rgba(206,189,255,0.15)', border: 'rgba(206,189,255,0.3)' },
-  ovulatory: { label: 'Ovulatory', color: '#e2c62d', bg: 'rgba(226,198,45,0.15)', border: 'rgba(226,198,45,0.3)' },
-  luteal: { label: 'Luteal', color: '#7dd3fc', bg: 'rgba(125,211,252,0.15)', border: 'rgba(125,211,252,0.3)' },
-};
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-}
 
 function todayISO(): string {
   return new Date().toISOString().split('T')[0]!;
@@ -127,17 +115,25 @@ export function CycleTrackerSheet({
   onEndPeriod,
   onUpdateSettings,
 }: Props) {
-  const [view, setView] = useState<View>(() => (cycleData?.settings ? 'main' : 'setup-date'));
+  const [view, setView] = useState<View>(() => (isCycleTrackerReady(cycleData) ? 'main' : 'setup-date'));
   const [selectedDate, setSelectedDate] = useState(todayISO());
-  const [selectedCycleLength, setSelectedCycleLength] = useState(CYCLE_DEFAULT);
-  const [selectedPeriodLength, setSelectedPeriodLength] = useState(PERIOD_DEFAULT);
+  const [selectedCycleLength, setSelectedCycleLength] = useState(
+    () => cycleData?.settings?.cycleLength ?? CYCLE_DEFAULT,
+  );
+  const [selectedPeriodLength, setSelectedPeriodLength] = useState(
+    () => cycleData?.settings?.periodLength ?? PERIOD_DEFAULT,
+  );
   const [saving, setSaving] = useState(false);
   const dateListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    setView(cycleData?.settings ? 'main' : 'setup-date');
-  }, [open, cycleData?.settings]);
+    setView(isCycleTrackerReady(cycleData) ? 'main' : 'setup-date');
+    if (cycleData?.settings) {
+      setSelectedCycleLength(cycleData.settings.cycleLength);
+      setSelectedPeriodLength(cycleData.settings.periodLength);
+    }
+  }, [open, cycleData?.currentCycleDay, cycleData?.settings]);
 
   useEffect(() => {
     if (!open) return;
@@ -188,15 +184,7 @@ export function CycleTrackerSheet({
     }
   };
 
-  const phase = cycleData?.phase ?? null;
-  const phaseConfig = phase ? PHASE_CONFIG[phase] : null;
   const cycleLength = cycleData?.settings?.cycleLength ?? CYCLE_DEFAULT;
-  const circumference = 2 * Math.PI * 42;
-  const cycleDash =
-    cycleData?.currentCycleDay != null
-      ? Math.min(cycleData.currentCycleDay / cycleLength, 1) * circumference
-      : 0;
-
   const ongoingPeriod = cycleData?.recentPeriods.find((p) => !p.endDate);
   const pastDaysList = pastDates(60);
 
@@ -380,54 +368,8 @@ export function CycleTrackerSheet({
                   Cycle tracker
                 </div>
 
-                <div className="mb-5 flex items-center gap-5">
-                  <div className="relative h-24 w-24 shrink-0">
-                    <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
-                      <circle cx="48" cy="48" r="42" fill="none" stroke="#2b2930" strokeWidth="7" />
-                      <circle
-                        cx="48" cy="48" r="42" fill="none"
-                        stroke={phaseConfig?.color ?? '#cebdff'}
-                        strokeWidth="7"
-                        strokeDasharray={`${cycleDash} ${circumference}`}
-                        strokeLinecap="round"
-                        transform="rotate(-90 48 48)"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-[22px] leading-none text-on-surface" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-                        {cycleData?.currentCycleDay ?? '—'}
-                      </span>
-                      <span className="mt-1 text-[8px] uppercase tracking-[0.15em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-                        of {cycleLength}d
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex-1">
-                    {phaseConfig && (
-                      <span
-                        className="mb-2 inline-flex items-center rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.1em]"
-                        style={{ background: phaseConfig.bg, borderColor: phaseConfig.border, color: phaseConfig.color, fontFamily: '"Geist Mono", ui-monospace, monospace' }}
-                      >
-                        ● {phaseConfig.label} phase
-                      </span>
-                    )}
-                    {cycleData?.nextPeriodDate && (
-                      <p className="mt-2 text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                        Next period <span className="text-on-surface">{formatDate(cycleData.nextPeriodDate)}</span>
-                      </p>
-                    )}
-                    {cycleData?.fertileWindowStart && cycleData.fertileWindowEnd && (
-                      <p className="mt-1 text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                        Fertile window <span className="text-on-surface">{formatDate(cycleData.fertileWindowStart)}–{formatDate(cycleData.fertileWindowEnd)}</span>
-                      </p>
-                    )}
-                    {cycleData?.avgPeriodLength && (
-                      <p className="mt-1 text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-                        Avg period <span className="text-on-surface">{cycleData.avgPeriodLength} days</span>
-                      </p>
-                    )}
-                  </div>
+                <div className="mb-5">
+                  <CycleTrackerSummary cycleData={cycleData} loading={loading} ringSize="sheet" />
                 </div>
 
                 <div className="flex flex-col gap-2.5">

@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
@@ -14,9 +14,32 @@ const categories: { key: CategoryKey; label: string; items: [string, string][] }
   { key: 'life', label: 'Lifestyle', items: [['walked', '30min walk'], ['caffeine', 'Caffeine'], ['alcohol', 'Alcohol']] },
 ];
 
-const days = ['T', 'W', 'T', 'F', 'S', 'S', 'M'];
-const loggedDayIndices = [0, 1, 2, 3, 4, 5];
-const todayIndex = 6;
+const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+
+type WeekDayCell = {
+  label: (typeof WEEKDAY_LABELS)[number];
+  dateNum: number;
+  isToday: boolean;
+};
+
+function getCurrentWeekDays(reference = new Date()): WeekDayCell[] {
+  const today = new Date(reference);
+  today.setHours(0, 0, 0, 0);
+  const dayOfWeek = today.getDay();
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysFromMonday);
+
+  return WEEKDAY_LABELS.map((label, i) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    return {
+      label,
+      dateNum: date.getDate(),
+      isToday: date.getTime() === today.getTime(),
+    };
+  });
+}
 
 const initialSelections: Selections = {
   vaso: ['hot-flash'],
@@ -40,6 +63,9 @@ export default function SymptomTrackRoute() {
   const [selections, setSelections] = useState<Selections>(initialSelections);
   const [intensity, setIntensity] = useState(4);
   const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
+  const weekDays = useMemo(() => getCurrentWeekDays(), []);
+  const todayIndex = weekDays.findIndex((d) => d.isToday);
+  const loggedDayIndices = weekDays.map((_, i) => i).filter((i) => i < todayIndex);
 
   const toggle = (cat: CategoryKey, id: string) => {
     setSelections((prev) => {
@@ -64,14 +90,23 @@ export default function SymptomTrackRoute() {
             {`, ${firstName}?`}
           </h1>
 
-          <div className="flex justify-between gap-1.5">
-            {days.map((d, i) => {
+          <div className="flex justify-between gap-1">
+            {weekDays.map((day, i) => {
               const isLogged = loggedDayIndices.includes(i);
-              const isToday = i === todayIndex;
+              const isToday = day.isToday;
               return (
-                <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-                  <span className="text-[9.5px] tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-                    {d}
+                <div key={day.label} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                  <span
+                    className={`text-[9px] uppercase tracking-[0.08em] ${isToday ? 'text-primary' : 'text-outline'}`}
+                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                  >
+                    {day.label}
+                  </span>
+                  <span
+                    className={`text-[11px] leading-none ${isToday ? 'font-medium text-on-surface' : 'text-on-surface-variant'}`}
+                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                  >
+                    {day.dateNum}
                   </span>
                   <div
                     className="flex items-center justify-center font-semibold"
@@ -82,7 +117,7 @@ export default function SymptomTrackRoute() {
                       background: isToday ? '#e2c62d' : isLogged ? '#cebdff' : '#2b2930',
                       color: isToday ? '#322f37' : '#e6e0ea',
                       fontFamily: '"Geist", -apple-system, system-ui, sans-serif',
-                      fontSize: 11,
+                      fontSize: isToday ? 10 : 11,
                     }}
                   >
                     {isToday ? 'Today' : null}

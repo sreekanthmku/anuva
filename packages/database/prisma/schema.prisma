@@ -37,6 +37,9 @@ model User {
   fcmTokens         FcmToken[]
   cycleSettings      CycleSettings?
   periodLogs         PeriodLog[]
+  moodLogs           MoodLog[]
+  sleepLogs          SleepLog[]
+  quickSymptomLogs   QuickSymptomLog[]
   detailedAssessment DetailedAssessment?
 }
 
@@ -556,6 +559,41 @@ model PeriodLog {
 
   @@unique([userId, startDate])
   @@index([userId])
+}
+
+model MoodLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feeling   Int // 1..5
+  emotions  String[] // emotion enum values
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([userId, loggedAt])
+}
+
+model SleepLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quality     Int // 1..5
+  hours       String? // hours bucket enum value
+  disruptions String[] // disruption enum values
+  loggedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([userId, loggedAt])
+}
+
+model QuickSymptomLog {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symptom  String // quick symptom enum value
+  loggedAt DateTime @default(now())
+
+  @@index([userId, loggedAt])
 }
 
 // ─────────────────────────────────────────────

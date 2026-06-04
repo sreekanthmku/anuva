@@ -16,7 +16,7 @@ export function NotificationPermissionDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-6 pt-4 sm:items-center">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center px-4 pb-[calc(var(--bottom-nav-height)+16px)] pt-4 sm:items-center sm:pb-4">
       <button
         type="button"
         className="absolute inset-0 bg-black/55"

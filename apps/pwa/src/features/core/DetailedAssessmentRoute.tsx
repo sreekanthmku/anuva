@@ -102,9 +102,7 @@ export default function DetailedAssessmentRoute() {
 
   return (
     <main className="relative h-[100dvh] min-h-mobile overflow-y-auto overflow-x-hidden bg-surface text-on-surface [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <section
-        className="relative z-10 flex min-h-[100dvh] flex-col px-[22px] pb-[180px] pt-[52px]"
-      >
+      <section className="relative z-10 flex min-h-[100dvh] flex-col px-[22px] pb-[calc(var(--bottom-nav-height)+96px)] pt-[52px]">
         <div className="mb-5 flex items-center justify-between">
           <button
             type="button"
@@ -150,7 +148,7 @@ export default function DetailedAssessmentRoute() {
         )}
       </section>
 
-      <div className="fixed inset-x-0 bottom-[68px] z-20 border-t border-border-default bg-surface px-[22px] py-3">
+      <div className="fixed inset-x-0 bottom-[var(--bottom-nav-height)] z-40 border-t border-border-default bg-surface px-[22px] py-3">
         <button
           type="button"
           onClick={handleNext}

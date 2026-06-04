@@ -54,7 +54,7 @@ export default function AssessmentPairedRoute() {
 
   return (
     <main
-      className={`relative min-h-mobile overflow-hidden bg-surface text-on-surface ${showMascot ? 'pt-[100px]' : 'pt-6'}`}
+      className={`relative min-h-mobile overflow-x-hidden overflow-y-auto bg-surface text-on-surface ${showMascot ? 'pt-[100px]' : 'pt-6'}`}
     >
       {showMascot && (
         <section className="relative z-10 flex flex-col items-center px-6 pt-0">

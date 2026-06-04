@@ -1,12 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import type { MoodEmotion, QuickSymptom, SleepDisruption, SleepHoursBucket } from '@anuva/shared';
+import { Angry, Brain, Check, Coffee, Fan, Flame, HeartHandshake, Moon, Smile, Snowflake, Wind } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
 import { NotificationSyncBanner } from './components/NotificationSyncBanner';
 import { CycleTrackerSheet } from './components/CycleTrackerSheet';
+import { CycleTrackerSummary } from './components/CycleTrackerSummary';
+import { MoodLogSheet } from './components/MoodLogSheet';
+import { SleepLogSheet } from './components/SleepLogSheet';
+import { QuickLogMessageDialog } from './components/QuickLogMessageDialog';
 import { useHomeNotificationPrompt } from './hooks/useHomeNotificationPrompt';
 import { useCycleTracker } from './hooks/useCycleTracker';
+import { useMoodLog } from './hooks/useMoodLog';
+import { useSleepLog } from './hooks/useSleepLog';
+import { useQuickLog } from './hooks/useQuickLog';
 import {
   getCalibrationProgress,
   getJourneyDay,
@@ -14,16 +24,53 @@ import {
   isWellnessCalibrating,
 } from './wellnessCalibration';
 
-const PHASE_COLORS: Record<string, string> = {
-  period: '#F87171',
-  follicular: '#cebdff',
-  ovulatory: '#e2c62d',
-  luteal: '#7dd3fc',
-};
-
 const score = 72;
 const circumference = 2 * Math.PI * 42;
 const scoreDash = (score / 100) * circumference;
+
+type QuickLogAction = 'mood' | 'sleep';
+
+const QUICK_LOG_ITEMS: {
+  label: string;
+  sub: string;
+  color: string;
+  icon: LucideIcon;
+  action?: QuickLogAction;
+  symptom?: QuickSymptom;
+}[] = [
+  { label: 'Hot flash', sub: 'Log now', color: '#F87171', icon: Flame, symptom: 'hot_flash' },
+  { label: 'Sleep', sub: 'Rate last night', color: '#cebdff', icon: Moon, action: 'sleep' },
+  { label: 'Mood', sub: 'How are you?', color: '#dbc839', icon: Smile, action: 'mood' },
+  { label: 'Anxiety', sub: 'Log now', color: '#c084fc', icon: Brain, symptom: 'anxiety' },
+  { label: 'Chills', sub: 'Log now', color: '#7dd3fc', icon: Snowflake, symptom: 'chills' },
+  { label: 'Irritability', sub: 'Log now', color: '#fb923c', icon: Angry, symptom: 'irritability' },
+];
+
+const MOOD_FEELING_LABELS: Record<number, string> = {
+  5: 'Feeling great',
+  4: 'Feeling good',
+  3: 'Feeling okay',
+  2: 'Feeling low',
+  1: 'Feeling awful',
+};
+
+const QUICK_SYMPTOM_RESPONSE: Record<
+  QuickSymptom,
+  { icon: LucideIcon; color: string; caption: string }
+> = {
+  hot_flash: { icon: Fan, color: '#7dd3fc', caption: 'Cool down — this passes' },
+  anxiety: { icon: HeartHandshake, color: '#cebdff', caption: "You're held — breathe" },
+  chills: { icon: Coffee, color: '#fbbf24', caption: "Warm up — you're okay" },
+  irritability: { icon: Wind, color: '#6ee7b7', caption: 'Exhale — let the tension out' },
+};
+
+const SLEEP_QUALITY_LABELS: Record<number, string> = {
+  5: 'Slept great',
+  4: 'Slept good',
+  3: 'Slept okay',
+  2: 'Slept poorly',
+  1: 'Slept awful',
+};
 
 function getTimeGreeting(date = new Date()) {
   const hour = date.getHours();
@@ -51,7 +98,93 @@ export default function AnuDashboardRoute() {
   const notificationPrompt = useHomeNotificationPrompt();
   const [greeting, setGreeting] = useState(() => getTimeGreeting());
   const [cycleOpen, setCycleOpen] = useState(false);
+  const [moodOpen, setMoodOpen] = useState(false);
+  const [moodSaving, setMoodSaving] = useState(false);
+  const [sleepOpen, setSleepOpen] = useState(false);
+  const [sleepSaving, setSleepSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+
+  const showToast = (message: string) => {
+    setToast(message);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2800);
+  };
+
+  useEffect(() => () => {
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+  }, []);
+  const [quickMessage, setQuickMessage] = useState<{
+    title: string;
+    message: string;
+    icon: LucideIcon;
+    color: string;
+    caption: string;
+    count: number;
+  } | null>(null);
   const cycle = useCycleTracker();
+  const mood = useMoodLog();
+  const sleep = useSleepLog();
+  const quick = useQuickLog();
+  const todayMood = mood.data?.today ?? null;
+  const todaySleep = sleep.data?.today ?? null;
+  const quickCounts = quick.data?.counts ?? null;
+
+  const handleLogMood = async (feeling: number, emotions: MoodEmotion[]) => {
+    setMoodSaving(true);
+    try {
+      await mood.logMood(feeling, emotions);
+    } finally {
+      setMoodSaving(false);
+    }
+  };
+
+  const handleLogSleep = async (
+    quality: number,
+    hours: SleepHoursBucket | null,
+    disruptions: SleepDisruption[],
+  ) => {
+    setSleepSaving(true);
+    try {
+      await sleep.logSleep(quality, hours, disruptions);
+    } finally {
+      setSleepSaving(false);
+    }
+  };
+
+  const handleQuickLog = (action?: QuickLogAction) => {
+    if (action === 'mood') {
+      if (todayMood) {
+        showToast('Mood already logged today — come back tomorrow.');
+        return;
+      }
+      setMoodOpen(true);
+    }
+    if (action === 'sleep') {
+      if (todaySleep) {
+        showToast('Sleep already logged today — come back tomorrow.');
+        return;
+      }
+      setSleepOpen(true);
+    }
+  };
+
+  const handleLogSymptom = async (symptom: QuickSymptom, label: string) => {
+    try {
+      const result = await quick.logSymptom(symptom);
+      const response = QUICK_SYMPTOM_RESPONSE[symptom];
+      setQuickMessage({
+        title: label,
+        message: result.message,
+        icon: response.icon,
+        color: response.color,
+        caption: response.caption,
+        count: result.todayCount,
+      });
+    } catch {
+      showToast('Could not log right now. Try again.');
+    }
+  };
   const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
   const profileInitial = firstName.charAt(0).toUpperCase() || 'U';
   const trialStartedAt = getTrialStartDate(user);
@@ -278,59 +411,91 @@ export default function AnuDashboardRoute() {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
-          {/* Hot flash */}
-          <article className="rounded-[20px] border border-border-default bg-surface-container-low p-[14px]">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="h-[30px] w-[30px] rounded-full" style={{ background: '#F87171' }} />
-              <span className="text-[9.5px] uppercase tracking-[0.08em] text-error" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-                2 TODAY
-              </span>
-            </div>
-            <p className="text-[13px] font-medium text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Hot flash</p>
-            <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Log now</p>
-          </article>
-
-          {/* Sleep */}
-          <article className="rounded-[20px] border border-border-default bg-surface-container-low p-[14px]">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="h-[30px] w-[30px] rounded-full" style={{ background: '#cebdff' }} />
-            </div>
-            <p className="text-[13px] font-medium text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Sleep</p>
-            <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Rate last night</p>
-          </article>
-
-          {/* Mood */}
-          <article className="rounded-[20px] border border-border-default bg-surface-container-low p-[14px]">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="h-[30px] w-[30px] rounded-full" style={{ background: '#dbc839' }} />
-            </div>
-            <p className="text-[13px] font-medium text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Mood</p>
-            <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>How are you?</p>
-          </article>
-
-          {/* Cycle — live data */}
-          <button
-            type="button"
-            onClick={() => setCycleOpen(true)}
-            className="rounded-[20px] border border-border-default bg-surface-container-low p-[14px] text-left transition-opacity active:opacity-80"
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <span
-                className="h-[30px] w-[30px] rounded-full"
-                style={{ background: cycle.data?.phase ? PHASE_COLORS[cycle.data.phase] : '#e2c62d' }}
-              />
-            </div>
-            <p className="text-[13px] font-medium text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>Cycle</p>
-            <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-              {cycle.loading
-                ? '…'
-                : cycle.data?.currentCycleDay != null
-                  ? `Day ${cycle.data.currentCycleDay}`
-                  : 'Set up'}
-            </p>
-          </button>
+        <div className="grid grid-cols-3 gap-2">
+          {QUICK_LOG_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const interactive = Boolean(item.action || item.symptom);
+            const symptomCount = item.symptom ? (quickCounts?.[item.symptom] ?? 0) : 0;
+            let sub = item.sub;
+            let logged = false;
+            if (item.action === 'mood' && todayMood) {
+              sub = MOOD_FEELING_LABELS[todayMood.feeling] ?? item.sub;
+              logged = true;
+            } else if (item.action === 'sleep' && todaySleep) {
+              sub = SLEEP_QUALITY_LABELS[todaySleep.quality] ?? item.sub;
+              logged = true;
+            }
+            return (
+            <button
+              key={item.label}
+              type="button"
+              disabled={!interactive}
+              onClick={() =>
+                item.symptom
+                  ? handleLogSymptom(item.symptom, item.label)
+                  : handleQuickLog(item.action)
+              }
+              className={`rounded-[16px] border p-[10px] text-left outline-none transition-opacity focus:outline-none focus-visible:outline-none enabled:active:opacity-80 disabled:cursor-default ${
+                logged ? 'border-primary/40 bg-primary/[0.07]' : 'border-border-default bg-surface-container-low'
+              }`}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <div className="mb-2 flex min-h-[26px] items-start justify-between gap-1">
+                <span
+                  className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full"
+                  style={{ background: item.color }}
+                  aria-hidden="true"
+                >
+                  <Icon size={14} strokeWidth={2.25} className="text-surface" />
+                </span>
+                {logged ? (
+                  <span
+                    className="inline-flex items-center gap-0.5 text-[8px] uppercase leading-tight tracking-[0.06em] text-primary"
+                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                  >
+                    <Check size={9} strokeWidth={3} /> Logged
+                  </span>
+                ) : (
+                  symptomCount > 0 && (
+                    <span
+                      className="max-w-[52px] text-right text-[8px] uppercase leading-tight tracking-[0.06em] text-error"
+                      style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                    >
+                      {symptomCount} TODAY
+                    </span>
+                  )
+                )}
+              </div>
+              <p
+                className="text-[12px] font-medium leading-tight text-on-surface"
+                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+              >
+                {item.label}
+              </p>
+              <p
+                className="mt-0.5 text-[10px] leading-snug text-outline"
+                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+              >
+                {sub}
+              </p>
+            </button>
+            );
+          })}
         </div>
+      </section>
+
+      <section className="px-[22px] pt-4">
+        <button
+          type="button"
+          onClick={() => setCycleOpen(true)}
+          className="w-full rounded-[24px] border border-border-default bg-surface-container-low px-[16px] py-[16px] text-left transition-opacity active:opacity-80"
+        >
+          <div className="mb-3 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary">
+            <span className="h-px w-3 bg-primary/60" />
+            <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Cycle tracker</span>
+          </div>
+          <CycleTrackerSummary cycleData={cycle.data} loading={cycle.loading} />
+        </button>
       </section>
 
       {!detailedCompleted && (
@@ -409,6 +574,48 @@ export default function AnuDashboardRoute() {
         onEndPeriod={cycle.endPeriod}
         onUpdateSettings={cycle.updateSettings}
       />
+
+      <MoodLogSheet
+        open={moodOpen}
+        initialFeeling={todayMood?.feeling ?? null}
+        initialEmotions={todayMood?.emotions ?? []}
+        saving={moodSaving}
+        onClose={() => setMoodOpen(false)}
+        onSave={handleLogMood}
+      />
+
+      <SleepLogSheet
+        open={sleepOpen}
+        initialQuality={todaySleep?.quality ?? null}
+        initialHours={todaySleep?.hours ?? null}
+        initialDisruptions={todaySleep?.disruptions ?? []}
+        saving={sleepSaving}
+        onClose={() => setSleepOpen(false)}
+        onSave={handleLogSleep}
+      />
+
+      <QuickLogMessageDialog
+        open={quickMessage !== null}
+        title={quickMessage?.title ?? ''}
+        message={quickMessage?.message ?? ''}
+        icon={quickMessage?.icon ?? null}
+        iconColor={quickMessage?.color ?? '#cebdff'}
+        caption={quickMessage?.caption ?? ''}
+        count={quickMessage?.count ?? 0}
+        onClose={() => setQuickMessage(null)}
+      />
+
+      {toast && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+16px)] z-[80] flex justify-center px-4">
+          <div
+            className="max-w-[340px] rounded-full border border-border-default bg-surface-raised px-4 py-2.5 text-[12px] text-on-surface shadow-xl"
+            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            role="status"
+          >
+            {toast}
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </main>

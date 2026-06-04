@@ -38,6 +38,16 @@ import {
   logPeriodBodySchema,
   endPeriodBodySchema,
   cycleStateResponseSchema,
+  logMoodBodySchema,
+  moodLogSchema,
+  moodStateResponseSchema,
+  logSleepBodySchema,
+  sleepLogSchema,
+  sleepStateResponseSchema,
+  logQuickSymptomBodySchema,
+  quickLogStateResponseSchema,
+  logQuickSymptomResponseSchema,
+  type QuickSymptom,
   saveDetailedAssessmentBodySchema,
   submitDetailedAssessmentBodySchema,
   detailedAssessmentStateResponseSchema,
@@ -48,6 +58,7 @@ import { ZodError } from 'zod';
 import { BOOKABLE_DOCTOR_KEYS, ensureBookingCatalog } from './bookingCatalog.js';
 import { sendPushToAllTokens } from './fcm.js';
 import { computeAvgPeriodLength, computeCycleState } from './cycleCalc.js';
+import { randomQuickLogMessage } from './quickLogMessages.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -1218,6 +1229,196 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
       data: { endDate: new Date(endDate) },
     });
     res.json(serializePeriodLog(updated));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
+// Mood tracking
+// ─────────────────────────────────────────────
+
+function serializeMoodLog(m: { id: string; feeling: number; emotions: string[]; loggedAt: Date }) {
+  return moodLogSchema.parse({
+    id: m.id,
+    feeling: m.feeling,
+    emotions: m.emotions,
+    loggedAt: m.loggedAt.toISOString(),
+  });
+}
+
+app.get('/mood', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const [today, recent] = await Promise.all([
+      prisma.moodLog.findFirst({
+        where: { userId: user.id, loggedAt: { gte: startOfDay } },
+        orderBy: { loggedAt: 'desc' },
+      }),
+      prisma.moodLog.findMany({
+        where: { userId: user.id },
+        orderBy: { loggedAt: 'desc' },
+        take: 14,
+      }),
+    ]);
+
+    res.json(
+      moodStateResponseSchema.parse({
+        today: today ? serializeMoodLog(today) : null,
+        recent: recent.map(serializeMoodLog),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/mood', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { feeling, emotions, loggedAt } = logMoodBodySchema.parse(req.body);
+    const created = await prisma.moodLog.create({
+      data: {
+        userId: user.id,
+        feeling,
+        emotions,
+        ...(loggedAt ? { loggedAt: new Date(loggedAt) } : {}),
+      },
+    });
+    res.status(201).json(serializeMoodLog(created));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
+// Sleep tracking
+// ─────────────────────────────────────────────
+
+function serializeSleepLog(s: {
+  id: string;
+  quality: number;
+  hours: string | null;
+  disruptions: string[];
+  loggedAt: Date;
+}) {
+  return sleepLogSchema.parse({
+    id: s.id,
+    quality: s.quality,
+    hours: s.hours,
+    disruptions: s.disruptions,
+    loggedAt: s.loggedAt.toISOString(),
+  });
+}
+
+app.get('/sleep', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const [today, recent] = await Promise.all([
+      prisma.sleepLog.findFirst({
+        where: { userId: user.id, loggedAt: { gte: startOfDay } },
+        orderBy: { loggedAt: 'desc' },
+      }),
+      prisma.sleepLog.findMany({
+        where: { userId: user.id },
+        orderBy: { loggedAt: 'desc' },
+        take: 14,
+      }),
+    ]);
+
+    res.json(
+      sleepStateResponseSchema.parse({
+        today: today ? serializeSleepLog(today) : null,
+        recent: recent.map(serializeSleepLog),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/sleep', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { quality, hours, disruptions, loggedAt } = logSleepBodySchema.parse(req.body);
+    const created = await prisma.sleepLog.create({
+      data: {
+        userId: user.id,
+        quality,
+        hours,
+        disruptions,
+        ...(loggedAt ? { loggedAt: new Date(loggedAt) } : {}),
+      },
+    });
+    res.status(201).json(serializeSleepLog(created));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
+// Quick symptom logging (multiple per day)
+// ─────────────────────────────────────────────
+
+const QUICK_SYMPTOMS: QuickSymptom[] = ['hot_flash', 'anxiety', 'chills', 'irritability'];
+
+async function getTodayQuickLogCounts(userId: string) {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const grouped = await prisma.quickSymptomLog.groupBy({
+    by: ['symptom'],
+    where: { userId, loggedAt: { gte: startOfDay } },
+    _count: { symptom: true },
+  });
+
+  const counts = { hot_flash: 0, anxiety: 0, chills: 0, irritability: 0 } as Record<
+    QuickSymptom,
+    number
+  >;
+  for (const row of grouped) {
+    if ((QUICK_SYMPTOMS as string[]).includes(row.symptom)) {
+      counts[row.symptom as QuickSymptom] = row._count.symptom;
+    }
+  }
+  return counts;
+}
+
+app.get('/quick-log', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const counts = await getTodayQuickLogCounts(user.id);
+    res.json(quickLogStateResponseSchema.parse({ counts }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/quick-log', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { symptom, loggedAt } = logQuickSymptomBodySchema.parse(req.body);
+    await prisma.quickSymptomLog.create({
+      data: {
+        userId: user.id,
+        symptom,
+        ...(loggedAt ? { loggedAt: new Date(loggedAt) } : {}),
+      },
+    });
+    const counts = await getTodayQuickLogCounts(user.id);
+    res.status(201).json(
+      logQuickSymptomResponseSchema.parse({
+        symptom,
+        todayCount: counts[symptom],
+        message: randomQuickLogMessage(symptom),
+      }),
+    );
   } catch (e) {
     next(e);
   }

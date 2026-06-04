@@ -21,7 +21,7 @@ export default function SplashRoute() {
   }, [navigate, status, user]);
 
   return (
-    <main className="relative flex min-h-mobile flex-col items-center justify-center overflow-hidden bg-surface px-6 text-on-surface">
+    <main className="relative flex min-h-mobile flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-surface px-6 text-on-surface">
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 h-[min(100vw,28rem)] w-[min(100vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(206, 189, 255, 0.22) 0%, transparent 55%)' }}

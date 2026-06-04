@@ -69,7 +69,7 @@ export default function AnuGreetingRoute() {
   }, [navigate, user]);
 
   return (
-    <main className="relative min-h-mobile overflow-hidden bg-surface text-on-surface">
+    <main className="relative min-h-mobile overflow-x-hidden overflow-y-auto bg-surface text-on-surface">
       <div
         className="pointer-events-none absolute left-1/2 top-[100px] h-[380px] w-[380px] -translate-x-1/2 rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(206, 189, 255, 0.2) 0%, transparent 55%)' }}
