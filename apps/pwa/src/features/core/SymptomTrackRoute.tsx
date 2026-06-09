@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import type { LucideIcon } from 'lucide-react';
-import { Annoyed, Frown, Laugh, Meh, Smile } from 'lucide-react';
+import { twemojiUrl } from '../../shared/lib/twemoji';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 import { TRACK_DOMAINS } from './data/trackSymptoms';
@@ -32,12 +31,12 @@ function getCurrentWeekDays(reference = new Date()): WeekDayCell[] {
   });
 }
 
-const FEELINGS: { value: number; label: string; icon: LucideIcon; color: string }[] = [
-  { value: 5, label: 'Great', icon: Laugh, color: '#6ee7b7' },
-  { value: 4, label: 'Good', icon: Smile, color: '#a7f3d0' },
-  { value: 3, label: 'Okay', icon: Meh, color: '#dbc839' },
-  { value: 2, label: 'Low', icon: Frown, color: '#fb923c' },
-  { value: 1, label: 'Awful', icon: Annoyed, color: '#F87171' },
+const FEELINGS: { value: number; label: string; emoji: string }[] = [
+  { value: 5, label: 'Great', emoji: '😄' },
+  { value: 4, label: 'Good', emoji: '😊' },
+  { value: 3, label: 'Okay', emoji: '😐' },
+  { value: 2, label: 'Low', emoji: '😔' },
+  { value: 1, label: 'Awful', emoji: '😩' },
 ];
 
 const MOOD_EMOTIONS: [string, string][] = [
@@ -120,7 +119,6 @@ function FaceScale({
   return (
     <div className="grid grid-cols-5 gap-2">
       {FEELINGS.map((f) => {
-        const Icon = f.icon;
         const selected = value === f.value;
         return (
           <button
@@ -131,7 +129,7 @@ function FaceScale({
             className="flex flex-col items-center gap-1.5 rounded-[16px] bg-transparent px-1 py-2 outline-none transition-transform focus:outline-none focus-visible:outline-none"
             style={{ transform: selected ? 'scale(1.18)' : 'scale(1)', WebkitTapHighlightColor: 'transparent' }}
           >
-            <Icon size={30} strokeWidth={1.5} fill={f.color} style={{ color: '#322f37' }} />
+            <img src={twemojiUrl(f.emoji)} alt={f.label} width={30} height={30} />
             <span
               className={`text-[9px] uppercase tracking-[0.04em] ${selected ? 'text-on-surface' : 'text-outline'}`}
               style={{ fontFamily: FONT_MONO }}

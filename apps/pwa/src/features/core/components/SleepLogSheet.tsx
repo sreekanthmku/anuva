@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { LucideIcon } from 'lucide-react';
-import { Annoyed, Frown, Laugh, Meh, Smile } from 'lucide-react';
 import type { SleepDisruption, SleepHoursBucket } from '@anuva/shared';
+import { twemojiUrl } from '../../../shared/lib/twemoji';
 
 type SleepLogSheetProps = {
   open: boolean;
@@ -17,12 +16,12 @@ type SleepLogSheetProps = {
   ) => void | Promise<void>;
 };
 
-const QUALITIES: { value: number; label: string; icon: LucideIcon; color: string }[] = [
-  { value: 5, label: 'Great', icon: Laugh, color: '#6ee7b7' },
-  { value: 4, label: 'Good', icon: Smile, color: '#a7f3d0' },
-  { value: 3, label: 'Okay', icon: Meh, color: '#dbc839' },
-  { value: 2, label: 'Poor', icon: Frown, color: '#fb923c' },
-  { value: 1, label: 'Awful', icon: Annoyed, color: '#F87171' },
+const QUALITIES: { value: number; label: string; emoji: string }[] = [
+  { value: 5, label: 'Great', emoji: '😄' },
+  { value: 4, label: 'Good', emoji: '😊' },
+  { value: 3, label: 'Okay', emoji: '😐' },
+  { value: 2, label: 'Poor', emoji: '😔' },
+  { value: 1, label: 'Awful', emoji: '😩' },
 ];
 
 const HOURS: { value: SleepHoursBucket; label: string }[] = [
@@ -122,7 +121,6 @@ export function SleepLogSheet({
 
         <div className="mb-6 grid grid-cols-5 gap-2">
           {QUALITIES.map((q) => {
-            const Icon = q.icon;
             const selected = quality === q.value;
             return (
               <button
@@ -133,7 +131,7 @@ export function SleepLogSheet({
                 className="flex flex-col items-center gap-1.5 rounded-[16px] bg-transparent px-1 py-2 outline-none transition-transform focus:outline-none focus-visible:outline-none"
                 style={{ transform: selected ? 'scale(1.28)' : 'scale(1)', WebkitTapHighlightColor: 'transparent' }}
               >
-                <Icon size={34} strokeWidth={1.5} fill={q.color} style={{ color: '#322f37' }} />
+                <img src={twemojiUrl(q.emoji)} alt={q.label} width={34} height={34} />
                 <span
                   className={`text-[9px] uppercase tracking-[0.04em] ${selected ? 'text-on-surface' : 'text-outline'}`}
                   style={{ fontFamily: FONT_MONO }}
