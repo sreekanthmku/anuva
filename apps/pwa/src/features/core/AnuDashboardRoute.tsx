@@ -404,7 +404,7 @@ export default function AnuDashboardRoute() {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {QUICK_LOG_ITEMS.map((item) => {
             const interactive = Boolean(item.action || item.symptom);
             const symptomCount = item.symptom ? (quickCounts?.[item.symptom] ?? 0) : 0;
@@ -427,40 +427,40 @@ export default function AnuDashboardRoute() {
                   ? handleLogSymptom(item.symptom, item.label)
                   : handleQuickLog(item.action)
               }
-              className={`flex items-center gap-2.5 rounded-[16px] border p-[10px] text-left outline-none transition-opacity focus:outline-none focus-visible:outline-none enabled:active:opacity-80 disabled:cursor-default ${
+              className={`flex min-h-[96px] flex-col justify-between rounded-[16px] border p-[12px] text-left outline-none transition-opacity focus:outline-none focus-visible:outline-none enabled:active:opacity-80 disabled:cursor-default ${
                 logged ? 'border-primary/40 bg-primary/[0.07]' : 'border-border-default bg-surface-container-low'
               }`}
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              <img src={twemojiUrl(item.emoji)} alt="" aria-hidden="true" width={28} height={28} className="shrink-0" />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center justify-between gap-1">
+              <span className="flex items-start justify-between">
+                <img src={twemojiUrl(item.emoji)} alt="" aria-hidden="true" width={30} height={30} />
+                {logged ? (
                   <span
-                    className="truncate text-[12px] font-medium leading-tight text-on-surface"
-                    style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                    className="inline-flex items-center gap-0.5 text-[8px] uppercase leading-tight tracking-[0.06em] text-primary"
+                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
                   >
-                    {item.label}
+                    <Check size={9} strokeWidth={3} /> Done
                   </span>
-                  {logged ? (
+                ) : (
+                  symptomCount > 0 && (
                     <span
-                      className="inline-flex shrink-0 items-center gap-0.5 text-[8px] uppercase leading-tight tracking-[0.06em] text-primary"
+                      className="text-[8px] uppercase leading-tight tracking-[0.06em] text-error"
                       style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
                     >
-                      <Check size={9} strokeWidth={3} /> Done
+                      {symptomCount}×
                     </span>
-                  ) : (
-                    symptomCount > 0 && (
-                      <span
-                        className="shrink-0 text-[8px] uppercase leading-tight tracking-[0.06em] text-error"
-                        style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
-                      >
-                        {symptomCount}×
-                      </span>
-                    )
-                  )}
+                  )
+                )}
+              </span>
+              <span>
+                <span
+                  className="block text-[12px] font-medium leading-tight text-on-surface"
+                  style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                >
+                  {item.label}
                 </span>
                 <span
-                  className="mt-0.5 block truncate text-[10px] leading-snug text-outline"
+                  className="mt-0.5 block text-[10px] leading-snug text-outline"
                   style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
                 >
                   {sub}
