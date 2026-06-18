@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import type { LucideIcon } from 'lucide-react';
 import type { MoodEmotion, QuickSymptom, SleepDisruption, SleepHoursBucket } from '@anuva/shared';
-import { Angry, Brain, Check, Coffee, Fan, Flame, HeartHandshake, Moon, Smile, Snowflake, Wind } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { twemojiUrl } from '../../shared/lib/twemoji';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
@@ -30,20 +30,20 @@ const scoreDash = (score / 100) * circumference;
 
 type QuickLogAction = 'mood' | 'sleep';
 
+
 const QUICK_LOG_ITEMS: {
   label: string;
   sub: string;
-  color: string;
-  icon: LucideIcon;
+  emoji: string;
   action?: QuickLogAction;
   symptom?: QuickSymptom;
 }[] = [
-  { label: 'Hot flash', sub: 'Log now', color: '#F87171', icon: Flame, symptom: 'hot_flash' },
-  { label: 'Sleep', sub: 'Rate last night', color: '#cebdff', icon: Moon, action: 'sleep' },
-  { label: 'Mood', sub: 'How are you?', color: '#dbc839', icon: Smile, action: 'mood' },
-  { label: 'Anxiety', sub: 'Log now', color: '#c084fc', icon: Brain, symptom: 'anxiety' },
-  { label: 'Chills', sub: 'Log now', color: '#7dd3fc', icon: Snowflake, symptom: 'chills' },
-  { label: 'Irritability', sub: 'Log now', color: '#fb923c', icon: Angry, symptom: 'irritability' },
+  { label: 'Hot flash', sub: 'Log now', emoji: '🔥', symptom: 'hot_flash' },
+  { label: 'Sleep', sub: 'Rate last night', emoji: '😴', action: 'sleep' },
+  { label: 'Mood', sub: 'How are you?', emoji: '🌸', action: 'mood' },
+  { label: 'Anxiety', sub: 'Log now', emoji: '😰', symptom: 'anxiety' },
+  { label: 'Chills', sub: 'Log now', emoji: '🥶', symptom: 'chills' },
+  { label: 'Irritability', sub: 'Log now', emoji: '😤', symptom: 'irritability' },
 ];
 
 const MOOD_FEELING_LABELS: Record<number, string> = {
@@ -54,14 +54,11 @@ const MOOD_FEELING_LABELS: Record<number, string> = {
   1: 'Feeling awful',
 };
 
-const QUICK_SYMPTOM_RESPONSE: Record<
-  QuickSymptom,
-  { icon: LucideIcon; color: string; caption: string }
-> = {
-  hot_flash: { icon: Fan, color: '#7dd3fc', caption: 'Cool down — this passes' },
-  anxiety: { icon: HeartHandshake, color: '#cebdff', caption: "You're held — breathe" },
-  chills: { icon: Coffee, color: '#fbbf24', caption: "Warm up — you're okay" },
-  irritability: { icon: Wind, color: '#6ee7b7', caption: 'Exhale — let the tension out' },
+const QUICK_SYMPTOM_RESPONSE: Record<QuickSymptom, { emoji: string; caption: string }> = {
+  hot_flash: { emoji: '🌬️', caption: 'Cool down — this passes' },
+  anxiety: { emoji: '🫂', caption: "You're held — breathe" },
+  chills: { emoji: '🍵', caption: "Warm up — you're okay" },
+  irritability: { emoji: '😮‍💨', caption: 'Exhale — let the tension out' },
 };
 
 const SLEEP_QUALITY_LABELS: Record<number, string> = {
@@ -115,10 +112,8 @@ export default function AnuDashboardRoute() {
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
   }, []);
   const [quickMessage, setQuickMessage] = useState<{
-    title: string;
     message: string;
-    icon: LucideIcon;
-    color: string;
+    emoji: string;
     caption: string;
     count: number;
   } | null>(null);
@@ -169,15 +164,13 @@ export default function AnuDashboardRoute() {
     }
   };
 
-  const handleLogSymptom = async (symptom: QuickSymptom, label: string) => {
+  const handleLogSymptom = async (symptom: QuickSymptom, _label: string) => {
     try {
       const result = await quick.logSymptom(symptom);
       const response = QUICK_SYMPTOM_RESPONSE[symptom];
       setQuickMessage({
-        title: label,
         message: result.message,
-        icon: response.icon,
-        color: response.color,
+        emoji: response.emoji,
         caption: response.caption,
         count: result.todayCount,
       });
@@ -413,7 +406,6 @@ export default function AnuDashboardRoute() {
 
         <div className="grid grid-cols-3 gap-2">
           {QUICK_LOG_ITEMS.map((item) => {
-            const Icon = item.icon;
             const interactive = Boolean(item.action || item.symptom);
             const symptomCount = item.symptom ? (quickCounts?.[item.symptom] ?? 0) : 0;
             let sub = item.sub;
@@ -435,49 +427,45 @@ export default function AnuDashboardRoute() {
                   ? handleLogSymptom(item.symptom, item.label)
                   : handleQuickLog(item.action)
               }
-              className={`rounded-[16px] border p-[10px] text-left outline-none transition-opacity focus:outline-none focus-visible:outline-none enabled:active:opacity-80 disabled:cursor-default ${
+              className={`flex min-h-[96px] flex-col justify-between rounded-[16px] border p-[12px] text-left outline-none transition-opacity focus:outline-none focus-visible:outline-none enabled:active:opacity-80 disabled:cursor-default ${
                 logged ? 'border-primary/40 bg-primary/[0.07]' : 'border-border-default bg-surface-container-low'
               }`}
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              <div className="mb-2 flex min-h-[26px] items-start justify-between gap-1">
-                <span
-                  className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full"
-                  style={{ background: item.color }}
-                  aria-hidden="true"
-                >
-                  <Icon size={14} strokeWidth={2.25} className="text-surface" />
-                </span>
+              <span className="flex items-start justify-between">
+                <img src={twemojiUrl(item.emoji)} alt="" aria-hidden="true" width={30} height={30} />
                 {logged ? (
                   <span
                     className="inline-flex items-center gap-0.5 text-[8px] uppercase leading-tight tracking-[0.06em] text-primary"
                     style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
                   >
-                    <Check size={9} strokeWidth={3} /> Logged
+                    <Check size={9} strokeWidth={3} /> Done
                   </span>
                 ) : (
                   symptomCount > 0 && (
                     <span
-                      className="max-w-[52px] text-right text-[8px] uppercase leading-tight tracking-[0.06em] text-error"
+                      className="text-[8px] uppercase leading-tight tracking-[0.06em] text-error"
                       style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
                     >
-                      {symptomCount} TODAY
+                      {symptomCount}×
                     </span>
                   )
                 )}
-              </div>
-              <p
-                className="text-[12px] font-medium leading-tight text-on-surface"
-                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
-              >
-                {item.label}
-              </p>
-              <p
-                className="mt-0.5 text-[10px] leading-snug text-outline"
-                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
-              >
-                {sub}
-              </p>
+              </span>
+              <span>
+                <span
+                  className="block text-[12px] font-medium leading-tight text-on-surface"
+                  style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                >
+                  {item.label}
+                </span>
+                <span
+                  className="mt-0.5 block text-[10px] leading-snug text-outline"
+                  style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                >
+                  {sub}
+                </span>
+              </span>
             </button>
             );
           })}
@@ -596,12 +584,9 @@ export default function AnuDashboardRoute() {
 
       <QuickLogMessageDialog
         open={quickMessage !== null}
-        title={quickMessage?.title ?? ''}
         message={quickMessage?.message ?? ''}
-        icon={quickMessage?.icon ?? null}
-        iconColor={quickMessage?.color ?? '#cebdff'}
+        emoji={quickMessage?.emoji ?? ''}
         caption={quickMessage?.caption ?? ''}
-        count={quickMessage?.count ?? 0}
         onClose={() => setQuickMessage(null)}
       />
 

@@ -1,15 +1,12 @@
 import { useEffect } from 'react';
 import { Check } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { twemojiUrl } from '../../../shared/lib/twemoji';
 
 type QuickLogMessageDialogProps = {
   open: boolean;
-  title: string;
   message: string;
-  icon: LucideIcon | null;
-  iconColor: string;
+  emoji: string;
   caption: string;
-  count: number;
   onClose: () => void;
 };
 
@@ -19,8 +16,7 @@ const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
 export function QuickLogMessageDialog({
   open,
   message,
-  icon: Icon,
-  iconColor,
+  emoji,
   caption,
   onClose,
 }: QuickLogMessageDialogProps) {
@@ -48,18 +44,21 @@ export function QuickLogMessageDialog({
         aria-modal="true"
         className="relative w-full max-w-[340px] rounded-[24px] border border-border-default bg-surface-raised px-[22px] py-6 text-center shadow-xl"
       >
-        <span
-          className="mx-auto mb-2.5 flex h-[84px] w-[84px] items-center justify-center rounded-full"
-          style={{ background: `${iconColor}26` }}
-          aria-hidden="true"
-        >
-          {Icon && <Icon size={42} strokeWidth={1.75} style={{ color: iconColor }} />}
-        </span>
+        {emoji && (
+          <img
+            src={twemojiUrl(emoji)}
+            alt=""
+            aria-hidden="true"
+            width={72}
+            height={72}
+            className="mx-auto mb-3"
+          />
+        )}
 
         {caption && (
           <p
-            className="mb-4 text-[11px] uppercase tracking-[0.1em]"
-            style={{ fontFamily: FONT_MONO, color: iconColor }}
+            className="mb-4 text-[11px] uppercase tracking-[0.1em] text-primary"
+            style={{ fontFamily: FONT_MONO }}
           >
             {caption}
           </p>
