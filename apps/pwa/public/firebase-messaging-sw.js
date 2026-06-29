@@ -22,18 +22,34 @@ if (self.FIREBASE_WEB_CONFIG?.apiKey) {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url = event.notification.data?.url || '/home';
+  const target = new URL(url, self.location.origin).href;
 
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    (async () => {
+      const clientList = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+
+      // Reuse an open PWA window: focus it AND navigate to the deep link.
       for (const client of clientList) {
         if ('focus' in client) {
-          return client.focus();
+          await client.focus();
+          if (client.url !== target && 'navigate' in client) {
+            try {
+              await client.navigate(target);
+            } catch {
+              // Fall back to a message the app can route on.
+              client.postMessage({ type: 'nudge-navigate', url });
+            }
+          }
+          return;
         }
       }
+
       if (self.clients.openWindow) {
-        return self.clients.openWindow(url);
+        await self.clients.openWindow(target);
       }
-      return undefined;
-    }),
+    })(),
   );
 });

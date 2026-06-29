@@ -1,4 +1,5 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import AssessmentPairedRoute from '../features/onboarding/AssessmentPairedRoute';
 import AssessmentRoute from '../features/onboarding/AssessmentRoute';
 import AssessmentResultRoute from '../features/onboarding/AssessmentResultRoute';
@@ -19,9 +20,28 @@ import LoginRoute from '../features/auth/LoginRoute';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import SplashRoute from '../features/auth/SplashRoute';
 
+// Routes notification clicks when the service worker can't navigate the client
+// itself (e.g. iOS) and posts a `nudge-navigate` message instead.
+function ServiceWorkerNavListener() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data;
+      if (data && data.type === 'nudge-navigate' && typeof data.url === 'string') {
+        navigate(data.url);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, [navigate]);
+  return null;
+}
+
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <ServiceWorkerNavListener />
       <Routes>
         <Route path="/" element={<SplashRoute />} />
         <Route path="/login" element={<LoginRoute />} />
