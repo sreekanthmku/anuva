@@ -58,7 +58,7 @@ export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<D
       await sendPushToAllTokens(
         u.fcmTokens.map((t) => t.token),
         { title: dispatch.bundleTitle, body: dispatch.cards[0]!.question },
-        { url: `/nudge/${slot}`, slot },
+        { url: `/home?nudge=${slot}`, slot },
       );
       await recordSend(u.id, dispatch.primaryNudgeId, slot, now, dispatch.setDistress);
       sent += 1;

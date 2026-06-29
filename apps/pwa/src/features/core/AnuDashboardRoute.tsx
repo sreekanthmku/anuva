@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import type { MoodEmotion, QuickSymptom, SleepDisruption, SleepHoursBucket } from '@anuva/shared';
+import type {
+  MoodEmotion,
+  NudgeSlot,
+  QuickSymptom,
+  SleepDisruption,
+  SleepHoursBucket,
+} from '@anuva/shared';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { Check } from 'lucide-react';
 import { twemojiUrl } from '../../shared/lib/twemoji';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
@@ -13,6 +19,7 @@ import { CyclePhaseBadge, CycleTrackerSummary } from './components/CycleTrackerS
 import { MoodLogSheet } from './components/MoodLogSheet';
 import { SleepLogSheet } from './components/SleepLogSheet';
 import { QuickLogMessageDialog } from './components/QuickLogMessageDialog';
+import { NudgeCheckInDialog } from './components/NudgeCheckInDialog';
 import { useHomeNotificationPrompt } from './hooks/useHomeNotificationPrompt';
 import { useCycleTracker } from './hooks/useCycleTracker';
 import { useMoodLog } from './hooks/useMoodLog';
@@ -93,6 +100,7 @@ const SERIF = '"Fraunces", serif';
 export default function AnuDashboardRoute() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const detailedStatus = user?.detailedAssessmentStatus ?? 'not_started';
   const detailedCompleted = detailedStatus === 'completed';
   const notificationPrompt = useHomeNotificationPrompt();
@@ -103,6 +111,7 @@ export default function AnuDashboardRoute() {
   const [sleepOpen, setSleepOpen] = useState(false);
   const [sleepSaving, setSleepSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [nudgeSlot, setNudgeSlot] = useState<NudgeSlot | null>(null);
   const toastTimer = useRef<number | null>(null);
 
   const showToast = (message: string) => {
@@ -207,6 +216,26 @@ export default function AnuDashboardRoute() {
 
     return () => window.clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    const requestedNudge = searchParams.get('nudge');
+    if (
+      requestedNudge === 'morning' ||
+      requestedNudge === 'afternoon' ||
+      requestedNudge === 'evening'
+    ) {
+      setNudgeSlot(requestedNudge);
+    }
+  }, [searchParams]);
+
+  const closeNudgeDialog = () => {
+    setNudgeSlot(null);
+    if (searchParams.has('nudge')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('nudge');
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 pt-8 text-on-surface">
@@ -648,6 +677,14 @@ export default function AnuDashboardRoute() {
         caption={quickMessage?.caption ?? ''}
         onClose={() => setQuickMessage(null)}
       />
+
+      {nudgeSlot && (
+        <NudgeCheckInDialog
+          slot={nudgeSlot}
+          onClose={closeNudgeDialog}
+          onComplete={nudgeDay.reload}
+        />
+      )}
 
       {toast && (
         <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+16px)] z-[80] flex justify-center px-4">
