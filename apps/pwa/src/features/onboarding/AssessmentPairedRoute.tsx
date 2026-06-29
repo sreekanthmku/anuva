@@ -96,7 +96,7 @@ export default function AssessmentPairedRoute() {
       )}
 
       <section
-        className={`relative z-10 flex flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-2 pb-[22px] pt-[26px] ${showMascot ? 'mt-6 min-h-[calc(100svh-288px)]' : 'mt-0 min-h-[calc(100svh-48px)]'}`}
+        className={`relative z-10 flex flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-3 pb-[22px] pt-[26px] ${showMascot ? 'mt-6 min-h-[calc(100svh-288px)]' : 'mt-0 min-h-[calc(100svh-48px)]'}`}
         style={{ minHeight: showMascot ? 'calc(100dvh - 288px)' : 'calc(100dvh - 48px)' }}
       >
         <div className="mb-[22px] flex items-center justify-between">

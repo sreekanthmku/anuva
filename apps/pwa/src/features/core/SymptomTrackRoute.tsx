@@ -74,8 +74,8 @@ function OptionChip({
       aria-pressed={selected}
       className="rounded-full border px-3.5 py-2 text-[12px] font-medium transition-colors outline-none focus:outline-none disabled:opacity-50"
       style={{
-        backgroundColor: selected ? '#5E3566' : 'transparent',
-        borderColor: selected ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
+        backgroundColor: selected ? '#5E3566' : '#FFFFFF',
+        borderColor: selected ? '#5E3566' : 'rgba(94, 53, 102, 0.18)',
         color: selected ? '#FBF6F0' : '#3E2542',
         fontFamily: FONT_BODY,
         WebkitTapHighlightColor: 'transparent',
@@ -192,7 +192,7 @@ export default function SymptomTrackRoute() {
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface">
-        <div className="px-2 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
+        <div className="px-3 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Eyebrow>{loading ? 'Loading…' : `${answeredCount} of ${total} logged today`}</Eyebrow>
           <h1 className="font-display mb-[16px] text-[30px] leading-[1.05] text-on-surface">
             How was your{' '}
@@ -248,7 +248,7 @@ export default function SymptomTrackRoute() {
         </div>
       </header>
 
-      <div className="flex flex-col gap-3 px-2 pb-[22px] pt-[16px]">
+      <div className="flex flex-col gap-3 px-3 pb-[22px] pt-[16px]">
         {error && (
           <div className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-3 text-[13px] text-on-surface-variant">
             {error}{' '}
@@ -267,12 +267,18 @@ export default function SymptomTrackRoute() {
           return (
             <section
               key={tier.key}
-              className="overflow-hidden rounded-[20px] border border-border-default bg-surface-raised"
+              className={`overflow-hidden rounded-[20px] border border-border-default ${
+                open
+                  ? 'bg-surface-raised shadow-[0_14px_32px_rgba(94,53,102,0.08)]'
+                  : 'bg-surface-container-low'
+              }`}
             >
               <button
                 type="button"
                 onClick={() => toggleTier(tier.key)}
-                className="flex w-full items-center justify-between px-4 py-3.5 text-left"
+                className={`flex w-full items-center justify-between px-4 py-3.5 text-left ${
+                  open ? 'bg-secondary-container' : ''
+                }`}
               >
                 <span
                   className="text-[14px] font-medium text-on-surface"
@@ -286,7 +292,7 @@ export default function SymptomTrackRoute() {
               </button>
 
               {open && (
-                <div className="flex flex-col gap-4 border-t border-border-default px-4 py-4">
+                <div className="flex flex-col gap-4 border-t border-primary/10 px-4 py-4">
                   {items.map((t) => {
                     // Mood & sleep keep the emoji scale + extras via their sheets.
                     if (EMOJI_TRACKERS.has(t.nudgeId)) {

@@ -1,6 +1,6 @@
 export function BookingFormHeader() {
   return (
-    <header className="sticky top-0 z-30 shrink-0 bg-surface px-[22px] pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
+    <header className="sticky top-0 z-30 shrink-0 bg-surface px-3 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
       <div
         className="mb-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"
         style={{

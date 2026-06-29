@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MoodEmotion, NudgeCard, NudgeSlot, SleepDisruption, SleepHoursBucket } from '@anuva/shared';
 import { useNudgeToday } from '../hooks/useNudgeToday';
 import { useMoodLog } from '../hooks/useMoodLog';
@@ -25,10 +25,19 @@ export function NudgeCheckInDialog({ slot, onClose, onComplete }: NudgeCheckInDi
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const completedSheetSave = useRef(false);
 
   const cards = data?.cards ?? [];
   const card: NudgeCard | undefined = cards[index];
   const isEmojiCard = card ? EMOJI_TRACKERS.has(card.nudgeId) : false;
+  const shouldOpenTargetSheet = !loading && !error && !done && card && isEmojiCard && reply === null;
+
+  useEffect(() => {
+    completedSheetSave.current = false;
+    if (isEmojiCard && reply === null) {
+      setSheetOpen(true);
+    }
+  }, [card?.nudgeId, isEmojiCard, reply]);
 
   const finish = async () => {
     setDone(true);
@@ -39,6 +48,7 @@ export function NudgeCheckInDialog({ slot, onClose, onComplete }: NudgeCheckInDi
     setSaving(true);
     try {
       await moodLog.logMood(feeling, emotions);
+      completedSheetSave.current = true;
       setReply("Emotional days are not weakness. I'll track this carefully.");
     } finally {
       setSaving(false);
@@ -53,6 +63,7 @@ export function NudgeCheckInDialog({ slot, onClose, onComplete }: NudgeCheckInDi
     setSaving(true);
     try {
       await sleepLog.logSleep(quality, hours, disruptions);
+      completedSheetSave.current = true;
       setReply("Thanks for logging your sleep. I'll factor it into today.");
     } finally {
       setSaving(false);
@@ -80,6 +91,33 @@ export function NudgeCheckInDialog({ slot, onClose, onComplete }: NudgeCheckInDi
     }
     await finish();
   };
+
+  const handleTargetSheetClose = () => {
+    if (completedSheetSave.current) {
+      setSheetOpen(false);
+      return;
+    }
+    onClose();
+  };
+
+  if (shouldOpenTargetSheet) {
+    return (
+      <>
+        <MoodLogSheet
+          open={sheetOpen && card.nudgeId === 'L1-003'}
+          saving={saving}
+          onClose={handleTargetSheetClose}
+          onSave={handleLogMood}
+        />
+        <SleepLogSheet
+          open={sheetOpen && card.nudgeId === 'L1-001'}
+          saving={saving}
+          onClose={handleTargetSheetClose}
+          onSave={handleLogSleep}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[75] flex items-center justify-center px-4 py-6">

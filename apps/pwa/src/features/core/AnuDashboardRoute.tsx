@@ -245,7 +245,7 @@ export default function AnuDashboardRoute() {
         onAccept={notificationPrompt.accept}
         onDismiss={notificationPrompt.dismiss}
       />
-      <section className="px-2 pb-2.5">
+      <section className="px-3 pb-2.5">
         {notificationPrompt.syncMessage && (
           <NotificationSyncBanner
             message={notificationPrompt.syncMessage}
@@ -315,7 +315,7 @@ export default function AnuDashboardRoute() {
         </div>
       </section>
 
-      <section className="px-2">
+      <section className="px-3">
         <article className="flex items-center gap-4 rounded-[20px] bg-secondary-container px-4 py-4">
           <div className="relative h-24 w-24 shrink-0">
             <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
@@ -420,7 +420,7 @@ export default function AnuDashboardRoute() {
         </article>
       </section>
 
-      <section className="px-2 pt-3">
+      <section className="px-3 pt-3">
         <article className="rounded-[20px] bg-primary-container px-[18px] py-4">
           <div className="flex items-start gap-3">
             <img
@@ -459,16 +459,16 @@ export default function AnuDashboardRoute() {
       </section>
 
       {nudgeDay.data && nudgeDay.data.answeredCount < nudgeDay.data.total && (
-        <section className="px-2 pt-3">
+        <section className="px-3 pt-3">
           <button
             type="button"
             onClick={() => navigate('/track')}
-            className="flex w-full items-center justify-between rounded-[20px] bg-primary px-[18px] py-4 text-left transition-opacity active:opacity-90"
+            className="flex w-full items-center justify-between rounded-[20px] border border-border-default bg-surface-container-low px-[18px] py-4 text-left transition-opacity active:opacity-80"
           >
             <div>
-              <Eyebrow tone="cream">Complete your day</Eyebrow>
+              <Eyebrow>Complete your day</Eyebrow>
               <p
-                className="text-[16px] font-medium text-on-primary"
+                className="text-[15px] font-medium text-on-surface"
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
                 {nudgeDay.data.total - nudgeDay.data.answeredCount} quick{' '}
@@ -476,14 +476,14 @@ export default function AnuDashboardRoute() {
                 left
               </p>
             </div>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-[16px] text-on-secondary">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-[15px] text-primary">
               →
             </span>
           </button>
         </section>
       )}
 
-      <section className="px-2 pt-3">
+      <section className="px-3 pt-3">
         <div className="mb-3 flex items-end justify-between">
           <Eyebrow>Quick log</Eyebrow>
           <span
@@ -517,7 +517,7 @@ export default function AnuDashboardRoute() {
                     ? handleLogSymptom(item.symptom, item.label)
                     : handleQuickLog(item.action)
                 }
-                className={`flex min-h-[92px] flex-col justify-between rounded-[18px] border bg-surface-container-lowest p-3 text-left outline-none transition-opacity focus:outline-none focus-visible:outline-none enabled:active:opacity-80 disabled:cursor-default ${
+                className={`flex min-h-[92px] flex-col justify-between rounded-[18px] border bg-surface-container-low p-3 text-left outline-none transition-opacity focus:outline-none focus-visible:outline-none enabled:active:opacity-80 disabled:cursor-default ${
                   logged ? 'border-primary/30' : 'border-border-default'
                 }`}
                 style={{ WebkitTapHighlightColor: 'transparent' }}
@@ -566,7 +566,7 @@ export default function AnuDashboardRoute() {
         </div>
       </section>
 
-      <section className="px-2 pt-3">
+      <section className="px-3 pt-3">
         <button
           type="button"
           onClick={() => setCycleOpen(true)}
@@ -581,7 +581,7 @@ export default function AnuDashboardRoute() {
       </section>
 
       {!detailedCompleted && (
-        <section className="px-2 pt-3">
+        <section className="px-3 pt-3">
           <article className="overflow-hidden rounded-[20px] bg-primary px-[18px] py-5">
             <Eyebrow tone="cream">Next step required</Eyebrow>
 
@@ -614,7 +614,7 @@ export default function AnuDashboardRoute() {
         </section>
       )}
 
-      <section className="px-2 pb-5 pt-3">
+      <section className="px-3 pb-5 pt-3">
         <article
           className="rounded-[20px] px-[18px] py-4"
           style={{ background: 'rgba(184, 146, 60, 0.18)' }}

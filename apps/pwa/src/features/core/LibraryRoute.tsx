@@ -52,7 +52,7 @@ function Eyebrow({ children, mint = false }: { children: string; mint?: boolean 
 export default function LibraryRoute() {
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
-      <header className="sticky top-0 z-30 shrink-0 bg-surface px-2 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
+      <header className="sticky top-0 z-30 shrink-0 bg-surface px-3 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
         <Eyebrow mint>Library</Eyebrow>
         <h1 className="font-display text-[32px] leading-[1.05] text-on-surface">
           Know your{' '}
@@ -72,7 +72,7 @@ export default function LibraryRoute() {
         </p>
       </header>
 
-      <section className="px-2">
+      <section className="px-3">
         <article
           className="rounded-[20px] border border-border-default bg-secondary-container p-[18px]"
           style={{}}
@@ -130,7 +130,7 @@ export default function LibraryRoute() {
         </article>
       </section>
 
-      <section className="px-2 pt-3.5">
+      <section className="px-3 pt-3.5">
         <div
           className="flex items-center gap-3.5 rounded-[20px] border p-4"
           style={{
@@ -169,7 +169,7 @@ export default function LibraryRoute() {
         </div>
       </section>
 
-      <section className="px-2 py-[22px]">
+      <section className="px-3 py-[22px]">
         <Eyebrow>Recent</Eyebrow>
         <div className="flex flex-col gap-2.5">
           {articles.map((a) => {
@@ -177,7 +177,7 @@ export default function LibraryRoute() {
             return (
               <article
                 key={a.title}
-                className="flex items-center gap-3 rounded-[20px] border border-border-default bg-surface-container-low p-3"
+                className="flex items-center gap-3 rounded-[20px] border border-border-default bg-surface-raised p-3 shadow-[0_10px_24px_rgba(94,53,102,0.06)]"
               >
                 <div
                   className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-border-default bg-surface-container-low"

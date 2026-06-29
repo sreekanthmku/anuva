@@ -35,7 +35,7 @@ export default function ConsultationBookingRoute() {
         onChange={booking.setSpecialistKey}
       />
 
-      <section className="px-2 pt-[18px]">
+      <section className="px-3 pt-[18px]">
         {booking.loadingSpecialists ? (
           <p
             className="text-[12px] text-on-surface-variant"
@@ -100,7 +100,7 @@ export default function ConsultationBookingRoute() {
         )}
       </section>
 
-      <section className="px-2 py-5">
+      <section className="px-3 py-5">
         <button
           type="button"
           disabled={!booking.pickedDateId || !booking.pickedTimeId || booking.submitting}

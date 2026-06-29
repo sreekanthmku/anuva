@@ -13,7 +13,7 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
 
   return (
     <>
-      <section className="px-[22px]">
+      <section className="px-3">
         <BookingEyebrow>Choose specialist</BookingEyebrow>
         <div className="flex flex-col gap-2">
           {items.map((s) => {
@@ -25,8 +25,9 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
                 key={s.key}
                 className="overflow-hidden rounded-[20px] border transition-colors"
                 style={{
-                  backgroundColor: sel ? '#FFFFFF' : disabled ? '#EFE4D8' : '#F7F0E8',
+                  backgroundColor: sel ? '#FFFFFF' : disabled ? '#EFE4D8' : '#FBF6F0',
                   borderColor: sel ? '#5E3566' : 'rgba(94, 53, 102, 0.2)',
+                  boxShadow: sel ? '0 10px 24px rgba(94,53,102,0.08)' : undefined,
                   opacity: disabled ? 0.82 : 1,
                 }}
               >

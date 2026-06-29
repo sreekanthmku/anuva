@@ -64,7 +64,7 @@ export default function AnuChatRoute() {
   return (
     <main className="min-h-mobile flex flex-col bg-surface text-on-surface">
       <header className="sticky top-0 z-40 shrink-0 bg-surface">
-        <section className="flex items-center gap-3 border-b border-border-default px-2 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
+        <section className="flex items-center gap-3 border-b border-border-default px-3 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
           <button
             type="button"
             onClick={() => navigate('/home')}
@@ -106,7 +106,7 @@ export default function AnuChatRoute() {
           </button>
         </section>
 
-        <section className="flex items-center justify-center gap-1.5 bg-primary/15 px-2 py-1.5 text-[9.5px] uppercase tracking-[0.12em] text-primary">
+        <section className="flex items-center justify-center gap-1.5 bg-primary/15 px-3 py-1.5 text-[9.5px] uppercase tracking-[0.12em] text-primary">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <rect x="5" y="10" width="14" height="10" rx="2" stroke="#5E3566" strokeWidth="2" />
             <path d="M8 10V7a4 4 0 018 0v3" stroke="#5E3566" strokeWidth="2" />

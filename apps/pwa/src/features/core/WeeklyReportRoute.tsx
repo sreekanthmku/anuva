@@ -27,7 +27,7 @@ export default function WeeklyReportRoute() {
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface">
-        <div className="px-2 pb-[22px] pt-[max(0.875rem,env(safe-area-inset-top))]">
+        <div className="px-3 pb-[22px] pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Eyebrow tone="plum">Week 1 · May 1 – 7</Eyebrow>
           <h1 className="font-display mb-1.5 text-[30px] leading-[1.1] text-on-surface">
             Your first{' '}
@@ -47,53 +47,64 @@ export default function WeeklyReportRoute() {
         </div>
       </header>
 
-      <section className="px-2 pb-6 pt-2">
-        <div className="flex flex-col gap-3">
-          {benchmarks.map((b) => (
-            <div key={b.label}>
-              <div className="mb-1 flex justify-between">
-                <span
-                  className="text-[12px] text-on-surface"
-                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-                >
-                  {b.label}
-                </span>
-                <span
-                  className="text-[10.5px] font-medium tracking-[0.05em]"
-                  style={{ color: b.color, fontFamily: '"Mulish", sans-serif' }}
-                >
-                  {b.delta}
-                </span>
+      <section className="px-3 pb-4 pt-2">
+        <article className="rounded-[20px] bg-secondary-container px-4 py-4">
+          <div className="mb-3 flex items-center justify-between">
+            <Eyebrow className="mb-0">Cohort comparison</Eyebrow>
+            <span
+              className="rounded-full bg-surface-bright px-3 py-1 text-[10px] uppercase tracking-[0.08em] text-on-surface-variant"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
+              Week 1
+            </span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {benchmarks.map((b) => (
+              <div key={b.label}>
+                <div className="mb-1 flex justify-between">
+                  <span
+                    className="text-[12px] text-on-surface"
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  >
+                    {b.label}
+                  </span>
+                  <span
+                    className="text-[10.5px] font-medium tracking-[0.05em]"
+                    style={{ color: b.color, fontFamily: '"Mulish", sans-serif' }}
+                  >
+                    {b.delta}
+                  </span>
+                </div>
+                <div className="relative h-1.5 overflow-hidden rounded-full bg-surface-bright">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${b.pct}%`, backgroundColor: b.color }}
+                  />
+                  <div
+                    className="absolute -top-0.5 left-[60%] h-2.5 w-px bg-outline"
+                    aria-hidden="true"
+                  />
+                </div>
               </div>
-              <div className="relative h-1.5 overflow-hidden rounded-full bg-surface-container-high">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${b.pct}%`, backgroundColor: b.color }}
-                />
-                <div
-                  className="absolute -top-0.5 left-[60%] h-2.5 w-px bg-outline"
-                  aria-hidden="true"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-        <p
-          className="mt-2.5 text-right text-[9.5px] uppercase tracking-[0.1em] text-outline"
-          style={{ fontFamily: '"Mulish", sans-serif' }}
-        >
-          ⎢ cohort median
-        </p>
+            ))}
+          </div>
+          <p
+            className="mt-2.5 text-right text-[9.5px] uppercase tracking-[0.1em] text-outline"
+            style={{ fontFamily: '"Mulish", sans-serif' }}
+          >
+            ⎢ cohort median
+          </p>
+        </article>
       </section>
 
-      <section className="flex flex-col gap-3 px-2 pb-[22px]">
+      <section className="flex flex-col gap-3 px-3 pb-[22px]">
         <div className="grid grid-cols-2 gap-2.5">
           {statCards.map((m) => {
             const maxT = Math.max(...m.trend, 1);
             return (
               <article
                 key={m.label}
-                className="rounded-[20px] border border-border-default bg-surface-container-low p-3.5"
+                className="rounded-[20px] border border-border-default bg-surface-raised p-3.5 shadow-[0_10px_24px_rgba(94,53,102,0.06)]"
               >
                 <div className="flex items-baseline gap-1">
                   <span className="text-[24px] leading-none text-on-surface">{m.num}</span>
@@ -127,7 +138,7 @@ export default function WeeklyReportRoute() {
           })}
         </div>
 
-        <article className="rounded-[20px] border border-primary/30 bg-primary/15 p-4">
+        <article className="rounded-[20px] border border-primary/20 bg-primary-container p-4">
           <Eyebrow tone="plum">↑ Improving</Eyebrow>
           <p
             className="text-[14px] leading-[1.4] text-on-surface"
@@ -137,7 +148,7 @@ export default function WeeklyReportRoute() {
           </p>
         </article>
 
-        <article className="rounded-[20px] border border-error/30 bg-error/10 p-4">
+        <article className="rounded-[20px] border border-error/25 bg-error-container p-4">
           <Eyebrow tone="ember">↓ Needs attention</Eyebrow>
           <p
             className="text-[14px] leading-[1.4] text-on-surface"
@@ -147,7 +158,7 @@ export default function WeeklyReportRoute() {
           </p>
         </article>
 
-        <article className="rounded-[20px] border border-border-default bg-secondary-container p-[18px]">
+        <article className="rounded-[20px] border border-border-default bg-primary-container p-[18px]">
           <div className="mb-2.5 flex items-center gap-3">
             <img src="/anu.png" alt="" className="h-[22px] w-[22px] object-contain" />
             <Eyebrow tone="plum" className="mb-0">

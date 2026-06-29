@@ -36,9 +36,10 @@ export function TimeSlotSection({
                 onClick={() => onSelectTime(t.id)}
                 className="rounded-[20px] border px-2 py-2.5 text-center transition-colors"
                 style={{
-                  backgroundColor: sel ? '#C97E92' : '#F7F0E8',
+                  backgroundColor: sel ? '#C97E92' : '#FBF6F0',
                   color: sel ? '#3E2542' : '#3E2542',
                   borderColor: sel ? '#C97E92' : 'rgba(94, 53, 102, 0.2)',
+                  boxShadow: sel ? '0 10px 24px rgba(94,53,102,0.08)' : undefined,
                 }}
               >
                 <span

@@ -110,7 +110,7 @@ export default function AnuGreetingRoute() {
           — ANU, your wellness companion
         </p>
 
-        <article className="mt-[26px] w-full rounded-[20px] border border-border-default bg-surface-container-low p-[18px]">
+        <article className="mt-[26px] w-full rounded-[20px] border border-border-default bg-surface-raised p-[18px] shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
           <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
             <span className="h-px w-3 bg-primary/60" />
             <span style={{ fontFamily: '"Mulish", sans-serif' }}>Next 7 days</span>

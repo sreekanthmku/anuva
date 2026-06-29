@@ -15,7 +15,7 @@ export function BookingConfirmedView({
   onBackHome,
 }: BookingConfirmedViewProps) {
   return (
-    <div className="flex flex-col items-center px-[22px] pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] text-center">
+    <div className="flex flex-col items-center px-3 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] text-center">
       <BookingEyebrow mint>Confirmed</BookingEyebrow>
       <div
         className="mt-2 mb-5 flex h-[88px] w-[88px] items-center justify-center rounded-full border border-primary/30 bg-primary/10"

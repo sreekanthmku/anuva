@@ -41,7 +41,7 @@ export default function AnonymousQARoute() {
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
-      <header className="sticky top-0 z-30 shrink-0 bg-surface px-2 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
+      <header className="sticky top-0 z-30 shrink-0 bg-surface px-3 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
         <Eyebrow mint>Ask the experts</Eyebrow>
         <h1 className="font-display max-w-[20rem] text-[30px] leading-[1.1] text-on-surface">
           Anonymous.{' '}
@@ -54,7 +54,7 @@ export default function AnonymousQARoute() {
         </h1>
       </header>
 
-      <section className="px-2">
+      <section className="px-3">
         <div
           className="flex items-start gap-2.5 rounded-[20px] border px-3.5 py-3"
           style={{
@@ -90,8 +90,8 @@ export default function AnonymousQARoute() {
         </div>
       </section>
 
-      <section className="px-2 pt-3.5">
-        <article className="rounded-[20px] border border-border-default bg-surface-container-low p-4">
+      <section className="px-3 pt-3.5">
+        <article className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
           <Eyebrow mint>Your question</Eyebrow>
           <textarea
             value={question}
@@ -143,13 +143,13 @@ export default function AnonymousQARoute() {
         </article>
       </section>
 
-      <section className="px-2 py-4">
+      <section className="px-3 py-4">
         <Eyebrow>Recent answers</Eyebrow>
         <div className="mt-2.5 flex flex-col gap-3">
           {qas.map((qa) => (
             <article
               key={qa.q}
-              className="rounded-[20px] border border-border-default bg-surface-container-low p-4"
+              className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_10px_24px_rgba(94,53,102,0.06)]"
             >
               <div className="mb-3 flex items-start gap-2">
                 <span
@@ -168,7 +168,7 @@ export default function AnonymousQARoute() {
               <div
                 className="rounded-r-starchart-lg py-3 pl-3.5 pr-3.5"
                 style={{
-                  backgroundColor: '#F7F0E8',
+                  backgroundColor: '#E7DCEC',
                   borderLeft: '2px solid #5E3566',
                 }}
               >

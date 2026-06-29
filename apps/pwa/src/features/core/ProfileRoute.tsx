@@ -88,7 +88,7 @@ export default function ProfileRoute() {
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
-      <header className="sticky top-0 z-30 bg-surface px-2 pb-4 pt-[max(0.875rem,env(safe-area-inset-top))]">
+      <header className="sticky top-0 z-30 bg-surface px-3 pb-4 pt-[max(0.875rem,env(safe-area-inset-top))]">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -102,7 +102,7 @@ export default function ProfileRoute() {
         </div>
       </header>
 
-      <section className="px-2 pb-6 pt-2">
+      <section className="px-3 pb-6 pt-2">
         <Eyebrow>Your account</Eyebrow>
 
         <div className="mb-6 flex items-center gap-4">
@@ -137,7 +137,7 @@ export default function ProfileRoute() {
           </div>
         </div>
 
-        <article className="overflow-hidden rounded-[20px] border border-border-default bg-secondary-container">
+        <article className="overflow-hidden rounded-[20px] border border-border-default bg-surface-raised shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
           <ul className="divide-y divide-border-default">
             {menuRows.map((row) => (
               <li key={row.label}>
@@ -146,7 +146,7 @@ export default function ProfileRoute() {
                   onClick={
                     row.id === 'notifications' ? () => void handleNotificationsRow() : undefined
                   }
-                  className="flex w-full flex-col items-start gap-0.5 px-5 py-4 text-left transition-colors hover:bg-surface-container-low/50"
+                  className="flex w-full flex-col items-start gap-0.5 px-5 py-4 text-left transition-colors hover:bg-primary-container/60"
                 >
                   <span
                     className="text-[15px] text-on-surface"
@@ -198,7 +198,7 @@ export default function ProfileRoute() {
               navigate('/login', { replace: true });
             });
           }}
-          className="mt-4 w-full rounded-full border border-border-default bg-transparent px-2 py-3.5 text-[13px] font-medium text-on-surface-variant"
+          className="mt-4 w-full rounded-full border border-border-default bg-surface-container-low px-2 py-3.5 text-[13px] font-medium text-on-surface-variant"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
           Sign out

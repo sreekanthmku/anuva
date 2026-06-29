@@ -102,7 +102,7 @@ export default function DetailedAssessmentRoute() {
 
   return (
     <main className="relative h-[100dvh] min-h-mobile overflow-y-auto overflow-x-hidden bg-surface text-on-surface [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <section className="relative z-10 flex min-h-[100dvh] flex-col px-2 pb-[calc(var(--bottom-nav-height)+96px)] pt-[52px]">
+      <section className="relative z-10 flex min-h-[100dvh] flex-col px-3 pb-[calc(var(--bottom-nav-height)+96px)] pt-[52px]">
         <div className="mb-5 flex items-center justify-between">
           <button
             type="button"
@@ -132,7 +132,7 @@ export default function DetailedAssessmentRoute() {
           Detailed assessment
         </p>
 
-        <div className="mt-6 flex flex-col gap-6">
+        <div className="mt-6 flex flex-col gap-3">
           {section.questions.map((question) => (
             <QuestionField
               key={question.key}
@@ -150,7 +150,7 @@ export default function DetailedAssessmentRoute() {
         )}
       </section>
 
-      <div className="fixed inset-x-0 bottom-[var(--bottom-nav-height)] z-40 border-t border-border-default bg-surface px-2 py-3">
+      <div className="fixed inset-x-0 bottom-[var(--bottom-nav-height)] z-40 border-t border-border-default bg-surface px-3 py-3">
         <button
           type="button"
           onClick={handleNext}
@@ -180,7 +180,7 @@ type FieldProps = {
 
 function QuestionField({ question, value, onChange }: FieldProps) {
   return (
-    <div>
+    <div className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
       <label
         className="block text-[15px] leading-[1.4] text-on-surface"
         style={{ fontFamily: '"Mulish", sans-serif' }}
@@ -257,7 +257,7 @@ function ChipGroup({
             style={{
               fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
               borderColor: active ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
-              background: active ? 'rgba(94, 53, 102, 0.16)' : '#EFE4D8',
+              background: active ? 'rgba(94, 53, 102, 0.16)' : '#FBF6F0',
               color: active ? '#5E3566' : '#6E5870',
             }}
           >
@@ -270,7 +270,7 @@ function ChipGroup({
 }
 
 const inputClass =
-  'w-full rounded-2xl border border-border-default bg-surface-container-low px-4 py-3 text-[15px] text-on-surface placeholder:text-outline focus:border-primary focus:outline-none';
+  'w-full rounded-2xl border border-border-default bg-surface-container-lowest px-4 py-3 text-[15px] text-on-surface placeholder:text-outline focus:border-primary focus:outline-none';
 
 function TextInput({
   type,
@@ -470,7 +470,7 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
           setOpen((o) => !o);
           setPickingYear(false);
         }}
-        className="flex w-full items-center justify-between rounded-2xl border border-border-default bg-surface-container-low px-4 py-3 text-[15px] transition-colors"
+        className="flex w-full items-center justify-between rounded-2xl border border-border-default bg-surface-container-lowest px-4 py-3 text-[15px] transition-colors"
         style={{
           fontFamily: '"Mulish", sans-serif',
           color: hasValue ? '#3E2542' : '#B49FB0',
@@ -697,7 +697,7 @@ function DynList({ value, onChange }: { value: string; onChange: (v: string) => 
             <button
               type="button"
               onClick={() => remove(index)}
-              className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border border-border-default bg-surface-container-low text-outline transition-colors hover:border-error hover:text-error"
+              className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border border-border-default bg-surface-container-lowest text-outline transition-colors hover:border-error hover:text-error"
               aria-label="Remove"
             >
               ×
@@ -731,7 +731,7 @@ function ThanksScreen({ onDismiss }: { onDismiss: () => void }) {
   }, [onDismiss]);
 
   return (
-    <main className="flex h-[100dvh] min-h-mobile flex-col items-center justify-center bg-surface px-2 text-center">
+    <main className="flex h-[100dvh] min-h-mobile flex-col items-center justify-center bg-surface px-3 text-center">
       <div
         className="mb-6 flex h-16 w-16 items-center justify-center rounded-full"
         style={{

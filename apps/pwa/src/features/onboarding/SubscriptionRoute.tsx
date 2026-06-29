@@ -105,7 +105,7 @@ export default function SubscriptionRoute() {
 
   return (
     <main className="min-h-mobile overflow-auto bg-surface pt-[40px] text-on-surface">
-      <section className="flex items-center justify-between px-2 pb-2.5 pt-0">
+      <section className="flex items-center justify-between px-3 pb-2.5 pt-0">
         <button
           type="button"
           onClick={() => navigate('/assessment-result')}
@@ -117,7 +117,7 @@ export default function SubscriptionRoute() {
         <img src="/anu.png" alt="Anuva logo" className="h-5 w-5 object-contain" />
       </section>
 
-      <section className="px-2 pb-[18px] pt-2">
+      <section className="px-3 pb-[18px] pt-2">
         <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-secondary">
           <span className="h-px w-3 bg-secondary/70" />
           <span style={{ fontFamily: '"Mulish", sans-serif' }}>Full experience</span>
@@ -142,7 +142,7 @@ export default function SubscriptionRoute() {
         </p>
       </section>
 
-      <section className="px-2 pb-4">
+      <section className="px-3 pb-4">
         <article className="rounded-[20px] border border-border-default bg-secondary-container p-[18px]">
           <div className="mb-3.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
             <span className="h-px w-3 bg-primary/60" />
@@ -179,7 +179,7 @@ export default function SubscriptionRoute() {
         </article>
       </section>
 
-      <section className="flex flex-col gap-2.5 px-2">
+      <section className="flex flex-col gap-2.5 px-3">
         {plans.map((plan) => {
           const isSelected = selectedPlanId === plan.id;
 
@@ -190,8 +190,9 @@ export default function SubscriptionRoute() {
               onClick={() => setSelectedPlanId(plan.id)}
               className="relative flex items-center gap-3.5 rounded-[18px] px-4 py-3.5 text-left transition-colors"
               style={{
-                backgroundColor: isSelected ? '#FFFFFF' : '#F7F0E8',
+                backgroundColor: isSelected ? '#FFFFFF' : '#FBF6F0',
                 border: isSelected ? '1.5px solid #5E3566' : '1px solid rgba(94, 53, 102, 0.2)',
+                boxShadow: isSelected ? '0 10px 24px rgba(94,53,102,0.08)' : undefined,
               }}
             >
               {plan.badge && (
@@ -255,7 +256,7 @@ export default function SubscriptionRoute() {
         })}
       </section>
 
-      <section className="flex flex-wrap justify-center gap-1.5 px-2 pb-2 pt-4">
+      <section className="flex flex-wrap justify-center gap-1.5 px-3 pb-2 pt-4">
         {(
           [
             { key: 'dpdp', label: 'DPDP', href: DPDP_ACT_URL },
@@ -290,7 +291,7 @@ export default function SubscriptionRoute() {
         })}
       </section>
 
-      <section className="px-2 pb-[22px] pt-2.5">
+      <section className="px-3 pb-[22px] pt-2.5">
         <button
           type="button"
           onClick={() => void handlePrimaryAction()}

@@ -42,7 +42,7 @@ export default function CareDirectionRoute() {
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
-      <header className="sticky top-0 z-30 shrink-0 bg-surface px-2 pb-[22px] pt-[max(0.875rem,env(safe-area-inset-top))] text-center">
+      <header className="sticky top-0 z-30 shrink-0 bg-surface px-3 pb-[22px] pt-[max(0.875rem,env(safe-area-inset-top))] text-center">
         <div className="mb-3.5 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/15 px-3 py-1">
           <span className="h-1 w-1 rounded-full bg-primary" />
           <span
@@ -67,7 +67,7 @@ export default function CareDirectionRoute() {
         </p>
       </header>
 
-      <section className="px-2 pt-2">
+      <section className="px-3 pt-2">
         <article
           className="rounded-[20px] border border-border-default bg-secondary-container p-[22px]"
           style={{}}
@@ -103,7 +103,7 @@ export default function CareDirectionRoute() {
         </article>
       </section>
 
-      <section className="px-2 pt-[18px]">
+      <section className="px-3 pt-[18px]">
         <Eyebrow>Other paths available</Eyebrow>
         <div className="grid grid-cols-2 gap-2">
           {paths.map((p) => {
@@ -115,8 +115,9 @@ export default function CareDirectionRoute() {
                 onClick={() => setActivePath(p.id)}
                 className="rounded-[20px] border p-3.5 text-left transition-colors"
                 style={{
-                  backgroundColor: isActive ? '#FFFFFF' : '#F7F0E8',
+                  backgroundColor: isActive ? '#FFFFFF' : '#FBF6F0',
                   borderColor: isActive ? '#5E3566' : 'rgba(94, 53, 102, 0.2)',
+                  boxShadow: isActive ? '0 10px 24px rgba(94,53,102,0.08)' : undefined,
                 }}
               >
                 <div
@@ -149,9 +150,10 @@ export default function CareDirectionRoute() {
         </div>
       </section>
 
-      <section className="px-2 py-[22px]">
-        <Eyebrow>Your journey</Eyebrow>
-        <div className="relative pl-1">
+      <section className="px-3 py-[22px]">
+        <article className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
+          <Eyebrow>Your journey</Eyebrow>
+          <div className="relative pl-1">
           {timeline.map((t, i) => {
             const isLast = i === timeline.length - 1;
             const dotBg =
@@ -212,28 +214,29 @@ export default function CareDirectionRoute() {
               </div>
             );
           })}
-        </div>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => navigate('/booking')}
-          className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary"
-          style={{
-            fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
-            letterSpacing: '-0.005em',
-          }}
-        >
-          Book My Free Consultation
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M5 12h14M13 6l6 6-6 6"
-              stroke="#3E2542"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+          <button
+            type="button"
+            onClick={() => navigate('/booking')}
+            className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary"
+            style={{
+              fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+              letterSpacing: '-0.005em',
+            }}
+          >
+            Book My Free Consultation
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M5 12h14M13 6l6 6-6 6"
+                stroke="#3E2542"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </article>
       </section>
 
       <BottomNav />
