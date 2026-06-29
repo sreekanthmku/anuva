@@ -191,8 +191,8 @@ export default function SymptomTrackRoute() {
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
-      <header className="sticky top-0 z-30 shrink-0 bg-surface">
-        <div className="px-3 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
+      <header className="sticky top-0 z-30 shrink-0 border-b border-border-default bg-primary-container shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
+        <div className="px-3 pb-[20px] pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Eyebrow>{loading ? 'Loading…' : `${answeredCount} of ${total} logged today`}</Eyebrow>
           <h1 className="font-display mb-[16px] text-[30px] leading-[1.05] text-on-surface">
             How was your{' '}
@@ -203,7 +203,7 @@ export default function SymptomTrackRoute() {
           </h1>
 
           {/* Progress bar */}
-          <div className="mb-[16px] h-1.5 w-full overflow-hidden rounded-full bg-surface-container-low">
+          <div className="mb-[16px] h-2 w-full overflow-hidden rounded-full bg-surface-bright">
             <div
               className="h-full rounded-full bg-primary transition-all"
               style={{ width: `${pct}%` }}
@@ -233,8 +233,8 @@ export default function SymptomTrackRoute() {
                       width: isToday ? '100%' : 10,
                       height: isToday ? 28 : 10,
                       borderRadius: isToday ? 14 : '50%',
-                      background: isToday ? '#C97E92' : '#ECDFD0',
-                      color: isToday ? '#3E2542' : '#3E2542',
+                      background: isToday ? '#5E3566' : '#FFFFFF',
+                      color: isToday ? '#FBF6F0' : '#3E2542',
                       fontFamily: FONT_BODY,
                       fontSize: isToday ? 10 : 11,
                     }}
@@ -248,7 +248,7 @@ export default function SymptomTrackRoute() {
         </div>
       </header>
 
-      <div className="flex flex-col gap-3 px-3 pb-[22px] pt-[16px]">
+      <div className="flex flex-col gap-3 px-3 pb-[22px] pt-[18px]">
         {error && (
           <div className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-3 text-[13px] text-on-surface-variant">
             {error}{' '}
@@ -270,14 +270,14 @@ export default function SymptomTrackRoute() {
               className={`overflow-hidden rounded-[20px] border border-border-default ${
                 open
                   ? 'bg-surface-raised shadow-[0_14px_32px_rgba(94,53,102,0.08)]'
-                  : 'bg-surface-container-low'
+                  : 'bg-secondary-container'
               }`}
             >
               <button
                 type="button"
                 onClick={() => toggleTier(tier.key)}
                 className={`flex w-full items-center justify-between px-4 py-3.5 text-left ${
-                  open ? 'bg-secondary-container' : ''
+                  open ? 'bg-primary-container' : ''
                 }`}
               >
                 <span
@@ -286,7 +286,12 @@ export default function SymptomTrackRoute() {
                 >
                   {tier.label}
                 </span>
-                <span className="text-[11px] text-outline" style={{ fontFamily: FONT_MONO }}>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[11px] ${
+                    open ? 'bg-surface-bright text-outline' : 'bg-surface-bright text-primary'
+                  }`}
+                  style={{ fontFamily: FONT_MONO }}
+                >
                   {tierAnswered}/{items.length} {open ? '▾' : '▸'}
                 </span>
               </button>

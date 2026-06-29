@@ -68,13 +68,13 @@ Single Prisma schema at `packages/database/prisma/schema.prisma`. Exports a sing
 
 ## Design System
 
-`DESIGN.md` defines the **StarChart Luxury** design system:
-- Dark space theme: `#141219` surface, `#1E1B4B` deep-space
-- Primary accent: nebula purple `#A78BFA` / `#cebdff`
-- CTA / achievement: star yellow `#e2c62d`
-- Fonts: **Plus Jakarta Sans** (headings), **Lexend** (body), **Space Mono** (mono)
+`DESIGN.md` defines the **Anuva Wellness** design system (light, warm brand):
+- Light theme: `#F7F0E8` cream surface, `#3E2542` plum text
+- Primary accent: deep plum `#5E3566`; CTA: dusty rose `#C97E92` (`secondary` token); gold `#B8923C` (`tertiary`) for eyebrows/dividers
+- Fonts: **Fraunces** (headings, serif), **Mulish** (body), **Dancing Script** (`font-script`, accent-only — one tagline/hero line), **Space Mono** (mono/numerics)
+- Tailwind semantic tokens keep their names (`bg-surface`, `text-on-surface`, `text-primary`…); values are defined in `apps/pwa/tailwind.config.ts`
 - Base spacing unit: 8px; use `sp-1` through `sp-8`
-- All buttons pill-shaped (9999px radius); minimum tap target 44px
+- All buttons pill-shaped (9999px radius); minimum tap target 44px; warm plum-tinted shadows (no heavy black, no glows)
 
 ## Key Conventions
 

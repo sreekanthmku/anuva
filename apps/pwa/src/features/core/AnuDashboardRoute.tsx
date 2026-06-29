@@ -302,14 +302,10 @@ export default function AnuDashboardRoute() {
               : 'Day 0 · Week 1'}
           </span>
           <span
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] font-semibold"
-            style={{
-              background: 'rgba(184,146,60,0.16)',
-              color: '#8F6B1E',
-              fontFamily: '"Mulish", sans-serif',
-            }}
+            className="inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-3 py-1 text-[12.5px] font-semibold text-on-tertiary-container"
+            style={{ fontFamily: '"Mulish", sans-serif' }}
           >
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: '#B8923C' }} />
+            <span className="h-1.5 w-1.5 rounded-full bg-tertiary" />
             Perimenopause
           </span>
         </div>
@@ -615,10 +611,7 @@ export default function AnuDashboardRoute() {
       )}
 
       <section className="px-3 pb-5 pt-3">
-        <article
-          className="rounded-[20px] px-[18px] py-4"
-          style={{ background: 'rgba(184, 146, 60, 0.18)' }}
-        >
+        <article className="rounded-[20px] bg-tertiary-container px-[18px] py-4">
           <Eyebrow tone="gold">Today&apos;s insight</Eyebrow>
           <p className="text-[18px] leading-[1.45] text-on-surface" style={{ fontFamily: SERIF }}>
             Cooling the bedroom to 22°C before sleep can reduce night sweats by up to 40%.
@@ -631,8 +624,8 @@ export default function AnuDashboardRoute() {
               Dr. Meera Rao · AIIMS
             </span>
             <span
-              className="text-[13px] font-semibold"
-              style={{ color: '#8F6B1E', fontFamily: '"Mulish", sans-serif' }}
+              className="text-[13px] font-semibold text-on-tertiary-container"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
             >
               Read →
             </span>

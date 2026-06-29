@@ -11,11 +11,7 @@ export function NotificationSyncBanner({
 }: NotificationSyncBannerProps) {
   return (
     <div
-      className="mb-4 rounded-[16px] border px-4 py-3"
-      style={{
-        borderColor: 'rgba(184, 146, 60, 0.35)',
-        background: 'rgba(184, 146, 60, 0.1)',
-      }}
+      className="mb-4 rounded-[16px] border border-tertiary/35 bg-tertiary-container px-4 py-3"
       role="status"
     >
       <p

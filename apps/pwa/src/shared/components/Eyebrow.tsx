@@ -4,7 +4,7 @@ type EyebrowTone = 'plum' | 'gold' | 'cream' | 'muted' | 'ember';
 
 const TONE_COLOR: Record<EyebrowTone, string> = {
   plum: '#5E3566',
-  gold: '#8F6B1E',
+  gold: '#5A4716',
   cream: '#F0DFCF',
   muted: '#6E5A78',
   ember: '#C0405A',

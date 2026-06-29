@@ -34,7 +34,7 @@ const articles = [
 const toneColor: Record<(typeof articles)[number]['tone'], string> = {
   mint: '#5E3566',
   butter: '#C97E92',
-  blush: '#B8923C',
+  blush: '#5A4716',
   lilac: '#5B82C4',
 };
 
