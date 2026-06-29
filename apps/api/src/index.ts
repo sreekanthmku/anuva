@@ -1129,7 +1129,9 @@ app.get('/nudge/today', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     const now = new Date();
-    const slot = currentSlot(now);
+    const requestedSlot =
+      req.query.slot === undefined ? undefined : nudgeSlotSchema.parse(req.query.slot);
+    const slot = requestedSlot ?? currentSlot(now);
     const dispatch = await buildDispatch(user.id, slot, now);
 
     const startOfToday = startOfDay(now);
