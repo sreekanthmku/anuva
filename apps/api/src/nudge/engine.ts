@@ -70,6 +70,7 @@ export interface Dispatch {
   bundleTitle: string;
   cards: NudgeCard[];
   primaryNudgeId: string | null; // what gets recorded as the slot's send
+  suppressedNudgeId?: string;
   suppressedReason?: string;
   setDistress: boolean;
 }
@@ -142,7 +143,15 @@ export async function buildDispatch(
         };
       }
     }
-    return { slot, bundleTitle: title, cards: [], primaryNudgeId: null, suppressedReason: 'SR-03', setDistress: false };
+    return {
+      slot,
+      bundleTitle: title,
+      cards: [],
+      primaryNudgeId: null,
+      suppressedNudgeId: 'L3-007',
+      suppressedReason: 'SR-03',
+      setDistress: false,
+    };
   }
 
   // L3 triggers take priority over the routine bundle for this slot.
@@ -159,7 +168,15 @@ export async function buildDispatch(
   const primary = mustNudge(SLOT_PRIMARY[slot]);
   const gate = await runGovernor(userId, primary, slot, now);
   if (!gate.allowed) {
-    return { slot, bundleTitle: title, cards: [], primaryNudgeId: null, suppressedReason: gate.suppressedBy, setDistress: false };
+    return {
+      slot,
+      bundleTitle: title,
+      cards: [],
+      primaryNudgeId: null,
+      suppressedNudgeId: primary.id,
+      suppressedReason: gate.suppressedBy,
+      setDistress: false,
+    };
   }
 
   const ids: string[] = [];
@@ -194,6 +211,7 @@ export async function buildDispatch(
     bundleTitle: title,
     cards,
     primaryNudgeId: cards.length ? SLOT_PRIMARY[slot] : null,
+    suppressedNudgeId: cards.length ? undefined : SLOT_PRIMARY[slot],
     suppressedReason: cards.length ? undefined : 'SR-05',
     setDistress,
   };
@@ -222,6 +240,27 @@ export async function recordSend(
       ? [prisma.l3TriggerLog.create({ data: { userId, triggerId: nudgeId, firedAt: now } })]
       : []),
   ]);
+}
+
+// Record a candidate that was intentionally skipped by the Governor.
+export async function recordSuppression(
+  userId: string,
+  nudgeId: string,
+  slot: NudgeSlot,
+  reason: string,
+  now: Date,
+) {
+  const def = getNudge(nudgeId);
+  await prisma.nudgeSendLog.create({
+    data: {
+      userId,
+      nudgeId,
+      layer: def?.layer ?? 1,
+      slot,
+      sentAt: now,
+      suppressedReason: reason,
+    },
+  });
 }
 
 // Persist a single tracker answer to its per-domain model.
