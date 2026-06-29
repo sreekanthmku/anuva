@@ -1,8 +1,15 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { twemojiUrl } from '../../shared/lib/twemoji';
+import type { MoodEmotion, NudgeDayTracker, NudgeTier, SleepDisruption, SleepHoursBucket } from '@anuva/shared';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
-import { TRACK_DOMAINS } from './data/trackSymptoms';
+import { MoodLogSheet } from './components/MoodLogSheet';
+import { SleepLogSheet } from './components/SleepLogSheet';
+import { useNudgeDay } from './hooks/useNudgeDay';
+import { useMoodLog } from './hooks/useMoodLog';
+import { useSleepLog } from './hooks/useSleepLog';
+
+// Mood (L1-003) + sleep (L1-001) keep the emoji scale + extras via these sheets.
+const EMOJI_TRACKERS = new Set(['L1-001', 'L1-003']);
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 
@@ -31,46 +38,15 @@ function getCurrentWeekDays(reference = new Date()): WeekDayCell[] {
   });
 }
 
-const FEELINGS: { value: number; label: string; emoji: string }[] = [
-  { value: 5, label: 'Great', emoji: '😄' },
-  { value: 4, label: 'Good', emoji: '😊' },
-  { value: 3, label: 'Okay', emoji: '😐' },
-  { value: 2, label: 'Low', emoji: '😔' },
-  { value: 1, label: 'Awful', emoji: '😩' },
-];
-
-const MOOD_EMOTIONS: [string, string][] = [
-  ['calm', 'Calm'],
-  ['energized', 'Energized'],
-  ['anxious', 'Anxious'],
-  ['irritable', 'Irritable'],
-  ['sad', 'Sad'],
-  ['tearful', 'Tearful'],
-  ['foggy', 'Foggy'],
-  ['overwhelmed', 'Overwhelmed'],
-];
-
-const SLEEP_HOURS: [string, string][] = [
-  ['lt5', '<5h'],
-  ['5to6', '5–6h'],
-  ['6to7', '6–7h'],
-  ['7to8', '7–8h'],
-  ['gt8', '8+h'],
-];
-
-const SLEEP_DISRUPTIONS: [string, string][] = [
-  ['night_sweats', 'Night sweats'],
-  ['hot_flashes', 'Hot flashes'],
-  ['cant_fall_asleep', "Couldn't fall asleep"],
-  ['woke_often', 'Woke often'],
-  ['woke_early', 'Woke too early'],
-  ['bathroom_trips', 'Bathroom trips'],
-  ['racing_mind', 'Racing mind'],
-  ['restless', 'Restless'],
-];
-
 const FONT_BODY = '"Geist", -apple-system, system-ui, sans-serif';
 const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
+
+const TIERS: { key: NudgeTier; label: string }[] = [
+  { key: 'core', label: 'Daily core' },
+  { key: 'body', label: 'Body' },
+  { key: 'lifestyle', label: 'Lifestyle' },
+  { key: 'weekly', label: 'This week' },
+];
 
 function Eyebrow({ children, colorClass = 'text-outline' }: { children: ReactNode; colorClass?: string }) {
   return (
@@ -81,21 +57,24 @@ function Eyebrow({ children, colorClass = 'text-outline' }: { children: ReactNod
   );
 }
 
-function Chip({
+function OptionChip({
   label,
   selected,
+  disabled,
   onClick,
 }: {
   label: string;
   selected: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-pressed={selected}
-      className="rounded-full border px-3.5 py-2 text-[12px] font-medium transition-colors outline-none focus:outline-none focus-visible:outline-none"
+      className="rounded-full border px-3.5 py-2 text-[12px] font-medium transition-colors outline-none focus:outline-none disabled:opacity-50"
       style={{
         backgroundColor: selected ? '#cebdff' : 'transparent',
         borderColor: selected ? '#cebdff' : 'rgba(148, 142, 157, 0.35)',
@@ -109,52 +88,50 @@ function Chip({
   );
 }
 
-function FaceScale({
-  value,
-  onChange,
-}: {
-  value: number | null;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="grid grid-cols-5 gap-2">
-      {FEELINGS.map((f) => {
-        const selected = value === f.value;
-        return (
-          <button
-            key={f.value}
-            type="button"
-            onClick={() => onChange(f.value)}
-            aria-pressed={selected}
-            className="flex flex-col items-center gap-1.5 rounded-[16px] bg-transparent px-1 py-2 outline-none transition-transform focus:outline-none focus-visible:outline-none"
-            style={{ transform: selected ? 'scale(1.18)' : 'scale(1)', WebkitTapHighlightColor: 'transparent' }}
-          >
-            <img src={twemojiUrl(f.emoji)} alt={f.label} width={30} height={30} />
-            <span
-              className={`text-[9px] uppercase tracking-[0.04em] ${selected ? 'text-on-surface' : 'text-outline'}`}
-              style={{ fontFamily: FONT_MONO }}
-            >
-              {f.label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 export default function SymptomTrackRoute() {
   const { user } = useAuth();
-  const [feeling, setFeeling] = useState<number | null>(null);
-  const [emotions, setEmotions] = useState<Set<string>>(new Set());
-  const [sleepQuality, setSleepQuality] = useState<number | null>(null);
-  const [sleepHours, setSleepHours] = useState<string | null>(null);
-  const [disruptions, setDisruptions] = useState<Set<string>>(new Set());
-  const [symptoms, setSymptoms] = useState<Set<string>>(new Set());
-  const [intensity, setIntensity] = useState(4);
-  const [note, setNote] = useState('');
+  const { data, loading, error, respond, reload } = useNudgeDay();
+  const moodLog = useMoodLog();
+  const sleepLog = useSleepLog();
+
+  // Optimistic answer overlay + per-tracker saving + manual re-open editing.
+  const [localAnswers, setLocalAnswers] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Set<string>>(new Set());
+  const [openTiers, setOpenTiers] = useState<Set<NudgeTier>>(new Set(['core']));
+  const [moodOpen, setMoodOpen] = useState(false);
+  const [moodSaving, setMoodSaving] = useState(false);
+  const [sleepOpen, setSleepOpen] = useState(false);
+  const [sleepSaving, setSleepSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
+
+  const todayMood = moodLog.data?.today ?? null;
+  const todaySleep = sleepLog.data?.today ?? null;
+
+  const handleLogMood = async (feeling: number, emotions: MoodEmotion[]) => {
+    setMoodSaving(true);
+    try {
+      await moodLog.logMood(feeling, emotions);
+      await reload();
+    } finally {
+      setMoodSaving(false);
+    }
+  };
+
+  const handleLogSleep = async (
+    quality: number,
+    hours: SleepHoursBucket | null,
+    disruptions: SleepDisruption[],
+  ) => {
+    setSleepSaving(true);
+    try {
+      await sleepLog.logSleep(quality, hours, disruptions);
+      await reload();
+    } finally {
+      setSleepSaving(false);
+    }
+  };
 
   const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
   const weekDays = useMemo(() => getCurrentWeekDays(), []);
@@ -169,35 +146,70 @@ export default function SymptomTrackRoute() {
     toastTimer.current = window.setTimeout(() => setToast(null), 2600);
   };
 
-  const toggleIn = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (id: string) => {
-    setter((prev) => {
+  const trackers = data?.trackers ?? [];
+  const answerOf = (t: NudgeDayTracker): string | null => localAnswers[t.nudgeId] ?? t.answer;
+  const isAnswered = (t: NudgeDayTracker): boolean => answerOf(t) !== null;
+
+  const answeredCount = trackers.filter(isAnswered).length;
+  const total = trackers.length;
+  const pct = total ? Math.round((answeredCount / total) * 100) : 0;
+
+  const submit = async (t: NudgeDayTracker, answer: string) => {
+    setSaving(t.nudgeId);
+    setLocalAnswers((prev) => ({ ...prev, [t.nudgeId]: answer }));
+    setEditing((prev) => {
+      const next = new Set(prev);
+      next.delete(t.nudgeId);
+      return next;
+    });
+    try {
+      const res = await respond({ nudgeId: t.nudgeId, answer });
+      showToast(res.message);
+    } catch {
+      showToast("Couldn't save that — we'll retry later.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const toggleTier = (tier: NudgeTier) =>
+    setOpenTiers((prev) => {
+      const next = new Set(prev);
+      if (next.has(tier)) next.delete(tier);
+      else next.add(tier);
+      return next;
+    });
+
+  const toggleEdit = (id: string) =>
+    setEditing((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  };
-  const toggleEmotion = toggleIn(setEmotions);
-  const toggleDisruption = toggleIn(setDisruptions);
-  const toggleSymptom = toggleIn(setSymptoms);
-
-  const handleSave = () => {
-    // Local only for now — persistence lands in the backend pass.
-    showToast('Check-in saved');
-  };
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
         <div className="px-[22px] pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
-          <Eyebrow colorClass="text-primary">Day 8 · Week 2</Eyebrow>
-          <h1 className="font-display mb-[18px] text-[30px] leading-[1.05] text-on-surface">
+          <Eyebrow colorClass="text-primary">
+            {loading ? 'Loading…' : `${answeredCount} of ${total} logged today`}
+          </Eyebrow>
+          <h1 className="font-display mb-[16px] text-[30px] leading-[1.05] text-on-surface">
             How was your{' '}
             <em className="not-italic text-primary" style={{ fontStyle: 'italic', fontWeight: 300 }}>
               today
             </em>
             {`, ${firstName}?`}
           </h1>
+
+          {/* Progress bar */}
+          <div className="mb-[16px] h-1.5 w-full overflow-hidden rounded-full bg-surface-container-low">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
 
           <div className="flex justify-between gap-1">
             {weekDays.map((day) => {
@@ -237,122 +249,118 @@ export default function SymptomTrackRoute() {
         </div>
       </header>
 
-      <div className="flex flex-col gap-[22px] px-[22px] pb-[22px] pt-[16px]">
-        {/* Mood */}
-        <section>
-          <Eyebrow colorClass="text-primary">Mood</Eyebrow>
-          <FaceScale value={feeling} onChange={setFeeling} />
-          {feeling !== null && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {MOOD_EMOTIONS.map(([id, label]) => (
-                <Chip key={id} label={label} selected={emotions.has(id)} onClick={() => toggleEmotion(id)} />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Sleep */}
-        <section>
-          <Eyebrow colorClass="text-primary">Sleep</Eyebrow>
-          <FaceScale value={sleepQuality} onChange={setSleepQuality} />
-          {sleepQuality !== null && (
-            <>
-              <p className="mb-2 mt-3 text-[11px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
-                Hours slept
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {SLEEP_HOURS.map(([id, label]) => (
-                  <Chip
-                    key={id}
-                    label={label}
-                    selected={sleepHours === id}
-                    onClick={() => setSleepHours((cur) => (cur === id ? null : id))}
-                  />
-                ))}
-              </div>
-              <p className="mb-2 mt-3 text-[11px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
-                What disrupted it?
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {SLEEP_DISRUPTIONS.map(([id, label]) => (
-                  <Chip key={id} label={label} selected={disruptions.has(id)} onClick={() => toggleDisruption(id)} />
-                ))}
-              </div>
-            </>
-          )}
-        </section>
-
-        {/* Symptom domains */}
-        {TRACK_DOMAINS.map((domain) => (
-          <section key={domain.key}>
-            <Eyebrow>{domain.label}</Eyebrow>
-            <div className="flex flex-wrap gap-2">
-              {domain.items.map(([id, label]) => (
-                <Chip key={id} label={label} selected={symptoms.has(id)} onClick={() => toggleSymptom(id)} />
-              ))}
-            </div>
-          </section>
-        ))}
-
-        {/* Overall intensity */}
-        <section>
-          <div className="mb-2.5 flex items-baseline justify-between">
-            <Eyebrow>Overall intensity</Eyebrow>
-            <span className="text-[22px] text-on-surface">
-              {intensity}
-              <span className="text-[14px] font-normal text-outline">/7</span>
-            </span>
+      <div className="flex flex-col gap-3 px-[22px] pb-[22px] pt-[16px]">
+        {error && (
+          <div className="rounded-starchart-lg border border-border-default bg-surface-raised px-4 py-3 text-[13px] text-on-surface-variant">
+            {error}{' '}
+            <button type="button" onClick={reload} className="text-primary underline">
+              Retry
+            </button>
           </div>
-          <div className="flex gap-1.5">
-            {Array.from({ length: 7 }).map((_, i) => {
-              const filled = i < intensity;
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setIntensity(i + 1)}
-                  className="h-2.5 flex-1 rounded-full border-none p-0"
-                  style={{
-                    background: filled ? 'linear-gradient(90deg, #cebdff, #F87171)' : '#2b2930',
-                    cursor: 'pointer',
-                  }}
-                  aria-label={`Intensity ${i + 1}`}
-                />
-              );
-            })}
-          </div>
-          <div className="mt-1.5 flex justify-between">
-            <span className="text-[9.5px] uppercase tracking-[0.1em] text-outline" style={{ fontFamily: FONT_MONO }}>
-              Gentle day
-            </span>
-            <span className="text-[9.5px] uppercase tracking-[0.1em] text-outline" style={{ fontFamily: FONT_MONO }}>
-              Difficult day
-            </span>
-          </div>
-        </section>
+        )}
 
-        {/* Note */}
-        <section>
-          <Eyebrow>Note</Eyebrow>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            maxLength={1000}
-            placeholder="Anything else you want to remember about today?"
-            className="w-full resize-none rounded-starchart-lg border border-border-default bg-surface-container-low px-3.5 py-3 text-[13px] leading-[1.5] text-on-surface outline-none placeholder:text-outline focus:border-primary/50"
-            style={{ fontFamily: FONT_BODY }}
-          />
-        </section>
+        {TIERS.map((tier) => {
+          const items = trackers.filter((t) => t.tier === tier.key);
+          if (items.length === 0) return null;
+          const open = openTiers.has(tier.key);
+          const tierAnswered = items.filter(isAnswered).length;
 
-        <button
-          type="button"
-          onClick={handleSave}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface"
-          style={{ fontFamily: FONT_BODY, letterSpacing: '-0.005em' }}
-        >
-          Save Log ✓
-        </button>
+          return (
+            <section key={tier.key} className="overflow-hidden rounded-starchart-lg border border-border-default bg-surface-raised">
+              <button
+                type="button"
+                onClick={() => toggleTier(tier.key)}
+                className="flex w-full items-center justify-between px-4 py-3.5 text-left"
+              >
+                <span className="text-[14px] font-medium text-on-surface" style={{ fontFamily: FONT_BODY }}>
+                  {tier.label}
+                </span>
+                <span className="text-[11px] text-outline" style={{ fontFamily: FONT_MONO }}>
+                  {tierAnswered}/{items.length} {open ? '▾' : '▸'}
+                </span>
+              </button>
+
+              {open && (
+                <div className="flex flex-col gap-4 border-t border-border-default px-4 py-4">
+                  {items.map((t) => {
+                    // Mood & sleep keep the emoji scale + extras via their sheets.
+                    if (EMOJI_TRACKERS.has(t.nudgeId)) {
+                      const answered = t.answer !== null;
+                      const openSheet = () =>
+                        t.nudgeId === 'L1-003' ? setMoodOpen(true) : setSleepOpen(true);
+                      return (
+                        <div key={t.nudgeId} className="flex items-center justify-between gap-2">
+                          <div>
+                            <span className="text-[13px] text-on-surface" style={{ fontFamily: FONT_BODY }}>
+                              {t.label}
+                              {answered && <span className="ml-1.5 text-primary">✓</span>}
+                            </span>
+                            <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
+                              {answered ? t.answer : 'Not logged yet'}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={openSheet}
+                            className="rounded-full border border-border-default px-3.5 py-1.5 text-[12px] text-on-surface"
+                            style={{ fontFamily: FONT_BODY }}
+                          >
+                            {answered ? 'Change' : 'Log'}
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    const answer = answerOf(t);
+                    const answered = answer !== null;
+                    const showOptions = !answered || editing.has(t.nudgeId);
+                    return (
+                      <div key={t.nudgeId}>
+                        <div className="mb-2 flex items-baseline justify-between gap-2">
+                          <span
+                            className="text-[13px] text-on-surface"
+                            style={{ fontFamily: FONT_BODY }}
+                          >
+                            {t.label}
+                            {answered && <span className="ml-1.5 text-primary">✓</span>}
+                          </span>
+                          {answered && !showOptions && (
+                            <button
+                              type="button"
+                              onClick={() => toggleEdit(t.nudgeId)}
+                              className="text-[10px] uppercase tracking-[0.1em] text-outline"
+                              style={{ fontFamily: FONT_MONO }}
+                            >
+                              Change
+                            </button>
+                          )}
+                        </div>
+
+                        {showOptions ? (
+                          <div className="flex flex-wrap gap-2">
+                            {t.options.map((opt) => (
+                              <OptionChip
+                                key={opt}
+                                label={opt}
+                                selected={answer === opt}
+                                disabled={saving === t.nudgeId}
+                                onClick={() => submit(t, opt)}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[13px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
+                            {answer}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          );
+        })}
       </div>
 
       {toast && (
@@ -366,6 +374,25 @@ export default function SymptomTrackRoute() {
           </div>
         </div>
       )}
+
+      <MoodLogSheet
+        open={moodOpen}
+        initialFeeling={todayMood?.feeling ?? null}
+        initialEmotions={todayMood?.emotions ?? []}
+        saving={moodSaving}
+        onClose={() => setMoodOpen(false)}
+        onSave={handleLogMood}
+      />
+
+      <SleepLogSheet
+        open={sleepOpen}
+        initialQuality={todaySleep?.quality ?? null}
+        initialHours={todaySleep?.hours ?? null}
+        initialDisruptions={todaySleep?.disruptions ?? []}
+        saving={sleepSaving}
+        onClose={() => setSleepOpen(false)}
+        onSave={handleLogSleep}
+      />
 
       <BottomNav />
     </main>

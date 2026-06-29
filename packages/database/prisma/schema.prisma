@@ -18,6 +18,8 @@ model User {
   email               String?   @unique
   phoneVerifiedAt     DateTime?
   onboardingCompleted Boolean   @default(false)
+  dieticianPlanAssigned Boolean @default(false)
+  familyFeatureOptOut Boolean   @default(false)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -41,6 +43,24 @@ model User {
   sleepLogs          SleepLog[]
   quickSymptomLogs   QuickSymptomLog[]
   detailedAssessment DetailedAssessment?
+  energyLogs         EnergyLog[]
+  stressLogs         StressLog[]
+  hotFlashDailyLogs  HotFlashDailyLog[]
+  periodDailyStatuses PeriodDailyStatus[]
+  planAdherenceLogs  PlanAdherenceLog[]
+  hydrationLogs      HydrationLog[]
+  cravingsLogs       CravingsLog[]
+  movementLogs       MovementLog[]
+  meTimeLogs         MeTimeLog[]
+  foodRhythmLogs     FoodRhythmLog[]
+  familySupportLogs  FamilySupportLog[]
+  weeklyMoodReviews  WeeklyMoodReviewLog[]
+  brainFogLogs       BrainFogLog[]
+  bloatingLogs       BloatingLog[]
+  painLogs           PainLog[]
+  nudgeDailyStates   NudgeDailyState[]
+  nudgeSendLogs      NudgeSendLog[]
+  l3TriggerLogs      L3TriggerLog[]
 }
 
 enum FcmPlatform {
@@ -565,8 +585,11 @@ model MoodLog {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  feeling   Int // 1..5
+  feeling   Int? // 1..5 (manual sheet)
   emotions  String[] // emotion enum values
+  category  String? // nudge L1-003 categorical answer
+  slot      String? // morning | evening
+  moodShift String? // nudge L1-008 evening mood-shift answer
   loggedAt  DateTime @default(now())
   createdAt DateTime @default(now())
 
@@ -574,14 +597,16 @@ model MoodLog {
 }
 
 model SleepLog {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quality     Int // 1..5
-  hours       String? // hours bucket enum value
-  disruptions String[] // disruption enum values
-  loggedAt    DateTime @default(now())
-  createdAt   DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quality        Int? // 1..5 (manual sheet)
+  hours          String? // hours bucket enum value
+  disruptions    String[] // disruption enum values
+  category       String? // nudge L1-001 categorical answer
+  nightSweatFlag Boolean  @default(false)
+  loggedAt       DateTime @default(now())
+  createdAt      DateTime @default(now())
 
   @@index([userId, loggedAt])
 }
@@ -625,4 +650,268 @@ model DetailedAnswer {
 
   @@unique([assessmentId, questionKey])
   @@index([assessmentId])
+}
+
+// ─────────────────────────────────────────────
+// Nudge engine — daily tracker logs
+// Categorical answers captured by the ANU nudge cards.
+// source: "nudge" (answered via card) | "manual" (self-logged)
+// ─────────────────────────────────────────────
+
+model EnergyLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L1-002 answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model StressLog {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime @db.Date
+  category     String // L1-004 answer
+  overwhelmed  Boolean  @default(false) // sets distress_flag
+  source       String   @default("nudge")
+  loggedAt     DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model HotFlashDailyLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L1-005 bucket: none | 1-2 | 3-5 | more_than_5 | not_sure
+  count     Int? // numeric estimate when derivable
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model PeriodDailyStatus {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L1-006 answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model PlanAdherenceLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L1-007 answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model HydrationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L2-001 answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model CravingsLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L2-002 answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model MovementLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L2-006 answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model MeTimeLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L2-007 answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model FoodRhythmLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L2-009 answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model FamilySupportLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date // Sunday the week was logged
+  category  String // L2-008 weekly answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model WeeklyMoodReviewLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date // Fri/Sat the week was logged
+  category  String // L2-010 primary concern
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model BrainFogLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L2-003 answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model BloatingLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L2-004 answer
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model PainLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // L2-005 answer (pain type)
+  source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+// ─────────────────────────────────────────────
+// Nudge engine — governor state & send history
+// ─────────────────────────────────────────────
+
+model NudgeDailyState {
+  id                     String   @id @default(cuid())
+  userId                 String
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date                   DateTime @db.Date
+  nudgeCount             Int      @default(0)
+  morningAnchorResponded Boolean  @default(false)
+  afternoonResponded     Boolean  @default(false)
+  distressFlag           Boolean  @default(false)
+  lastEngagedAt          DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model NudgeSendLog {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nudgeId          String // e.g. L1-001, L2-003
+  layer            Int // 1 | 2 | 3
+  slot             String // morning | afternoon | evening
+  sentAt           DateTime  @default(now())
+  engagedAt        DateTime?
+  suppressedReason String? // set when a candidate was gated (SR-xx)
+
+  @@index([userId, sentAt])
+  @@index([userId, nudgeId, sentAt])
+}
+
+model L3TriggerLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  triggerId String // L3-001 .. L3-009
+  firedAt   DateTime @default(now())
+
+  @@index([userId, triggerId, firedAt])
 }

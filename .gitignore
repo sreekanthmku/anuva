@@ -26,3 +26,6 @@ pnpm-debug.log*
 .idea/
 .vscode/
 .vercel
+
+# Internal docs
+ANU_Nudge_Engine_Dev_Reference.docx

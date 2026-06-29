@@ -48,6 +48,12 @@ import {
   quickLogStateResponseSchema,
   logQuickSymptomResponseSchema,
   type QuickSymptom,
+  submitNudgeResponseBodySchema,
+  nudgeRespondResponseSchema,
+  nudgeTodayResponseSchema,
+  nudgeStateResponseSchema,
+  nudgeDayResponseSchema,
+  nudgeSlotSchema,
   saveDetailedAssessmentBodySchema,
   submitDetailedAssessmentBodySchema,
   detailedAssessmentStateResponseSchema,
@@ -58,6 +64,15 @@ import { ZodError } from 'zod';
 import { BOOKABLE_DOCTOR_KEYS, ensureBookingCatalog } from './bookingCatalog.js';
 import { sendPushToAllTokens } from './fcm.js';
 import { computeAvgPeriodLength, computeCycleState } from './cycleCalc.js';
+import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
+import {
+  buildDispatch,
+  storeResponse,
+  currentSlot,
+  startOfDay,
+  getDaySheet,
+  markTrackerEngagement,
+} from './nudge/engine.js';
 import { randomQuickLogMessage } from './quickLogMessages.js';
 
 const app = express();
@@ -1105,6 +1120,109 @@ app.get('/push/hello-world', async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────
+// Nudge engine
+// ─────────────────────────────────────────────
+
+// What the client should surface right now (current slot's card bundle).
+app.get('/nudge/today', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const now = new Date();
+    const slot = currentSlot(now);
+    const dispatch = await buildDispatch(user.id, slot, now);
+
+    const startOfToday = startOfDay(now);
+    const todayState = await prisma.nudgeDailyState.findUnique({
+      where: { userId_date: { userId: user.id, date: startOfToday } },
+    });
+    const budgetRemaining = Math.max(0, 3 - (todayState?.nudgeCount ?? 0));
+
+    res.json(
+      nudgeTodayResponseSchema.parse({
+        slot: dispatch.cards.length ? slot : null,
+        bundleTitle: dispatch.cards.length ? dispatch.bundleTitle : null,
+        budgetRemaining,
+        cards: dispatch.cards,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Store an answer to a nudge card and return ANU's tone reply.
+app.post('/nudge/respond', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { nudgeId, answer, loggedAt } = submitNudgeResponseBodySchema.parse(req.body);
+    const now = new Date();
+    const when = loggedAt ? new Date(loggedAt) : now;
+    const result = await storeResponse(user.id, nudgeId, answer, when, now);
+    res.status(201).json(
+      nudgeRespondResponseSchema.parse({
+        ok: true,
+        toneTemplateId: result.toneTemplateId,
+        message: result.message,
+        distressFlag: result.distressFlag,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Unified daily tracker sheet — powers the /track Today view. Includes answers
+// already captured via nudges so /track shows them without re-asking.
+app.get('/nudge/day', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const sheet = await getDaySheet(user.id, new Date());
+    res.json(nudgeDayResponseSchema.parse(sheet));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Governor state for the current day (debug/admin).
+app.get('/nudge/state', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const startOfToday = startOfDay(new Date());
+    const state = await prisma.nudgeDailyState.findUnique({
+      where: { userId_date: { userId: user.id, date: startOfToday } },
+    });
+    res.json(
+      nudgeStateResponseSchema.parse({
+        date: startOfToday.toISOString().split('T')[0],
+        nudgeCount: state?.nudgeCount ?? 0,
+        morningAnchorResponded: state?.morningAnchorResponded ?? false,
+        afternoonResponded: state?.afternoonResponded ?? false,
+        distressFlag: state?.distressFlag ?? false,
+        lastEngagedAt: state?.lastEngagedAt ? state.lastEngagedAt.toISOString() : null,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Manual slot dispatch for testing (guarded by the broadcast secret).
+app.post('/nudge/dispatch', async (req, res, next) => {
+  try {
+    requireBroadcastSecret(req);
+    const slot = nudgeSlotSchema.parse(req.query.slot);
+    const result = await dispatchSlot(slot);
+    res.json({ ok: true, slot, ...result });
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('FIREBASE_SERVICE_ACCOUNT')) {
+      next(new HttpError(503, e.message));
+      return;
+    }
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
 // Cycle tracking
 // ─────────────────────────────────────────────
 
@@ -1238,7 +1356,7 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
 // Mood tracking
 // ─────────────────────────────────────────────
 
-function serializeMoodLog(m: { id: string; feeling: number; emotions: string[]; loggedAt: Date }) {
+function serializeMoodLog(m: { id: string; feeling: number | null; emotions: string[]; loggedAt: Date }) {
   return moodLogSchema.parse({
     id: m.id,
     feeling: m.feeling,
@@ -1254,12 +1372,13 @@ app.get('/mood', async (req, res, next) => {
     startOfDay.setHours(0, 0, 0, 0);
 
     const [today, recent] = await Promise.all([
+      // Manual mood logs only (nudge L1-003/008 rows leave feeling null).
       prisma.moodLog.findFirst({
-        where: { userId: user.id, loggedAt: { gte: startOfDay } },
+        where: { userId: user.id, feeling: { not: null }, loggedAt: { gte: startOfDay } },
         orderBy: { loggedAt: 'desc' },
       }),
       prisma.moodLog.findMany({
-        where: { userId: user.id },
+        where: { userId: user.id, feeling: { not: null } },
         orderBy: { loggedAt: 'desc' },
         take: 14,
       }),
@@ -1288,6 +1407,7 @@ app.post('/mood', async (req, res, next) => {
         ...(loggedAt ? { loggedAt: new Date(loggedAt) } : {}),
       },
     });
+    await markTrackerEngagement(user.id, new Date());
     res.status(201).json(serializeMoodLog(created));
   } catch (e) {
     next(e);
@@ -1300,7 +1420,7 @@ app.post('/mood', async (req, res, next) => {
 
 function serializeSleepLog(s: {
   id: string;
-  quality: number;
+  quality: number | null;
   hours: string | null;
   disruptions: string[];
   loggedAt: Date;
@@ -1321,12 +1441,13 @@ app.get('/sleep', async (req, res, next) => {
     startOfDay.setHours(0, 0, 0, 0);
 
     const [today, recent] = await Promise.all([
+      // Manual sleep logs only (nudge L1-001 rows leave quality null).
       prisma.sleepLog.findFirst({
-        where: { userId: user.id, loggedAt: { gte: startOfDay } },
+        where: { userId: user.id, quality: { not: null }, loggedAt: { gte: startOfDay } },
         orderBy: { loggedAt: 'desc' },
       }),
       prisma.sleepLog.findMany({
-        where: { userId: user.id },
+        where: { userId: user.id, quality: { not: null } },
         orderBy: { loggedAt: 'desc' },
         take: 14,
       }),
@@ -1356,6 +1477,7 @@ app.post('/sleep', async (req, res, next) => {
         ...(loggedAt ? { loggedAt: new Date(loggedAt) } : {}),
       },
     });
+    await markTrackerEngagement(user.id, new Date());
     res.status(201).json(serializeSleepLog(created));
   } catch (e) {
     next(e);
@@ -1540,6 +1662,8 @@ app.use(
 
 async function startServer() {
   await readyBookingCatalog();
+
+  startNudgeScheduler();
 
   app.listen(port, () => {
     console.log(`API listening on http://localhost:${port}`);

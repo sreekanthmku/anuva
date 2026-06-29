@@ -17,6 +17,7 @@ import { useCycleTracker } from './hooks/useCycleTracker';
 import { useMoodLog } from './hooks/useMoodLog';
 import { useSleepLog } from './hooks/useSleepLog';
 import { useQuickLog } from './hooks/useQuickLog';
+import { useNudgeDay } from './hooks/useNudgeDay';
 import {
   getCalibrationProgress,
   getJourneyDay,
@@ -54,19 +55,19 @@ const MOOD_FEELING_LABELS: Record<number, string> = {
   1: 'Feeling awful',
 };
 
-const QUICK_SYMPTOM_RESPONSE: Record<QuickSymptom, { emoji: string; caption: string }> = {
-  hot_flash: { emoji: '🌬️', caption: 'Cool down — this passes' },
-  anxiety: { emoji: '🫂', caption: "You're held — breathe" },
-  chills: { emoji: '🍵', caption: "Warm up — you're okay" },
-  irritability: { emoji: '😮‍💨', caption: 'Exhale — let the tension out' },
-};
-
 const SLEEP_QUALITY_LABELS: Record<number, string> = {
   5: 'Slept great',
   4: 'Slept good',
   3: 'Slept okay',
   2: 'Slept poorly',
   1: 'Slept awful',
+};
+
+const QUICK_SYMPTOM_RESPONSE: Record<QuickSymptom, { emoji: string; caption: string }> = {
+  hot_flash: { emoji: '🌬️', caption: 'Cool down — this passes' },
+  anxiety: { emoji: '🫂', caption: "You're held — breathe" },
+  chills: { emoji: '🍵', caption: "Warm up — you're okay" },
+  irritability: { emoji: '😮‍💨', caption: 'Exhale — let the tension out' },
 };
 
 function getTimeGreeting(date = new Date()) {
@@ -121,6 +122,7 @@ export default function AnuDashboardRoute() {
   const mood = useMoodLog();
   const sleep = useSleepLog();
   const quick = useQuickLog();
+  const nudgeDay = useNudgeDay();
   const todayMood = mood.data?.today ?? null;
   const todaySleep = sleep.data?.today ?? null;
   const quickCounts = quick.data?.counts ?? null;
@@ -129,6 +131,7 @@ export default function AnuDashboardRoute() {
     setMoodSaving(true);
     try {
       await mood.logMood(feeling, emotions);
+      await nudgeDay.reload();
     } finally {
       setMoodSaving(false);
     }
@@ -142,6 +145,7 @@ export default function AnuDashboardRoute() {
     setSleepSaving(true);
     try {
       await sleep.logSleep(quality, hours, disruptions);
+      await nudgeDay.reload();
     } finally {
       setSleepSaving(false);
     }
@@ -392,6 +396,28 @@ export default function AnuDashboardRoute() {
           </div>
         </article>
       </section>
+
+      {nudgeDay.data && nudgeDay.data.answeredCount < nudgeDay.data.total && (
+        <section className="px-[22px] pt-4">
+          <button
+            type="button"
+            onClick={() => navigate('/track')}
+            className="flex w-full items-center justify-between rounded-[24px] border border-primary/30 bg-primary/10 px-[18px] py-4 text-left"
+          >
+            <div>
+              <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary">
+                <span className="h-px w-3 bg-primary/60" />
+                <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Complete your day</span>
+              </div>
+              <p className="text-[15px] text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                {nudgeDay.data.total - nudgeDay.data.answeredCount} quick{' '}
+                {nudgeDay.data.total - nudgeDay.data.answeredCount === 1 ? 'check-in' : 'check-ins'} left
+              </p>
+            </div>
+            <span className="text-[20px] text-primary">→</span>
+          </button>
+        </section>
+      )}
 
       <section className="px-[22px] pt-4">
         <div className="mb-2.5 flex items-baseline justify-between">
