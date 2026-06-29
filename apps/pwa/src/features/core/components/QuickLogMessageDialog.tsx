@@ -10,8 +10,8 @@ type QuickLogMessageDialogProps = {
   onClose: () => void;
 };
 
-const FONT_BODY = '"Geist", -apple-system, system-ui, sans-serif';
-const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
+const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
+const FONT_MONO = '"Mulish", sans-serif';
 
 export function QuickLogMessageDialog({
   open,
@@ -42,7 +42,7 @@ export function QuickLogMessageDialog({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-[340px] rounded-[24px] border border-border-default bg-surface-raised px-[22px] py-6 text-center shadow-xl"
+        className="relative w-full max-w-[340px] rounded-[20px] border border-border-default bg-surface-raised px-[22px] py-6 text-center"
       >
         {emoji && (
           <img
@@ -64,13 +64,16 @@ export function QuickLogMessageDialog({
           </p>
         )}
 
-        <span className="mx-auto mb-3 inline-flex items-center gap-1 rounded-full bg-primary/12 px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] text-primary" style={{ fontFamily: FONT_MONO }}>
+        <span
+          className="mx-auto mb-3 inline-flex items-center gap-1 rounded-full bg-primary/12 px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] text-primary"
+          style={{ fontFamily: FONT_MONO }}
+        >
           <Check size={10} strokeWidth={3} /> Logged
         </span>
 
         <p
           className="mb-6 text-[15px] leading-[1.5] text-on-surface"
-          style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}
+          style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
         >
           {message}
         </p>

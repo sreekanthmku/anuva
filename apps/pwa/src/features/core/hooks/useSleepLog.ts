@@ -39,7 +39,7 @@ export function useSleepLog() {
       await load();
       return entry;
     },
-    [load],
+    [load]
   );
 
   return {

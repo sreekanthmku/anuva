@@ -13,8 +13,7 @@ export function QuestionTitle({ prompt }: QuestionTitleProps) {
       <em
         className="not-italic text-primary"
         style={{
-          fontFamily: '"DM Sans", sans-serif',
-          fontStyle: 'italic',
+          fontFamily: '"Fraunces", sans-serif',
           fontWeight: 400,
           letterSpacing: '-0.02em',
         }}

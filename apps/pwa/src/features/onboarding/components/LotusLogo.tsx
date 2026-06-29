@@ -3,11 +3,15 @@ type LotusLogoProps = {
   color?: string;
 };
 
-export function LotusLogo({ size = 40, color = '#cebdff' }: LotusLogoProps) {
+export function LotusLogo({ size = 40, color = '#5E3566' }: LotusLogoProps) {
   return (
     <div
       className="inline-flex items-center justify-center"
-      style={{ width: size, height: size, filter: `drop-shadow(0 0 12px ${color}88) drop-shadow(0 0 4px ${color})` }}
+      style={{
+        width: size,
+        height: size,
+        filter: `drop-shadow(0 0 12px ${color}88) drop-shadow(0 0 4px ${color})`,
+      }}
     >
       <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">
         {Array.from({ length: 8 }).map((_, i) => (
@@ -27,4 +31,3 @@ export function LotusLogo({ size = 40, color = '#cebdff' }: LotusLogoProps) {
     </div>
   );
 }
-

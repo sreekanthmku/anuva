@@ -9,14 +9,19 @@ type TimeSlotSectionProps = {
   emptyMessage?: string | null;
 };
 
-export function TimeSlotSection({ slots, pickedTimeId, onSelectTime, emptyMessage }: TimeSlotSectionProps) {
+export function TimeSlotSection({
+  slots,
+  pickedTimeId,
+  onSelectTime,
+  emptyMessage,
+}: TimeSlotSectionProps) {
   return (
     <div className="mt-4">
       <BookingEyebrow>Choose a time</BookingEyebrow>
       {slots.length === 0 ? (
         <div
-          className="rounded-starchart-lg border border-dashed border-border-default bg-surface-container-low px-4 py-3 text-[12px] text-on-surface-variant"
-          style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+          className="rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-3 text-[12px] text-on-surface-variant"
+          style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
           {emptyMessage ?? 'No time slots available for this date.'}
         </div>
@@ -29,14 +34,17 @@ export function TimeSlotSection({ slots, pickedTimeId, onSelectTime, emptyMessag
                 key={t.id}
                 type="button"
                 onClick={() => onSelectTime(t.id)}
-                className="rounded-starchart-lg border px-2 py-2.5 text-center transition-colors"
+                className="rounded-[20px] border px-2 py-2.5 text-center transition-colors"
                 style={{
-                  backgroundColor: sel ? '#e2c62d' : '#141219',
-                  color: sel ? '#322f37' : '#e6e0ea',
-                  borderColor: sel ? '#e2c62d' : 'rgba(167, 139, 250, 0.2)',
+                  backgroundColor: sel ? '#C97E92' : '#F7F0E8',
+                  color: sel ? '#3E2542' : '#3E2542',
+                  borderColor: sel ? '#C97E92' : 'rgba(94, 53, 102, 0.2)',
                 }}
               >
-                <span className="text-[13px] font-medium tabular-nums" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                <span
+                  className="text-[13px] font-medium tabular-nums"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                >
                   {t.label}
                 </span>
               </button>

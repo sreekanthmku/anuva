@@ -11,9 +11,13 @@
   },
   "dependencies": {
     "@anuva/shared": "workspace:*",
+    "@fontsource/dancing-script": "^5.2.8",
     "@fontsource/dm-sans": "^5.2.5",
+    "@fontsource/fraunces": "^5.2.9",
     "@fontsource/geist": "^5.2.8",
     "@fontsource/geist-mono": "^5.2.7",
+    "@fontsource/mulish": "^5.2.8",
+    "@fontsource/space-mono": "^5.2.9",
     "firebase": "^12.13.0",
     "jotai": "^2.11.0",
     "lucide-react": "^1.17.0",

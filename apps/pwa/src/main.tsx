@@ -1,20 +1,21 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@fontsource/geist/300.css';
-import '@fontsource/geist/400.css';
-import '@fontsource/geist/500.css';
-import '@fontsource/geist/600.css';
-import '@fontsource/geist-mono/400.css';
-import '@fontsource/geist-mono/500.css';
-import '@fontsource/dm-sans/300.css';
-import '@fontsource/dm-sans/400.css';
-import '@fontsource/dm-sans/500.css';
-import '@fontsource/dm-sans/600.css';
-import '@fontsource/dm-sans/700.css';
-import '@fontsource/dm-sans/300-italic.css';
-import '@fontsource/dm-sans/400-italic.css';
-import '@fontsource/dm-sans/500-italic.css';
-import '@fontsource/dm-sans/700-italic.css';
+// Anuva brand fonts: Mulish (body), Fraunces (headings/serif), Dancing Script (accent)
+import '@fontsource/mulish/300.css';
+import '@fontsource/mulish/400.css';
+import '@fontsource/mulish/500.css';
+import '@fontsource/mulish/600.css';
+import '@fontsource/mulish/700.css';
+import '@fontsource/fraunces/400.css';
+import '@fontsource/fraunces/500.css';
+import '@fontsource/fraunces/600.css';
+import '@fontsource/fraunces/700.css';
+import '@fontsource/fraunces/400-italic.css';
+import '@fontsource/dancing-script/500.css';
+import '@fontsource/dancing-script/600.css';
+import '@fontsource/dancing-script/700.css';
+import '@fontsource/space-mono/400.css';
+import '@fontsource/space-mono/700.css';
 import App from './App';
 import './index.css';
 

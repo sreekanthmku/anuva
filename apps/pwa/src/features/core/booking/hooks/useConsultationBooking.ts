@@ -2,7 +2,14 @@ import type { ConsultationSpecialist } from '@anuva/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { ApiError } from '../../../../shared/lib/api';
 import { bookConsultation, fetchConsultationSlots, fetchConsultationSpecialists } from '../api';
-import { DATES_PER_PAGE, addDays, bookingDateCard, dateAtLocalNoonFromTodayOffset, formatBookingTimeLabel, localYmd } from '../dateTime';
+import {
+  DATES_PER_PAGE,
+  addDays,
+  bookingDateCard,
+  dateAtLocalNoonFromTodayOffset,
+  formatBookingTimeLabel,
+  localYmd,
+} from '../dateTime';
 
 export type ConsultationBookingPhase = 'form' | 'confirmed';
 
@@ -20,7 +27,9 @@ export function useConsultationBooking() {
   const [error, setError] = useState<string | null>(null);
   const [datePageStartOffset, setDatePageStartOffset] = useState(0);
   const [specialistKey, setSpecialistKey] = useState<string | null>(null);
-  const [slotDates, setSlotDates] = useState<{ date: string; slots: { id: string; startsAt: string; endsAt: string }[] }[]>([]);
+  const [slotDates, setSlotDates] = useState<
+    { date: string; slots: { id: string; startsAt: string; endsAt: string }[] }[]
+  >([]);
   const [pickedDateId, setPickedDateId] = useState<string | null>(null);
   const [pickedTimeId, setPickedTimeId] = useState<string | null>(null);
   const [confirmedBooking, setConfirmedBooking] = useState<ConfirmedBooking | null>(null);
@@ -59,7 +68,7 @@ export function useConsultationBooking() {
 
   const selectedSpecialist = useMemo(
     () => specialists.find((item) => item.key === specialistKey) ?? null,
-    [specialists, specialistKey],
+    [specialists, specialistKey]
   );
 
   const isSelectedSpecialistBookable = Boolean(selectedSpecialist?.bookable);
@@ -88,7 +97,9 @@ export function useConsultationBooking() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Unable to load appointment slots right now.');
+        setError(
+          err instanceof Error ? err.message : 'Unable to load appointment slots right now.'
+        );
       })
       .finally(() => {
         if (!cancelled) {
@@ -138,8 +149,12 @@ export function useConsultationBooking() {
   }
 
   const specialistLabel = confirmedBooking?.specialistName ?? selectedSpecialist?.name ?? '';
-  const timeLabel = confirmedBooking ? formatBookingTimeLabel(confirmedBooking.startsAt) : timeSlots.find((t) => t.id === pickedTimeId)?.label ?? '';
-  const confirmedDateYmd = confirmedBooking ? localYmd(new Date(confirmedBooking.startsAt)) : pickedDateId;
+  const timeLabel = confirmedBooking
+    ? formatBookingTimeLabel(confirmedBooking.startsAt)
+    : (timeSlots.find((t) => t.id === pickedTimeId)?.label ?? '');
+  const confirmedDateYmd = confirmedBooking
+    ? localYmd(new Date(confirmedBooking.startsAt))
+    : pickedDateId;
   const selectedWindowStart = dateAtLocalNoonFromTodayOffset(datePageStartOffset);
   const selectedWindowEnd = addDays(selectedWindowStart, DATES_PER_PAGE - 1);
   const windowLabel = `${selectedWindowStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${selectedWindowEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;

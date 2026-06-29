@@ -2,7 +2,13 @@ export type FcmSyncResult =
   | { ok: true; token: string }
   | {
       ok: false;
-      reason: 'not_configured' | 'not_granted' | 'unsupported' | 'no_token' | 'server_error' | 'unknown';
+      reason:
+        | 'not_configured'
+        | 'not_granted'
+        | 'unsupported'
+        | 'no_token'
+        | 'server_error'
+        | 'unknown';
       message: string;
     };
 

@@ -1,14 +1,20 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import type { MoodEmotion, NudgeCard, SleepDisruption, SleepHoursBucket } from '@anuva/shared';
+import { useNavigate, useParams } from 'react-router-dom';
+import type {
+  MoodEmotion,
+  NudgeCard,
+  NudgeSlot,
+  SleepDisruption,
+  SleepHoursBucket,
+} from '@anuva/shared';
 import { useNudgeToday } from './hooks/useNudgeToday';
 import { useMoodLog } from './hooks/useMoodLog';
 import { useSleepLog } from './hooks/useSleepLog';
 import { MoodLogSheet } from './components/MoodLogSheet';
 import { SleepLogSheet } from './components/SleepLogSheet';
 
-const FONT_BODY = '"Geist", -apple-system, system-ui, sans-serif';
-const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
+const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
+const FONT_MONO = '"Mulish", sans-serif';
 
 // Mood (L1-003) + sleep (L1-001) use the emoji scale + extras, not chips.
 const EMOJI_TRACKERS = new Set(['L1-001', 'L1-003']);
@@ -17,7 +23,10 @@ const EMOJI_TRACKERS = new Set(['L1-001', 'L1-003']);
 // place; ANU's tone reply is shown before advancing to the next card.
 export default function NudgeCardRoute() {
   const navigate = useNavigate();
-  const { data, loading, error, respond } = useNudgeToday();
+  const { slot } = useParams();
+  const requestedSlot: NudgeSlot | undefined =
+    slot === 'morning' || slot === 'afternoon' || slot === 'evening' ? slot : undefined;
+  const { data, loading, error, respond } = useNudgeToday(requestedSlot);
   const moodLog = useMoodLog();
   const sleepLog = useSleepLog();
   const [index, setIndex] = useState(0);
@@ -43,7 +52,7 @@ export default function NudgeCardRoute() {
   const handleLogSleep = async (
     quality: number,
     hours: SleepHoursBucket | null,
-    disruptions: SleepDisruption[],
+    disruptions: SleepDisruption[]
   ) => {
     setSaving(true);
     try {
@@ -92,10 +101,10 @@ export default function NudgeCardRoute() {
         {error && <p className="text-on-surface-variant">{error}</p>}
 
         {!loading && !error && (cards.length === 0 || done) && (
-          <div className="rounded-[24px] border border-border-default bg-surface-raised px-6 py-10 text-center">
+          <div className="rounded-[20px] border border-border-default bg-surface-raised px-6 py-10 text-center">
             <h2
               className="mb-2 text-[20px] text-on-surface"
-              style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}
+              style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
               {done ? "That's all for now." : 'Nothing to check in on right now.'}
             </h2>
@@ -113,7 +122,7 @@ export default function NudgeCardRoute() {
         )}
 
         {!loading && !error && !done && card && (
-          <div className="rounded-[24px] border border-border-default bg-surface-raised px-[22px] py-7">
+          <div className="rounded-[20px] border border-border-default bg-surface-raised px-2 py-7">
             {data?.bundleTitle && (
               <div
                 className="mb-2 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
@@ -125,7 +134,7 @@ export default function NudgeCardRoute() {
             )}
             <h2
               className="mb-6 text-[19px] leading-snug text-on-surface"
-              style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}
+              style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
               {card.question}
             </h2>

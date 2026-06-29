@@ -22,10 +22,10 @@ let messaging: Messaging | null = null;
 export function isFirebaseConfigured(): boolean {
   return Boolean(
     firebaseConfig.apiKey &&
-      firebaseConfig.projectId &&
-      firebaseConfig.messagingSenderId &&
-      firebaseConfig.appId &&
-      vapidKey,
+    firebaseConfig.projectId &&
+    firebaseConfig.messagingSenderId &&
+    firebaseConfig.appId &&
+    vapidKey
   );
 }
 
@@ -57,7 +57,9 @@ const FCM_SW_URL = '/firebase-messaging-sw.js';
 const FCM_SW_SCOPE = '/firebase-cloud-messaging-push-scope/';
 
 /** True when the registration is actually running our FCM SW script (not the workbox `/` SW). */
-function isFcmRegistration(registration: ServiceWorkerRegistration | undefined): registration is ServiceWorkerRegistration {
+function isFcmRegistration(
+  registration: ServiceWorkerRegistration | undefined
+): registration is ServiceWorkerRegistration {
   if (!registration) {
     return false;
   }

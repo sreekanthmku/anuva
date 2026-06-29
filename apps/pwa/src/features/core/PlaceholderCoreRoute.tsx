@@ -9,12 +9,11 @@ export default function PlaceholderCoreRoute({ title, subtitle }: PlaceholderCor
   return (
     <main className="flex h-[100dvh] min-h-mobile flex-col overflow-x-hidden overflow-y-auto bg-surface px-6 pb-28 pt-10 text-on-surface">
       <section className="flex-1">
-        <h1
-          className="font-display text-[34px] leading-[1.1] text-on-surface"
+        <h1 className="font-display text-[34px] leading-[1.1] text-on-surface">{title}</h1>
+        <p
+          className="mt-3 text-[14px] text-on-surface-variant"
+          style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
-          {title}
-        </h1>
-        <p className="mt-3 text-[14px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
           {subtitle}
         </p>
       </section>

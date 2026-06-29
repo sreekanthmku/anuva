@@ -12,11 +12,14 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
         <div>
           <p
             className="text-[22px] tracking-[0.16em] text-on-surface"
-            style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 400 }}
+            style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 400 }}
           >
             ANUVA
           </p>
-          <p className="mt-3 text-[13px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+          <p
+            className="mt-3 text-[13px] text-on-surface-variant"
+            style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+          >
             Checking your session...
           </p>
         </div>

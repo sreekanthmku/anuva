@@ -8,10 +8,42 @@ type CategoryKey = 'vaso' | 'sleep' | 'mood' | 'life';
 type Selections = Record<CategoryKey, string[]>;
 
 const categories: { key: CategoryKey; label: string; items: [string, string][] }[] = [
-  { key: 'vaso', label: 'Vasomotor', items: [['hot-flash', 'Hot flash'], ['night-sweat', 'Night sweat'], ['chills', 'Chills']] },
-  { key: 'sleep', label: 'Sleep & Energy', items: [['slept-well', 'Slept well'], ['interrupted', 'Interrupted'], ['fatigued', 'Fatigued']] },
-  { key: 'mood', label: 'Emotional', items: [['anxious', 'Anxious'], ['calm', 'Calm'], ['irritable', 'Irritable']] },
-  { key: 'life', label: 'Lifestyle', items: [['walked', '30min walk'], ['caffeine', 'Caffeine'], ['alcohol', 'Alcohol']] },
+  {
+    key: 'vaso',
+    label: 'Vasomotor',
+    items: [
+      ['hot-flash', 'Hot flash'],
+      ['night-sweat', 'Night sweat'],
+      ['chills', 'Chills'],
+    ],
+  },
+  {
+    key: 'sleep',
+    label: 'Sleep & Energy',
+    items: [
+      ['slept-well', 'Slept well'],
+      ['interrupted', 'Interrupted'],
+      ['fatigued', 'Fatigued'],
+    ],
+  },
+  {
+    key: 'mood',
+    label: 'Emotional',
+    items: [
+      ['anxious', 'Anxious'],
+      ['calm', 'Calm'],
+      ['irritable', 'Irritable'],
+    ],
+  },
+  {
+    key: 'life',
+    label: 'Lifestyle',
+    items: [
+      ['walked', '30min walk'],
+      ['caffeine', 'Caffeine'],
+      ['alcohol', 'Alcohol'],
+    ],
+  },
 ];
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
@@ -48,11 +80,21 @@ const initialSelections: Selections = {
   life: ['caffeine'],
 };
 
-function Eyebrow({ children, colorClass = 'text-outline' }: { children: ReactNode; colorClass?: string }) {
+function Eyebrow({
+  children,
+  colorClass = 'text-outline',
+}: {
+  children: ReactNode;
+  colorClass?: string;
+}) {
   return (
-    <div className={`mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] ${colorClass}`}>
-      <span className={`h-px w-3 ${colorClass === 'text-primary' ? 'bg-primary/60' : 'bg-outline/60'}`} />
-      <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>{children}</span>
+    <div
+      className={`mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] ${colorClass}`}
+    >
+      <span
+        className={`h-px w-3 ${colorClass === 'text-primary' ? 'bg-primary/60' : 'bg-outline/60'}`}
+      />
+      <span style={{ fontFamily: '"Mulish", sans-serif' }}>{children}</span>
     </div>
   );
 }
@@ -77,14 +119,12 @@ export default function SymptomTrackRoute() {
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
-      <header className="sticky top-0 z-30 shrink-0 bg-surface shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
+      <header className="sticky top-0 z-30 shrink-0 bg-surface">
         <div className="px-[22px] pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Eyebrow colorClass="text-primary">Day 8 · Week 2</Eyebrow>
-          <h1
-            className="font-display mb-[18px] text-[30px] leading-[1.05] text-on-surface"
-          >
+          <h1 className="font-display mb-[18px] text-[30px] leading-[1.05] text-on-surface">
             How was your{' '}
-            <em className="not-italic text-primary" style={{ fontStyle: 'italic', fontWeight: 300 }}>
+            <em className="not-italic text-primary" style={{ fontWeight: 300 }}>
               today
             </em>
             {`, ${firstName}?`}
@@ -98,13 +138,13 @@ export default function SymptomTrackRoute() {
                 <div key={day.label} className="flex min-w-0 flex-1 flex-col items-center gap-1">
                   <span
                     className={`text-[9px] uppercase tracking-[0.08em] ${isToday ? 'text-primary' : 'text-outline'}`}
-                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
                   >
                     {day.label}
                   </span>
                   <span
                     className={`text-[11px] leading-none ${isToday ? 'font-medium text-on-surface' : 'text-on-surface-variant'}`}
-                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
                   >
                     {day.dateNum}
                   </span>
@@ -114,9 +154,9 @@ export default function SymptomTrackRoute() {
                       width: isToday ? '100%' : 10,
                       height: isToday ? 28 : 10,
                       borderRadius: isToday ? 14 : '50%',
-                      background: isToday ? '#e2c62d' : isLogged ? '#cebdff' : '#2b2930',
-                      color: isToday ? '#322f37' : '#e6e0ea',
-                      fontFamily: '"Geist", -apple-system, system-ui, sans-serif',
+                      background: isToday ? '#C97E92' : isLogged ? '#5E3566' : '#ECDFD0',
+                      color: isToday ? '#3E2542' : '#3E2542',
+                      fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
                       fontSize: isToday ? 10 : 11,
                     }}
                   >
@@ -141,12 +181,12 @@ export default function SymptomTrackRoute() {
                     key={id}
                     type="button"
                     onClick={() => toggle(cat.key, id)}
-                    className="rounded-starchart-lg border px-2 py-3 text-center text-[12px] font-medium transition-colors"
+                    className="rounded-[20px] border px-2 py-3 text-center text-[12px] font-medium transition-colors"
                     style={{
-                      backgroundColor: sel ? '#2E2A6E' : '#141219',
-                      borderColor: sel ? '#cebdff' : 'rgba(167, 139, 250, 0.2)',
-                      color: sel ? '#cebdff' : '#e6e0ea',
-                      fontFamily: '"Geist", -apple-system, system-ui, sans-serif',
+                      backgroundColor: sel ? '#FFFFFF' : '#F7F0E8',
+                      borderColor: sel ? '#5E3566' : 'rgba(94, 53, 102, 0.2)',
+                      color: sel ? '#5E3566' : '#3E2542',
+                      fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
                     }}
                   >
                     {label}
@@ -160,9 +200,7 @@ export default function SymptomTrackRoute() {
         <div>
           <div className="mb-2.5 flex items-baseline justify-between">
             <Eyebrow>Overall intensity</Eyebrow>
-            <span
-              className="text-[22px] text-on-surface"
-            >
+            <span className="text-[22px] text-on-surface">
               {intensity}
               <span className="text-[14px] font-normal text-outline">/7</span>
             </span>
@@ -177,7 +215,7 @@ export default function SymptomTrackRoute() {
                   onClick={() => setIntensity(i + 1)}
                   className="h-2.5 flex-1 rounded-full border-none p-0"
                   style={{
-                    background: filled ? 'linear-gradient(90deg, #cebdff, #F87171)' : '#2b2930',
+                    background: filled ? '#5E3566' : '#ECDFD0',
                     cursor: 'pointer',
                   }}
                   aria-label={`Intensity ${i + 1}`}
@@ -186,10 +224,16 @@ export default function SymptomTrackRoute() {
             })}
           </div>
           <div className="mt-1.5 flex justify-between">
-            <span className="text-[9.5px] uppercase tracking-[0.1em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <span
+              className="text-[9.5px] uppercase tracking-[0.1em] text-outline"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               Gentle day
             </span>
-            <span className="text-[9.5px] uppercase tracking-[0.1em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <span
+              className="text-[9.5px] uppercase tracking-[0.1em] text-outline"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               Difficult day
             </span>
           </div>
@@ -198,8 +242,11 @@ export default function SymptomTrackRoute() {
         <button
           type="button"
           onClick={() => navigate('/report')}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface"
-          style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif', letterSpacing: '-0.005em' }}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-semibold text-on-secondary"
+          style={{
+            fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+            letterSpacing: '-0.005em',
+          }}
         >
           Save Log ✓
         </button>

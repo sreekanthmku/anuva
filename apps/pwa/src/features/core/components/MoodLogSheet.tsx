@@ -30,8 +30,8 @@ const EMOTIONS: { value: MoodEmotion; label: string }[] = [
   { value: 'overwhelmed', label: 'Overwhelmed' },
 ];
 
-const FONT_BODY = '"Geist", -apple-system, system-ui, sans-serif';
-const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
+const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
+const FONT_MONO = '"Mulish", sans-serif';
 
 export function MoodLogSheet({
   open,
@@ -65,7 +65,7 @@ export function MoodLogSheet({
 
   const toggleEmotion = (value: MoodEmotion) => {
     setEmotions((prev) =>
-      prev.includes(value) ? prev.filter((e) => e !== value) : [...prev, value],
+      prev.includes(value) ? prev.filter((e) => e !== value) : [...prev, value]
     );
   };
 
@@ -86,16 +86,19 @@ export function MoodLogSheet({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-[360px] rounded-[24px] border border-border-default bg-surface-raised px-[22px] py-6 shadow-xl"
+        className="relative w-full max-w-[360px] rounded-[20px] border border-border-default bg-surface-raised px-[22px] py-6"
         style={{ maxHeight: '88dvh', overflowY: 'auto' }}
       >
-        <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary" style={{ fontFamily: FONT_MONO }}>
+        <div
+          className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
+          style={{ fontFamily: FONT_MONO }}
+        >
           <span className="h-px w-3 bg-primary/60" />
           Mood check-in
         </div>
         <h2
           className="mb-5 text-[20px] text-on-surface"
-          style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}
+          style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
         >
           How are you feeling?
         </h2>
@@ -110,7 +113,10 @@ export function MoodLogSheet({
                 onClick={() => setFeeling(f.value)}
                 aria-pressed={selected}
                 className="flex flex-col items-center gap-1.5 rounded-[16px] bg-transparent px-1 py-2 outline-none transition-transform focus:outline-none focus-visible:outline-none"
-                style={{ transform: selected ? 'scale(1.28)' : 'scale(1)', WebkitTapHighlightColor: 'transparent' }}
+                style={{
+                  transform: selected ? 'scale(1.28)' : 'scale(1)',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
               >
                 <img src={twemojiUrl(f.emoji)} alt={f.label} width={34} height={34} />
                 <span
@@ -139,9 +145,9 @@ export function MoodLogSheet({
                 className="whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors"
                 style={{
                   fontFamily: FONT_BODY,
-                  backgroundColor: selected ? '#cebdff' : 'transparent',
-                  color: selected ? '#322f37' : '#e6e0ea',
-                  borderColor: selected ? '#cebdff' : 'rgba(148, 142, 157, 0.35)',
+                  backgroundColor: selected ? '#5E3566' : 'transparent',
+                  color: selected ? '#FBF6F0' : '#3E2542',
+                  borderColor: selected ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
                 }}
               >
                 {e.label}

@@ -9,7 +9,11 @@ type DetailedAssessmentState = {
 };
 
 export function useDetailedAssessment() {
-  const [state, setState] = useState<DetailedAssessmentState>({ data: null, loading: true, error: null });
+  const [state, setState] = useState<DetailedAssessmentState>({
+    data: null,
+    loading: true,
+    error: null,
+  });
 
   const load = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }));
@@ -35,10 +39,13 @@ export function useDetailedAssessment() {
   }, []);
 
   const submit = useCallback(async (answers: DetailedAnswer[]) => {
-    const data = await apiFetch<DetailedAssessmentStateResponse>('/api/detailed-assessment/submit', {
-      method: 'POST',
-      body: JSON.stringify({ answers }),
-    });
+    const data = await apiFetch<DetailedAssessmentStateResponse>(
+      '/api/detailed-assessment/submit',
+      {
+        method: 'POST',
+        body: JSON.stringify({ answers }),
+      }
+    );
     setState({ data, loading: false, error: null });
     return data;
   }, []);

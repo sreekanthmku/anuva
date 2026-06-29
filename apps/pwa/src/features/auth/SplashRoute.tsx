@@ -15,7 +15,9 @@ export default function SplashRoute() {
     }
 
     const id = window.setTimeout(() => {
-      navigate(status === 'authenticated' && user ? getPostAuthPath(user) : '/login', { replace: true });
+      navigate(status === 'authenticated' && user ? getPostAuthPath(user) : '/login', {
+        replace: true,
+      });
     }, SPLASH_MS);
     return () => window.clearTimeout(id);
   }, [navigate, status, user]);
@@ -24,7 +26,9 @@ export default function SplashRoute() {
     <main className="relative flex min-h-mobile flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-surface px-6 text-on-surface">
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 h-[min(100vw,28rem)] w-[min(100vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(206, 189, 255, 0.22) 0%, transparent 55%)' }}
+        style={{
+          background: 'transparent',
+        }}
       />
 
       <div className="relative z-10 flex flex-col items-center">
@@ -32,19 +36,17 @@ export default function SplashRoute() {
         <p
           className="text-[26px] tracking-[0.2em] text-on-surface"
           style={{
-            fontFamily: '"DM Sans", sans-serif',
-            fontWeight: 400,
+            fontFamily: '"Fraunces", serif',
+            fontWeight: 500,
           }}
         >
           ANUVA
         </p>
         <p
-          className="mt-2 text-[12px] italic text-primary"
+          className="mt-2 text-[20px] text-secondary"
           style={{
-            fontFamily: '"DM Sans", sans-serif',
-            fontStyle: 'italic',
-            fontWeight: 400,
-            letterSpacing: '-0.02em',
+            fontFamily: '"Dancing Script", cursive',
+            fontWeight: 600,
           }}
         >
           a soft place to land.

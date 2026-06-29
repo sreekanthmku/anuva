@@ -34,7 +34,7 @@ export function useMoodLog() {
       await load();
       return entry;
     },
-    [load],
+    [load]
   );
 
   return {

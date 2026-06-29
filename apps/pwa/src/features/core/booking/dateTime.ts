@@ -20,7 +20,12 @@ export function dateAtLocalNoonFromTodayOffset(firstDayOffset: number): Date {
   return anchor;
 }
 
-export function bookingDateCard(ymd: string): { id: string; dayNum: number; monthLabel: string; weekdayLabel: string } {
+export function bookingDateCard(ymd: string): {
+  id: string;
+  dayNum: number;
+  monthLabel: string;
+  weekdayLabel: string;
+} {
   const [y, m, d] = ymd.split('-').map(Number);
   if (!y || !m || !d) {
     return {
@@ -48,5 +53,10 @@ export function formatBookingDateLong(ymd: string): string {
   const [y, m, d] = ymd.split('-').map(Number);
   if (!y || !m || !d) return ymd;
   const dt = new Date(y, m - 1, d);
-  return dt.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  return dt.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }

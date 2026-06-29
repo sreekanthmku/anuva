@@ -9,7 +9,7 @@ export function AssessmentResultNavBar({ onBack }: AssessmentResultNavBarProps) 
         type="button"
         onClick={onBack}
         className="bg-transparent p-0 text-[13px] text-on-surface-variant"
-        style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+        style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
       >
         ← Back
       </button>

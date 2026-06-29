@@ -40,9 +40,9 @@ export default function AssessmentResultRoute() {
   const isInControl = status === 'in_control';
   const summaryItems: RiskPill[] = isInControl
     ? [
-        { title: 'Score', value: `${score}`, color: '#cebdff' },
-        { title: 'Status', value: 'In control', color: '#e2c62d' },
-        { title: 'Check back', value: '3 months', color: '#60A5FA' },
+        { title: 'Score', value: `${score}`, color: '#5E3566' },
+        { title: 'Status', value: 'In control', color: '#C97E92' },
+        { title: 'Check back', value: '3 months', color: '#5B82C4' },
       ]
     : riskPills;
   const steps = isInControl ? controlNextSteps : nextSteps;
@@ -75,9 +75,12 @@ export default function AssessmentResultRoute() {
       <AssessmentResultNavBar onBack={() => navigate(assessmentPath())} />
       <AssessmentResultSummary score={score} status={status} riskItems={summaryItems} />
 
-      <section className="px-[22px] pb-[18px] pt-1">
+      <section className="px-2 pb-[18px] pt-1">
         <NextStepsCard steps={steps} />
-        <AssessmentResultCTA onPrimary={() => void handlePrimaryAction()} isSubmitting={isStartingTrial} />
+        <AssessmentResultCTA
+          onPrimary={() => void handlePrimaryAction()}
+          isSubmitting={isStartingTrial}
+        />
       </section>
     </main>
   );

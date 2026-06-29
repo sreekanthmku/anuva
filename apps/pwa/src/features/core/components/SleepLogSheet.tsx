@@ -12,7 +12,7 @@ type SleepLogSheetProps = {
   onSave: (
     quality: number,
     hours: SleepHoursBucket | null,
-    disruptions: SleepDisruption[],
+    disruptions: SleepDisruption[]
   ) => void | Promise<void>;
 };
 
@@ -43,8 +43,8 @@ const DISRUPTIONS: { value: SleepDisruption; label: string }[] = [
   { value: 'restless', label: 'Restless' },
 ];
 
-const FONT_BODY = '"Geist", -apple-system, system-ui, sans-serif';
-const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
+const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
+const FONT_MONO = '"Mulish", sans-serif';
 
 export function SleepLogSheet({
   open,
@@ -61,7 +61,7 @@ export function SleepLogSheet({
 
   const initialDisruptionsKey = useMemo(
     () => (initialDisruptions ?? []).join(','),
-    [initialDisruptions],
+    [initialDisruptions]
   );
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export function SleepLogSheet({
 
   const toggleDisruption = (value: SleepDisruption) => {
     setDisruptions((prev) =>
-      prev.includes(value) ? prev.filter((d) => d !== value) : [...prev, value],
+      prev.includes(value) ? prev.filter((d) => d !== value) : [...prev, value]
     );
   };
 
@@ -105,16 +105,19 @@ export function SleepLogSheet({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-[360px] rounded-[24px] border border-border-default bg-surface-raised px-[22px] py-6 shadow-xl"
+        className="relative w-full max-w-[360px] rounded-[20px] border border-border-default bg-surface-raised px-[22px] py-6"
         style={{ maxHeight: '88dvh', overflowY: 'auto' }}
       >
-        <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary" style={{ fontFamily: FONT_MONO }}>
+        <div
+          className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
+          style={{ fontFamily: FONT_MONO }}
+        >
           <span className="h-px w-3 bg-primary/60" />
           Sleep check-in
         </div>
         <h2
           className="mb-5 text-[20px] text-on-surface"
-          style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}
+          style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
         >
           How did you sleep?
         </h2>
@@ -129,7 +132,10 @@ export function SleepLogSheet({
                 onClick={() => setQuality(q.value)}
                 aria-pressed={selected}
                 className="flex flex-col items-center gap-1.5 rounded-[16px] bg-transparent px-1 py-2 outline-none transition-transform focus:outline-none focus-visible:outline-none"
-                style={{ transform: selected ? 'scale(1.28)' : 'scale(1)', WebkitTapHighlightColor: 'transparent' }}
+                style={{
+                  transform: selected ? 'scale(1.28)' : 'scale(1)',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
               >
                 <img src={twemojiUrl(q.emoji)} alt={q.label} width={34} height={34} />
                 <span
@@ -158,9 +164,9 @@ export function SleepLogSheet({
                 className="whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors"
                 style={{
                   fontFamily: FONT_BODY,
-                  backgroundColor: selected ? '#cebdff' : 'transparent',
-                  color: selected ? '#322f37' : '#e6e0ea',
-                  borderColor: selected ? '#cebdff' : 'rgba(148, 142, 157, 0.35)',
+                  backgroundColor: selected ? '#5E3566' : 'transparent',
+                  color: selected ? '#FBF6F0' : '#3E2542',
+                  borderColor: selected ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
                 }}
               >
                 {h.label}
@@ -184,9 +190,9 @@ export function SleepLogSheet({
                 className="whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors"
                 style={{
                   fontFamily: FONT_BODY,
-                  backgroundColor: selected ? '#cebdff' : 'transparent',
-                  color: selected ? '#322f37' : '#e6e0ea',
-                  borderColor: selected ? '#cebdff' : 'rgba(148, 142, 157, 0.35)',
+                  backgroundColor: selected ? '#5E3566' : 'transparent',
+                  color: selected ? '#FBF6F0' : '#3E2542',
+                  borderColor: selected ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
                 }}
               >
                 {d.label}

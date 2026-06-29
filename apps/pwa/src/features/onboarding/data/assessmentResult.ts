@@ -5,15 +5,15 @@ export type RiskPill = {
 };
 
 export const riskPills: RiskPill[] = [
-  { title: 'Vasomotor', value: 'High', color: '#F87171' },
-  { title: 'Sleep', value: 'Moderate', color: '#e2c62d' },
-  { title: 'Cognitive', value: 'Low', color: '#cebdff' },
+  { title: 'Vasomotor', value: 'High', color: '#C0405A' },
+  { title: 'Sleep', value: 'Moderate', color: '#C97E92' },
+  { title: 'Cognitive', value: 'Low', color: '#5E3566' },
 ];
 
 export const controlPills: RiskPill[] = [
-  { title: 'Score', value: 'In control', color: '#cebdff' },
-  { title: 'Follow-up', value: '3 months', color: '#60A5FA' },
-  { title: 'Status', value: 'Stable', color: '#e2c62d' },
+  { title: 'Score', value: 'In control', color: '#5E3566' },
+  { title: 'Follow-up', value: '3 months', color: '#5B82C4' },
+  { title: 'Status', value: 'Stable', color: '#C97E92' },
 ];
 
 export const nextSteps: [string, string][] = [

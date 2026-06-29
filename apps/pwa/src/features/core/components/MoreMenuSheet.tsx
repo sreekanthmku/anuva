@@ -48,7 +48,7 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
         aria-label="Close menu"
       />
       <div
-        className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-5 shadow-[0_-8px_32px_rgba(0,0,0,0.35)]"
+        className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-5"
         role="dialog"
         aria-modal="true"
         aria-labelledby="more-menu-title"
@@ -63,15 +63,18 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
               <button
                 type="button"
                 onClick={() => go(item.to)}
-                className="flex w-full items-center gap-4 rounded-starchart-lg border border-transparent px-3 py-3.5 text-left transition-colors hover:border-border-default hover:bg-surface-container-low"
+                className="flex w-full items-center gap-4 rounded-[20px] border border-transparent px-3 py-3.5 text-left transition-colors hover:border-border-default hover:bg-surface-container-low"
               >
                 <span
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-[12px] text-primary"
-                  style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
                   {item.num}
                 </span>
-                <span className="text-[15px] text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                <span
+                  className="text-[15px] text-on-surface"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                >
                   {item.label}
                 </span>
               </button>

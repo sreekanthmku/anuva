@@ -28,7 +28,7 @@ export function NotificationPermissionDialog({
         aria-modal="true"
         aria-labelledby="notification-prompt-title"
         aria-describedby="notification-prompt-desc"
-        className="relative w-full max-w-[360px] rounded-[24px] border border-border-default bg-surface-raised px-[22px] py-5 shadow-xl"
+        className="relative w-full max-w-[360px] rounded-[20px] border border-border-default bg-surface-raised px-[22px] py-5"
       >
         <button
           type="button"
@@ -36,8 +36,8 @@ export function NotificationPermissionDialog({
           aria-label="Close"
           className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border text-on-surface-variant transition-opacity hover:opacity-90"
           style={{
-            background: '#1d1a21',
-            borderColor: 'rgba(148, 142, 157, 0.35)',
+            background: '#EFE4D8',
+            borderColor: 'rgba(180, 159, 176, 0.35)',
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -65,12 +65,16 @@ export function NotificationPermissionDialog({
         <h2
           id="notification-prompt-title"
           className="mb-2 text-[20px] leading-tight text-on-surface"
-          style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 400 }}
+          style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 400 }}
         >
           Stay in the loop?
         </h2>
-        <p id="notification-prompt-desc" className="mb-5 text-[13px] leading-relaxed text-on-surface-variant">
-          Gentle reminders for symptom logging and your weekly summary. You can change this anytime in Profile.
+        <p
+          id="notification-prompt-desc"
+          className="mb-5 text-[13px] leading-relaxed text-on-surface-variant"
+        >
+          Gentle reminders for symptom logging and your weekly summary. You can change this anytime
+          in Profile.
         </p>
 
         <div className="flex flex-col gap-2">
@@ -78,8 +82,8 @@ export function NotificationPermissionDialog({
             type="button"
             onClick={onAccept}
             disabled={isRegistering}
-            className="inline-flex w-full items-center justify-center rounded-full bg-secondary px-4 py-3 text-[14px] font-medium text-inverse-on-surface disabled:opacity-60"
-            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            className="inline-flex w-full items-center justify-center rounded-full bg-secondary px-4 py-3 text-[14px] font-semibold text-on-secondary disabled:opacity-60"
+            style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
             {isRegistering ? 'Registering device…' : 'Enable notifications'}
           </button>
@@ -87,7 +91,7 @@ export function NotificationPermissionDialog({
             type="button"
             onClick={onDismiss}
             className="inline-flex w-full items-center justify-center rounded-full px-4 py-3 text-[13px] font-medium text-on-surface-variant"
-            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
             Not now
           </button>

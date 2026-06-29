@@ -8,10 +8,30 @@ export const CYCLE_PHASE_CONFIG: Record<
   CyclePhase,
   { label: string; color: string; bg: string; border: string }
 > = {
-  period: { label: 'Period', color: '#F87171', bg: 'rgba(248,113,113,0.15)', border: 'rgba(248,113,113,0.3)' },
-  follicular: { label: 'Follicular', color: '#cebdff', bg: 'rgba(206,189,255,0.15)', border: 'rgba(206,189,255,0.3)' },
-  ovulatory: { label: 'Ovulatory', color: '#e2c62d', bg: 'rgba(226,198,45,0.15)', border: 'rgba(226,198,45,0.3)' },
-  luteal: { label: 'Luteal', color: '#7dd3fc', bg: 'rgba(125,211,252,0.15)', border: 'rgba(125,211,252,0.3)' },
+  period: {
+    label: 'Period',
+    color: '#C0405A',
+    bg: 'rgba(192, 64, 90,0.15)',
+    border: 'rgba(192, 64, 90,0.3)',
+  },
+  follicular: {
+    label: 'Follicular',
+    color: '#5E3566',
+    bg: 'rgba(94, 53, 102,0.15)',
+    border: 'rgba(94, 53, 102,0.3)',
+  },
+  ovulatory: {
+    label: 'Ovulatory',
+    color: '#C97E92',
+    bg: 'rgba(201, 126, 146,0.15)',
+    border: 'rgba(201, 126, 146,0.3)',
+  },
+  luteal: {
+    label: 'Luteal',
+    color: '#5B82C4',
+    bg: 'rgba(125,211,252,0.15)',
+    border: 'rgba(125,211,252,0.3)',
+  },
 };
 
 export function formatCycleDate(dateStr: string): string {

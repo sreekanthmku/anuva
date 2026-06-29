@@ -48,7 +48,7 @@ export default function DetailedAssessmentRoute() {
   const isLastStep = step === totalSteps - 1;
   const progressLabel = useMemo(
     () => `${String(step + 1).padStart(2, '0')} / ${String(totalSteps).padStart(2, '0')}`,
-    [step, totalSteps],
+    [step, totalSteps]
   );
 
   const setAnswer = (key: string, value: string) => {
@@ -95,26 +95,26 @@ export default function DetailedAssessmentRoute() {
   if (loading && !hydrated) {
     return (
       <main className="flex min-h-mobile items-center justify-center bg-surface text-outline">
-        <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Loading…</span>
+        <span style={{ fontFamily: '"Mulish", sans-serif' }}>Loading…</span>
       </main>
     );
   }
 
   return (
     <main className="relative h-[100dvh] min-h-mobile overflow-y-auto overflow-x-hidden bg-surface text-on-surface [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <section className="relative z-10 flex min-h-[100dvh] flex-col px-[22px] pb-[calc(var(--bottom-nav-height)+96px)] pt-[52px]">
+      <section className="relative z-10 flex min-h-[100dvh] flex-col px-2 pb-[calc(var(--bottom-nav-height)+96px)] pt-[52px]">
         <div className="mb-5 flex items-center justify-between">
           <button
             type="button"
             onClick={handleBack}
             className="text-[13px] text-outline transition-opacity hover:opacity-80"
-            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
             ← Back
           </button>
           <span
             className="text-[11px] uppercase tracking-[0.12em] text-outline"
-            style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+            style={{ fontFamily: '"Mulish", sans-serif' }}
           >
             {progressLabel}
           </span>
@@ -122,10 +122,12 @@ export default function DetailedAssessmentRoute() {
 
         <StepDots total={totalSteps} current={step} />
 
-        <h1 className="mt-6 font-display text-[26px] leading-[1.15] text-on-surface">{section.title}</h1>
+        <h1 className="mt-6 font-display text-[26px] leading-[1.15] text-on-surface">
+          {section.title}
+        </h1>
         <p
           className="mt-1.5 text-[12px] uppercase tracking-[0.14em] text-primary"
-          style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+          style={{ fontFamily: '"Mulish", sans-serif' }}
         >
           Detailed assessment
         </p>
@@ -142,19 +144,19 @@ export default function DetailedAssessmentRoute() {
         </div>
 
         {error && (
-          <p className="mt-4 text-[13px] text-error" style={{ fontFamily: '"Geist", sans-serif' }}>
+          <p className="mt-4 text-[13px] text-error" style={{ fontFamily: '"Mulish", sans-serif' }}>
             {error}
           </p>
         )}
       </section>
 
-      <div className="fixed inset-x-0 bottom-[var(--bottom-nav-height)] z-40 border-t border-border-default bg-surface px-[22px] py-3">
+      <div className="fixed inset-x-0 bottom-[var(--bottom-nav-height)] z-40 border-t border-border-default bg-surface px-2 py-3">
         <button
           type="button"
           onClick={handleNext}
           disabled={saving}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[15px] text-[15px] font-medium text-inverse-on-surface disabled:opacity-60"
-          style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif', fontWeight: 500 }}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[15px] text-[15px] font-semibold text-on-secondary disabled:opacity-60"
+          style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif', fontWeight: 500 }}
         >
           {saving ? 'Saving…' : isLastStep ? 'Finish & submit' : 'Save & continue'}
           {!saving && <span aria-hidden="true">→</span>}
@@ -179,7 +181,10 @@ type FieldProps = {
 function QuestionField({ question, value, onChange }: FieldProps) {
   return (
     <div>
-      <label className="block text-[15px] leading-[1.4] text-on-surface" style={{ fontFamily: '"Geist", sans-serif' }}>
+      <label
+        className="block text-[15px] leading-[1.4] text-on-surface"
+        style={{ fontFamily: '"Mulish", sans-serif' }}
+      >
         {question.prompt}
         {question.optional && <span className="ml-1.5 text-[12px] text-outline">(optional)</span>}
       </label>
@@ -201,7 +206,14 @@ function FieldInput({ question, value, onChange }: FieldProps) {
     case 'select':
       return <ChipGroup options={question.options ?? []} value={value} onChange={onChange} />;
     case 'number':
-      return <TextInput type="number" value={value} onChange={onChange} placeholder={question.placeholder} />;
+      return (
+        <TextInput
+          type="number"
+          value={value}
+          onChange={onChange}
+          placeholder={question.placeholder}
+        />
+      );
     case 'date':
       return <DatePicker value={value} onChange={onChange} />;
     case 'textarea':
@@ -212,7 +224,14 @@ function FieldInput({ question, value, onChange }: FieldProps) {
       return <DynList value={value} onChange={onChange} />;
     case 'text':
     default:
-      return <TextInput type="text" value={value} onChange={onChange} placeholder={question.placeholder} />;
+      return (
+        <TextInput
+          type="text"
+          value={value}
+          onChange={onChange}
+          placeholder={question.placeholder}
+        />
+      );
   }
 }
 
@@ -236,10 +255,10 @@ function ChipGroup({
             onClick={() => onChange(active ? '' : option)}
             className="rounded-full border px-4 py-2 text-[14px] transition-colors"
             style={{
-              fontFamily: '"Geist", -apple-system, system-ui, sans-serif',
-              borderColor: active ? '#cebdff' : 'rgba(148, 142, 157, 0.35)',
-              background: active ? 'rgba(206, 189, 255, 0.16)' : '#1d1a21',
-              color: active ? '#cebdff' : '#b5acbf',
+              fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+              borderColor: active ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
+              background: active ? 'rgba(94, 53, 102, 0.16)' : '#EFE4D8',
+              color: active ? '#5E3566' : '#6E5870',
             }}
           >
             {option}
@@ -271,7 +290,7 @@ function TextInput({
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
       className={inputClass}
-      style={{ fontFamily: '"Geist", sans-serif' }}
+      style={{ fontFamily: '"Mulish", sans-serif' }}
     />
   );
 }
@@ -292,7 +311,7 @@ function TextArea({
       rows={3}
       onChange={(event) => onChange(event.target.value)}
       className={inputClass}
-      style={{ fontFamily: '"Geist", sans-serif' }}
+      style={{ fontFamily: '"Mulish", sans-serif' }}
     />
   );
 }
@@ -336,7 +355,7 @@ function TextList({
           placeholder={`${index + 1}.`}
           onChange={(event) => update(index, event.target.value)}
           className={inputClass}
-          style={{ fontFamily: '"Geist", sans-serif' }}
+          style={{ fontFamily: '"Mulish", sans-serif' }}
         />
       ))}
     </div>
@@ -349,8 +368,18 @@ function TextList({
 // ─────────────────────────────────────────────
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -402,18 +431,22 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstDow = new Date(viewYear, viewMonth, 1).getDay();
   const cells = Array.from({ length: firstDow + daysInMonth }, (_, i) =>
-    i < firstDow ? null : i - firstDow + 1,
+    i < firstDow ? null : i - firstDow + 1
   );
   // Pad to full weeks
   while (cells.length % 7 !== 0) cells.push(null);
 
   const prevMonth = () => {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
-    else setViewMonth((m) => m - 1);
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else setViewMonth((m) => m - 1);
   };
   const nextMonth = () => {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
-    else setViewMonth((m) => m + 1);
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else setViewMonth((m) => m + 1);
   };
 
   const selectDay = (day: number) => {
@@ -433,22 +466,33 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
       {/* Trigger */}
       <button
         type="button"
-        onClick={() => { setOpen((o) => !o); setPickingYear(false); }}
+        onClick={() => {
+          setOpen((o) => !o);
+          setPickingYear(false);
+        }}
         className="flex w-full items-center justify-between rounded-2xl border border-border-default bg-surface-container-low px-4 py-3 text-[15px] transition-colors"
         style={{
-          fontFamily: '"Geist", sans-serif',
-          color: hasValue ? '#e8e4ef' : '#948e9d',
-          borderColor: open ? '#cebdff' : undefined,
+          fontFamily: '"Mulish", sans-serif',
+          color: hasValue ? '#3E2542' : '#B49FB0',
+          borderColor: open ? '#5E3566' : undefined,
         }}
       >
         <span>{formatDisplay(value)}</span>
         <svg
-          width="16" height="16" viewBox="0 0 16 16" fill="none"
-          style={{ opacity: 0.6, flexShrink: 0, transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }}
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          style={{
+            opacity: 0.6,
+            flexShrink: 0,
+            transform: open ? 'rotate(180deg)' : undefined,
+            transition: 'transform 0.2s',
+          }}
         >
-          <rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="#948e9d" strokeWidth="1.2" />
-          <path d="M5 1v3M11 1v3" stroke="#948e9d" strokeWidth="1.2" strokeLinecap="round" />
-          <path d="M1.5 6.5h13" stroke="#948e9d" strokeWidth="1.2" />
+          <rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="#B49FB0" strokeWidth="1.2" />
+          <path d="M5 1v3M11 1v3" stroke="#B49FB0" strokeWidth="1.2" strokeLinecap="round" />
+          <path d="M1.5 6.5h13" stroke="#B49FB0" strokeWidth="1.2" />
         </svg>
       </button>
 
@@ -457,9 +501,8 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
         <div
           className="absolute left-0 z-50 mt-2 w-full overflow-hidden rounded-2xl border"
           style={{
-            background: '#1a1720',
-            borderColor: 'rgba(206, 189, 255, 0.2)',
-            boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+            background: '#EFE4D8',
+            borderColor: 'rgba(94, 53, 102, 0.2)',
           }}
         >
           {pickingYear ? (
@@ -467,9 +510,12 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
             <div>
               <div
                 className="flex items-center justify-between border-b px-4 py-3"
-                style={{ borderColor: 'rgba(206,189,255,0.1)' }}
+                style={{ borderColor: 'rgba(94, 53, 102,0.1)' }}
               >
-                <span className="text-[13px] uppercase tracking-[0.14em] text-primary" style={{ fontFamily: '"Geist Mono", monospace' }}>
+                <span
+                  className="text-[13px] uppercase tracking-[0.14em] text-primary"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
                   Select year
                 </span>
                 <button
@@ -485,12 +531,15 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
                   <button
                     key={year}
                     type="button"
-                    onClick={() => { setViewYear(year); setPickingYear(false); }}
+                    onClick={() => {
+                      setViewYear(year);
+                      setPickingYear(false);
+                    }}
                     className="w-full px-4 py-2.5 text-left text-[15px] transition-colors hover:bg-white/5"
                     style={{
-                      fontFamily: '"Geist", sans-serif',
-                      color: year === viewYear ? '#cebdff' : '#b5acbf',
-                      background: year === viewYear ? 'rgba(206,189,255,0.1)' : undefined,
+                      fontFamily: '"Mulish", sans-serif',
+                      color: year === viewYear ? '#5E3566' : '#6E5870',
+                      background: year === viewYear ? 'rgba(94, 53, 102,0.1)' : undefined,
                     }}
                   >
                     {year}
@@ -503,22 +552,38 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
             <div className="p-3">
               {/* Header */}
               <div className="mb-3 flex items-center justify-between">
-                <button type="button" onClick={prevMonth} className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10 text-outline text-[18px]">‹</button>
+                <button
+                  type="button"
+                  onClick={prevMonth}
+                  className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10 text-outline text-[18px]"
+                >
+                  ‹
+                </button>
                 <button
                   type="button"
                   onClick={() => setPickingYear(true)}
                   className="text-[14px] font-medium text-on-surface transition-opacity hover:opacity-70"
-                  style={{ fontFamily: '"Geist", sans-serif' }}
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
                   {MONTHS[viewMonth]} {viewYear}
                 </button>
-                <button type="button" onClick={nextMonth} className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10 text-outline text-[18px]">›</button>
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10 text-outline text-[18px]"
+                >
+                  ›
+                </button>
               </div>
 
               {/* Day-of-week headers */}
               <div className="mb-1 grid grid-cols-7 text-center">
                 {DAYS.map((d) => (
-                  <span key={d} className="text-[11px] uppercase tracking-[0.08em] text-outline" style={{ fontFamily: '"Geist Mono", monospace' }}>
+                  <span
+                    key={d}
+                    className="text-[11px] uppercase tracking-[0.08em] text-outline"
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
+                  >
                     {d}
                   </span>
                 ))}
@@ -528,8 +593,12 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
               <div className="grid grid-cols-7 gap-y-0.5 text-center">
                 {cells.map((day, idx) => {
                   if (!day) return <span key={idx} />;
-                  const isSelected = parsed?.day === day && parsed?.month === viewMonth && parsed?.year === viewYear;
-                  const isToday = today.getDate() === day && today.getMonth() === viewMonth && today.getFullYear() === viewYear;
+                  const isSelected =
+                    parsed?.day === day && parsed?.month === viewMonth && parsed?.year === viewYear;
+                  const isToday =
+                    today.getDate() === day &&
+                    today.getMonth() === viewMonth &&
+                    today.getFullYear() === viewYear;
                   return (
                     <button
                       key={idx}
@@ -537,9 +606,13 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
                       onClick={() => selectDay(day)}
                       className="mx-auto flex h-8 w-8 items-center justify-center rounded-full text-[14px] transition-colors"
                       style={{
-                        fontFamily: '"Geist", sans-serif',
-                        background: isSelected ? '#cebdff' : isToday ? 'rgba(206,189,255,0.12)' : undefined,
-                        color: isSelected ? '#141219' : isToday ? '#cebdff' : '#c9c3d4',
+                        fontFamily: '"Mulish", sans-serif',
+                        background: isSelected
+                          ? '#5E3566'
+                          : isToday
+                            ? 'rgba(94, 53, 102,0.12)'
+                            : undefined,
+                        color: isSelected ? '#F7F0E8' : isToday ? '#5E3566' : '#6E5870',
                         fontWeight: isSelected ? 600 : undefined,
                       }}
                     >
@@ -586,7 +659,7 @@ function DynList({ value, onChange }: { value: string; onChange: (v: string) => 
       /* fall through */
     }
     setLines(['']);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const emit = (next: string[]) => {
@@ -618,7 +691,7 @@ function DynList({ value, onChange }: { value: string; onChange: (v: string) => 
             placeholder={`Medication ${index + 1}`}
             onChange={(event) => update(index, event.target.value)}
             className={inputClass}
-            style={{ fontFamily: '"Geist", sans-serif' }}
+            style={{ fontFamily: '"Mulish", sans-serif' }}
           />
           {lines.length > 1 && (
             <button
@@ -636,9 +709,11 @@ function DynList({ value, onChange }: { value: string; onChange: (v: string) => 
         type="button"
         onClick={add}
         className="mt-1 flex items-center gap-1.5 text-[13px] text-primary transition-opacity hover:opacity-70"
-        style={{ fontFamily: '"Geist", sans-serif' }}
+        style={{ fontFamily: '"Mulish", sans-serif' }}
       >
-        <span className="flex h-5 w-5 items-center justify-center rounded-full border border-primary/40 text-[14px] leading-none">+</span>
+        <span className="flex h-5 w-5 items-center justify-center rounded-full border border-primary/40 text-[14px] leading-none">
+          +
+        </span>
         Add another
       </button>
     </div>
@@ -656,25 +731,34 @@ function ThanksScreen({ onDismiss }: { onDismiss: () => void }) {
   }, [onDismiss]);
 
   return (
-    <main className="flex h-[100dvh] min-h-mobile flex-col items-center justify-center bg-surface px-[22px] text-center">
+    <main className="flex h-[100dvh] min-h-mobile flex-col items-center justify-center bg-surface px-2 text-center">
       <div
         className="mb-6 flex h-16 w-16 items-center justify-center rounded-full"
-        style={{ background: 'rgba(206, 189, 255, 0.12)', border: '1.5px solid rgba(206, 189, 255, 0.3)' }}
+        style={{
+          background: 'rgba(94, 53, 102, 0.12)',
+          border: '1.5px solid rgba(94, 53, 102, 0.3)',
+        }}
       >
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <path d="M6 14.5l5.5 5.5L22 9" stroke="#cebdff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M6 14.5l5.5 5.5L22 9"
+            stroke="#5E3566"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
 
       <h1
         className="font-display text-[28px] leading-[1.2] text-on-surface"
-        style={{ fontStyle: 'italic', fontWeight: 300 }}
+        style={{ fontWeight: 300 }}
       >
         Thank you
       </h1>
       <p
         className="mt-3 max-w-[26ch] text-[14px] leading-[1.6] text-outline"
-        style={{ fontFamily: '"Geist", sans-serif' }}
+        style={{ fontFamily: '"Mulish", sans-serif' }}
       >
         Your assessment has been saved. ANU will use this to personalise your care.
       </p>
@@ -683,14 +767,14 @@ function ThanksScreen({ onDismiss }: { onDismiss: () => void }) {
         type="button"
         onClick={onDismiss}
         className="mt-8 rounded-full border border-border-default px-6 py-2.5 text-[13px] text-outline transition-opacity hover:opacity-70"
-        style={{ fontFamily: '"Geist", sans-serif' }}
+        style={{ fontFamily: '"Mulish", sans-serif' }}
       >
         Back to home
       </button>
 
       <p
         className="mt-4 text-[11px] uppercase tracking-[0.12em] text-outline/50"
-        style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+        style={{ fontFamily: '"Mulish", sans-serif' }}
       >
         Redirecting in 2s…
       </p>

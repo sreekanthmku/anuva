@@ -14,7 +14,10 @@ const answerScoreByLabel: Record<string, number> = {
   No: 0,
 };
 
-export function scoreAssessmentQuestions(answers: Record<number, number | undefined>, questions: AssessmentQuestion[]) {
+export function scoreAssessmentQuestions(
+  answers: Record<number, number | undefined>,
+  questions: AssessmentQuestion[]
+) {
   return questions.reduce((total, question, index) => {
     const selectedIndex = answers[index];
     if (selectedIndex === undefined) {

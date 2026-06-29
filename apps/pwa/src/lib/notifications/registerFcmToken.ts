@@ -15,7 +15,10 @@ export async function registerFcmTokenOnServer(body: RegisterFcmBody): Promise<v
   }
 }
 
-export async function unregisterFcmTokenOnServer(body: { fcmToken?: string; deviceId?: string }): Promise<void> {
+export async function unregisterFcmTokenOnServer(body: {
+  fcmToken?: string;
+  deviceId?: string;
+}): Promise<void> {
   await apiFetch('/api/unregister-fcm', {
     method: 'POST',
     body: JSON.stringify(body),

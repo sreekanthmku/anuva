@@ -1,7 +1,9 @@
 import type { AuthUser } from '@anuva/shared';
 import { assessmentPath } from '../onboarding/config/assessmentView';
 
-export function getPostAuthPath(user: Pick<AuthUser, 'onboardingCompleted' | 'hasActiveAccess'> | null): string {
+export function getPostAuthPath(
+  user: Pick<AuthUser, 'onboardingCompleted' | 'hasActiveAccess'> | null
+): string {
   if (!user?.onboardingCompleted) {
     return assessmentPath();
   }

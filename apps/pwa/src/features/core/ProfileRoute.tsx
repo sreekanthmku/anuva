@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { enablePushNotifications, needsPushRegistrationRetry, syncFcmTokenIfGranted } from '../../lib/firebase';
+import {
+  enablePushNotifications,
+  needsPushRegistrationRetry,
+  syncFcmTokenIfGranted,
+} from '../../lib/firebase';
 import { DPDP_ACT_URL } from '../../shared/lib/dpdp';
+import { Eyebrow } from '../../shared/components/Eyebrow';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 
@@ -38,7 +43,9 @@ export default function ProfileRoute() {
   const [notificationNote, setNotificationNote] = useState<string | null>(null);
   const displayName = user?.name?.trim() || 'Anuva Member';
   const initial = displayName.charAt(0).toUpperCase() || 'A';
-  const memberSince = user ? new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : null;
+  const memberSince = user
+    ? new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+    : null;
 
   async function handleNotificationsRow() {
     setNotificationNote(null);
@@ -49,7 +56,9 @@ export default function ProfileRoute() {
     }
 
     if (Notification.permission === 'denied') {
-      setNotificationNote('Notifications are blocked. Enable them in your browser site settings, then return here.');
+      setNotificationNote(
+        'Notifications are blocked. Enable them in your browser site settings, then return here.'
+      );
       return;
     }
 
@@ -79,13 +88,13 @@ export default function ProfileRoute() {
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
-      <header className="sticky top-0 z-30 bg-surface px-[22px] pb-4 pt-[max(0.875rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
+      <header className="sticky top-0 z-30 bg-surface px-2 pb-4 pt-[max(0.875rem,env(safe-area-inset-top))]">
         <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={() => navigate('/home')}
             className="bg-transparent p-0 text-[13px] text-on-surface-variant"
-            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
             ← Home
           </button>
@@ -93,19 +102,16 @@ export default function ProfileRoute() {
         </div>
       </header>
 
-      <section className="px-[22px] pb-6 pt-2">
-        <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
-          <span className="h-px w-3 bg-primary/60" />
-          <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Your account</span>
-        </div>
+      <section className="px-2 pb-6 pt-2">
+        <Eyebrow>Your account</Eyebrow>
 
         <div className="mb-6 flex items-center gap-4">
           <span
             className="inline-flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full border text-[22px] text-primary"
             style={{
-              background: '#1d1a21',
-              borderColor: 'rgba(148, 142, 157, 0.35)',
-              fontFamily: '"DM Sans", sans-serif',
+              background: '#EFE4D8',
+              borderColor: 'rgba(180, 159, 176, 0.35)',
+              fontFamily: '"Fraunces", sans-serif',
               fontWeight: 500,
             }}
             aria-hidden
@@ -113,33 +119,45 @@ export default function ProfileRoute() {
             {initial}
           </span>
           <div className="min-w-0">
-            <h1
-              className="font-display text-[24px] leading-tight text-on-surface"
-            >
+            <h1 className="font-display text-[24px] leading-tight text-on-surface">
               {displayName}
             </h1>
-            <p className="mt-0.5 truncate text-[13px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+            <p
+              className="mt-0.5 truncate text-[13px] text-on-surface-variant"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+            >
               {user?.phone || 'Phone not available'}
             </p>
-            <p className="mt-1 text-[11px] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <p
+              className="mt-1 text-[11px] text-outline"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               {memberSince ? `Member since ${memberSince}` : 'Member'}
             </p>
           </div>
         </div>
 
-        <article className="overflow-hidden rounded-[24px] border border-border-default bg-gradient-to-br from-surface-raised to-deep-space">
+        <article className="overflow-hidden rounded-[20px] border border-border-default bg-secondary-container">
           <ul className="divide-y divide-border-default">
             {menuRows.map((row) => (
               <li key={row.label}>
                 <button
                   type="button"
-                  onClick={row.id === 'notifications' ? () => void handleNotificationsRow() : undefined}
+                  onClick={
+                    row.id === 'notifications' ? () => void handleNotificationsRow() : undefined
+                  }
                   className="flex w-full flex-col items-start gap-0.5 px-5 py-4 text-left transition-colors hover:bg-surface-container-low/50"
                 >
-                  <span className="text-[15px] text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                  <span
+                    className="text-[15px] text-on-surface"
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  >
                     {row.label}
                   </span>
-                  <span className="text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                  <span
+                    className="text-[12px] text-on-surface-variant"
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  >
                     {row.id === 'notifications' ? (
                       notificationStatusHint()
                     ) : row.label === 'Privacy & data' ? (
@@ -164,7 +182,10 @@ export default function ProfileRoute() {
             ))}
           </ul>
           {notificationNote && (
-            <p className="border-t border-border-default px-5 py-3 text-[12px] text-primary" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+            <p
+              className="border-t border-border-default px-5 py-3 text-[12px] text-primary"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+            >
               {notificationNote}
             </p>
           )}
@@ -177,13 +198,16 @@ export default function ProfileRoute() {
               navigate('/login', { replace: true });
             });
           }}
-          className="mt-4 w-full rounded-full border border-border-default bg-transparent px-[22px] py-3.5 text-[13px] font-medium text-on-surface-variant"
-          style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+          className="mt-4 w-full rounded-full border border-border-default bg-transparent px-2 py-3.5 text-[13px] font-medium text-on-surface-variant"
+          style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
           Sign out
         </button>
 
-        <p className="mt-6 text-center text-[10px] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+        <p
+          className="mt-6 text-center text-[10px] text-outline"
+          style={{ fontFamily: '"Mulish", sans-serif' }}
+        >
           Anuva PWA · v0
         </p>
       </section>

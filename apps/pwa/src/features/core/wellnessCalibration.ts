@@ -3,7 +3,9 @@ import type { AuthUser } from '@anuva/shared';
 export const WELLNESS_CALIBRATION_DAYS = 7;
 
 /** Trial / subscription start — same field returned as `subscriptionStartedAt`. */
-export function getTrialStartDate(user: Pick<AuthUser, 'subscriptionStartedAt'> | null | undefined): string | undefined {
+export function getTrialStartDate(
+  user: Pick<AuthUser, 'subscriptionStartedAt'> | null | undefined
+): string | undefined {
   return user?.subscriptionStartedAt ?? undefined;
 }
 
@@ -16,7 +18,10 @@ export function getJourneyDay(trialStartedAt: string, now = new Date()): number 
   return Math.floor((today.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
 }
 
-export function isWellnessCalibrating(trialStartedAt: string | undefined, now = new Date()): boolean {
+export function isWellnessCalibrating(
+  trialStartedAt: string | undefined,
+  now = new Date()
+): boolean {
   if (!trialStartedAt) {
     return true;
   }
@@ -24,7 +29,10 @@ export function isWellnessCalibrating(trialStartedAt: string | undefined, now = 
   return getJourneyDay(trialStartedAt, now) < WELLNESS_CALIBRATION_DAYS;
 }
 
-export function getCalibrationProgress(trialStartedAt: string, now = new Date()): {
+export function getCalibrationProgress(
+  trialStartedAt: string,
+  now = new Date()
+): {
   day: number;
   totalDays: number;
   daysRemaining: number;

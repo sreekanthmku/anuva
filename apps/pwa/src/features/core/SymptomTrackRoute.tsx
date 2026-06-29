@@ -1,5 +1,12 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import type { MoodEmotion, NudgeDayTracker, NudgeTier, SleepDisruption, SleepHoursBucket } from '@anuva/shared';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type {
+  MoodEmotion,
+  NudgeDayTracker,
+  NudgeTier,
+  SleepDisruption,
+  SleepHoursBucket,
+} from '@anuva/shared';
+import { Eyebrow } from '../../shared/components/Eyebrow';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 import { MoodLogSheet } from './components/MoodLogSheet';
@@ -38,8 +45,8 @@ function getCurrentWeekDays(reference = new Date()): WeekDayCell[] {
   });
 }
 
-const FONT_BODY = '"Geist", -apple-system, system-ui, sans-serif';
-const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
+const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
+const FONT_MONO = '"Mulish", sans-serif';
 
 const TIERS: { key: NudgeTier; label: string }[] = [
   { key: 'core', label: 'Daily core' },
@@ -47,15 +54,6 @@ const TIERS: { key: NudgeTier; label: string }[] = [
   { key: 'lifestyle', label: 'Lifestyle' },
   { key: 'weekly', label: 'This week' },
 ];
-
-function Eyebrow({ children, colorClass = 'text-outline' }: { children: ReactNode; colorClass?: string }) {
-  return (
-    <div className={`mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] ${colorClass}`}>
-      <span className={`h-px w-3 ${colorClass === 'text-primary' ? 'bg-primary/60' : 'bg-outline/60'}`} />
-      <span style={{ fontFamily: FONT_MONO }}>{children}</span>
-    </div>
-  );
-}
 
 function OptionChip({
   label,
@@ -76,9 +74,9 @@ function OptionChip({
       aria-pressed={selected}
       className="rounded-full border px-3.5 py-2 text-[12px] font-medium transition-colors outline-none focus:outline-none disabled:opacity-50"
       style={{
-        backgroundColor: selected ? '#cebdff' : 'transparent',
-        borderColor: selected ? '#cebdff' : 'rgba(148, 142, 157, 0.35)',
-        color: selected ? '#322f37' : '#e6e0ea',
+        backgroundColor: selected ? '#5E3566' : 'transparent',
+        borderColor: selected ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
+        color: selected ? '#FBF6F0' : '#3E2542',
         fontFamily: FONT_BODY,
         WebkitTapHighlightColor: 'transparent',
       }}
@@ -122,7 +120,7 @@ export default function SymptomTrackRoute() {
   const handleLogSleep = async (
     quality: number,
     hours: SleepHoursBucket | null,
-    disruptions: SleepDisruption[],
+    disruptions: SleepDisruption[]
   ) => {
     setSleepSaving(true);
     try {
@@ -136,9 +134,12 @@ export default function SymptomTrackRoute() {
   const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
   const weekDays = useMemo(() => getCurrentWeekDays(), []);
 
-  useEffect(() => () => {
-    if (toastTimer.current) window.clearTimeout(toastTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    },
+    []
+  );
 
   const showToast = (message: string) => {
     setToast(message);
@@ -190,14 +191,12 @@ export default function SymptomTrackRoute() {
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
-      <header className="sticky top-0 z-30 shrink-0 bg-surface shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
-        <div className="px-[22px] pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
-          <Eyebrow colorClass="text-primary">
-            {loading ? 'Loading…' : `${answeredCount} of ${total} logged today`}
-          </Eyebrow>
+      <header className="sticky top-0 z-30 shrink-0 bg-surface">
+        <div className="px-2 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
+          <Eyebrow>{loading ? 'Loading…' : `${answeredCount} of ${total} logged today`}</Eyebrow>
           <h1 className="font-display mb-[16px] text-[30px] leading-[1.05] text-on-surface">
             How was your{' '}
-            <em className="not-italic text-primary" style={{ fontStyle: 'italic', fontWeight: 300 }}>
+            <em className="not-italic text-primary" style={{ fontWeight: 300 }}>
               today
             </em>
             {`, ${firstName}?`}
@@ -234,8 +233,8 @@ export default function SymptomTrackRoute() {
                       width: isToday ? '100%' : 10,
                       height: isToday ? 28 : 10,
                       borderRadius: isToday ? 14 : '50%',
-                      background: isToday ? '#e2c62d' : '#2b2930',
-                      color: isToday ? '#322f37' : '#e6e0ea',
+                      background: isToday ? '#C97E92' : '#ECDFD0',
+                      color: isToday ? '#3E2542' : '#3E2542',
                       fontFamily: FONT_BODY,
                       fontSize: isToday ? 10 : 11,
                     }}
@@ -249,9 +248,9 @@ export default function SymptomTrackRoute() {
         </div>
       </header>
 
-      <div className="flex flex-col gap-3 px-[22px] pb-[22px] pt-[16px]">
+      <div className="flex flex-col gap-3 px-2 pb-[22px] pt-[16px]">
         {error && (
-          <div className="rounded-starchart-lg border border-border-default bg-surface-raised px-4 py-3 text-[13px] text-on-surface-variant">
+          <div className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-3 text-[13px] text-on-surface-variant">
             {error}{' '}
             <button type="button" onClick={reload} className="text-primary underline">
               Retry
@@ -266,13 +265,19 @@ export default function SymptomTrackRoute() {
           const tierAnswered = items.filter(isAnswered).length;
 
           return (
-            <section key={tier.key} className="overflow-hidden rounded-starchart-lg border border-border-default bg-surface-raised">
+            <section
+              key={tier.key}
+              className="overflow-hidden rounded-[20px] border border-border-default bg-surface-raised"
+            >
               <button
                 type="button"
                 onClick={() => toggleTier(tier.key)}
                 className="flex w-full items-center justify-between px-4 py-3.5 text-left"
               >
-                <span className="text-[14px] font-medium text-on-surface" style={{ fontFamily: FONT_BODY }}>
+                <span
+                  className="text-[14px] font-medium text-on-surface"
+                  style={{ fontFamily: FONT_BODY }}
+                >
                   {tier.label}
                 </span>
                 <span className="text-[11px] text-outline" style={{ fontFamily: FONT_MONO }}>
@@ -291,11 +296,17 @@ export default function SymptomTrackRoute() {
                       return (
                         <div key={t.nudgeId} className="flex items-center justify-between gap-2">
                           <div>
-                            <span className="text-[13px] text-on-surface" style={{ fontFamily: FONT_BODY }}>
+                            <span
+                              className="text-[13px] text-on-surface"
+                              style={{ fontFamily: FONT_BODY }}
+                            >
                               {t.label}
                               {answered && <span className="ml-1.5 text-primary">✓</span>}
                             </span>
-                            <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
+                            <p
+                              className="text-[12px] text-on-surface-variant"
+                              style={{ fontFamily: FONT_BODY }}
+                            >
                               {answered ? t.answer : 'Not logged yet'}
                             </p>
                           </div>
@@ -349,7 +360,10 @@ export default function SymptomTrackRoute() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-[13px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
+                          <p
+                            className="text-[13px] text-on-surface-variant"
+                            style={{ fontFamily: FONT_BODY }}
+                          >
                             {answer}
                           </p>
                         )}
@@ -366,7 +380,7 @@ export default function SymptomTrackRoute() {
       {toast && (
         <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+16px)] z-[80] flex justify-center px-4">
           <div
-            className="max-w-[340px] rounded-full border border-border-default bg-surface-raised px-4 py-2.5 text-[12px] text-on-surface shadow-xl"
+            className="max-w-[340px] rounded-full border border-border-default bg-surface-raised px-4 py-2.5 text-[12px] text-on-surface"
             style={{ fontFamily: FONT_BODY }}
             role="status"
           >

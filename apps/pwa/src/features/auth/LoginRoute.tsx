@@ -123,16 +123,22 @@ export default function LoginRoute() {
           <div className="relative">
             <div
               className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-              style={{ background: 'radial-gradient(circle, rgba(206, 189, 255, 0.15) 0%, transparent 60%)' }}
+              style={{
+                background: 'transparent',
+              }}
               aria-hidden
             />
-            <img src="/anu.png" alt="Anuva logo" className="relative z-10 h-20 w-20 object-contain" />
+            <img
+              src="/anu.png"
+              alt="Anuva logo"
+              className="relative z-10 h-20 w-20 object-contain"
+            />
           </div>
         </div>
         <p
           className="mt-4 text-[16px] tracking-[0.16em] text-on-surface"
           style={{
-            fontFamily: '"DM Sans", sans-serif',
+            fontFamily: '"Fraunces", sans-serif',
             fontWeight: 400,
             letterSpacing: '0.16em',
           }}
@@ -140,20 +146,23 @@ export default function LoginRoute() {
           ANUVA
         </p>
         <p
-          className="mt-0.5 text-[13px] italic tracking-normal text-primary"
+          className="mt-0.5 text-[13px] tracking-normal text-primary"
           style={{
-            fontFamily: '"DM Sans", sans-serif',
-            fontStyle: 'italic',
+            fontFamily: '"Fraunces", sans-serif',
             fontWeight: 400,
             letterSpacing: '-0.02em',
           }}
         >
-          {inOtpStep ? 'Enter the 6-digit OTP to continue' : mode === 'login' ? 'Login with your phone number' : 'Create your account with name and phone'}
+          {inOtpStep
+            ? 'Enter the 6-digit OTP to continue'
+            : mode === 'login'
+              ? 'Login with your phone number'
+              : 'Create your account with name and phone'}
         </p>
       </section>
 
       <section
-        className="relative z-10 mt-6 flex min-h-[calc(100svh-220px)] flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-[22px] pb-[22px] pt-[26px]"
+        className="relative z-10 mt-6 flex min-h-[calc(100svh-220px)] flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-2 pb-[22px] pt-[26px]"
         style={{ minHeight: 'calc(100dvh - 220px)' }}
       >
         {!inOtpStep && (
@@ -167,9 +176,9 @@ export default function LoginRoute() {
                   onClick={() => resetOtpStep(option)}
                   className="rounded-full px-4 py-2.5 text-[12px] uppercase tracking-[0.12em] transition-colors"
                   style={{
-                    fontFamily: '"Geist Mono", ui-monospace, monospace',
-                    background: active ? '#e2c62d' : 'transparent',
-                    color: active ? '#322f37' : '#948e9d',
+                    fontFamily: '"Mulish", sans-serif',
+                    background: active ? '#C97E92' : 'transparent',
+                    color: active ? '#3E2542' : '#B49FB0',
                   }}
                 >
                   {option === 'login' ? 'Login' : 'Sign up'}
@@ -182,16 +191,24 @@ export default function LoginRoute() {
         {inOtpStep ? (
           <form onSubmit={handleVerifyOtp} className="flex flex-1 flex-col">
             <div
-              className="mb-5 rounded-[24px] border border-border-default bg-surface-container-low px-4 py-4"
-              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+              className="mb-5 rounded-[20px] border border-border-default bg-surface-container-low px-4 py-4"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              <p className="text-[12px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+              <p
+                className="text-[12px] uppercase tracking-[0.12em] text-outline"
+                style={{ fontFamily: '"Mulish", sans-serif' }}
+              >
                 OTP sent
               </p>
-              <p className="mt-2 text-[15px] text-on-surface">We sent a verification code to {maskedPhone}.</p>
+              <p className="mt-2 text-[15px] text-on-surface">
+                We sent a verification code to {maskedPhone}.
+              </p>
             </div>
 
-            <label className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <label
+              className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               6-digit OTP
             </label>
             <input
@@ -202,13 +219,16 @@ export default function LoginRoute() {
               maxLength={6}
               value={otp}
               onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="mb-2 w-full rounded-starchart-lg border border-border-default bg-surface-container-low px-4 py-3.5 text-[18px] tracking-[0.35em] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
-              style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+              className="mb-2 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[18px] tracking-[0.35em] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
               placeholder="123456"
             />
 
             {errorMessage && (
-              <p className="mb-3 text-[13px] text-error" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+              <p
+                className="mb-3 text-[13px] text-error"
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+              >
                 {errorMessage}
               </p>
             )}
@@ -216,8 +236,12 @@ export default function LoginRoute() {
             <button
               type="submit"
               disabled={isSubmitting || otp.length !== 6}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface disabled:opacity-60"
-              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif', fontWeight: 500, letterSpacing: '-0.005em' }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
+              style={{
+                fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+                fontWeight: 500,
+                letterSpacing: '-0.005em',
+              }}
             >
               {isSubmitting ? 'Verifying...' : 'Verify OTP'}
             </button>
@@ -230,7 +254,7 @@ export default function LoginRoute() {
               type="button"
               onClick={() => resetOtpStep()}
               className="mt-3 w-full bg-transparent py-3 text-[13px] font-medium text-on-surface-variant"
-              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
               Change phone number
             </button>
@@ -256,7 +280,7 @@ export default function LoginRoute() {
               }}
               disabled={isSubmitting || resendCountdown > 0}
               className="mt-1 w-full bg-transparent py-3 text-[13px] font-medium text-primary disabled:text-outline"
-              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
               {resendCountdown > 0 ? `Resend OTP in ${resendCountdown}s` : 'Resend OTP'}
             </button>
@@ -265,7 +289,10 @@ export default function LoginRoute() {
           <form onSubmit={handleRequestOtp} className="flex flex-1 flex-col">
             {mode === 'signup' && (
               <>
-                <label className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                <label
+                  className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
                   Full name
                 </label>
                 <input
@@ -274,14 +301,17 @@ export default function LoginRoute() {
                   autoComplete="name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  className="mb-4 w-full rounded-starchart-lg border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
-                  style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                  className="mb-4 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   placeholder="Enter your name"
                 />
               </>
             )}
 
-            <label className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <label
+              className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               Phone number
             </label>
             <input
@@ -291,17 +321,25 @@ export default function LoginRoute() {
               inputMode="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              className="mb-2 w-full rounded-starchart-lg border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
-              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+              className="mb-2 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               placeholder="+91 98765 43210"
             />
 
-            <p className="mb-4 text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
-              {mode === 'login' ? 'Use the phone number linked to your account.' : 'We will verify this number with a one-time password.'}
+            <p
+              className="mb-4 text-[12px] text-on-surface-variant"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+            >
+              {mode === 'login'
+                ? 'Use the phone number linked to your account.'
+                : 'We will verify this number with a one-time password.'}
             </p>
 
             {errorMessage && (
-              <p className="mb-3 text-[13px] text-error" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+              <p
+                className="mb-3 text-[13px] text-error"
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+              >
                 {errorMessage}
               </p>
             )}
@@ -309,10 +347,18 @@ export default function LoginRoute() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface disabled:opacity-60"
-              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif', fontWeight: 500, letterSpacing: '-0.005em' }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
+              style={{
+                fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+                fontWeight: 500,
+                letterSpacing: '-0.005em',
+              }}
             >
-              {isSubmitting ? 'Sending OTP...' : mode === 'signup' ? 'Begin My Wellness Journey' : 'Send OTP'}
+              {isSubmitting
+                ? 'Sending OTP...'
+                : mode === 'signup'
+                  ? 'Begin My Wellness Journey'
+                  : 'Send OTP'}
             </button>
 
             <div className="mt-4">

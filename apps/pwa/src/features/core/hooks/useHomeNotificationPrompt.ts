@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../auth/auth-context';
-import { enablePushNotifications, needsPushRegistrationRetry, syncFcmTokenIfGranted } from '../../../lib/firebase';
+import {
+  enablePushNotifications,
+  needsPushRegistrationRetry,
+  syncFcmTokenIfGranted,
+} from '../../../lib/firebase';
 import {
   canPromptForNotifications,
   dismissNotificationPrompt,
@@ -53,7 +57,10 @@ export function useHomeNotificationPrompt() {
     setOpen(false);
 
     if (needsPushRegistrationRetry()) {
-      setSyncMessage((current) => current ?? 'Notifications are on, but this device is not registered yet. Tap retry.');
+      setSyncMessage(
+        (current) =>
+          current ?? 'Notifications are on, but this device is not registered yet. Tap retry.'
+      );
     }
   }, [status, runSync]);
 

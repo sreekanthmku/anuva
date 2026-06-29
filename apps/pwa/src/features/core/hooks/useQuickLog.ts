@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type {
-  LogQuickSymptomResponse,
-  QuickLogStateResponse,
-  QuickSymptom,
-} from '@anuva/shared';
+import type { LogQuickSymptomResponse, QuickLogStateResponse, QuickSymptom } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
 
 type QuickLogState = {
@@ -38,7 +34,7 @@ export function useQuickLog() {
       await load();
       return result;
     },
-    [load],
+    [load]
   );
 
   return {

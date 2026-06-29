@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MoodEmotion, QuickSymptom, SleepDisruption, SleepHoursBucket } from '@anuva/shared';
+import { Eyebrow } from '../../shared/components/Eyebrow';
 import { Check } from 'lucide-react';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -8,7 +9,7 @@ import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
 import { NotificationSyncBanner } from './components/NotificationSyncBanner';
 import { CycleTrackerSheet } from './components/CycleTrackerSheet';
-import { CycleTrackerSummary } from './components/CycleTrackerSummary';
+import { CyclePhaseBadge, CycleTrackerSummary } from './components/CycleTrackerSummary';
 import { MoodLogSheet } from './components/MoodLogSheet';
 import { SleepLogSheet } from './components/SleepLogSheet';
 import { QuickLogMessageDialog } from './components/QuickLogMessageDialog';
@@ -30,7 +31,6 @@ const circumference = 2 * Math.PI * 42;
 const scoreDash = (score / 100) * circumference;
 
 type QuickLogAction = 'mood' | 'sleep';
-
 
 const QUICK_LOG_ITEMS: {
   label: string;
@@ -88,6 +88,8 @@ function getTimeGreeting(date = new Date()) {
   return 'Good night';
 }
 
+const SERIF = '"Fraunces", serif';
+
 export default function AnuDashboardRoute() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -109,9 +111,12 @@ export default function AnuDashboardRoute() {
     toastTimer.current = window.setTimeout(() => setToast(null), 2800);
   };
 
-  useEffect(() => () => {
-    if (toastTimer.current) window.clearTimeout(toastTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    },
+    []
+  );
   const [quickMessage, setQuickMessage] = useState<{
     message: string;
     emoji: string;
@@ -140,7 +145,7 @@ export default function AnuDashboardRoute() {
   const handleLogSleep = async (
     quality: number,
     hours: SleepHoursBucket | null,
-    disruptions: SleepDisruption[],
+    disruptions: SleepDisruption[]
   ) => {
     setSleepSaving(true);
     try {
@@ -204,14 +209,14 @@ export default function AnuDashboardRoute() {
   }, []);
 
   return (
-    <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 pt-[40px] text-on-surface">
+    <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 pt-8 text-on-surface">
       <NotificationPermissionDialog
         open={notificationPrompt.open}
         isRegistering={notificationPrompt.isRegistering}
         onAccept={notificationPrompt.accept}
         onDismiss={notificationPrompt.dismiss}
       />
-      <section className="px-[22px] pb-[14px]">
+      <section className="px-2 pb-2.5">
         {notificationPrompt.syncMessage && (
           <NotificationSyncBanner
             message={notificationPrompt.syncMessage}
@@ -225,7 +230,7 @@ export default function AnuDashboardRoute() {
             <img src="/anu.png" alt="Anuva logo" className="h-5 w-5 object-contain" />
             <span
               className="text-[16px] tracking-[0.16em] text-on-surface"
-              style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 500 }}
+              style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
             >
               ANUVA
             </span>
@@ -235,9 +240,9 @@ export default function AnuDashboardRoute() {
             aria-label="Open profile"
             className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border text-[14px] text-primary transition-opacity hover:opacity-90"
             style={{
-              background: '#1d1a21',
-              borderColor: 'rgba(148, 142, 157, 0.35)',
-              fontFamily: '"DM Sans", sans-serif',
+              background: '#EFE4D8',
+              borderColor: 'rgba(180, 159, 176, 0.35)',
+              fontFamily: '"Fraunces", sans-serif',
               fontWeight: 500,
             }}
           >
@@ -245,55 +250,65 @@ export default function AnuDashboardRoute() {
           </NavLink>
         </header>
 
-        <div className="mb-2.5 flex flex-wrap items-baseline gap-x-2">
-          <span
-            className="text-[10px] uppercase tracking-[0.18em] text-primary"
-            style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
-          >
-            {greeting},
-          </span>
-          <h1 className="font-display text-[34px] leading-[1] text-on-surface">
-            <em className="not-italic text-primary" style={{ fontStyle: 'italic', fontWeight: 300 }}>
-              {firstName}
-            </em>
-          </h1>
-        </div>
+        <p
+          className="text-[12px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant"
+          style={{ fontFamily: '"Mulish", sans-serif' }}
+        >
+          {greeting},
+        </p>
+        <h1
+          className="mt-1 text-[40px] leading-[1.05] text-primary"
+          style={{ fontFamily: SERIF, fontWeight: 500 }}
+        >
+          {firstName}
+        </h1>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10.5px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-            {memberDay !== null && memberWeek ? `Day ${memberDay} · Week ${memberWeek}` : 'Day 0 · Week 1'}
-          </span>
-          <span className="text-outline/40">·</span>
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <span
-            className="rounded-full border px-[9px] py-[3px] text-[9.5px] uppercase tracking-[0.1em]"
+            className="rounded-full bg-surface-container px-3 py-1 text-[12.5px] font-medium text-on-surface-variant"
+            style={{ fontFamily: '"Mulish", sans-serif' }}
+          >
+            {memberDay !== null && memberWeek
+              ? `Day ${memberDay} · Week ${memberWeek}`
+              : 'Day 0 · Week 1'}
+          </span>
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] font-semibold"
             style={{
-              background: 'rgba(219, 200, 57, 0.16)',
-              borderColor: 'rgba(219, 200, 57, 0.3)',
-              color: '#dbc839',
-              fontFamily: '"Geist Mono", ui-monospace, monospace',
+              background: 'rgba(184,146,60,0.16)',
+              color: '#8F6B1E',
+              fontFamily: '"Mulish", sans-serif',
             }}
           >
-            ● Perimenopause
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: '#B8923C' }} />
+            Perimenopause
           </span>
         </div>
       </section>
 
-      <section className="px-[22px]">
-        <article className="flex items-center gap-4 rounded-[24px] border border-border-default bg-gradient-to-br from-surface-raised to-deep-space px-5 py-[18px]">
+      <section className="px-2">
+        <article className="flex items-center gap-4 rounded-[20px] bg-secondary-container px-4 py-4">
           <div className="relative h-24 w-24 shrink-0">
             <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
-              <circle cx="48" cy="48" r="42" fill="none" stroke="#2b2930" strokeWidth="6" />
               <circle
                 cx="48"
                 cy="48"
                 r="42"
                 fill="none"
-                stroke={isCalibrating ? '#948e9d' : '#cebdff'}
+                stroke="rgba(94,53,102,0.16)"
+                strokeWidth="6"
+              />
+              <circle
+                cx="48"
+                cy="48"
+                r="42"
+                fill="none"
+                stroke="#5E3566"
                 strokeWidth="6"
                 strokeDasharray={`${isCalibrating ? calibrationArc : scoreDash} ${circumference}`}
                 strokeLinecap="round"
                 transform="rotate(-90 48 48)"
-                opacity={isCalibrating ? 0.85 : 1}
+                opacity={isCalibrating ? 0.6 : 1}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -301,18 +316,24 @@ export default function AnuDashboardRoute() {
                 <>
                   <span
                     className="text-[22px] leading-none text-on-surface"
-                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
                   >
                     {calibration ? `${calibration.day}/${calibration.totalDays}` : '—'}
                   </span>
-                  <span className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                  <span
+                    className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline"
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
+                  >
                     calibrating
                   </span>
                 </>
               ) : (
                 <>
                   <span className="text-[30px] leading-none text-on-surface">{score}</span>
-                  <span className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                  <span
+                    className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline"
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
+                  >
                     balance
                   </span>
                 </>
@@ -321,24 +342,19 @@ export default function AnuDashboardRoute() {
           </div>
 
           <div className="flex-1">
-            <div className="mb-1.5 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary">
-              <span className="h-px w-3 bg-primary/60" />
-              <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-                {isCalibrating ? 'Your first week' : "Today's wellness"}
-              </span>
-            </div>
+            <Eyebrow>{isCalibrating ? 'Your first week' : "Today's wellness"}</Eyebrow>
             {isCalibrating ? (
               <>
                 <p
-                  className="mb-2 text-[18px] leading-[1.25] text-on-surface"
-                  style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
+                  className="mb-2.5 text-[20px] leading-[1.25] text-on-surface"
+                  style={{ fontFamily: SERIF }}
                 >
                   We&apos;re learning your rhythm.
                 </p>
                 {calibration && (
                   <span
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border-default bg-surface-container-low px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] text-outline"
-                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-surface-bright px-3 py-1.5 text-[12px] font-medium text-on-surface-variant"
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
                   >
                     Day {calibration.day} of {calibration.totalDays}
                     {calibration.daysRemaining > 0 ? ` · ${calibration.daysRemaining}d left` : ''}
@@ -348,17 +364,23 @@ export default function AnuDashboardRoute() {
             ) : (
               <>
                 <p
-                  className="mb-2 text-[18px] leading-[1.25] text-on-surface"
-                  style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
+                  className="mb-2.5 text-[20px] leading-[1.25] text-on-surface"
+                  style={{ fontFamily: SERIF }}
                 >
                   Steady, with gentle friction.
                 </p>
                 <div className="flex flex-wrap gap-2.5">
-                  <span className="inline-flex items-center gap-1.5 text-[11px] text-primary" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                  <span
+                    className="inline-flex items-center gap-1.5 text-[11px] text-primary"
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  >
                     <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                     Sleep +12%
                   </span>
-                  <span className="inline-flex items-center gap-1.5 text-[11px] text-error" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                  <span
+                    className="inline-flex items-center gap-1.5 text-[11px] text-error"
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  >
                     <span className="h-1.5 w-1.5 rounded-full bg-error" />
                     Hot flashes ↑
                   </span>
@@ -369,26 +391,36 @@ export default function AnuDashboardRoute() {
         </article>
       </section>
 
-      <section className="px-[22px] pt-[14px]">
-        <article className="rounded-[24px] border border-border-default bg-surface-container-low px-[18px] py-4">
-          <div className="flex items-start gap-3.5">
-            <img src="/anu.png" alt="ANU avatar" className="mt-0.5 h-[26px] w-[26px] shrink-0 object-contain" />
+      <section className="px-2 pt-3">
+        <article className="rounded-[20px] bg-primary-container px-[18px] py-4">
+          <div className="flex items-start gap-3">
+            <img
+              src="/anu.png"
+              alt="ANU avatar"
+              className="mt-0.5 h-8 w-8 shrink-0 object-contain"
+            />
             <div className="flex-1">
-              <div className="mb-2 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary">
-                <span className="h-px w-3 bg-primary/60" />
-                <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>ANU · just now</span>
-              </div>
+              <Eyebrow>ANU · just now</Eyebrow>
               <p
-                className="text-[16px] leading-[1.4] text-on-surface"
-                style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}
+                className="text-[16px] leading-[1.45] text-on-surface"
+                style={{ fontFamily: SERIF }}
               >
-                &quot;You logged two hot flashes yesterday. Want me to suggest a 3-minute cooling ritual for tonight?&quot;
+                &quot;You logged two hot flashes yesterday. Want me to suggest a 3-minute cooling
+                ritual for tonight?&quot;
               </p>
-              <div className="mt-3 flex gap-1.5">
-                <button type="button" className="rounded-full border border-primary/30 bg-primary/15 px-3 py-1.5 text-[12px] text-primary" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+              <div className="mt-4 flex gap-2.5">
+                <button
+                  type="button"
+                  className="rounded-full bg-primary px-5 py-2.5 text-[14px] font-semibold text-on-primary transition-opacity active:opacity-85"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
                   Yes, show me
                 </button>
-                <button type="button" className="rounded-full border border-border-default bg-surface px-3 py-1.5 text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                <button
+                  type="button"
+                  className="rounded-full border border-primary/25 px-5 py-2.5 text-[14px] font-semibold text-primary transition-colors active:bg-primary/5"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
                   Later
                 </button>
               </div>
@@ -398,34 +430,37 @@ export default function AnuDashboardRoute() {
       </section>
 
       {nudgeDay.data && nudgeDay.data.answeredCount < nudgeDay.data.total && (
-        <section className="px-[22px] pt-4">
+        <section className="px-2 pt-3">
           <button
             type="button"
             onClick={() => navigate('/track')}
-            className="flex w-full items-center justify-between rounded-[24px] border border-primary/30 bg-primary/10 px-[18px] py-4 text-left"
+            className="flex w-full items-center justify-between rounded-[20px] bg-primary px-[18px] py-4 text-left transition-opacity active:opacity-90"
           >
             <div>
-              <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary">
-                <span className="h-px w-3 bg-primary/60" />
-                <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Complete your day</span>
-              </div>
-              <p className="text-[15px] text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+              <Eyebrow tone="cream">Complete your day</Eyebrow>
+              <p
+                className="text-[16px] font-medium text-on-primary"
+                style={{ fontFamily: '"Mulish", sans-serif' }}
+              >
                 {nudgeDay.data.total - nudgeDay.data.answeredCount} quick{' '}
-                {nudgeDay.data.total - nudgeDay.data.answeredCount === 1 ? 'check-in' : 'check-ins'} left
+                {nudgeDay.data.total - nudgeDay.data.answeredCount === 1 ? 'check-in' : 'check-ins'}{' '}
+                left
               </p>
             </div>
-            <span className="text-[20px] text-primary">→</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-[16px] text-on-secondary">
+              →
+            </span>
           </button>
         </section>
       )}
 
-      <section className="px-[22px] pt-4">
-        <div className="mb-2.5 flex items-baseline justify-between">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-outline">
-            <span className="h-px w-3 bg-outline/60" />
-            <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Quick log</span>
-          </div>
-          <span className="text-[10px] uppercase tracking-[0.1em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+      <section className="px-2 pt-3">
+        <div className="mb-3 flex items-end justify-between">
+          <Eyebrow>Quick log</Eyebrow>
+          <span
+            className="text-[12px] text-on-surface-variant"
+            style={{ fontFamily: '"Mulish", sans-serif' }}
+          >
             Tap to track
           </span>
         </div>
@@ -444,99 +479,93 @@ export default function AnuDashboardRoute() {
               logged = true;
             }
             return (
-            <button
-              key={item.label}
-              type="button"
-              disabled={!interactive}
-              onClick={() =>
-                item.symptom
-                  ? handleLogSymptom(item.symptom, item.label)
-                  : handleQuickLog(item.action)
-              }
-              className={`flex min-h-[96px] flex-col justify-between rounded-[16px] border p-[12px] text-left outline-none transition-opacity focus:outline-none focus-visible:outline-none enabled:active:opacity-80 disabled:cursor-default ${
-                logged ? 'border-primary/40 bg-primary/[0.07]' : 'border-border-default bg-surface-container-low'
-              }`}
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <span className="flex items-start justify-between">
-                <img src={twemojiUrl(item.emoji)} alt="" aria-hidden="true" width={30} height={30} />
-                {logged ? (
-                  <span
-                    className="inline-flex items-center gap-0.5 text-[8px] uppercase leading-tight tracking-[0.06em] text-primary"
-                    style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
-                  >
-                    <Check size={9} strokeWidth={3} /> Done
-                  </span>
-                ) : (
-                  symptomCount > 0 && (
-                    <span
-                      className="text-[8px] uppercase leading-tight tracking-[0.06em] text-error"
-                      style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}
-                    >
-                      {symptomCount}×
+              <button
+                key={item.label}
+                type="button"
+                disabled={!interactive}
+                onClick={() =>
+                  item.symptom
+                    ? handleLogSymptom(item.symptom, item.label)
+                    : handleQuickLog(item.action)
+                }
+                className={`flex min-h-[92px] flex-col justify-between rounded-[18px] border bg-surface-container-lowest p-3 text-left outline-none transition-opacity focus:outline-none focus-visible:outline-none enabled:active:opacity-80 disabled:cursor-default ${
+                  logged ? 'border-primary/30' : 'border-border-default'
+                }`}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <span className="flex items-start justify-between">
+                  <img
+                    src={twemojiUrl(item.emoji)}
+                    alt=""
+                    aria-hidden="true"
+                    width={32}
+                    height={32}
+                    style={{ opacity: logged ? 0.5 : 1 }}
+                  />
+                  {logged ? (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-on-secondary">
+                      <Check size={12} strokeWidth={3} />
                     </span>
-                  )
-                )}
-              </span>
-              <span>
-                <span
-                  className="block text-[12px] font-medium leading-tight text-on-surface"
-                  style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
-                >
-                  {item.label}
+                  ) : (
+                    symptomCount > 0 && (
+                      <span
+                        className="rounded-full bg-secondary/15 px-1.5 py-0.5 text-[10px] font-bold text-secondary"
+                        style={{ fontFamily: '"Mulish", sans-serif' }}
+                      >
+                        {symptomCount}×
+                      </span>
+                    )
+                  )}
                 </span>
-                <span
-                  className="mt-0.5 block text-[10px] leading-snug text-outline"
-                  style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
-                >
-                  {sub}
+                <span>
+                  <span
+                    className="block text-[14px] font-semibold leading-tight text-on-surface"
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
+                  >
+                    {item.label}
+                  </span>
+                  <span
+                    className="mt-1 block text-[11.5px] leading-snug text-on-surface-variant"
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
+                  >
+                    {sub}
+                  </span>
                 </span>
-              </span>
-            </button>
+              </button>
             );
           })}
         </div>
       </section>
 
-      <section className="px-[22px] pt-4">
+      <section className="px-2 pt-3">
         <button
           type="button"
           onClick={() => setCycleOpen(true)}
-          className="w-full rounded-[24px] border border-border-default bg-surface-container-low px-[16px] py-[16px] text-left transition-opacity active:opacity-80"
+          className="w-full rounded-[20px] bg-primary-fixed px-[18px] py-4 text-left transition-opacity active:opacity-80"
         >
-          <div className="mb-3 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary">
-            <span className="h-px w-3 bg-primary/60" />
-            <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Cycle tracker</span>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <Eyebrow className="mb-0">Cycle tracker</Eyebrow>
+            {cycle.data?.phase ? <CyclePhaseBadge phase={cycle.data.phase} /> : null}
           </div>
           <CycleTrackerSummary cycleData={cycle.data} loading={cycle.loading} />
         </button>
       </section>
 
       {!detailedCompleted && (
-        <section className="px-[22px] pt-4">
-          <article
-            className="overflow-hidden rounded-[28px] border px-5 py-5"
-            style={{
-              background: 'linear-gradient(145deg, rgba(36, 25, 47, 0.96), rgba(24, 18, 37, 0.98))',
-              borderColor: 'rgba(206, 189, 255, 0.18)',
-              boxShadow: '0 16px 40px rgba(0,0,0,0.32)',
-            }}
-          >
-            <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]" style={{ color: '#dbc839' }}>
-              <span className="h-px w-3 bg-[#dbc839]/70" />
-              <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Next step required</span>
-            </div>
+        <section className="px-2 pt-3">
+          <article className="overflow-hidden rounded-[20px] bg-primary px-[18px] py-5">
+            <Eyebrow tone="cream">Next step required</Eyebrow>
 
             <p
-              className="max-w-[24ch] text-[17px] leading-[1.4] text-on-surface"
-              style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}
+              className="max-w-[20ch] text-[22px] leading-[1.25] text-on-primary"
+              style={{ fontFamily: SERIF, fontWeight: 500 }}
             >
               Let&apos;s go deeper with your assessment
             </p>
 
             <p
-              className="mt-3 max-w-[28ch] text-[12px] leading-[1.5]"
-              style={{ color: '#b5acbf', fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+              className="mt-3 max-w-[34ch] text-[13.5px] leading-[1.55]"
+              style={{ color: '#E7D7E0', fontFamily: '"Mulish", sans-serif' }}
             >
               Your detailed assessment helps ANU personalise your care path. Takes about 8 minutes.
             </p>
@@ -544,34 +573,38 @@ export default function AnuDashboardRoute() {
             <button
               type="button"
               onClick={() => navigate('/detailed-assessment')}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-medium text-inverse-on-surface"
-              style={{
-                fontFamily: '"Geist", -apple-system, system-ui, sans-serif',
-                fontWeight: 500,
-                letterSpacing: '-0.005em',
-              }}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-6 py-3.5 text-[15px] font-semibold text-on-secondary transition-opacity active:opacity-90"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              {detailedStatus === 'in_progress' ? 'Resume detailed assessment' : 'Start detailed assessment'}
+              {detailedStatus === 'in_progress'
+                ? 'Resume detailed assessment'
+                : 'Start detailed assessment'}
               <span aria-hidden="true">→</span>
             </button>
           </article>
         </section>
       )}
 
-      <section className="px-[22px] pb-[22px] pt-4">
-        <article className="rounded-[24px] border px-[18px] py-4" style={{ background: 'rgba(219, 200, 57, 0.16)', borderColor: 'rgba(219, 200, 57, 0.3)' }}>
-          <div className="mb-2.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]" style={{ color: '#dbc839' }}>
-            <span className="h-px w-3 bg-[#dbc839]/70" />
-            <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Today&apos;s insight</span>
-          </div>
-          <p className="text-[17px] leading-[1.4] text-on-surface" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic' }}>
+      <section className="px-2 pb-5 pt-3">
+        <article
+          className="rounded-[20px] px-[18px] py-4"
+          style={{ background: 'rgba(184, 146, 60, 0.18)' }}
+        >
+          <Eyebrow tone="gold">Today&apos;s insight</Eyebrow>
+          <p className="text-[18px] leading-[1.45] text-on-surface" style={{ fontFamily: SERIF }}>
             Cooling the bedroom to 22°C before sleep can reduce night sweats by up to 40%.
           </p>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-[0.1em] text-on-surface-variant" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+          <div className="mt-3.5 flex items-center justify-between">
+            <span
+              className="text-[12px] font-medium text-on-surface-variant"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               Dr. Meera Rao · AIIMS
             </span>
-            <span className="text-[12px] font-medium" style={{ color: '#dbc839', fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+            <span
+              className="text-[13px] font-semibold"
+              style={{ color: '#8F6B1E', fontFamily: '"Mulish", sans-serif' }}
+            >
               Read →
             </span>
           </div>
@@ -619,8 +652,8 @@ export default function AnuDashboardRoute() {
       {toast && (
         <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+16px)] z-[80] flex justify-center px-4">
           <div
-            className="max-w-[340px] rounded-full border border-border-default bg-surface-raised px-4 py-2.5 text-[12px] text-on-surface shadow-xl"
-            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            className="max-w-[340px] rounded-full border border-border-default bg-surface-raised px-4 py-2.5 text-[12px] text-on-surface border border-border-default"
+            style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             role="status"
           >
             {toast}

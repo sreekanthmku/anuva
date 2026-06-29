@@ -23,7 +23,8 @@ export const assessmentQuestions: AssessmentQuestion[] = [
   },
   {
     id: 'mood-swings',
-    prompt: "Do you experience sudden mood swings you can't control (anxious, fear, worrying, crying)?",
+    prompt:
+      "Do you experience sudden mood swings you can't control (anxious, fear, worrying, crying)?",
     options: ['Yes', 'No', 'Sometimes'],
   },
   {
@@ -53,7 +54,8 @@ export const assessmentQuestions: AssessmentQuestion[] = [
   },
   {
     id: 'aches-fatigue',
-    prompt: 'Do you have unexplained aches in your joints or muscles? Do you feel unexplained fatigue?',
+    prompt:
+      'Do you have unexplained aches in your joints or muscles? Do you feel unexplained fatigue?',
     options: ['Yes', 'No', 'Sometimes'],
   },
   {

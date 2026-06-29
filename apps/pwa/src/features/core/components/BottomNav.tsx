@@ -20,13 +20,18 @@ const navItems: NavItem[] = [
 ];
 
 function NavIcon({ icon, active }: { icon: NavItem['icon']; active: boolean }) {
-  const color = active ? '#322f37' : '#948e9d';
+  const color = active ? '#3E2542' : '#6E5A78';
   const size = 20;
 
   if (icon === 'home') {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M3 11L12 4l9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1v-9z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+        <path
+          d="M3 11L12 4l9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1v-9z"
+          stroke={color}
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
       </svg>
     );
   }
@@ -47,7 +52,12 @@ function NavIcon({ icon, active }: { icon: NavItem['icon']; active: boolean }) {
   if (icon === 'report') {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M4 20V10m6 10V4m6 16v-8m6 8v-5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+        <path
+          d="M4 20V10m6 10V4m6 16v-8m6 8v-5"
+          stroke={color}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
       </svg>
     );
   }
@@ -83,15 +93,15 @@ export function BottomNav() {
                 >
                   <span
                     className="flex h-[38px] w-[38px] items-center justify-center rounded-full transition-colors"
-                    style={{ background: moreActive ? '#e2c62d' : 'transparent' }}
+                    style={{ background: moreActive ? '#C97E92' : 'transparent' }}
                   >
                     <NavIcon icon="more" active={moreActive} />
                   </span>
                   <span
                     className="text-[9.5px] uppercase tracking-[0.1em]"
                     style={{
-                      fontFamily: '"Geist Mono", ui-monospace, monospace',
-                      color: moreActive ? '#e6e0ea' : '#948e9d',
+                      fontFamily: '"Mulish", sans-serif',
+                      color: moreActive ? '#3E2542' : '#6E5A78',
                     }}
                   >
                     {item.label}
@@ -105,15 +115,15 @@ export function BottomNav() {
                     <>
                       <span
                         className="flex h-[38px] w-[38px] items-center justify-center rounded-full transition-colors"
-                        style={{ background: isActive ? '#e2c62d' : 'transparent' }}
+                        style={{ background: isActive ? '#C97E92' : 'transparent' }}
                       >
                         <NavIcon icon={item.icon} active={isActive} />
                       </span>
                       <span
                         className="text-[9.5px] uppercase tracking-[0.1em]"
                         style={{
-                          fontFamily: '"Geist Mono", ui-monospace, monospace',
-                          color: isActive ? '#e6e0ea' : '#948e9d',
+                          fontFamily: '"Mulish", sans-serif',
+                          color: isActive ? '#3E2542' : '#6E5A78',
                         }}
                       >
                         {item.label}
@@ -122,7 +132,7 @@ export function BottomNav() {
                   )}
                 </NavLink>
               </li>
-            ),
+            )
           )}
         </ul>
         <div className="h-[calc(env(safe-area-inset-bottom,0px)+6px)]" />

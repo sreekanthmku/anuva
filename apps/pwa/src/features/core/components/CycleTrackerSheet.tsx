@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CycleStateResponse } from '@anuva/shared';
-import { CycleTrackerSummary } from './CycleTrackerSummary';
+import { CyclePhaseBadge, CycleTrackerSummary } from './CycleTrackerSummary';
 import { CYCLE_LENGTH_DEFAULT, isCycleTrackerReady } from './cycleTrackerDisplay';
 
 const CYCLE_MIN = 21;
@@ -47,11 +47,11 @@ function RangeSlider({
       <div className="mb-4 flex items-baseline justify-center gap-1">
         <span
           className="text-[52px] leading-none text-on-surface"
-          style={{ fontFamily: '"Geist Mono", ui-monospace, monospace', fontWeight: 300 }}
+          style={{ fontFamily: '"Mulish", sans-serif', fontWeight: 300 }}
         >
           {value}
         </span>
-        <span className="text-[16px] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+        <span className="text-[16px] text-outline" style={{ fontFamily: '"Mulish", sans-serif' }}>
           {unit}
         </span>
       </div>
@@ -69,22 +69,27 @@ function RangeSlider({
             borderRadius: '9999px',
             outline: 'none',
             cursor: 'pointer',
-            background: `linear-gradient(to right, #cebdff ${pct}%, rgba(148,142,157,0.25) ${pct}%)`,
+            background: `linear-gradient(to right, #5E3566 ${pct}%, rgba(180, 159, 176,0.25) ${pct}%)`,
           }}
         />
       </div>
 
       <div className="mt-2 flex justify-between px-1">
-        <span className="text-[10px] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-          {min}{unit}
+        <span className="text-[10px] text-outline" style={{ fontFamily: '"Mulish", sans-serif' }}>
+          {min}
+          {unit}
         </span>
-        <span className="text-[10px] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-          {max}{unit}
+        <span className="text-[10px] text-outline" style={{ fontFamily: '"Mulish", sans-serif' }}>
+          {max}
+          {unit}
         </span>
       </div>
 
       {value === defaultValue && (
-        <p className="mt-2 text-center text-[11px] text-outline" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+        <p
+          className="mt-2 text-center text-[11px] text-outline"
+          style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+        >
           {defaultLabel}
         </p>
       )}
@@ -115,13 +120,15 @@ export function CycleTrackerSheet({
   onEndPeriod,
   onUpdateSettings,
 }: Props) {
-  const [view, setView] = useState<View>(() => (isCycleTrackerReady(cycleData) ? 'main' : 'setup-date'));
+  const [view, setView] = useState<View>(() =>
+    isCycleTrackerReady(cycleData) ? 'main' : 'setup-date'
+  );
   const [selectedDate, setSelectedDate] = useState(todayISO());
   const [selectedCycleLength, setSelectedCycleLength] = useState(
-    () => cycleData?.settings?.cycleLength ?? CYCLE_DEFAULT,
+    () => cycleData?.settings?.cycleLength ?? CYCLE_DEFAULT
   );
   const [selectedPeriodLength, setSelectedPeriodLength] = useState(
-    () => cycleData?.settings?.periodLength ?? PERIOD_DEFAULT,
+    () => cycleData?.settings?.periodLength ?? PERIOD_DEFAULT
   );
   const [saving, setSaving] = useState(false);
   const dateListRef = useRef<HTMLDivElement>(null);
@@ -199,7 +206,7 @@ export function CycleTrackerSheet({
         aria-label="Close cycle tracker"
       />
       <div
-        className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-5 shadow-[0_-8px_32px_rgba(0,0,0,0.35)]"
+        className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-5"
         role="dialog"
         aria-modal="true"
         style={{ maxHeight: '90dvh', overflowY: 'auto' }}
@@ -209,25 +216,41 @@ export function CycleTrackerSheet({
         {/* SETUP: Date picker */}
         {view === 'setup-date' && (
           <div>
-            <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <div
+              className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               <span className="h-px w-3 bg-primary/60" />
               Cycle setup · Step 1 of {totalSetupSteps}
             </div>
-            <h2 className="mb-1 text-[20px] text-on-surface" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}>
+            <h2
+              className="mb-1 text-[20px] text-on-surface"
+              style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
+            >
               When did your last period start?
             </h2>
-            <p className="mb-5 text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+            <p
+              className="mb-5 text-[12px] text-on-surface-variant"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+            >
               Pick the date your most recent period began.
             </p>
 
-            <div ref={dateListRef} className="mb-5 flex max-h-[240px] flex-col gap-1.5 overflow-y-auto">
+            <div
+              ref={dateListRef}
+              className="mb-5 flex max-h-[240px] flex-col gap-1.5 overflow-y-auto"
+            >
               {pastDaysList.map((d) => {
                 const date = new Date(d + 'T00:00:00');
                 const isToday = d === todayISO();
                 const isSelected = d === selectedDate;
                 const label = isToday
                   ? 'Today'
-                  : date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+                  : date.toLocaleDateString('en-IN', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                    });
                 return (
                   <button
                     key={d}
@@ -235,15 +258,20 @@ export function CycleTrackerSheet({
                     onClick={() => setSelectedDate(d)}
                     className="flex items-center justify-between rounded-[14px] border px-4 py-3 text-left transition-colors"
                     style={{
-                      background: isSelected ? 'rgba(248,113,113,0.15)' : 'transparent',
-                      borderColor: isSelected ? 'rgba(248,113,113,0.4)' : 'rgba(148,142,157,0.2)',
+                      background: isSelected ? 'rgba(192, 64, 90,0.15)' : 'transparent',
+                      borderColor: isSelected ? 'rgba(192, 64, 90,0.4)' : 'rgba(180, 159, 176,0.2)',
                     }}
                   >
-                    <span className="text-[14px] text-on-surface" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+                    <span
+                      className="text-[14px] text-on-surface"
+                      style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                    >
                       {label}
                     </span>
                     {isSelected && (
-                      <span className="text-[12px]" style={{ color: '#F87171' }}>✓</span>
+                      <span className="text-[12px]" style={{ color: '#C0405A' }}>
+                        ✓
+                      </span>
                     )}
                   </button>
                 );
@@ -253,8 +281,8 @@ export function CycleTrackerSheet({
             <button
               type="button"
               onClick={() => setView('setup-cycle-length')}
-              className="w-full rounded-full bg-primary py-[14px] text-[14px] font-medium text-inverse-on-surface"
-              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+              className="w-full rounded-full bg-primary py-[14px] text-[14px] font-semibold text-on-secondary"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
               Next →
             </button>
@@ -264,14 +292,23 @@ export function CycleTrackerSheet({
         {/* SETUP: Cycle length */}
         {view === 'setup-cycle-length' && (
           <div>
-            <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <div
+              className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               <span className="h-px w-3 bg-primary/60" />
               Cycle setup · Step 2 of {totalSetupSteps}
             </div>
-            <h2 className="mb-1 text-[20px] text-on-surface" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}>
+            <h2
+              className="mb-1 text-[20px] text-on-surface"
+              style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
+            >
               How long is your cycle?
             </h2>
-            <p className="mb-6 text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+            <p
+              className="mb-6 text-[12px] text-on-surface-variant"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+            >
               Days from period start to next period start.
             </p>
 
@@ -290,15 +327,15 @@ export function CycleTrackerSheet({
                 type="button"
                 onClick={() => setView('setup-date')}
                 className="flex-1 rounded-full border border-border-default py-[14px] text-[14px] text-on-surface-variant"
-                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
                 ← Back
               </button>
               <button
                 type="button"
                 onClick={() => setView('setup-period-length')}
-                className="flex-[2] rounded-full bg-primary py-[14px] text-[14px] font-medium text-inverse-on-surface"
-                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                className="flex-[2] rounded-full bg-primary py-[14px] text-[14px] font-semibold text-on-secondary"
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
                 Next →
               </button>
@@ -309,14 +346,23 @@ export function CycleTrackerSheet({
         {/* SETUP: Period length */}
         {view === 'setup-period-length' && (
           <div>
-            <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <div
+              className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               <span className="h-px w-3 bg-primary/60" />
               Cycle setup · Step 3 of {totalSetupSteps}
             </div>
-            <h2 className="mb-1 text-[20px] text-on-surface" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}>
+            <h2
+              className="mb-1 text-[20px] text-on-surface"
+              style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
+            >
               How long does your period last?
             </h2>
-            <p className="mb-6 text-[12px] text-on-surface-variant" style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}>
+            <p
+              className="mb-6 text-[12px] text-on-surface-variant"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+            >
               Typical number of days you bleed. We'll refine this from your logs over time.
             </p>
 
@@ -335,7 +381,7 @@ export function CycleTrackerSheet({
                 type="button"
                 onClick={() => setView('setup-cycle-length')}
                 className="flex-1 rounded-full border border-border-default py-[14px] text-[14px] text-on-surface-variant"
-                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
                 ← Back
               </button>
@@ -343,8 +389,8 @@ export function CycleTrackerSheet({
                 type="button"
                 disabled={saving}
                 onClick={handleSetup}
-                className="flex-[2] rounded-full bg-primary py-[14px] text-[14px] font-medium text-inverse-on-surface disabled:opacity-50"
-                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                className="flex-[2] rounded-full bg-primary py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-50"
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
                 {saving ? 'Saving…' : 'Save cycle'}
               </button>
@@ -357,15 +403,26 @@ export function CycleTrackerSheet({
           <div>
             {loading && !cycleData ? (
               <div className="flex items-center justify-center py-12">
-                <span className="text-[12px] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+                <span
+                  className="text-[12px] text-outline"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
                   Loading…
                 </span>
               </div>
             ) : (
               <>
-                <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
-                  <span className="h-px w-3 bg-primary/60" />
-                  Cycle tracker
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <div
+                    className="flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
+                  >
+                    <span className="h-px w-3 bg-primary/60" />
+                    Cycle tracker
+                  </div>
+                  {cycleData?.phase ? (
+                    <CyclePhaseBadge phase={cycleData.phase} size="sheet" />
+                  ) : null}
                 </div>
 
                 <div className="mb-5">
@@ -379,7 +436,12 @@ export function CycleTrackerSheet({
                       disabled={saving}
                       onClick={() => handleEndPeriod(ongoingPeriod.id)}
                       className="w-full rounded-full border py-[13px] text-[14px] font-medium disabled:opacity-50"
-                      style={{ background: 'rgba(248,113,113,0.12)', borderColor: 'rgba(248,113,113,0.35)', color: '#F87171', fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                      style={{
+                        background: 'rgba(192, 64, 90,0.12)',
+                        borderColor: 'rgba(192, 64, 90,0.35)',
+                        color: '#C0405A',
+                        fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+                      }}
                     >
                       {saving ? 'Saving…' : 'Period ended today'}
                     </button>
@@ -389,7 +451,12 @@ export function CycleTrackerSheet({
                       disabled={saving}
                       onClick={handleLogPeriod}
                       className="w-full rounded-full border py-[13px] text-[14px] font-medium disabled:opacity-50"
-                      style={{ background: 'rgba(248,113,113,0.12)', borderColor: 'rgba(248,113,113,0.35)', color: '#F87171', fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                      style={{
+                        background: 'rgba(192, 64, 90,0.12)',
+                        borderColor: 'rgba(192, 64, 90,0.35)',
+                        color: '#C0405A',
+                        fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+                      }}
                     >
                       {saving ? 'Saving…' : 'Period started today'}
                     </button>
@@ -403,7 +470,7 @@ export function CycleTrackerSheet({
                       setView('edit-settings');
                     }}
                     className="w-full rounded-full border border-border-default py-[13px] text-[13px] text-on-surface-variant"
-                    style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
                     Edit cycle settings
                   </button>
@@ -416,15 +483,24 @@ export function CycleTrackerSheet({
         {/* EDIT SETTINGS */}
         {view === 'edit-settings' && (
           <div>
-            <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <div
+              className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               <span className="h-px w-3 bg-primary/60" />
               Edit cycle settings
             </div>
-            <h2 className="mb-5 text-[20px] text-on-surface" style={{ fontFamily: '"DM Sans", sans-serif', fontStyle: 'italic', fontWeight: 300 }}>
+            <h2
+              className="mb-5 text-[20px] text-on-surface"
+              style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
+            >
               Cycle &amp; period length
             </h2>
 
-            <p className="mb-3 text-[11px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <p
+              className="mb-3 text-[11px] uppercase tracking-[0.12em] text-outline"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               Cycle length
             </p>
             <RangeSlider
@@ -437,7 +513,10 @@ export function CycleTrackerSheet({
               onChange={setSelectedCycleLength}
             />
 
-            <p className="mb-3 mt-6 text-[11px] uppercase tracking-[0.12em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <p
+              className="mb-3 mt-6 text-[11px] uppercase tracking-[0.12em] text-outline"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               Period length
             </p>
             <RangeSlider
@@ -455,7 +534,7 @@ export function CycleTrackerSheet({
                 type="button"
                 onClick={() => setView('main')}
                 className="flex-1 rounded-full border border-border-default py-[14px] text-[14px] text-on-surface-variant"
-                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
                 Cancel
               </button>
@@ -463,8 +542,8 @@ export function CycleTrackerSheet({
                 type="button"
                 disabled={saving}
                 onClick={handleUpdateSettings}
-                className="flex-[2] rounded-full bg-primary py-[14px] text-[14px] font-medium text-inverse-on-surface disabled:opacity-50"
-                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                className="flex-[2] rounded-full bg-primary py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-50"
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
                 {saving ? 'Saving…' : 'Save'}
               </button>

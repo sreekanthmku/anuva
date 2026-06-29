@@ -63,13 +63,13 @@ export default function AnuChatRoute() {
 
   return (
     <main className="min-h-mobile flex flex-col bg-surface text-on-surface">
-      <header className="sticky top-0 z-40 shrink-0 bg-surface shadow-[0_1px_0_0_rgba(167,139,250,0.2)]">
-        <section className="flex items-center gap-3 border-b border-border-default px-[22px] pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
+      <header className="sticky top-0 z-40 shrink-0 bg-surface">
+        <section className="flex items-center gap-3 border-b border-border-default px-2 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
           <button
             type="button"
             onClick={() => navigate('/home')}
             className="bg-transparent p-0 text-[18px] leading-none text-on-surface-variant"
-            style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+            style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             aria-label="Back to home"
           >
             ←
@@ -79,34 +79,50 @@ export default function AnuChatRoute() {
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-surface-container-low">
               <img src="/anu.png" alt="ANU avatar" className="h-6 w-6 object-contain" />
             </span>
-            <span className="absolute -bottom-[1px] -right-[1px] h-2.5 w-2.5 rounded-full border-2 border-surface bg-primary shadow-[0_0_8px_#cebdff]" />
+            <span className="absolute -bottom-[1px] -right-[1px] h-2.5 w-2.5 rounded-full border-2 border-surface bg-primary" />
           </div>
 
           <div className="flex-1">
-            <p className="text-[17px] text-on-surface" style={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 500 }}>
+            <p
+              className="text-[17px] text-on-surface"
+              style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
+            >
               ANU
             </p>
-            <p className="text-[10px] uppercase tracking-[0.08em] text-primary" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+            <p
+              className="text-[10px] uppercase tracking-[0.08em] text-primary"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
               ● Online · Remembers all
             </p>
           </div>
 
-          <button type="button" className="bg-transparent p-0 text-[18px] text-outline" aria-label="More options">
+          <button
+            type="button"
+            className="bg-transparent p-0 text-[18px] text-outline"
+            aria-label="More options"
+          >
             ⋯
           </button>
         </section>
 
-        <section className="flex items-center justify-center gap-1.5 bg-primary/15 px-[22px] py-1.5 text-[9.5px] uppercase tracking-[0.12em] text-primary">
+        <section className="flex items-center justify-center gap-1.5 bg-primary/15 px-2 py-1.5 text-[9.5px] uppercase tracking-[0.12em] text-primary">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect x="5" y="10" width="14" height="10" rx="2" stroke="#cebdff" strokeWidth="2" />
-            <path d="M8 10V7a4 4 0 018 0v3" stroke="#cebdff" strokeWidth="2" />
+            <rect x="5" y="10" width="14" height="10" rx="2" stroke="#5E3566" strokeWidth="2" />
+            <path d="M8 10V7a4 4 0 018 0v3" stroke="#5E3566" strokeWidth="2" />
           </svg>
-          <span style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>Encrypted on device</span>
+          <span style={{ fontFamily: '"Mulish", sans-serif' }}>Encrypted on device</span>
         </section>
       </header>
 
-      <section ref={messageListRef} className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-[168px] pt-[18px]">
-        <p className="mb-1 text-center text-[9.5px] uppercase tracking-[0.15em] text-outline" style={{ fontFamily: '"Geist Mono", ui-monospace, monospace' }}>
+      <section
+        ref={messageListRef}
+        className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-[168px] pt-[18px]"
+      >
+        <p
+          className="mb-1 text-center text-[9.5px] uppercase tracking-[0.15em] text-outline"
+          style={{ fontFamily: '"Mulish", sans-serif' }}
+        >
           Today · 8:12 AM
         </p>
 
@@ -114,15 +130,24 @@ export default function AnuChatRoute() {
           const isUser = message.from === 'user';
 
           return (
-            <div key={`${message.from}-${index}`} className={`flex max-w-[82%] items-end gap-2 ${isUser ? 'ml-auto flex-row-reverse' : ''}`}>
-              {!isUser && <img src="/anu.png" alt="" className="h-6 w-6 shrink-0 rounded-full border border-border-default bg-surface-container-low p-1" />}
+            <div
+              key={`${message.from}-${index}`}
+              className={`flex max-w-[82%] items-end gap-2 ${isUser ? 'ml-auto flex-row-reverse' : ''}`}
+            >
+              {!isUser && (
+                <img
+                  src="/anu.png"
+                  alt=""
+                  className="h-6 w-6 shrink-0 rounded-full border border-border-default bg-surface-container-low p-1"
+                />
+              )}
               <div
-                className={`px-[14px] py-[10px] text-[14px] leading-[1.45] ${
+                className={`px-[14px] py-[10px] text-[14px] leading-[1.5] ${
                   isUser
-                    ? 'rounded-[20px_20px_4px_20px] bg-secondary text-inverse-on-surface'
-                    : 'rounded-[20px_20px_20px_4px] border border-border-default bg-surface-container-low text-on-surface'
+                    ? 'rounded-[20px_20px_4px_20px] bg-secondary text-on-secondary'
+                    : 'rounded-[20px_20px_20px_4px] bg-primary-container text-on-surface'
                 }`}
-                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
                 {message.text}
               </div>
@@ -140,8 +165,8 @@ export default function AnuChatRoute() {
                 key={reply}
                 type="button"
                 onClick={() => send(reply)}
-                className="shrink-0 rounded-full border border-primary/30 bg-primary/15 px-3.5 py-[7px] text-[12px] font-medium text-primary"
-                style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+                className="shrink-0 rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-[13px] font-semibold text-primary"
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
                 {reply}
               </button>
@@ -159,7 +184,7 @@ export default function AnuChatRoute() {
               }}
               placeholder="Share what you're feeling..."
               className="w-full border-none bg-transparent text-[14px] text-on-surface outline-none placeholder:text-outline"
-              style={{ fontFamily: '"Geist", -apple-system, system-ui, sans-serif' }}
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             />
           </label>
 
@@ -170,7 +195,12 @@ export default function AnuChatRoute() {
             aria-label="Send message"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M4 12l16-7-7 16-2-7-7-2z" stroke="#322f37" strokeWidth="1.8" strokeLinejoin="round" />
+              <path
+                d="M4 12l16-7-7 16-2-7-7-2z"
+                stroke="#3E2542"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
         </section>

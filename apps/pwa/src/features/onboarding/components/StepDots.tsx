@@ -16,7 +16,7 @@ export function StepDots({ total, current }: StepDotsProps) {
             className="h-1.5 rounded-full transition-all duration-200"
             style={{
               width: isActive ? 22 : 6,
-              backgroundColor: isActive ? '#e2c62d' : isDone ? '#cebdff' : 'rgba(255,255,255,0.12)',
+              backgroundColor: isActive ? '#C97E92' : isDone ? '#5E3566' : 'rgba(62, 37, 66,0.12)',
             }}
           />
         );
@@ -24,4 +24,3 @@ export function StepDots({ total, current }: StepDotsProps) {
     </div>
   );
 }
-

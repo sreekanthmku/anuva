@@ -3,7 +3,7 @@ import { completeOnboarding } from '../auth/session';
 
 export function persistOnboardingCompletionIfAuthenticated(
   user: AuthUser | null,
-  refreshUser: () => Promise<void>,
+  refreshUser: () => Promise<void>
 ): void {
   if (!user || user.onboardingCompleted) {
     return;

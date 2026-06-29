@@ -3,4 +3,3 @@
 export function registerServiceWorker() {
   // no-op for now
 }
-
