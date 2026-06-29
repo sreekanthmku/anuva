@@ -73,6 +73,7 @@ import {
   getDaySheet,
   markTrackerEngagement,
 } from './nudge/engine.js';
+import { runNudgeSelfTest } from './nudge/selfTest.js';
 import { randomQuickLogMessage } from './quickLogMessages.js';
 
 const app = express();
@@ -1169,6 +1170,13 @@ app.post('/nudge/respond', async (req, res, next) => {
   } catch (e) {
     next(e);
   }
+});
+
+// Public self-test of the nudge decision logic (Governor SR-01..09, tone
+// RT-001..007, L2 selection tree). No auth, no DB — deterministic pure checks.
+app.get('/nudge/selftest', (_req, res) => {
+  const report = runNudgeSelfTest();
+  res.status(report.ok ? 200 : 500).json(report);
 });
 
 // Unified daily tracker sheet — powers the /track Today view. Includes answers
