@@ -63,6 +63,14 @@ function governorCases(): CaseResult[] {
       expect: { allowed: false, suppressedBy: 'SR-01' },
     },
     {
+      name: 'render ignores daily cap',
+      nudge: L1_001,
+      slot: 'morning',
+      now: MORNING,
+      state: baseState({ nudgeCountToday: 3 }),
+      expect: { allowed: true },
+    },
+    {
       name: 'SR-05 already logged tracker',
       nudge: L1_001,
       slot: 'morning',
@@ -73,7 +81,13 @@ function governorCases(): CaseResult[] {
   ];
 
   return cases.map((c) => {
-    const got = evaluateGovernor(c.nudge, c.slot, c.now, c.state);
+    const got = evaluateGovernor(
+      c.nudge,
+      c.slot,
+      c.now,
+      c.state,
+      c.name === 'render ignores daily cap' ? { ignoreDailyCap: true } : {},
+    );
     const ok =
       got.allowed === c.expect.allowed &&
       (c.expect.suppressedBy === undefined || got.suppressedBy === c.expect.suppressedBy);

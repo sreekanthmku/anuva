@@ -18,16 +18,21 @@ export interface GovernorResult {
   suppressedBy?: string; // e.g. "SR-01"
 }
 
+export interface GovernorOptions {
+  ignoreDailyCap?: boolean;
+}
+
 // Pure evaluator — easy to unit test with mock state.
 export function evaluateGovernor(
   nudge: NudgeDef,
   _slot: NudgeSlot,
   _now: Date,
   state: GovernorState,
+  options: GovernorOptions = {},
 ): GovernorResult {
   void nudge;
 
-  if (state.nudgeCountToday >= DAILY_CAP) {
+  if (!options.ignoreDailyCap && state.nudgeCountToday >= DAILY_CAP) {
     return { allowed: false, suppressedBy: 'SR-01' };
   }
 
@@ -110,7 +115,8 @@ export async function runGovernor(
   nudge: NudgeDef,
   slot: NudgeSlot,
   now: Date,
+  options: GovernorOptions = {},
 ): Promise<GovernorResult> {
   const state = await loadGovernorState(userId, nudge, now);
-  return evaluateGovernor(nudge, slot, now, state);
+  return evaluateGovernor(nudge, slot, now, state, options);
 }

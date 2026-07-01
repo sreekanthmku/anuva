@@ -3,8 +3,8 @@ import { z } from 'zod';
 // Time slots a nudge can fire in.
 export const nudgeSlotSchema = z.enum(['morning', 'afternoon', 'evening']);
 
-// 1 = daily tracker, 2 = rotating contextual, 3 = smart trigger.
-export const nudgeLayerSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+// 1 = daily tracker, 2 = rotating contextual.
+export const nudgeLayerSchema = z.union([z.literal(1), z.literal(2)]);
 
 // A single answerable card the client renders. L1 morning/evening slots
 // return several cards bundled under one collapsed tap-card.
@@ -26,7 +26,7 @@ export const submitNudgeResponseBodySchema = z.object({
 
 export const nudgeRespondResponseSchema = z.object({
   ok: z.boolean(),
-  toneTemplateId: z.string(), // RT-001 .. RT-007
+  toneTemplateId: z.string(), // RT-001 .. RT-004
   message: z.string(), // ANU tone-reference reply
   distressFlag: z.boolean(),
 });
@@ -34,7 +34,7 @@ export const nudgeRespondResponseSchema = z.object({
 // GET /nudge/today — what the client should surface right now.
 export const nudgeTodayResponseSchema = z.object({
   slot: nudgeSlotSchema.nullable(),
-  bundleTitle: z.string().nullable(), // "Morning Anchor" / "Evening Close" / null
+  bundleTitle: z.string().nullable(), // "Morning" / "Afternoon" / "Evening/Night" / null
   budgetRemaining: z.number().int(),
   cards: z.array(nudgeCardSchema),
 });

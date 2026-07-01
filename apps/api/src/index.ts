@@ -1132,7 +1132,7 @@ app.get('/nudge/today', async (req, res, next) => {
     const requestedSlot =
       req.query.slot === undefined ? undefined : nudgeSlotSchema.parse(req.query.slot);
     const slot = requestedSlot ?? currentSlot(now);
-    const dispatch = await buildDispatch(user.id, slot, now);
+    const dispatch = await buildDispatch(user.id, slot, now, { purpose: 'render' });
 
     const startOfToday = startOfDay(now);
     const todayState = await prisma.nudgeDailyState.findUnique({
