@@ -19,8 +19,8 @@ const FONT_MONO = '"Mulish", sans-serif';
 // Mood (L1-003) + sleep (L1-001) use the emoji scale + extras, not chips.
 const EMOJI_TRACKERS = new Set(['L1-001', 'L1-003']);
 
-// Collapsed tap-card bundle for the current slot. Each card is answered in
-// place; ANU's tone reply is shown before advancing to the next card.
+// Collapsed tap-card bundle for the current slot. Each card is answered in place;
+// successful answers advance immediately and only the final reply is shown.
 export default function NudgeCardRoute() {
   const navigate = useNavigate();
   const { slot } = useParams();
@@ -30,7 +30,8 @@ export default function NudgeCardRoute() {
   const moodLog = useMoodLog();
   const sleepLog = useSleepLog();
   const [index, setIndex] = useState(0);
-  const [reply, setReply] = useState<string | null>(null);
+  const [finalReply, setFinalReply] = useState<string | null>(null);
+  const [answerError, setAnswerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -39,11 +40,22 @@ export default function NudgeCardRoute() {
   const card: NudgeCard | undefined = cards[index];
   const isEmojiCard = card ? EMOJI_TRACKERS.has(card.nudgeId) : false;
 
+  const completeCard = (message: string) => {
+    setAnswerError(null);
+    setSheetOpen(false);
+    if (index + 1 < cards.length) {
+      setIndex((i) => i + 1);
+      return;
+    }
+    setFinalReply(message);
+    setDone(true);
+  };
+
   const handleLogMood = async (feeling: number, emotions: MoodEmotion[]) => {
     setSaving(true);
     try {
       await moodLog.logMood(feeling, emotions);
-      setReply("Emotional days are not weakness. I'll track this carefully.");
+      completeCard("Emotional days are not weakness. I'll track this carefully.");
     } finally {
       setSaving(false);
     }
@@ -57,7 +69,7 @@ export default function NudgeCardRoute() {
     setSaving(true);
     try {
       await sleepLog.logSleep(quality, hours, disruptions);
-      setReply("Thanks for logging your sleep. I'll factor it into today.");
+      completeCard("Thanks for logging your sleep. I'll factor it into today.");
     } finally {
       setSaving(false);
     }
@@ -68,20 +80,11 @@ export default function NudgeCardRoute() {
     setSaving(true);
     try {
       const res = await respond({ nudgeId: card.nudgeId, answer });
-      setReply(res.message);
+      completeCard(res.message);
     } catch {
-      setReply("I couldn't save that just now. We'll try again later.");
+      setAnswerError("I couldn't save that just now. We'll try again later.");
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleNext = () => {
-    setReply(null);
-    if (index + 1 < cards.length) {
-      setIndex((i) => i + 1);
-    } else {
-      setDone(true);
     }
   };
 
@@ -109,7 +112,7 @@ export default function NudgeCardRoute() {
               {done ? "That's all for now." : 'Nothing to check in on right now.'}
             </h2>
             <p className="text-[13px] text-on-surface-variant">
-              {done ? 'Thank you for sharing with me today.' : 'Come back at your next check-in.'}
+              {done ? (finalReply ?? 'Thank you for sharing with me today.') : 'Come back at your next check-in.'}
             </p>
             <button
               type="button"
@@ -139,7 +142,7 @@ export default function NudgeCardRoute() {
               {card.question}
             </h2>
 
-            {reply === null && isEmojiCard ? (
+            {isEmojiCard ? (
               <button
                 type="button"
                 disabled={saving}
@@ -148,7 +151,7 @@ export default function NudgeCardRoute() {
               >
                 {card.nudgeId === 'L1-003' ? 'Log your mood' : 'Log your sleep'}
               </button>
-            ) : reply === null ? (
+            ) : (
               <div className="flex flex-col gap-2.5">
                 {card.options.map((opt) => (
                   <button
@@ -161,17 +164,11 @@ export default function NudgeCardRoute() {
                     {opt}
                   </button>
                 ))}
-              </div>
-            ) : (
-              <div>
-                <p className="mb-6 text-[14px] leading-relaxed text-on-surface-variant">{reply}</p>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="w-full rounded-full bg-primary py-3.5 text-[14px] font-medium text-surface active:opacity-80"
-                >
-                  {index + 1 < cards.length ? 'Next' : 'Done'}
-                </button>
+                {answerError && (
+                  <p className="pt-1 text-[13px] leading-relaxed text-on-surface-variant">
+                    {answerError}
+                  </p>
+                )}
               </div>
             )}
           </div>
