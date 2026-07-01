@@ -6,14 +6,14 @@ export type RiskPill = {
 
 export const riskPills: RiskPill[] = [
   { title: 'Vasomotor', value: 'High', color: '#C0405A' },
-  { title: 'Sleep', value: 'Moderate', color: '#C97E92' },
+  { title: 'Sleep', value: 'Moderate', color: '#5B82C4' },
   { title: 'Cognitive', value: 'Low', color: '#5E3566' },
 ];
 
 export const controlPills: RiskPill[] = [
   { title: 'Score', value: 'In control', color: '#5E3566' },
   { title: 'Follow-up', value: '3 months', color: '#5B82C4' },
-  { title: 'Status', value: 'Stable', color: '#C97E92' },
+  { title: 'Status', value: 'Stable', color: '#4F9D6B' },
 ];
 
 export const nextSteps: [string, string][] = [

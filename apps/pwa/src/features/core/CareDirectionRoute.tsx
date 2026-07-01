@@ -69,7 +69,7 @@ export default function CareDirectionRoute() {
 
       <section className="px-3 pt-2">
         <article
-          className="rounded-[20px] border border-border-default bg-secondary-container p-[22px]"
+          className="rounded-[20px] border border-border-default bg-primary-container p-[22px]"
           style={{}}
         >
           <Eyebrow mint>{`Recommended for ${firstName}`}</Eyebrow>
@@ -117,7 +117,6 @@ export default function CareDirectionRoute() {
                 style={{
                   backgroundColor: isActive ? '#FFFFFF' : '#FBF6F0',
                   borderColor: isActive ? '#5E3566' : 'rgba(94, 53, 102, 0.2)',
-                  boxShadow: isActive ? '0 10px 24px rgba(94,53,102,0.08)' : undefined,
                 }}
               >
                 <div
@@ -151,13 +150,13 @@ export default function CareDirectionRoute() {
       </section>
 
       <section className="px-3 py-[22px]">
-        <article className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
+        <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
           <Eyebrow>Your journey</Eyebrow>
           <div className="relative pl-1">
           {timeline.map((t, i) => {
             const isLast = i === timeline.length - 1;
             const dotBg =
-              t.status === 'done' ? '#5E3566' : t.status === 'active' ? '#C97E92' : 'transparent';
+              t.status === 'done' ? '#5E3566' : t.status === 'active' ? '#5E3566' : 'transparent';
             const dotBorder = t.status === 'upcoming' ? '#B49FB0' : dotBg;
 
             return (

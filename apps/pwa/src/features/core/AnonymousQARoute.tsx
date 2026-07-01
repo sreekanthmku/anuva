@@ -91,7 +91,7 @@ export default function AnonymousQARoute() {
       </section>
 
       <section className="px-3 pt-3.5">
-        <article className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
+        <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
           <Eyebrow mint>Your question</Eyebrow>
           <textarea
             value={question}
@@ -112,9 +112,9 @@ export default function AnonymousQARoute() {
                   className="whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors"
                   style={{
                     fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
-                    backgroundColor: active ? '#C97E92' : '#ECDFD0',
-                    color: active ? '#3E2542' : '#3E2542',
-                    borderColor: active ? '#C97E92' : 'rgba(180, 159, 176, 0.35)',
+                    backgroundColor: active ? '#5E3566' : '#ECDFD0',
+                    color: active ? '#FBF6F0' : '#3E2542',
+                    borderColor: active ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
                   }}
                 >
                   {t.label}
@@ -149,7 +149,7 @@ export default function AnonymousQARoute() {
           {qas.map((qa) => (
             <article
               key={qa.q}
-              className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_10px_24px_rgba(94,53,102,0.06)]"
+              className="rounded-[20px] border border-border-default bg-surface-raised p-4"
             >
               <div className="mb-3 flex items-start gap-2">
                 <span

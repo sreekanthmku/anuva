@@ -180,7 +180,7 @@ type FieldProps = {
 
 function QuestionField({ question, value, onChange }: FieldProps) {
   return (
-    <div className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
+    <div className="rounded-[20px] border border-border-default bg-surface-raised p-4">
       <label
         className="block text-[15px] leading-[1.4] text-on-surface"
         style={{ fontFamily: '"Mulish", sans-serif' }}

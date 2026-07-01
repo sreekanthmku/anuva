@@ -93,7 +93,7 @@ export function BottomNav() {
                 >
                   <span
                     className="flex h-[38px] w-[38px] items-center justify-center rounded-full transition-colors"
-                    style={{ background: moreActive ? '#C97E92' : 'transparent' }}
+                    style={{ background: moreActive ? '#E7DCEC' : 'transparent' }}
                   >
                     <NavIcon icon="more" active={moreActive} />
                   </span>
@@ -101,7 +101,7 @@ export function BottomNav() {
                     className="text-[9.5px] uppercase tracking-[0.1em]"
                     style={{
                       fontFamily: '"Mulish", sans-serif',
-                      color: moreActive ? '#3E2542' : '#6E5A78',
+                      color: moreActive ? '#5E3566' : '#6E5A78',
                     }}
                   >
                     {item.label}
@@ -115,7 +115,7 @@ export function BottomNav() {
                     <>
                       <span
                         className="flex h-[38px] w-[38px] items-center justify-center rounded-full transition-colors"
-                        style={{ background: isActive ? '#C97E92' : 'transparent' }}
+                        style={{ background: isActive ? '#E7DCEC' : 'transparent' }}
                       >
                         <NavIcon icon={item.icon} active={isActive} />
                       </span>
@@ -123,7 +123,7 @@ export function BottomNav() {
                         className="text-[9.5px] uppercase tracking-[0.1em]"
                         style={{
                           fontFamily: '"Mulish", sans-serif',
-                          color: isActive ? '#3E2542' : '#6E5A78',
+                          color: isActive ? '#5E3566' : '#6E5A78',
                         }}
                       >
                         {item.label}

@@ -1,7 +1,6 @@
-// ANU Nudge Engine — core dispatch & persistence.
-// Builds the card(s) a slot should surface (routine L1 bundle + contextual L2,
-// or an L3 trigger that takes priority), persists answers to their per-domain
-// model, and tracks governor state (NudgeDailyState / NudgeSendLog / L3TriggerLog).
+// ANU Nudge Engine — MVP dispatch & persistence.
+// Builds the fixed MVP slot bundles, persists answers to their per-domain model,
+// and tracks daily sends/engagement state.
 
 import { prisma } from '@anuva/database';
 import type { NudgeCard, NudgeSlot } from '@anuva/shared';
@@ -15,8 +14,7 @@ import {
 } from './registry.js';
 import { runGovernor } from './governor.js';
 import { selectL2Nudge } from './selectL2Nudge.js';
-import { detectTriggers } from './triggers.js';
-import { HIGH_STRESS, HOTFLASH_PRESENT, OVERWHELMED } from './signals.js';
+import { OVERWHELMED } from './signals.js';
 
 export function startOfDay(d: Date): Date {
   const s = new Date(d);
@@ -33,9 +31,9 @@ export function currentSlot(now: Date): NudgeSlot {
 }
 
 const SLOT_TITLES: Record<NudgeSlot, string> = {
-  morning: 'Morning Anchor',
-  afternoon: 'Afternoon Pulse',
-  evening: 'Evening Close',
+  morning: 'Morning',
+  afternoon: 'Afternoon',
+  evening: 'Evening/Night',
 };
 
 // Primary mandatory nudge whose governor result gates the whole slot bundle.
@@ -44,9 +42,6 @@ const SLOT_PRIMARY: Record<NudgeSlot, string> = {
   afternoon: 'L1-004',
   evening: 'L1-005',
 };
-
-// L3 priority order — safety always wins.
-const L3_PRIORITY = ['L3-007', 'L3-001', 'L3-002', 'L3-003', 'L3-005', 'L3-008'];
 
 function mustNudge(id: string): NudgeDef {
   const def = getNudge(id);
@@ -83,8 +78,7 @@ async function ensureDailyState(userId: string, dayStart: Date) {
   });
 }
 
-// Mark nudge engagement when mood/sleep are logged via the manual /mood,/sleep
-// path (they are morning L1 trackers, so this satisfies SR-04's morning-anchor).
+// Mark nudge engagement when mood/sleep are logged via the manual /mood,/sleep path.
 export async function markTrackerEngagement(userId: string, now: Date): Promise<void> {
   const dayStart = startOfDay(now);
   await prisma.nudgeDailyState.upsert({
@@ -94,75 +88,15 @@ export async function markTrackerEngagement(userId: string, now: Date): Promise<
   });
 }
 
-export async function carePlanAssigned(userId: string): Promise<boolean> {
-  const cp = await prisma.userCarePath.findFirst({
-    where: { userId, status: { in: ['selected', 'active'] } },
-  });
-  return Boolean(cp);
-}
-
-// Choose the single optional L2 to append to the Evening Close card.
-async function eveningL2(userId: string, now: Date): Promise<string | null> {
-  const dow = now.getDay();
-  if (dow === 0) return 'L2-008'; // Sunday — family support (weekly)
-  if (dow === 5 || dow === 6) return 'L2-010'; // Fri/Sat — weekly mood review
-
-  const dayStart = startOfDay(now);
-  const [stress, hotFlash] = await Promise.all([
-    prisma.stressLog.findUnique({ where: { userId_date: { userId, date: dayStart } } }),
-    prisma.hotFlashDailyLog.findUnique({ where: { userId_date: { userId, date: dayStart } } }),
-  ]);
-  if (stress && HIGH_STRESS.has(stress.category)) return 'L2-007'; // me-time
-  if (hotFlash && HOTFLASH_PRESENT.has(hotFlash.category)) return 'L2-005'; // pain
-  return 'L2-004'; // bloating default
-}
-
-// Build what should fire for `slot`. L3 triggers (governor-permitted) replace the
-// routine bundle; under distress only L3-007 is allowed.
+// Build what should fire for `slot`.
 export async function buildDispatch(
   userId: string,
   slot: NudgeSlot,
   now: Date,
 ): Promise<Dispatch> {
   const dayStart = startOfDay(now);
-  const state = await ensureDailyState(userId, dayStart);
+  await ensureDailyState(userId, dayStart);
   const title = SLOT_TITLES[slot];
-
-  // Distress: only L3-007 Safety may fire.
-  if (state.distressFlag) {
-    const triggers = await detectTriggers(userId, now);
-    if (triggers.includes('L3-007')) {
-      const g = await runGovernor(userId, mustNudge('L3-007'), slot, now);
-      if (g.allowed) {
-        return {
-          slot,
-          bundleTitle: title,
-          cards: [toCard(mustNudge('L3-007'))],
-          primaryNudgeId: 'L3-007',
-          setDistress: false,
-        };
-      }
-    }
-    return {
-      slot,
-      bundleTitle: title,
-      cards: [],
-      primaryNudgeId: null,
-      suppressedNudgeId: 'L3-007',
-      suppressedReason: 'SR-03',
-      setDistress: false,
-    };
-  }
-
-  // L3 triggers take priority over the routine bundle for this slot.
-  const triggers = await detectTriggers(userId, now);
-  for (const id of L3_PRIORITY) {
-    if (!triggers.includes(id)) continue;
-    const g = await runGovernor(userId, mustNudge(id), slot, now);
-    if (g.allowed) {
-      return { slot, bundleTitle: title, cards: [toCard(mustNudge(id))], primaryNudgeId: id, setDistress: false };
-    }
-  }
 
   // Routine bundle — gated by the slot's primary mandatory nudge.
   const primary = mustNudge(SLOT_PRIMARY[slot]);
@@ -190,11 +124,7 @@ export async function buildDispatch(
     if (l2.nudgeId) ids.push(l2.nudgeId);
     setDistress = l2.setDistress;
   } else {
-    ids.push('L1-005', 'L1-006');
-    if (await carePlanAssigned(userId)) ids.push('L1-007');
-    ids.push('L1-008');
-    const l2 = await eveningL2(userId, now);
-    if (l2) ids.push(l2);
+    ids.push('L1-005', 'L2-001', 'L1-007', 'L1-008');
   }
 
   // SR-05: drop individual cards whose tracker was already self-logged today.
@@ -224,21 +154,22 @@ export async function recordSend(
   slot: NudgeSlot,
   now: Date,
   setDistress = false,
+  cardNudgeIds: string[] = [nudgeId],
 ) {
-  const def = getNudge(nudgeId);
+  const sendIds = Array.from(new Set(cardNudgeIds.length ? cardNudgeIds : [nudgeId]));
   const dayStart = startOfDay(now);
   await prisma.$transaction([
-    prisma.nudgeSendLog.create({
-      data: { userId, nudgeId, layer: def?.layer ?? 1, slot, sentAt: now },
+    ...sendIds.map((id) => {
+      const def = getNudge(id);
+      return prisma.nudgeSendLog.create({
+        data: { userId, nudgeId: id, layer: def?.layer ?? 1, slot, sentAt: now },
+      });
     }),
     prisma.nudgeDailyState.upsert({
       where: { userId_date: { userId, date: dayStart } },
       create: { userId, date: dayStart, nudgeCount: 1, distressFlag: setDistress },
       update: { nudgeCount: { increment: 1 }, ...(setDistress ? { distressFlag: true } : {}) },
     }),
-    ...(def?.layer === 3
-      ? [prisma.l3TriggerLog.create({ data: { userId, triggerId: nudgeId, firedAt: now } })]
-      : []),
   ]);
 }
 
@@ -290,8 +221,6 @@ async function persistAnswer(userId: string, def: NudgeDef, answer: string, logg
         },
       });
       return;
-    case 'none':
-      return; // L3 trigger prompt — engagement only
     default: {
       // All remaining per-domain daily logs share the upsert-by-day shape.
       const model = s.model;
@@ -326,8 +255,7 @@ export async function storeResponse(
   await persistAnswer(userId, def, answer, loggedAt);
 
   const dayStart = startOfDay(now);
-  const setDistress =
-    (def.id === 'L1-004' && answer === OVERWHELMED) || def.id === 'L3-007' && answer !== 'None of these';
+  const setDistress = false;
 
   const engagementPatch: Record<string, unknown> = { lastEngagedAt: now };
   if (def.slot === 'morning' && def.layer === 1) engagementPatch.morningAnchorResponded = true;
@@ -404,8 +332,6 @@ async function readAnswer(userId: string, def: NudgeDef, dayStart: Date): Promis
       });
       return r?.feeling != null ? (FEELING_LABELS[r.feeling] ?? `Mood ${r.feeling}/5`) : null;
     }
-    case 'none':
-      return null;
     default: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const r = await (prisma as any)[s.model].findUnique({
@@ -436,22 +362,12 @@ export interface DaySheet {
 
 export async function getDaySheet(userId: string, now: Date): Promise<DaySheet> {
   const dayStart = startOfDay(now);
-  const dow = now.getDay();
-
-  const [user, hasCarePlan] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { dieticianPlanAssigned: true } }),
-    carePlanAssigned(userId),
-  ]);
 
   const trackers: DayTrackerView[] = [];
   for (const id of DAY_TRACKER_ORDER) {
     const meta = DAY_TRACKERS[id]!;
     const def = getNudge(id);
     if (!def) continue;
-    // Contextual relevance — same gates as the nudge exceptions.
-    if (meta.requires === 'carePlan' && !hasCarePlan) continue;
-    if (meta.requires === 'dietician' && !user?.dieticianPlanAssigned) continue;
-    if (meta.weeklyDays && !meta.weeklyDays.includes(dow)) continue;
 
     const answer = await readAnswer(userId, def, dayStart);
     trackers.push({

@@ -154,8 +154,8 @@ export default function SymptomTrackRoute() {
                       width: isToday ? '100%' : 10,
                       height: isToday ? 28 : 10,
                       borderRadius: isToday ? 14 : '50%',
-                      background: isToday ? '#C97E92' : isLogged ? '#5E3566' : '#ECDFD0',
-                      color: isToday ? '#3E2542' : '#3E2542',
+                      background: isToday ? '#5E3566' : isLogged ? '#E7DCEC' : '#ECDFD0',
+                      color: isToday ? '#FBF6F0' : '#3E2542',
                       fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
                       fontSize: isToday ? 10 : 11,
                     }}

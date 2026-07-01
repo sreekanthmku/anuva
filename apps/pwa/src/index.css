@@ -68,6 +68,23 @@
     overscroll-behavior: none;
   }
 
+  /**
+   * Global warmth overlay — one knob to warm ALL colors at once.
+   * Warm amber tinted layer, multiplied over the whole app.
+   * Tune warmth with `opacity` below (0 = off, 0.10 ≈ subtle, 0.20 = strong).
+   * pointer-events:none so it never blocks taps.
+   */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: #FF9A3D;
+    mix-blend-mode: multiply;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
   /** PWA: stop elastic pull / rubber-band on scroll containers (iOS, Chrome) */
   main {
     overscroll-behavior: none;
@@ -87,7 +104,7 @@ input[type='range']::-webkit-slider-thumb {
   border-radius: 9999px;
   background: #5E3566;
   border: 2px solid #FBF6F0;
-  box-shadow: 0 0 0 3px rgba(94, 53, 102, 0.25);
+  outline: 3px solid rgba(94, 53, 102, 0.25);
   cursor: pointer;
 }
 
@@ -97,6 +114,6 @@ input[type='range']::-moz-range-thumb {
   border-radius: 9999px;
   background: #5E3566;
   border: 2px solid #FBF6F0;
-  box-shadow: 0 0 0 3px rgba(94, 53, 102, 0.25);
+  outline: 3px solid rgba(94, 53, 102, 0.25);
   cursor: pointer;
 }

@@ -1,34 +1,24 @@
 // ANU Nudge Engine — static registry of all nudges + ANU tone templates.
-// Source of truth: ANU_Nudge_Engine_Dev_Reference.docx v2.0.
+// MVP source of truth: ANU_Nudge_Engine_MVP_Rules.md.
 
 import type { NudgeSlot } from '@anuva/shared';
 
-// Where a nudge answer is persisted. `none` = L3 trigger prompts that only
-// record engagement (no per-domain row). `symptomLog` reuses the existing
-// comprehensive SymptomLog via an entry key.
+// Where a nudge answer is persisted.
 export type StorageTarget =
   | { model: 'sleepLog' }
   | { model: 'energyLog' }
   | { model: 'moodLog'; slot: 'morning' | 'evening' }
   | { model: 'stressLog' }
   | { model: 'hotFlashDailyLog' }
-  | { model: 'periodDailyStatus' }
   | { model: 'planAdherenceLog' }
   | { model: 'hydrationLog' }
   | { model: 'cravingsLog' }
-  | { model: 'movementLog' }
-  | { model: 'meTimeLog' }
   | { model: 'foodRhythmLog' }
-  | { model: 'familySupportLog' }
-  | { model: 'weeklyMoodReviewLog' }
-  | { model: 'brainFogLog' }
-  | { model: 'bloatingLog' }
-  | { model: 'painLog' }
-  | { model: 'none' };
+  | { model: 'brainFogLog' };
 
 export interface NudgeDef {
   id: string;
-  layer: 1 | 2 | 3;
+  layer: 1 | 2;
   slot: NudgeSlot;
   required: boolean; // Mandatory => true; Recommended/Optional => false
   question: string;
@@ -98,28 +88,11 @@ export const NUDGES: Record<string, NudgeDef> = {
     options: ['None', '1–2', '3–5', 'More than 5', 'Not sure'],
     storage: { model: 'hotFlashDailyLog' },
   },
-  'L1-006': {
-    id: 'L1-006',
-    layer: 1,
-    slot: 'evening',
-    required: true,
-    question: 'Any update about your period or spotting today?',
-    options: [
-      'No period',
-      'Period started today',
-      'Period ongoing',
-      'Spotting',
-      'Heavy flow',
-      'Irregular bleeding',
-      'Period delayed',
-    ],
-    storage: { model: 'periodDailyStatus' },
-  },
   'L1-007': {
     id: 'L1-007',
     layer: 1,
     slot: 'evening',
-    required: false,
+    required: true,
     question: "Were you able to follow today's care suggestion?",
     options: [
       'Yes, fully',
@@ -134,7 +107,7 @@ export const NUDGES: Record<string, NudgeDef> = {
     id: 'L1-008',
     layer: 1,
     slot: 'evening',
-    required: false,
+    required: true,
     question: 'Did your mood change suddenly today?',
     options: [
       'No, mood was stable',
@@ -154,9 +127,9 @@ export const NUDGES: Record<string, NudgeDef> = {
   'L2-001': {
     id: 'L2-001',
     layer: 2,
-    slot: 'afternoon',
-    required: false,
-    question: 'Small check-in: how much water have you had so far today?',
+    slot: 'evening',
+    required: true,
+    question: 'How much water did you drink today?',
     options: [
       'Less than 2 glasses',
       '2–4 glasses',
@@ -197,65 +170,6 @@ export const NUDGES: Record<string, NudgeDef> = {
     ],
     storage: { model: 'brainFogLog' },
   },
-  'L2-004': {
-    id: 'L2-004',
-    layer: 2,
-    slot: 'evening',
-    required: false,
-    question: 'Did your body feel bloated or heavier today?',
-    options: ['No', 'Mild', 'Moderate', 'Very uncomfortable', 'Mostly around stomach'],
-    storage: { model: 'bloatingLog' },
-  },
-  'L2-005': {
-    id: 'L2-005',
-    layer: 2,
-    slot: 'evening',
-    required: false,
-    question: 'Did you experience any pain or discomfort today?',
-    options: [
-      'No pain',
-      'Headache',
-      'Lower back pain',
-      'Joint pain',
-      'Breast tenderness',
-      'Abdominal cramps',
-      'Body ache',
-    ],
-    storage: { model: 'painLog' },
-  },
-  'L2-006': {
-    id: 'L2-006',
-    layer: 2,
-    slot: 'evening',
-    required: false,
-    question: 'Were you able to move your body today, even lightly?',
-    options: ['Yes, walked', 'Yes, stretched', 'Yes, exercised', 'Not today', 'Too tired'],
-    storage: { model: 'movementLog' },
-  },
-  'L2-007': {
-    id: 'L2-007',
-    layer: 2,
-    slot: 'evening',
-    required: false,
-    question: 'Did you get even 10 minutes for yourself today?',
-    options: ['Yes', 'No', 'I tried but could not', 'I felt guilty taking time', 'I forgot'],
-    storage: { model: 'meTimeLog' },
-  },
-  'L2-008': {
-    id: 'L2-008',
-    layer: 2,
-    slot: 'evening',
-    required: false,
-    question: 'This week, did you feel supported at home?',
-    options: [
-      'Yes, I felt supported',
-      'Sometimes',
-      'Not really',
-      'I felt misunderstood',
-      'I did not discuss it with family',
-    ],
-    storage: { model: 'familySupportLog' },
-  },
   'L2-009': {
     id: 'L2-009',
     layer: 2,
@@ -265,134 +179,6 @@ export const NUDGES: Record<string, NudgeDef> = {
     options: ['Balanced', 'Skipped meals', 'Ate late', 'Overate', 'Had cravings', 'Not sure'],
     storage: { model: 'foodRhythmLog' },
   },
-  'L2-010': {
-    id: 'L2-010',
-    layer: 2,
-    slot: 'evening',
-    required: false,
-    question: 'Looking back at this week, what troubled you the most?',
-    options: [
-      'Sleep',
-      'Mood swings',
-      'Hot flashes',
-      'Weight or bloating',
-      'Stress',
-      'Period changes',
-      'Low energy',
-      'Body pain',
-    ],
-    storage: { model: 'weeklyMoodReviewLog' },
-  },
-
-  // ─────────────────────────────────────────────
-  // Layer 3 — smart triggers (1x / 3 days per trigger)
-  // ─────────────────────────────────────────────
-
-  'L3-001': {
-    id: 'L3-001',
-    layer: 3,
-    slot: 'evening',
-    required: false,
-    question:
-      'I noticed your sleep has been disturbed for the last two nights. What do you think affected it most?',
-    options: [
-      'Night sweats',
-      'Anxiety',
-      'Overthinking',
-      'Bathroom visits',
-      'Body discomfort',
-      'Phone use',
-      'Not sure',
-    ],
-    storage: { model: 'none' },
-  },
-  'L3-002': {
-    id: 'L3-002',
-    layer: 3,
-    slot: 'evening',
-    required: false,
-    question:
-      "I've noticed your mood has felt heavier recently. When does it usually feel strongest?",
-    options: [
-      'Morning',
-      'Afternoon',
-      'Evening',
-      'Around family',
-      'Around work',
-      'Before/around period',
-      'It comes suddenly',
-    ],
-    storage: { model: 'none' },
-  },
-  'L3-003': {
-    id: 'L3-003',
-    layer: 3,
-    slot: 'evening',
-    required: false,
-    question:
-      'Your body has reported sudden heat episodes recently. Did you notice any common trigger?',
-    options: [
-      'Stress',
-      'Spicy food',
-      'Tea/coffee',
-      'Warm room/weather',
-      'After activity',
-      'During sleep',
-      'No clear trigger',
-    ],
-    storage: { model: 'none' },
-  },
-  'L3-005': {
-    id: 'L3-005',
-    layer: 3,
-    slot: 'afternoon',
-    required: false,
-    question:
-      "You've had a few stressful days. What is taking the most emotional space right now?",
-    options: [
-      'Work',
-      'Family',
-      'Health worry',
-      'Money',
-      'Relationship',
-      'Too many responsibilities',
-      "I don't know",
-    ],
-    storage: { model: 'none' },
-  },
-  'L3-007': {
-    id: 'L3-007',
-    layer: 3,
-    slot: 'morning',
-    required: false,
-    question:
-      'Some symptoms need timely medical attention. Are you experiencing anything severe or unusual today?',
-    options: [
-      'Very heavy bleeding',
-      'Chest pain',
-      'Fainting/dizziness',
-      'Severe headache',
-      'Severe anxiety or panic',
-      'None of these',
-    ],
-    storage: { model: 'none' },
-  },
-  'L3-008': {
-    id: 'L3-008',
-    layer: 3,
-    slot: 'evening',
-    required: false,
-    question:
-      'Would you like me to prepare a simple message for your family explaining what you felt today?',
-    options: [
-      'Yes, make it gentle',
-      'Yes, make it direct',
-      'Not today',
-      "I'll handle it myself",
-      'Maybe later',
-    ],
-    storage: { model: 'none' },
-  },
 };
 
 export function getNudge(id: string): NudgeDef | undefined {
@@ -401,18 +187,13 @@ export function getNudge(id: string): NudgeDef | undefined {
 
 // ─────────────────────────────────────────────
 // Day-sheet metadata — drives the unified /track "Today" view.
-// Tiers control surfacing order/collapsing; `requires`/`weeklyDays` gate
-// contextual relevance (mirrors the nudge exception rules). L3 triggers are
-// excluded — they are derived prompts, not manual day trackers.
 // ─────────────────────────────────────────────
 
-export type DayTier = 'core' | 'body' | 'lifestyle' | 'weekly';
+export type DayTier = 'core' | 'body' | 'lifestyle';
 
 export interface DayTrackerMeta {
   tier: DayTier;
   label: string;
-  requires?: 'carePlan' | 'dietician';
-  weeklyDays?: number[]; // JS getDay() values this tracker is relevant on
 }
 
 export const DAY_TRACKERS: Record<string, DayTrackerMeta> = {
@@ -421,26 +202,19 @@ export const DAY_TRACKERS: Record<string, DayTrackerMeta> = {
   'L1-003': { tier: 'core', label: 'Mood' },
   'L1-004': { tier: 'core', label: 'Stress' },
   'L1-005': { tier: 'body', label: 'Hot flashes' },
-  'L1-006': { tier: 'body', label: 'Period' },
+  'L2-001': { tier: 'body', label: 'Hydration' },
+  'L1-007': { tier: 'lifestyle', label: 'Plan adherence' },
   'L1-008': { tier: 'body', label: 'Mood shift' },
   'L2-003': { tier: 'body', label: 'Focus' },
-  'L2-004': { tier: 'body', label: 'Bloating' },
-  'L2-005': { tier: 'body', label: 'Pain' },
-  'L1-007': { tier: 'lifestyle', label: 'Plan adherence', requires: 'carePlan' },
-  'L2-001': { tier: 'lifestyle', label: 'Hydration' },
-  'L2-002': { tier: 'lifestyle', label: 'Cravings', requires: 'dietician' },
-  'L2-006': { tier: 'lifestyle', label: 'Movement' },
-  'L2-007': { tier: 'lifestyle', label: 'Me-time' },
-  'L2-009': { tier: 'lifestyle', label: 'Food rhythm', requires: 'dietician' },
-  'L2-008': { tier: 'weekly', label: 'Family support', weeklyDays: [0] },
-  'L2-010': { tier: 'weekly', label: 'Weekly review', weeklyDays: [5, 6] },
+  'L2-002': { tier: 'lifestyle', label: 'Cravings' },
+  'L2-009': { tier: 'lifestyle', label: 'Food rhythm' },
 };
 
-// Stable display order for the day sheet (core → body → lifestyle → weekly).
+// Stable display order for the day sheet.
 export const DAY_TRACKER_ORDER = Object.keys(DAY_TRACKERS);
 
 // ─────────────────────────────────────────────
-// ANU Tone Reference — response templates (RT-001..RT-007)
+// ANU Tone Reference — MVP response templates
 // ─────────────────────────────────────────────
 
 export interface ToneTemplate {
@@ -475,20 +249,6 @@ export const TONE_TEMPLATES: Record<string, ToneTemplate> = {
     message: "That's okay. I'll mark this as uncertain instead of forcing an answer.",
     neverSay: 'You need to answer accurately',
   },
-  'RT-005': {
-    id: 'RT-005',
-    useCase: 'Family support low',
-    message:
-      'Feeling misunderstood can make symptoms feel heavier. I can help create a simple message for your family.',
-    neverSay: 'Blaming family',
-  },
-  'RT-007': {
-    id: 'RT-007',
-    useCase: 'Safety issue',
-    message:
-      'Please do not ignore this. It would be safer to contact a doctor or emergency medical service now.',
-    neverSay: 'Panic language or diagnosis',
-  },
 };
 
 // Answer-classification helpers used to pick the right tone template.
@@ -504,22 +264,12 @@ const POSITIVE_ANSWERS = new Set([
   'calm',
   'low stress',
   'none',
-  'no period',
   'yes, fully',
   'no, mood was stable',
   'clear and focused',
+  'balanced',
   'more than 6 glasses',
   'no cravings',
-  'no',
-  'no pain',
-  'yes, i felt supported',
-]);
-const SAFETY_RED_FLAGS = new Set([
-  'very heavy bleeding',
-  'chest pain',
-  'fainting/dizziness',
-  'severe headache',
-  'severe anxiety or panic',
 ]);
 const MOOD_DIFFICULTY_ANSWERS = new Set([
   'sad',
@@ -540,15 +290,9 @@ function tone(id: string): ToneTemplate {
 
 // Pick the ANU tone template for a given nudge answer.
 export function selectToneTemplate(nudgeId: string, answer: string): ToneTemplate {
+  void nudgeId;
   const a = answer.trim().toLowerCase();
 
-  if (nudgeId === 'L3-007') {
-    return a === 'none of these' ? tone('RT-001') : tone('RT-007');
-  }
-  if (SAFETY_RED_FLAGS.has(a)) return tone('RT-007');
-  if (nudgeId === 'L2-008' && (a === 'not really' || a === 'i felt misunderstood')) {
-    return tone('RT-005');
-  }
   if (UNCERTAIN_ANSWERS.has(a)) return tone('RT-004');
   if (LOW_ADHERENCE_ANSWERS.has(a)) return tone('RT-002');
   if (MOOD_DIFFICULTY_ANSWERS.has(a)) return tone('RT-003');

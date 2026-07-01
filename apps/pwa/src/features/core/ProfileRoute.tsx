@@ -137,7 +137,7 @@ export default function ProfileRoute() {
           </div>
         </div>
 
-        <article className="overflow-hidden rounded-[20px] border border-border-default bg-surface-raised shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
+        <article className="overflow-hidden rounded-[20px] border border-border-default bg-surface-raised">
           <ul className="divide-y divide-border-default">
             {menuRows.map((row) => (
               <li key={row.label}>

@@ -27,7 +27,6 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
                 style={{
                   backgroundColor: sel ? '#FFFFFF' : disabled ? '#EFE4D8' : '#FBF6F0',
                   borderColor: sel ? '#5E3566' : 'rgba(94, 53, 102, 0.2)',
-                  boxShadow: sel ? '0 10px 24px rgba(94,53,102,0.08)' : undefined,
                   opacity: disabled ? 0.82 : 1,
                 }}
               >
@@ -163,7 +162,7 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
         aria-modal="true"
         aria-labelledby="specialist-details-title"
       >
-        <div className="bg-secondary-container px-5 pb-5 pt-4">
+        <div className="bg-primary-container px-5 pb-5 pt-4">
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" />
           <div className="flex items-start gap-3.5">
             <div

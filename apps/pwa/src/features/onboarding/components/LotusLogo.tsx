@@ -10,7 +10,6 @@ export function LotusLogo({ size = 40, color = '#5E3566' }: LotusLogoProps) {
       style={{
         width: size,
         height: size,
-        filter: `drop-shadow(0 0 12px ${color}88) drop-shadow(0 0 4px ${color})`,
       }}
     >
       <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">

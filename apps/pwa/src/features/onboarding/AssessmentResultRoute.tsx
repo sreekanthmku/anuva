@@ -41,7 +41,7 @@ export default function AssessmentResultRoute() {
   const summaryItems: RiskPill[] = isInControl
     ? [
         { title: 'Score', value: `${score}`, color: '#5E3566' },
-        { title: 'Status', value: 'In control', color: '#C97E92' },
+        { title: 'Status', value: 'In control', color: '#4F9D6B' },
         { title: 'Check back', value: '3 months', color: '#5B82C4' },
       ]
     : riskPills;

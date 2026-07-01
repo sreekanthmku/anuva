@@ -143,7 +143,7 @@ export default function SubscriptionRoute() {
       </section>
 
       <section className="px-3 pb-4">
-        <article className="rounded-[20px] border border-border-default bg-secondary-container p-[18px]">
+        <article className="rounded-[20px] border border-border-default bg-primary-container p-[18px]">
           <div className="mb-3.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
             <span className="h-px w-3 bg-primary/60" />
             <span style={{ fontFamily: '"Mulish", sans-serif' }}>Everything included</span>
@@ -192,7 +192,6 @@ export default function SubscriptionRoute() {
               style={{
                 backgroundColor: isSelected ? '#FFFFFF' : '#FBF6F0',
                 border: isSelected ? '1.5px solid #5E3566' : '1px solid rgba(94, 53, 102, 0.2)',
-                boxShadow: isSelected ? '0 10px 24px rgba(94,53,102,0.08)' : undefined,
               }}
             >
               {plan.badge && (

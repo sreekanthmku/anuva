@@ -110,7 +110,7 @@ export default function AnuGreetingRoute() {
           — ANU, your wellness companion
         </p>
 
-        <article className="mt-[26px] w-full rounded-[20px] border border-border-default bg-surface-raised p-[18px] shadow-[0_10px_24px_rgba(94,53,102,0.06)]">
+        <article className="mt-[26px] w-full rounded-[20px] border border-border-default bg-surface-raised p-[18px]">
           <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
             <span className="h-px w-3 bg-primary/60" />
             <span style={{ fontFamily: '"Mulish", sans-serif' }}>Next 7 days</span>
@@ -126,9 +126,9 @@ export default function AnuGreetingRoute() {
                 <span
                   className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px]"
                   style={{
-                    background: index === 0 ? '#C97E92' : 'transparent',
+                    background: index === 0 ? '#5E3566' : 'transparent',
                     border: index === 0 ? 'none' : '1px solid rgba(180, 159, 176, 0.35)',
-                    color: index === 0 ? '#3E2542' : '#B49FB0',
+                    color: index === 0 ? '#FBF6F0' : '#B49FB0',
                     fontFamily: '"Mulish", sans-serif',
                     fontWeight: 600,
                   }}

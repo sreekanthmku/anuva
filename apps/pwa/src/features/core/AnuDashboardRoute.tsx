@@ -312,7 +312,7 @@ export default function AnuDashboardRoute() {
       </section>
 
       <section className="px-3">
-        <article className="flex items-center gap-4 rounded-[20px] bg-secondary-container px-4 py-4">
+        <article className="flex items-center gap-4 rounded-[20px] bg-primary-container px-4 py-4">
           <div className="relative h-24 w-24 shrink-0">
             <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
               <circle
@@ -417,7 +417,7 @@ export default function AnuDashboardRoute() {
       </section>
 
       <section className="px-3 pt-3">
-        <article className="rounded-[20px] bg-primary-container px-[18px] py-4">
+        <article className="rounded-[20px] bg-secondary-container px-[18px] py-4">
           <div className="flex items-start gap-3">
             <img
               src="/anu.png"
@@ -528,13 +528,13 @@ export default function AnuDashboardRoute() {
                     style={{ opacity: logged ? 0.5 : 1 }}
                   />
                   {logged ? (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-on-secondary">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary">
                       <Check size={12} strokeWidth={3} />
                     </span>
                   ) : (
                     symptomCount > 0 && (
                       <span
-                        className="rounded-full bg-secondary/15 px-1.5 py-0.5 text-[10px] font-bold text-secondary"
+                        className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary"
                         style={{ fontFamily: '"Mulish", sans-serif' }}
                       >
                         {symptomCount}×

@@ -38,7 +38,7 @@ export function BookingConfirmedView({
       </p>
 
       <article
-        className="w-full max-w-[20rem] rounded-[20px] border border-border-default bg-secondary-container p-5 text-left"
+        className="w-full max-w-[20rem] rounded-[20px] border border-border-default bg-primary-container p-5 text-left"
         style={{}}
       >
         <div

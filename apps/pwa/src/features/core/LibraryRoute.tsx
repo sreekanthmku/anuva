@@ -33,8 +33,8 @@ const articles = [
 
 const toneColor: Record<(typeof articles)[number]['tone'], string> = {
   mint: '#5E3566',
-  butter: '#C97E92',
-  blush: '#5A4716',
+  butter: '#5A4716',
+  blush: '#C97E92',
   lilac: '#5B82C4',
 };
 
@@ -74,7 +74,7 @@ export default function LibraryRoute() {
 
       <section className="px-3">
         <article
-          className="rounded-[20px] border border-border-default bg-secondary-container p-[18px]"
+          className="rounded-[20px] border border-border-default bg-primary-container p-[18px]"
           style={{}}
         >
           <div
@@ -177,7 +177,7 @@ export default function LibraryRoute() {
             return (
               <article
                 key={a.title}
-                className="flex items-center gap-3 rounded-[20px] border border-border-default bg-surface-raised p-3 shadow-[0_10px_24px_rgba(94,53,102,0.06)]"
+                className="flex items-center gap-3 rounded-[20px] border border-border-default bg-surface-raised p-3"
               >
                 <div
                   className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-border-default bg-surface-container-low"

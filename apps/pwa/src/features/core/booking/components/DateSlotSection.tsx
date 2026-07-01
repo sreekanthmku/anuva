@@ -76,17 +76,16 @@ export function DateSlotSection({
               onClick={() => onSelectDate(s.id)}
               className="rounded-[20px] border px-2 py-2.5 text-center transition-colors"
               style={{
-                backgroundColor: sel ? '#C97E92' : '#FBF6F0',
-                color: sel ? '#3E2542' : '#3E2542',
-                borderColor: sel ? '#C97E92' : 'rgba(94, 53, 102, 0.2)',
-                boxShadow: sel ? '0 10px 24px rgba(94,53,102,0.08)' : undefined,
+                backgroundColor: sel ? '#5E3566' : '#FBF6F0',
+                color: sel ? '#FBF6F0' : '#3E2542',
+                borderColor: sel ? '#5E3566' : 'rgba(94, 53, 102, 0.2)',
               }}
             >
               <div
                 className="text-[9.5px] uppercase tracking-[0.12em]"
                 style={{
                   fontFamily: '"Mulish", sans-serif',
-                  color: sel ? '#3E2542' : '#B49FB0',
+                  color: sel ? '#FBF6F0' : '#B49FB0',
                   opacity: sel ? 0.7 : 1,
                 }}
               >
@@ -96,7 +95,7 @@ export function DateSlotSection({
                 className="mt-0.5 text-[22px] font-semibold tabular-nums"
                 style={{
                   fontFamily: '"Fraunces", sans-serif',
-                  color: sel ? '#3E2542' : '#3E2542',
+                  color: sel ? '#FBF6F0' : '#3E2542',
                 }}
               >
                 {s.dayNum}
@@ -105,7 +104,7 @@ export function DateSlotSection({
                 className="mt-0.5 text-[9.5px] uppercase tracking-[0.12em]"
                 style={{
                   fontFamily: '"Mulish", sans-serif',
-                  color: sel ? '#3E2542' : '#B49FB0',
+                  color: sel ? '#FBF6F0' : '#B49FB0',
                   opacity: sel ? 0.7 : 1,
                 }}
               >

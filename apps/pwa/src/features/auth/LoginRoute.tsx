@@ -177,8 +177,8 @@ export default function LoginRoute() {
                   className="rounded-full px-4 py-2.5 text-[12px] uppercase tracking-[0.12em] transition-colors"
                   style={{
                     fontFamily: '"Mulish", sans-serif',
-                    background: active ? '#C97E92' : 'transparent',
-                    color: active ? '#3E2542' : '#B49FB0',
+                    background: active ? '#5E3566' : 'transparent',
+                    color: active ? '#FBF6F0' : '#B49FB0',
                   }}
                 >
                   {option === 'login' ? 'Login' : 'Sign up'}

@@ -60,7 +60,14 @@ export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<D
         { title: dispatch.bundleTitle, body: dispatch.cards[0]!.question },
         { url: `/home?nudge=${slot}`, slot },
       );
-      await recordSend(u.id, dispatch.primaryNudgeId, slot, now, dispatch.setDistress);
+      await recordSend(
+        u.id,
+        dispatch.primaryNudgeId,
+        slot,
+        now,
+        dispatch.setDistress,
+        dispatch.cards.map((card) => card.nudgeId),
+      );
       sent += 1;
     } catch (e) {
       console.error('[nudge] dispatch failed for user', u.id, e);

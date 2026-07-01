@@ -1174,8 +1174,7 @@ app.post('/nudge/respond', async (req, res, next) => {
   }
 });
 
-// Public self-test of the nudge decision logic (Governor SR-01..09, tone
-// RT-001..007, L2 selection tree). No auth, no DB — deterministic pure checks.
+// Public self-test of the MVP nudge decision logic. No auth, no DB.
 app.get('/nudge/selftest', (_req, res) => {
   const report = runNudgeSelfTest();
   res.status(report.ok ? 200 : 500).json(report);

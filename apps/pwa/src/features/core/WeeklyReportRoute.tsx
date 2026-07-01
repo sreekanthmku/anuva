@@ -4,7 +4,7 @@ import { BottomNav } from './components/BottomNav';
 const benchmarks = [
   { label: 'Sleep quality', pct: 62, color: '#5E3566', delta: '+12%' },
   { label: 'Hot flashes', pct: 78, color: '#C0405A', delta: '+3 this week' },
-  { label: 'Energy level', pct: 54, color: '#C97E92', delta: 'Steady' },
+  { label: 'Energy level', pct: 54, color: '#5B82C4', delta: 'Steady' },
   { label: 'Mood stability', pct: 71, color: '#5E3566', delta: '+8%' },
   { label: 'Cognitive focus', pct: 68, color: '#5B82C4', delta: 'Good' },
   { label: 'Physical activity', pct: 44, color: '#C0405A', delta: '-2 walks' },
@@ -18,7 +18,7 @@ const statCards = [
     unit: 'steps/day',
     label: 'Avg activity',
     trend: [8, 10, 7, 12, 9, 14, 12],
-    c: '#C97E92',
+    c: '#4F9D6B',
   },
   { num: '71', unit: '/100', label: 'Wellness', trend: [60, 62, 65, 68, 70, 69, 72], c: '#5E3566' },
 ];
@@ -48,7 +48,7 @@ export default function WeeklyReportRoute() {
       </header>
 
       <section className="px-3 pb-4 pt-2">
-        <article className="rounded-[20px] bg-secondary-container px-4 py-4">
+        <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
           <div className="mb-3 flex items-center justify-between">
             <Eyebrow className="mb-0">Cohort comparison</Eyebrow>
             <span
@@ -104,7 +104,7 @@ export default function WeeklyReportRoute() {
             return (
               <article
                 key={m.label}
-                className="rounded-[20px] border border-border-default bg-surface-raised p-3.5 shadow-[0_10px_24px_rgba(94,53,102,0.06)]"
+                className="rounded-[20px] border border-border-default bg-surface-raised p-3.5"
               >
                 <div className="flex items-baseline gap-1">
                   <span className="text-[24px] leading-none text-on-surface">{m.num}</span>
