@@ -114,19 +114,28 @@ spacing:
 # Anuva Wellness Design System
 
 ## Overview
-Anuva Wellness is a warm, light, feminine design system for India's family-inclusive menopause and perimenopause wellness platform. A cream/ivory canvas, deep-plum headings, dusty-rose calls to action, blush-pink accents and quiet gold detailing convey calm, trust and care. The mood is reassuring and human — never clinical, never loud.
+Anuva Wellness is a warm, light, feminine design system for India's family-inclusive menopause and perimenopause wellness platform. It is derived from the Anuva reference image: a cream/ivory canvas, confident deep-plum brand structure, dusty-rose calls to action, muted lavender wellness washes and quiet gold ornamental detailing. The mood is reassuring and human — never clinical, never loud.
 
 ---
 ## Colors
 - **Cream** (#F7F0E8): Primary background / app canvas
-- **Deep Plum** (#5E3566): Primary accent, active states, primary buttons, links
+- **Deep Plum** (#5E3566): Brand authority, active states, selected controls, primary buttons, links and structural bands
 - **Plum Ink** (#3E2542): Primary text on cream
 - **Mauve** (#6E5870): Secondary / muted text
-- **Dusty Rose** (#C97E92): CTA fill, current/selected markers (`secondary` token)
-- **Blush** (#F4DCE0): Soft container tints, icon circles (`secondary-container`)
-- **Gold** (#B8923C): Eyebrow labels, dividers, subtle highlights (`tertiary` token)
+- **Lavender** (#E7DCEC): Calm focus surfaces, current sections, ANU guidance blocks (`primary-container`)
+- **Dusty Rose** (#C97E92): CTA fill and supportive human moments (`secondary` token). Do not use for routine selected/current state.
+- **Blush** (#F4DCE0): Soft supportive container tint (`secondary-container`). Use sparingly; not a default section color.
+- **Gold** (#B8923C): Ornamental dividers, premium/insight accents, report/clinical-note highlights (`tertiary` token). Do not use as a routine card background.
 - **White / Soft Cream** (#FFFFFF / #FBF6F0): Raised cards, inputs
 - **Success** (#4F9D6B) · **Warning** (#C9912E) · **Error** (#C0405A) · **Info** (#5B82C4)
+
+### Color semantics
+- **Page canvas**: `surface` cream.
+- **Working/input surfaces**: `surface-raised` or `surface-container-low` with `border-default`.
+- **Active/current/focus**: `primary` or `primary-container`.
+- **Supportive prompts / conversational warmth / one primary CTA**: `secondary` or `secondary-container`.
+- **Insight / report / premium-value / ornamental detail**: `tertiary` or `tertiary-container`.
+- **Warning/error**: `warning`, `error`, and containers only for true attention states.
 
 ## Typography
 - **Headline Font**: Fraunces (serif, optical sizing — legible at UI sizes)
@@ -161,8 +170,10 @@ All buttons are pill-shaped (9999px radius), minimum 44px tap target.
 Disabled buttons drop to 0.4 opacity.
 
 ### Cards
-- **Default**: White / soft-cream (#FBF6F0) surface, 1px `border-default` (rgba(94,53,102,0.15)), 16px radius, 24px padding, shadow-sm.
-- **Highlighted**: Same with a blush (#F4DCE0) tint or a 1px rose border for emphasis.
+- **Default**: White / soft-cream (#FBF6F0) surface, 1px `border-default` (rgba(94,53,102,0.15)), 16px radius, 24px padding. No shadows.
+- **Active/focus**: Lavender (`primary-container`) or plum (`primary`) according to contrast needs.
+- **Supportive/CTA-adjacent**: Blush (`secondary-container`) only when the content is emotionally supportive or CTA-adjacent.
+- **Insight/report**: Gold (`tertiary-container`) only for insights, report notes, value callouts or ornament.
 
 ### Inputs
 Soft-cream (#FBF6F0) field, 12px radius, 10px 16px padding, Mulish 16px plum text, 1.5px `outline` border. Hover/focus border shifts to plum with a soft plum focus ring. Error border = #C0405A. Labels: Mulish 14px semibold mauve. Helper: Mulish 12px mauve; error helper uses error color.
@@ -175,11 +186,11 @@ Soft-cream (#FBF6F0) field, 12px radius, 10px 16px padding, Mulish 16px plum tex
 Transparent background, 1px `outline-variant` dividers, 12px 16px item padding. Hover tints faint blush; active row tints plum@8%.
 
 ## Do's and Don'ts
-1. **Do** keep the cream canvas calm; let plum and rose do the accenting.
-2. **Do** reserve dusty-rose for the single primary CTA per screen; overuse dilutes it.
-3. **Do** use gold sparingly for eyebrows, dividers and quiet highlights.
+1. **Do** keep the cream canvas calm; let plum carry the brand authority.
+2. **Do** reserve dusty-rose for the single primary CTA per screen or clearly supportive conversational moments; overuse makes neutral healthcare UI feel alert-like.
+3. **Do** use gold sparingly for ornamental dividers, report insights and premium/value highlights.
 4. **Do** use the script font for at most one short tagline/hero line — never body, buttons or labels.
-5. **Don't** use heavy black shadows; elevation is warm and soft (plum-tinted, low alpha).
+5. **Don't** use shadows for elevation. Use solid fills, borders, dividers and spacing only.
 6. **Do** keep body text ≥14px and ensure plum text holds ≥4.5:1 contrast on cream.
 7. **Don't** mix more than two accent colors in one component.
 8. **Do** keep generous tap targets (minimum 44px) and gentle, unhurried motion.

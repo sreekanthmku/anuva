@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+export const consultationStatusSchema = z.enum(['pending', 'confirmed', 'completed', 'cancelled']);
+
+export type ConsultationStatus = z.infer<typeof consultationStatusSchema>;
+
 export const consultationSpecialistSchema = z.object({
   key: z.string().min(1),
   name: z.string().min(1),
@@ -68,6 +72,30 @@ export const consultationBookingResponseSchema = z.object({
 });
 
 export type ConsultationBookingResponse = z.infer<typeof consultationBookingResponseSchema>;
+
+export const doctorConsultationBookingSchema = z.object({
+  consultationId: z.string(),
+  specialistKey: z.string(),
+  specialistName: z.string(),
+  patientId: z.string(),
+  patientName: z.string().nullable(),
+  patientPhone: z.string(),
+  scheduledAt: z.string().datetime(),
+  endsAt: z.string().datetime().nullable(),
+  status: consultationStatusSchema,
+  isFree: z.boolean(),
+  createdAt: z.string().datetime(),
+});
+
+export type DoctorConsultationBooking = z.infer<typeof doctorConsultationBookingSchema>;
+
+export const doctorConsultationBookingsResponseSchema = z.object({
+  bookings: z.array(doctorConsultationBookingSchema),
+});
+
+export type DoctorConsultationBookingsResponse = z.infer<
+  typeof doctorConsultationBookingsResponseSchema
+>;
 
 export const createConsultationSlotsBodySchema = z.object({
   specialistKey: z.string().trim().min(1),

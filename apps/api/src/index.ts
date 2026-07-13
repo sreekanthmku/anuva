@@ -15,6 +15,7 @@ import {
   authSessionResponseSchema,
   authUserSchema,
   consultationBookingResponseSchema,
+  doctorConsultationBookingsResponseSchema,
   consultationSlotsQuerySchema,
   consultationSlotsResponseSchema,
   consultationSpecialistsResponseSchema,
@@ -611,6 +612,56 @@ app.post('/consultations/book', async (req, res, next) => {
     });
 
     res.json(consultationBookingResponseSchema.parse(booked));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/doctor/consultations', async (_req, res, next) => {
+  try {
+    await readyBookingCatalog();
+
+    const bookings = await prisma.consultation.findMany({
+      include: {
+        specialist: {
+          select: {
+            key: true,
+            name: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+          },
+        },
+        slot: {
+          select: {
+            endsAt: true,
+          },
+        },
+      },
+      orderBy: [{ scheduledAt: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    res.json(
+      doctorConsultationBookingsResponseSchema.parse({
+        bookings: bookings.map((booking) => ({
+          consultationId: booking.id,
+          specialistKey: booking.specialist.key,
+          specialistName: booking.specialist.name,
+          patientId: booking.user.id,
+          patientName: booking.user.name,
+          patientPhone: booking.user.phone,
+          scheduledAt: booking.scheduledAt.toISOString(),
+          endsAt: booking.slot?.endsAt.toISOString() ?? null,
+          status: booking.status,
+          isFree: booking.isFree,
+          createdAt: booking.createdAt.toISOString(),
+        })),
+      }),
+    );
   } catch (e) {
     next(e);
   }

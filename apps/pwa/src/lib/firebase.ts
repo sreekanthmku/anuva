@@ -108,6 +108,39 @@ async function getFcmServiceWorkerRegistration(): Promise<ServiceWorkerRegistrat
   return registration;
 }
 
+/**
+ * Android Chrome throws `AbortError: Registration failed - push service error` when a stale
+ * PushSubscription (bound to an old VAPID key or the old workbox `/` registration) blocks a fresh
+ * subscribe. Drop any existing subscription on both the FCM scope and the root scope so getToken
+ * can subscribe cleanly. Desktop tolerates the stale sub; Android does not.
+ */
+async function clearStalePushSubscriptions(
+  fcmRegistration: ServiceWorkerRegistration
+): Promise<void> {
+  const registrations = new Set<ServiceWorkerRegistration>([fcmRegistration]);
+  try {
+    const root = await navigator.serviceWorker.getRegistration('/');
+    if (root) {
+      registrations.add(root);
+    }
+  } catch {
+    /* ignore */
+  }
+
+  await Promise.all(
+    [...registrations].map(async (registration) => {
+      try {
+        const sub = await registration.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+        }
+      } catch {
+        /* ignore */
+      }
+    })
+  );
+}
+
 export async function saveFcmTokenToServer(fcmToken: string): Promise<void> {
   await registerFcmTokenOnServer({
     fcmToken,
@@ -152,10 +185,22 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
     }
 
     const registration = await getFcmServiceWorkerRegistration();
-    const token = await getToken(messagingInstance, {
-      vapidKey: vapidKey!,
-      serviceWorkerRegistration: registration,
-    });
+
+    let token: string;
+    try {
+      token = await getToken(messagingInstance, {
+        vapidKey: vapidKey!,
+        serviceWorkerRegistration: registration,
+      });
+    } catch (subscribeError) {
+      // A stale/conflicting push subscription (common on Android) makes the first subscribe fail
+      // with "Registration failed - push service error". Clear it and retry once.
+      await clearStalePushSubscriptions(registration);
+      token = await getToken(messagingInstance, {
+        vapidKey: vapidKey!,
+        serviceWorkerRegistration: registration,
+      });
+    }
 
     if (!token) {
       return {

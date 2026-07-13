@@ -96,7 +96,7 @@ function ReportRingCard({ ring }: { ring: ReportRing }) {
             r={radius}
             fill="none"
             stroke={ring.track}
-            strokeWidth="7"
+            strokeWidth="9"
           />
           <circle
             cx={center}
@@ -104,7 +104,7 @@ function ReportRingCard({ ring }: { ring: ReportRing }) {
             r={radius}
             fill="none"
             stroke={ring.color}
-            strokeWidth="7"
+            strokeWidth="9"
             strokeDasharray={`${circumference * progress} ${circumference}`}
             strokeLinecap="round"
             transform={`rotate(-90 ${center} ${center})`}

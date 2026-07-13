@@ -47,6 +47,7 @@ export {
 } from './auth.js';
 
 export {
+  consultationStatusSchema,
   consultationSpecialistSchema,
   consultationSpecialistsResponseSchema,
   consultationSlotsQuerySchema,
@@ -55,10 +56,13 @@ export {
   consultationSlotsResponseSchema,
   createConsultationBookingBodySchema,
   consultationBookingResponseSchema,
+  doctorConsultationBookingSchema,
+  doctorConsultationBookingsResponseSchema,
   createConsultationSlotsBodySchema,
   createConsultationSlotsResponseSchema,
   deleteConsultationSlotParamsSchema,
   deleteConsultationSlotResponseSchema,
+  type ConsultationStatus,
   type ConsultationSpecialist,
   type ConsultationSpecialistsResponse,
   type ConsultationSlotsQuery,
@@ -67,6 +71,8 @@ export {
   type ConsultationSlotsResponse,
   type CreateConsultationBookingBody,
   type ConsultationBookingResponse,
+  type DoctorConsultationBooking,
+  type DoctorConsultationBookingsResponse,
   type CreateConsultationSlotsBody,
   type CreateConsultationSlotsResponse,
   type DeleteConsultationSlotParams,
