@@ -1,7 +1,0 @@
-./any.go
-./cpuload.go
-./errors.go
-./interfaces.go
-./regionaware.go
-./sysload.go
-./utils.go

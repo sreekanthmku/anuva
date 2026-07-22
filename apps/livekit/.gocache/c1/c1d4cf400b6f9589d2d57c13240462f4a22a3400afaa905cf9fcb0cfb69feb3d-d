@@ -1,4 +1,0 @@
-./config.go
-./ip.go
-./rtc_unix.go
-./webrtc_config.go

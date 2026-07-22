@@ -1,9 +1,0 @@
-./errors.go
-./interfaces.go
-./localrouter.go
-./messagechannel.go
-./node.go
-./nodestats.go
-./redisrouter.go
-./roommanager.go
-./signal.go

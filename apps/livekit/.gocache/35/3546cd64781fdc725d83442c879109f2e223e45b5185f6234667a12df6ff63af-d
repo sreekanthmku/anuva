@@ -1,8 +1,0 @@
-./consts.go
-./filter.go
-./notifier.go
-./resource_queue.go
-./resource_url_notifier.go
-./stats.go
-./url_notifier.go
-./verifier.go

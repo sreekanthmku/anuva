@@ -1,8 +1,0 @@
-./datapacket.go
-./debug.go
-./node.go
-./node_nonlinux.go
-./node_nonwindows.go
-./packets.go
-./quality.go
-./rooms.go

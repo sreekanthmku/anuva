@@ -1,5 +1,0 @@
-#!/bin/sh
-PROJDIR=$(cd `dirname $0`/.. && pwd)
-
-echo "Installing golangci-lint linter..."
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1

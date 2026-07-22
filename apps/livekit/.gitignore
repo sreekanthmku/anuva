@@ -1,3 +1,9 @@
 consultation-recordings/
 *.rdb
 *.aof
+
+# Go build/module caches from a local `go build` of the egress worker. These were
+# committed by accident (~31k files) and are pure machine-local cache.
+.gomodcache/
+.gocache/
+bin/

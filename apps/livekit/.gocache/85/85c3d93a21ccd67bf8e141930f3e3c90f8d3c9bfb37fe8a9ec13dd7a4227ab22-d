@@ -1,6 +1,0 @@
-./analyticsservice.go
-./events.go
-./stats.go
-./statsconn.go
-./statsworker.go
-./telemetryservice.go

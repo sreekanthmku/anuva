@@ -1,8 +1,0 @@
-./cache.go
-./deprecated.go
-./device.go
-./options.go
-./os.go
-./parser.go
-./user_agent.go
-./yaml.go

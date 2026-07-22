@@ -1,9 +1,0 @@
-./errors.go
-./interfaces.go
-./signalhandler.go
-./signalhandlerunimplemented.go
-./signallerasync.go
-./signallerasyncbase.go
-./signallerunimplemented.go
-./signalling.go
-./signallingunimplemented.go

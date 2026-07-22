@@ -1,8 +1,0 @@
-./doc.go
-./logger.go
-./negroni.go
-./recovery.go
-./response_writer.go
-./response_writer_feature.go
-./response_writer_pusher.go
-./static.go
