@@ -16,7 +16,7 @@
 #   LIVEKIT_API_KEY, LIVEKIT_API_SECRET   generate with: livekit-server generate-keys
 #   LIVEKIT_NODE_IP                       the VPS public IPv4
 #   API_WEBHOOK_URL                       https://api.<domain>/livekit/webhook
-#   RECORDINGS_HOST_DIR                   host path for recordings, e.g. /data/anuva/recordings
+#   (recordings bind-mount path is literal in the egress service, see comment there)
 
 services:
   redis:
@@ -82,7 +82,13 @@ services:
         log_level: info
         redis:
           address: redis:6379
-    # Recordings land on the host so the API container can read them for the ffmpeg mixdown.
-    # The API must mount this same host directory (see RECORDING_LOCAL_DIR).
+    # Egress runs as uid 1001, so the host directory must be writable by it:
+    #   sudo mkdir -p /data/anuva/recordings && sudo chmod 777 /data/anuva/recordings
+    #
+    # The path is written literally on purpose. Coolify does not interpolate variables inside
+    # `volumes:` — it reads `${RECORDINGS_HOST_DIR}` as a volume *name* and silently creates a
+    # named Docker volume instead of binding the host directory. The recordings then land in
+    # /var/lib/docker/volumes where the API cannot reach them to run the mixdown, and egress
+    # fails with "permission denied" because that volume is owned by root.
     volumes:
-      - ${RECORDINGS_HOST_DIR}:/out
+      - /data/anuva/recordings:/out
