@@ -17,6 +17,7 @@ import {
 } from './booking/dateTime';
 import { SpecialistPicker } from './booking/components/SpecialistPicker';
 import { TimeSlotSection } from './booking/components/TimeSlotSection';
+import { BottomNav } from './components/BottomNav';
 
 type Tab = 'upcoming' | 'past';
 
@@ -283,7 +284,7 @@ export default function MyBookingsRoute() {
   const list = tab === 'upcoming' ? upcoming : past;
 
   return (
-    <main className="min-h-mobile bg-surface pb-16 text-on-surface">
+    <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="border-b border-border-default bg-surface/95 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <Link
@@ -438,6 +439,8 @@ export default function MyBookingsRoute() {
           }}
         />
       ) : null}
+
+      <BottomNav />
     </main>
   );
 }

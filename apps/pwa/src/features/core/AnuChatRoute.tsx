@@ -1,68 +1,127 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/auth-context';
+import type { AnuChatHistoryResponse, AnuChatResponse } from '@anuva/shared';
+import { apiFetch } from '../../shared/lib/api';
 import { BottomNav } from './components/BottomNav';
 
 type ChatMessage = {
   from: 'anu' | 'user';
   text: string;
+  /// Red-flag replies are clinician-authored safety text; they get their own
+  /// treatment so they cannot be mistaken for ordinary coaching.
+  isEscalation?: boolean;
 };
 
-const quickReplies = ['Yes, log it', 'Tell me more', 'What helps most?', 'Should I see a doctor?'];
+/// Shown only before the first exchange — after that every chip comes from
+/// ANU's own reply, so they follow whatever she actually raised.
+const openingPrompts = ['I feel tired', "I can't sleep", 'I get hot flashes'];
 
 export default function AnuChatRoute() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    {
-      from: 'anu',
-      text: `Good morning, ${firstName}. I noticed your sleep was interrupted twice last night. Would you like to talk about it?`,
-    },
-    { from: 'user', text: 'I woke up drenched around 3am.' },
-    {
-      from: 'anu',
-      text: 'That sounds exhausting. A hot flash during REM is common in early perimenopause - not dangerous, but worth tracking. Want me to log it and suggest a cooling ritual for tonight?',
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [input, setInput] = useState('');
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messageListRef = useRef<HTMLElement | null>(null);
-  const messageEndRef = useRef<HTMLDivElement | null>(null);
-
-  const send = (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-
-    setMessages((prev) => [...prev, { from: 'user', text: trimmed }]);
-    setInput('');
-
-    window.setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          from: 'anu',
-          text: "Logged. I'll dim your notifications after 9pm and queue a 3-minute breathing exercise for 9:30. Small shifts, repeated nightly, make the biggest difference.",
-        },
-      ]);
-    }, 600);
-  };
+  const didInitialScroll = useRef(false);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      if (messageEndRef.current) {
-        messageEndRef.current.scrollIntoView({ block: 'end' });
-        return;
+    let cancelled = false;
+
+    apiFetch<AnuChatHistoryResponse>('/api/anu/chat')
+      .then((data) => {
+        if (cancelled) return;
+        setMessages(
+          data.turns.flatMap((turn) => [
+            { from: 'user' as const, text: turn.userMessage },
+            { from: 'anu' as const, text: turn.reply, isEscalation: turn.source === 'red_flag' },
+          ]),
+        );
+        // Restore the chips from the last reply so a returning user picks up
+        // where she left off.
+        setSuggestions(data.turns.at(-1)?.suggestions ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Could not load your conversation.');
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const send = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || sending) return;
+
+      setMessages((prev) => [...prev, { from: 'user', text: trimmed }]);
+      setInput('');
+      setSending(true);
+      setError(null);
+      // Clear immediately: the old chips belong to the previous answer.
+      setSuggestions([]);
+
+      try {
+        const data = await apiFetch<AnuChatResponse>('/api/anu/chat', {
+          method: 'POST',
+          body: JSON.stringify({ message: trimmed }),
+        });
+        setMessages((prev) => [
+          ...prev,
+          { from: 'anu', text: data.reply, isEscalation: data.source === 'red_flag' },
+        ]);
+        setSuggestions(data.suggestions);
+      } catch {
+        setError('ANU could not reply just now. Please try again.');
+      } finally {
+        setSending(false);
       }
-      if (messageListRef.current) {
-        messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
-      }
+    },
+    [sending],
+  );
+
+  // Pin to the newest message. The list itself is scrolled rather than calling
+  // scrollIntoView, which can scroll an ancestor instead and fights the fixed
+  // composer. Two frames: the first lets React paint the new bubble, the second
+  // catches the reflow when the chip row appears or disappears.
+  useEffect(() => {
+    const list = messageListRef.current;
+    if (!list) return;
+
+    // Jump straight to the bottom when restoring history; animate afterwards.
+    const behavior: ScrollBehavior = didInitialScroll.current ? 'smooth' : 'auto';
+    let second = 0;
+    const first = window.requestAnimationFrame(() => {
+      list.scrollTo({ top: list.scrollHeight, behavior });
+      second = window.requestAnimationFrame(() => {
+        list.scrollTo({ top: list.scrollHeight, behavior });
+        didInitialScroll.current = true;
+      });
     });
 
-    return () => window.cancelAnimationFrame(frame);
-  }, [messages]);
+    return () => {
+      window.cancelAnimationFrame(first);
+      window.cancelAnimationFrame(second);
+    };
+  }, [messages, sending, suggestions, historyLoading]);
+
+  // Openers only seed an empty thread; once ANU has replied the chips are hers.
+  const chips = messages.length === 0 && !historyLoading ? openingPrompts : suggestions;
 
   return (
-    <main className="min-h-mobile flex flex-col bg-surface text-on-surface">
+    // The only reserved space is BottomNav, which is fixed and outside this
+    // tree. Everything inside is laid out by flex, so the composer can never
+    // overlap the messages however tall the chip row grows.
+    <main
+      className="h-mobile flex flex-col overflow-hidden bg-surface text-on-surface"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 68px)' }}
+    >
       <header className="sticky top-0 z-40 shrink-0 bg-surface">
         <section className="flex items-center gap-3 border-b border-border-default px-3 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
           <button
@@ -117,14 +176,17 @@ export default function AnuChatRoute() {
 
       <section
         ref={messageListRef}
-        className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-[168px] pt-[18px]"
+        className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-3 pt-[18px]"
       >
-        <p
-          className="mb-1 text-center text-[9.5px] uppercase tracking-[0.15em] text-outline"
-          style={{ fontFamily: '"Mulish", sans-serif' }}
-        >
-          Today · 8:12 AM
-        </p>
+        {!historyLoading && messages.length === 0 && (
+          <p
+            className="mt-6 text-center text-[13px] leading-[1.6] text-on-surface-variant"
+            style={{ fontFamily: '"Mulish", sans-serif' }}
+          >
+            Tell ANU what you&apos;re feeling. She can explain what may be behind it and help you
+            track it.
+          </p>
+        )}
 
         {messages.map((message, index) => {
           const isUser = message.from === 'user';
@@ -145,7 +207,9 @@ export default function AnuChatRoute() {
                 className={`px-[14px] py-[10px] text-[14px] leading-[1.5] ${
                   isUser
                     ? 'rounded-[20px_20px_4px_20px] bg-secondary text-on-secondary'
-                    : 'rounded-[20px_20px_20px_4px] bg-primary-container text-on-surface'
+                    : message.isEscalation
+                      ? 'rounded-[20px_20px_20px_4px] border border-tertiary/40 bg-tertiary/10 text-on-surface'
+                      : 'rounded-[20px_20px_20px_4px] bg-primary-container text-on-surface'
                 }`}
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
@@ -154,25 +218,53 @@ export default function AnuChatRoute() {
             </div>
           );
         })}
-        <div ref={messageEndRef} />
+
+        {sending && (
+          <div className="flex max-w-[82%] items-end gap-2">
+            <img
+              src="/anu.png"
+              alt=""
+              className="h-6 w-6 shrink-0 rounded-full border border-border-default bg-surface-container-low p-1"
+            />
+            <div
+              className="rounded-[20px_20px_20px_4px] bg-primary-container px-[14px] py-[10px] text-[14px] text-on-surface-variant"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
+              ANU is typing…
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <p
+            className="text-center text-[12px] text-error"
+            style={{ fontFamily: '"Mulish", sans-serif' }}
+          >
+            {error}
+          </p>
+        )}
+
       </section>
 
-      <section className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom,0px)+68px)] z-40 bg-surface">
-        <section className="no-scrollbar overflow-x-auto border-t border-border-default px-4 py-2">
-          <div className="flex gap-1.5">
-            {quickReplies.map((reply) => (
-              <button
-                key={reply}
-                type="button"
-                onClick={() => send(reply)}
-                className="shrink-0 rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-[13px] font-semibold text-primary"
-                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-              >
-                {reply}
-              </button>
-            ))}
-          </div>
-        </section>
+      <section className="shrink-0 bg-surface">
+        {chips.length > 0 && (
+          <section className="no-scrollbar overflow-x-auto border-t border-border-default px-4 py-2">
+            <div className="flex gap-1.5">
+              {chips.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => void send(chip)}
+                  disabled={sending}
+                  className="shrink-0 rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-[13px] font-semibold text-primary disabled:opacity-50"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="flex items-center gap-2.5 bg-surface px-5 pb-2 pt-1.5">
           <label className="flex flex-1 items-center gap-2 rounded-full border border-border-default bg-surface-container-low px-5 py-1.5">
@@ -180,8 +272,9 @@ export default function AnuChatRoute() {
               value={input}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter') send(input);
+                if (event.key === 'Enter') void send(input);
               }}
+              disabled={sending}
               placeholder="Share what you're feeling..."
               className="w-full border-none bg-transparent text-[14px] text-on-surface outline-none placeholder:text-outline"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
@@ -190,8 +283,9 @@ export default function AnuChatRoute() {
 
           <button
             type="button"
-            onClick={() => send(input)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-secondary"
+            onClick={() => void send(input)}
+            disabled={sending}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-secondary disabled:opacity-50"
             aria-label="Send message"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">

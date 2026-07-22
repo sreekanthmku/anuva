@@ -10,6 +10,17 @@
     min-height: 100dvh;
   }
 
+  /**
+   * Fixed viewport height, for screens that scroll an inner pane rather than
+   * the page — a flex child can only scroll when its container is bounded, and
+   * `min-h-mobile` alone lets the container grow with its content instead.
+   */
+  .h-mobile {
+    height: 100vh;
+    height: 100svh;
+    height: 100dvh;
+  }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;

@@ -62,6 +62,7 @@ model User {
   nudgeDailyStates   NudgeDailyState[]
   nudgeSendLogs      NudgeSendLog[]
   l3TriggerLogs      L3TriggerLog[]
+  anuChatTurns       AnuChatTurn[]
 }
 
 enum FcmPlatform {
@@ -998,4 +999,62 @@ model L3TriggerLog {
   firedAt   DateTime @default(now())
 
   @@index([userId, triggerId, firedAt])
+}
+
+// ─────────────────────────────────────────────
+// ANU chat
+// ─────────────────────────────────────────────
+
+enum AnuTurnSource {
+  red_flag
+  cache
+  model
+}
+
+/// Immutable audit trail. Records what ANU actually said to whom, and why.
+/// The reply is snapshotted rather than joined so a later prompt or content
+/// change cannot rewrite history.
+model AnuChatTurn {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userMessage   String
+  reply         String
+  /// Follow-up chips offered with this reply, so reopening the thread restores
+  /// the same choices the user was given at the time.
+  suggestions   String[]
+  /// Bank symptom label this turn was about, used to keep follow-ups anchored
+  /// to the same topic. Null for greetings and anything off-list.
+  symptom       String?
+  source        AnuTurnSource
+  redFlagArea   String? // set when the deterministic gate fired
+  cacheHitId    String? // AnuResponseCache.id when served from cache
+  similarity    Float? // cosine score of the cache lookup, when one ran
+  promptVersion Int
+  createdAt     DateTime      @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+/// Semantic response cache. `embedding` is a raw float32 buffer (512 dims);
+/// vectors are scanned in memory, never in SQL, so no pgvector extension is
+/// needed. Postgres is the durable store that repopulates the index on boot.
+model AnuResponseCache {
+  id            String   @id @default(cuid())
+  question      String
+  reply         String
+  /// Cached alongside the reply — chips and the symptom are derived with it and
+  /// would otherwise be lost on a cache hit, leaving the next follow-up with no
+  /// topic to anchor to.
+  suggestions   String[]
+  symptom       String?
+  embedding     Bytes
+  promptVersion Int
+  hits          Int      @default(0)
+  lastUsedAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([promptVersion])
+  @@index([lastUsedAt])
 }
