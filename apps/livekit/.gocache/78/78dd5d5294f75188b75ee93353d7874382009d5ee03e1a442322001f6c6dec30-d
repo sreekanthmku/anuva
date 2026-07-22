@@ -1,0 +1,4 @@
+./probe_regulator.go
+./probe_signal.go
+./prober.go
+./trenddetector.go

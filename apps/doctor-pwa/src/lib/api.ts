@@ -1,4 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
+const DOCTOR_KEY_STORAGE = 'anuva.doctorKey';
 
 export class ApiError extends Error {
   status: number;
@@ -7,6 +8,18 @@ export class ApiError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+export function getDoctorKey(): string {
+  return localStorage.getItem(DOCTOR_KEY_STORAGE) || '';
+}
+
+export function setDoctorKey(key: string): void {
+  localStorage.setItem(DOCTOR_KEY_STORAGE, key.trim());
+}
+
+export function clearDoctorKey(): void {
+  localStorage.removeItem(DOCTOR_KEY_STORAGE);
 }
 
 function toAbsoluteUrl(input: RequestInfo | URL): RequestInfo | URL {
@@ -24,6 +37,7 @@ export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit):
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      'x-doctor-key': getDoctorKey(),
       ...(init?.headers || {}),
     },
   });

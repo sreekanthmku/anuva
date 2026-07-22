@@ -4,6 +4,20 @@ export const consultationStatusSchema = z.enum(['pending', 'confirmed', 'complet
 
 export type ConsultationStatus = z.infer<typeof consultationStatusSchema>;
 
+export const consultationCallStatusSchema = z.enum(['waiting', 'active', 'ended', 'failed']);
+
+export type ConsultationCallStatus = z.infer<typeof consultationCallStatusSchema>;
+
+export const consultationRecordingStatusSchema = z.enum([
+  'starting',
+  'recording',
+  'processing',
+  'ready',
+  'failed',
+]);
+
+export type ConsultationRecordingStatus = z.infer<typeof consultationRecordingStatusSchema>;
+
 export const consultationSpecialistSchema = z.object({
   key: z.string().min(1),
   name: z.string().min(1),
@@ -85,6 +99,8 @@ export const doctorConsultationBookingSchema = z.object({
   status: consultationStatusSchema,
   isFree: z.boolean(),
   createdAt: z.string().datetime(),
+  callStatus: consultationCallStatusSchema.nullable(),
+  recordingStatus: consultationRecordingStatusSchema.nullable(),
 });
 
 export type DoctorConsultationBooking = z.infer<typeof doctorConsultationBookingSchema>;
@@ -96,6 +112,68 @@ export const doctorConsultationBookingsResponseSchema = z.object({
 export type DoctorConsultationBookingsResponse = z.infer<
   typeof doctorConsultationBookingsResponseSchema
 >;
+
+export const consultationCallRecordingSchema = z.object({
+  status: consultationRecordingStatusSchema,
+  storagePath: z.string().nullable(),
+  startedAt: z.string().datetime().nullable(),
+  completedAt: z.string().datetime().nullable(),
+  durationSeconds: z.number().int().nonnegative().nullable(),
+  errorMessage: z.string().nullable(),
+});
+
+export type ConsultationCallRecording = z.infer<typeof consultationCallRecordingSchema>;
+
+export const consultationCallStateSchema = z.object({
+  consultationId: z.string(),
+  roomName: z.string().nullable(),
+  status: consultationCallStatusSchema.nullable(),
+  doctorStartedAt: z.string().datetime().nullable(),
+  patientJoinedAt: z.string().datetime().nullable(),
+  recordingStartedAt: z.string().datetime().nullable(),
+  endedAt: z.string().datetime().nullable(),
+  patientConsentRequired: z.boolean(),
+  patientConsented: z.boolean(),
+  recording: consultationCallRecordingSchema.nullable(),
+});
+
+export type ConsultationCallState = z.infer<typeof consultationCallStateSchema>;
+
+export const consultationCallJoinResponseSchema = z.object({
+  livekitUrl: z.string().url(),
+  token: z.string().min(1),
+  call: consultationCallStateSchema,
+});
+
+export type ConsultationCallJoinResponse = z.infer<typeof consultationCallJoinResponseSchema>;
+
+export const consultationCallStateResponseSchema = z.object({
+  call: consultationCallStateSchema,
+});
+
+export type ConsultationCallStateResponse = z.infer<typeof consultationCallStateResponseSchema>;
+
+export const consultationCallConsentBodySchema = z.object({
+  consentTextVersion: z.string().trim().min(1).default('recording-consent-v1'),
+});
+
+export type ConsultationCallConsentBody = z.infer<typeof consultationCallConsentBodySchema>;
+
+export const consultationCallConsentResponseSchema = z.object({
+  ok: z.literal(true),
+  call: consultationCallStateSchema,
+});
+
+export type ConsultationCallConsentResponse = z.infer<
+  typeof consultationCallConsentResponseSchema
+>;
+
+export const consultationCallEndResponseSchema = z.object({
+  ok: z.literal(true),
+  call: consultationCallStateSchema,
+});
+
+export type ConsultationCallEndResponse = z.infer<typeof consultationCallEndResponseSchema>;
 
 export const createConsultationSlotsBodySchema = z.object({
   specialistKey: z.string().trim().min(1),

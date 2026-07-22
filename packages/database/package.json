@@ -11,17 +11,18 @@
   },
   "scripts": {
     "build": "prisma generate && tsc -p tsconfig.build.json",
+    "prisma": "prisma",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "lint": "echo \"no lint\""
   },
   "dependencies": {
-    "@prisma/client": "^6.1.0"
+    "@prisma/client": "^6.19.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
-    "prisma": "^6.1.0",
+    "prisma": "^6.19.3",
     "typescript": "^5.7.2"
   }
 }

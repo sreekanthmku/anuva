@@ -1,0 +1,3 @@
+package loadavg
+//go:cgo_import_dynamic getloadavg getloadavg ""
+//go:cgo_import_dynamic _ _ "/usr/lib/libSystem.B.dylib"

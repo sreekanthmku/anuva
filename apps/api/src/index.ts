@@ -1,20 +1,42 @@
+import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { config } from 'dotenv';
+
+const execFileAsync = promisify(execFile);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 config({ path: path.join(__dirname, '../../../.env') });
 
 import cors from 'cors';
 import express from 'express';
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { prisma } from '@anuva/database';
+import {
+  AccessToken,
+  DirectFileOutput,
+  EgressClient,
+  EgressStatus,
+  EncodedFileOutput,
+  EncodedFileType,
+  RoomServiceClient,
+  TrackType,
+  WebhookReceiver,
+} from 'livekit-server-sdk';
 import {
   activateOneDaySubscriptionResponseSchema,
   authSessionResponseSchema,
   authUserSchema,
   consultationBookingResponseSchema,
+  consultationCallConsentBodySchema,
+  consultationCallConsentResponseSchema,
+  consultationCallEndResponseSchema,
+  consultationCallJoinResponseSchema,
+  consultationCallStateResponseSchema,
+  consultationCallStateSchema,
   doctorConsultationBookingsResponseSchema,
   consultationSlotsQuerySchema,
   consultationSlotsResponseSchema,
@@ -60,6 +82,7 @@ import {
   detailedAssessmentStateResponseSchema,
   detailedAssessmentQuestionKeys,
   type AuthUser,
+  type ConsultationCallState,
 } from '@anuva/shared';
 import { ZodError } from 'zod';
 import { BOOKABLE_DOCTOR_KEYS, ensureBookingCatalog } from './bookingCatalog.js';
@@ -96,9 +119,78 @@ const SESSION_COOKIE_SAME_SITE = (process.env.SESSION_COOKIE_SAME_SITE?.trim().t
   | 'strict'
   | 'none';
 const PUSH_BROADCAST_SECRET = process.env.PUSH_BROADCAST_SECRET?.trim() || '';
+const LIVEKIT_URL = process.env.LIVEKIT_URL?.trim() || '';
+const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY?.trim() || '';
+const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET?.trim() || '';
+const LIVEKIT_TOKEN_TTL = process.env.LIVEKIT_TOKEN_TTL?.trim() || '2h';
+const LIVEKIT_RECORDING_FILE_PREFIX =
+  process.env.LIVEKIT_RECORDING_FILE_PREFIX?.trim().replace(/\/+$/, '') || 'consultation-recordings';
+const LIVEKIT_RECORDING_ENABLED = process.env.LIVEKIT_RECORDING_ENABLED !== 'false';
+const LIVEKIT_RECORDING_AUDIO_ONLY = process.env.LIVEKIT_RECORDING_AUDIO_ONLY !== 'false';
+const CALL_CONSENT_TEXT_VERSION =
+  process.env.CALL_CONSENT_TEXT_VERSION?.trim() || 'recording-consent-v1';
+const DOCTOR_ACCESS_KEY = process.env.DOCTOR_ACCESS_KEY?.trim() || '';
+// Where the egress recording volume is mounted on the API's own filesystem. Required to mix the
+// per-speaker files into a combined track; without it recording still works, mixdown is skipped.
+const RECORDING_LOCAL_DIR = process.env.RECORDING_LOCAL_DIR?.trim() || '';
 
 app.use(cors({ origin: true, credentials: true }));
+
+/**
+ * LiveKit signs the raw request body, so this route has to see the unparsed bytes and must
+ * therefore be registered ahead of express.json().
+ *
+ * Recording cannot be kicked off when the patient hits /join: the token has only just been
+ * issued, so the patient is not in the room and has no audio track for egress to attach to.
+ * LiveKit tells us when tracks actually appear, and that is the moment to start.
+ */
+app.post('/livekit/webhook', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) => {
+  if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
+    res.status(503).end();
+    return;
+  }
+
+  let event;
+  try {
+    const receiver = new WebhookReceiver(LIVEKIT_API_KEY, LIVEKIT_API_SECRET);
+    event = await receiver.receive(req.body.toString('utf8'), req.get('Authorization'));
+  } catch (error) {
+    console.warn('Rejected LiveKit webhook', error);
+    res.status(401).end();
+    return;
+  }
+
+  // Ack first: LiveKit retries on non-2xx, and none of this work is worth a retry storm.
+  res.status(200).end();
+
+  try {
+    if (event.event === 'track_published' && event.room?.name) {
+      await reconcileCallRecordings(event.room.name);
+      return;
+    }
+
+    if (event.event === 'egress_updated' || event.event === 'egress_ended') {
+      const egressId = event.egressInfo?.egressId;
+      if (!egressId) {
+        return;
+      }
+
+      const recording = await prisma.consultationRecording.findUnique({ where: { egressId } });
+      if (recording) {
+        await syncRecordingStatus(recording);
+        // Runs only once both sides are ready, so whichever egress finishes last triggers it.
+        await maybeMixCallRecording(recording.consultationCallId);
+      }
+    }
+  } catch (error) {
+    console.warn(`Failed handling LiveKit webhook ${event.event}`, error);
+  }
+});
+
 app.use(express.json());
+
+// Guards every /doctor route, including any added later.
+app.use('/doctor', requireDoctorAccess);
 
 class HttpError extends Error {
   status: number;
@@ -423,12 +515,809 @@ function requireBroadcastSecret(req: Request) {
   }
 }
 
+/**
+ * Every /doctor route exposes patient names, phone numbers, and the ability to mint a
+ * LiveKit token for any consultation, so they are gated behind a shared key.
+ *
+ * Fails closed: an unset DOCTOR_ACCESS_KEY refuses the request rather than leaving the
+ * routes open, because a missing env var must never silently mean "no auth".
+ */
+function requireDoctorAccess(req: Request, _res: Response, next: NextFunction) {
+  if (!DOCTOR_ACCESS_KEY) {
+    next(new HttpError(503, 'DOCTOR_ACCESS_KEY is not configured on the server.'));
+    return;
+  }
+
+  const header = req.get('x-doctor-key') ?? '';
+  const provided = Buffer.from(header);
+  const expected = Buffer.from(DOCTOR_ACCESS_KEY);
+
+  // timingSafeEqual throws on length mismatch, so the lengths are compared first. The
+  // length of the key is not a secret worth protecting here.
+  const ok =
+    provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
+
+  if (!ok) {
+    next(new HttpError(401, 'Invalid or missing doctor access key.'));
+    return;
+  }
+
+  next();
+}
+
 function isBookableDoctorKey(key: string): boolean {
   return BOOKABLE_DOCTOR_KEYS.has(key);
 }
 
 async function readyBookingCatalog() {
   await ensureBookingCatalog(prisma);
+}
+
+function getLiveKitConfig() {
+  if (!LIVEKIT_URL || !LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
+    throw new HttpError(503, 'LiveKit is not configured on the server.');
+  }
+
+  return {
+    url: LIVEKIT_URL,
+    apiKey: LIVEKIT_API_KEY,
+    apiSecret: LIVEKIT_API_SECRET,
+  };
+}
+
+function getRoomServiceClient() {
+  const config = getLiveKitConfig();
+  return new RoomServiceClient(config.url, config.apiKey, config.apiSecret);
+}
+
+function getEgressClient() {
+  const config = getLiveKitConfig();
+  return new EgressClient(config.url, config.apiKey, config.apiSecret);
+}
+
+function consultationRoomName(consultationId: string): string {
+  return `consultation_${consultationId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+}
+
+type ConsultationCallRecord = {
+  id: string;
+  consultationId: string;
+  roomName: string;
+  status: 'waiting' | 'active' | 'ended' | 'failed';
+  doctorStartedAt: Date | null;
+  patientJoinedAt: Date | null;
+  recordingStartedAt: Date | null;
+  endedAt: Date | null;
+  recordings?: ConsultationRecordingRecord[];
+  consents?: {
+    userId: string;
+  }[];
+};
+
+type ConsultationRecordingRecord = {
+  id: string;
+  consultationCallId: string;
+  participantRole: 'doctor' | 'patient' | 'mixed';
+  participantIdentity: string;
+  egressId: string | null;
+  status: 'starting' | 'recording' | 'processing' | 'ready' | 'failed';
+  storagePath: string | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  durationSeconds: number | null;
+  errorMessage: string | null;
+};
+
+type DoctorConsultationRow = {
+  id: string;
+  specialist: {
+    key: string;
+    name: string;
+  };
+  user: {
+    id: string;
+    name: string | null;
+    phone: string;
+  };
+  slot: {
+    endsAt: Date;
+  } | null;
+  call: {
+    status: 'waiting' | 'active' | 'ended' | 'failed';
+    recordings: ConsultationRecordingRecord[];
+  } | null;
+  scheduledAt: Date;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  isFree: boolean;
+  createdAt: Date;
+};
+
+const RECORDING_STATUS_PRECEDENCE = [
+  'failed',
+  'recording',
+  'starting',
+  'processing',
+  'ready',
+] as const;
+
+/**
+ * Each participant is recorded to its own file, but clients only care whether the
+ * consultation as a whole is being captured. Collapse the per-participant rows into
+ * the single recording view both PWAs already render.
+ */
+function aggregateRecording(allRecordings: ConsultationRecordingRecord[] | undefined) {
+  // The mixed track is a derived artifact, not a capture. Clients ask "is this consultation being
+  // recorded", so a still-running ffmpeg must not hold the status at `processing`, and a failed
+  // mixdown must not report `failed` while both real recordings are safely on disk.
+  const recordings = allRecordings?.filter((r) => r.participantRole !== 'mixed');
+
+  if (!recordings?.length) {
+    return null;
+  }
+
+  const status =
+    RECORDING_STATUS_PRECEDENCE.find((candidate) =>
+      recordings.some((recording) => recording.status === candidate),
+    ) ?? 'starting';
+
+  const startedAt = recordings
+    .map((recording) => recording.startedAt)
+    .filter((value): value is Date => value !== null)
+    .sort((a, b) => a.getTime() - b.getTime())[0];
+
+  const allSettled = recordings.every(
+    (recording) => recording.status === 'ready' || recording.status === 'failed',
+  );
+  const completedAt = allSettled
+    ? recordings
+        .map((recording) => recording.completedAt)
+        .filter((value): value is Date => value !== null)
+        .sort((a, b) => b.getTime() - a.getTime())[0]
+    : undefined;
+
+  const durations = recordings
+    .map((recording) => recording.durationSeconds)
+    .filter((value): value is number => value !== null);
+
+  return {
+    status,
+    // Recordings are per participant now, so there is no single storage path to expose.
+    storagePath: null,
+    startedAt: startedAt?.toISOString() ?? null,
+    completedAt: completedAt?.toISOString() ?? null,
+    durationSeconds: durations.length ? Math.max(...durations) : null,
+    errorMessage: recordings.find((recording) => recording.errorMessage)?.errorMessage ?? null,
+  };
+}
+
+function serializeConsultationCallState(
+  consultationId: string,
+  call: ConsultationCallRecord | null,
+  patientConsented: boolean,
+): ConsultationCallState {
+  return consultationCallStateSchema.parse({
+    consultationId,
+    roomName: call?.roomName ?? null,
+    status: call?.status ?? null,
+    doctorStartedAt: call?.doctorStartedAt?.toISOString() ?? null,
+    patientJoinedAt: call?.patientJoinedAt?.toISOString() ?? null,
+    recordingStartedAt: call?.recordingStartedAt?.toISOString() ?? null,
+    endedAt: call?.endedAt?.toISOString() ?? null,
+    patientConsentRequired: LIVEKIT_RECORDING_ENABLED,
+    patientConsented: !LIVEKIT_RECORDING_ENABLED || patientConsented,
+    recording: aggregateRecording(call?.recordings),
+  });
+}
+
+async function createJoinToken(args: {
+  roomName: string;
+  consultationId: string;
+  role: 'doctor' | 'patient';
+  identity: string;
+  name: string;
+}): Promise<string> {
+  const config = getLiveKitConfig();
+  const token = new AccessToken(config.apiKey, config.apiSecret, {
+    identity: args.identity,
+    name: args.name,
+    ttl: LIVEKIT_TOKEN_TTL,
+    metadata: JSON.stringify({
+      consultationId: args.consultationId,
+      role: args.role,
+    }),
+  });
+
+  token.addGrant({
+    roomJoin: true,
+    room: args.roomName,
+    canPublish: true,
+    canSubscribe: true,
+    canPublishData: true,
+  });
+
+  return token.toJwt();
+}
+
+async function ensureLiveKitRoom(roomName: string, consultationId: string): Promise<void> {
+  const roomClient = getRoomServiceClient();
+
+  try {
+    await roomClient.createRoom({
+      name: roomName,
+      emptyTimeout: 10 * 60,
+      departureTimeout: 2 * 60,
+      maxParticipants: 2,
+      metadata: JSON.stringify({ consultationId }),
+    });
+  } catch (error) {
+    if (error instanceof Error && /already exists|exists|already/i.test(error.message)) {
+      return;
+    }
+    throw error;
+  }
+}
+
+async function getDoctorConsultation(consultationId: string) {
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: consultationId },
+    include: {
+      specialist: { select: { name: true } },
+      user: { select: { id: true, name: true, phone: true } },
+      call: {
+        include: {
+          recordings: true,
+          consents: { select: { userId: true } },
+        },
+      },
+    },
+  });
+
+  if (!consultation) {
+    throw new HttpError(404, 'Consultation not found.');
+  }
+
+  if (consultation.status === 'cancelled') {
+    throw new HttpError(400, 'This consultation cannot be called.');
+  }
+
+  return consultation;
+}
+
+async function getPatientConsultation(consultationId: string, userId: string) {
+  const consultation = await prisma.consultation.findFirst({
+    where: {
+      id: consultationId,
+      userId,
+    },
+    include: {
+      specialist: { select: { name: true } },
+      call: {
+        include: {
+          recordings: true,
+          consents: { select: { userId: true } },
+        },
+      },
+    },
+  });
+
+  if (!consultation) {
+    throw new HttpError(404, 'Consultation not found.');
+  }
+
+  return consultation;
+}
+
+function hasPatientConsent(call: ConsultationCallRecord | null | undefined, userId: string): boolean {
+  return call?.consents?.some((consent) => consent.userId === userId) ?? false;
+}
+
+async function ensureConsultationCall(consultationId: string): Promise<ConsultationCallRecord> {
+  const roomName = consultationRoomName(consultationId);
+  const now = new Date();
+
+  const existing = await prisma.consultationCall.findUnique({
+    where: { consultationId },
+    include: {
+      recordings: true,
+      consents: { select: { userId: true } },
+    },
+  });
+
+  if (existing) {
+    if (existing.status === 'ended') {
+      throw new HttpError(400, 'This consultation call has already ended.');
+    }
+
+    const call = await prisma.consultationCall.update({
+      where: { id: existing.id },
+      data: { doctorStartedAt: now },
+      include: {
+        recordings: true,
+        consents: { select: { userId: true } },
+      },
+    });
+
+    await ensureLiveKitRoom(call.roomName, consultationId);
+    return call;
+  }
+
+  const call = await prisma.consultationCall.create({
+    data: {
+      consultationId,
+      roomName,
+      status: 'waiting',
+      doctorStartedAt: now,
+    },
+    include: {
+      recordings: true,
+      consents: { select: { userId: true } },
+    },
+  });
+
+  await ensureLiveKitRoom(roomName, consultationId);
+  return call;
+}
+
+function recordingStoragePath(roomName: string, role: 'doctor' | 'patient'): string {
+  const extension = LIVEKIT_RECORDING_AUDIO_ONLY ? 'ogg' : 'mp4';
+  return `${LIVEKIT_RECORDING_FILE_PREFIX}/${roomName}-${role}-{time}.${extension}`;
+}
+
+/**
+ * Participant identities are minted in createJoinToken as `doctor:<consultationId>`
+ * and `patient:<userId>:<consultationId>`.
+ */
+function roleFromIdentity(identity: string): 'doctor' | 'patient' | null {
+  if (identity.startsWith('doctor:')) {
+    return 'doctor';
+  }
+  if (identity.startsWith('patient:')) {
+    return 'patient';
+  }
+  return null;
+}
+
+function durationFromEgress(startedAt: bigint, endedAt: bigint): number | null {
+  if (startedAt <= 0n || endedAt <= startedAt) {
+    return null;
+  }
+
+  return Number((endedAt - startedAt) / 1_000_000_000n);
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === 'object' && error !== null && (error as { code?: string }).code === 'P2002'
+  );
+}
+
+async function syncRecordingStatus(recording: ConsultationRecordingRecord) {
+  if (!recording.egressId) {
+    return recording;
+  }
+
+  if (recording.status === 'ready' || recording.status === 'failed') {
+    return recording;
+  }
+
+  const [egress] = await getEgressClient().listEgress({ egressId: recording.egressId });
+  if (!egress) {
+    return recording;
+  }
+
+  if (egress.status === EgressStatus.EGRESS_COMPLETE) {
+    // storagePath was written with LiveKit's `{time}` placeholder still in it, so it does not
+    // name a real file. Egress reports the resolved filename once it finishes — record that,
+    // otherwise nothing downstream (mixdown, archival, playback) can find the recording.
+    const filename = egress.fileResults?.[0]?.filename;
+
+    return prisma.consultationRecording.update({
+      where: { id: recording.id },
+      data: {
+        status: 'ready',
+        completedAt: new Date(),
+        durationSeconds: durationFromEgress(egress.startedAt, egress.endedAt),
+        ...(filename ? { storagePath: filename } : {}),
+      },
+    });
+  }
+
+  if (
+    egress.status === EgressStatus.EGRESS_FAILED ||
+    egress.status === EgressStatus.EGRESS_ABORTED
+  ) {
+    return prisma.consultationRecording.update({
+      where: { id: recording.id },
+      data: {
+        status: 'failed',
+        completedAt: new Date(),
+        errorMessage: egress.error || 'Recording failed.',
+      },
+    });
+  }
+
+  if (egress.status === EgressStatus.EGRESS_ENDING && recording.status !== 'processing') {
+    return prisma.consultationRecording.update({
+      where: { id: recording.id },
+      data: { status: 'processing' },
+    });
+  }
+
+  return recording;
+}
+
+async function syncCallRecordings(recordings: ConsultationRecordingRecord[]): Promise<void> {
+  await Promise.all(recordings.map((recording) => syncRecordingStatus(recording)));
+}
+
+/**
+ * Egress writes to a path that is only meaningful inside its own container (LIVEKIT_RECORDING_FILE_PREFIX,
+ * e.g. `/out`). RECORDING_LOCAL_DIR is where that volume actually lands on the API's filesystem,
+ * which is the only way this process can open the files to mix them.
+ */
+function localRecordingPath(storagePath: string): string | null {
+  if (!RECORDING_LOCAL_DIR) {
+    return null;
+  }
+
+  return path.join(RECORDING_LOCAL_DIR, path.basename(storagePath));
+}
+
+/**
+ * Mixes the two per-speaker files into one combined track.
+ *
+ * No egress type can do this for us: track composite takes a single audio track, and room
+ * composite — the only one that mixes a whole room — is the headless-Chrome path we moved off.
+ * So the participant files are mixed after the fact, which keeps recording cheap and preserves
+ * the speaker-separated originals for transcription.
+ *
+ * Idempotent: the unique (consultationCallId, participantRole) index makes the `mixed` row the
+ * lock, so concurrent egress_ended webhooks cannot start two ffmpeg runs for one call.
+ */
+async function maybeMixCallRecording(consultationCallId: string): Promise<void> {
+  if (!RECORDING_LOCAL_DIR) {
+    return;
+  }
+
+  const call = await prisma.consultationCall.findUnique({
+    where: { id: consultationCallId },
+    include: { recordings: true },
+  });
+
+  if (!call) {
+    return;
+  }
+
+  const doctor = call.recordings.find((r) => r.participantRole === 'doctor');
+  const patient = call.recordings.find((r) => r.participantRole === 'patient');
+  const alreadyMixed = call.recordings.some((r) => r.participantRole === 'mixed');
+
+  // Both sides have to be finished; a mix of a half-written file is worthless.
+  if (alreadyMixed || !doctor?.storagePath || !patient?.storagePath) {
+    return;
+  }
+  if (doctor.status !== 'ready' || patient.status !== 'ready') {
+    return;
+  }
+
+  const doctorFile = localRecordingPath(doctor.storagePath);
+  const patientFile = localRecordingPath(patient.storagePath);
+  if (!doctorFile || !patientFile) {
+    return;
+  }
+
+  const outputName = `${call.roomName}-mixed.ogg`;
+  const outputFile = path.join(RECORDING_LOCAL_DIR, outputName);
+
+  try {
+    await Promise.all([fs.access(doctorFile), fs.access(patientFile)]);
+  } catch {
+    console.warn(`Cannot mix ${call.roomName}: participant files are not readable from the API`);
+    return;
+  }
+
+  try {
+    await prisma.consultationRecording.create({
+      data: {
+        consultationCallId: call.id,
+        participantRole: 'mixed',
+        participantIdentity: 'mixed',
+        status: 'processing',
+        storagePath: path.join(LIVEKIT_RECORDING_FILE_PREFIX, outputName),
+      },
+    });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return;
+    }
+    throw error;
+  }
+
+  const where = {
+    consultationCallId_participantRole: {
+      consultationCallId: call.id,
+      participantRole: 'mixed' as const,
+    },
+  };
+
+  try {
+    // normalize=0 keeps each speaker at their original level; amix otherwise attenuates every
+    // input, which makes a two-person consultation noticeably quiet.
+    await execFileAsync('ffmpeg', [
+      '-y',
+      '-i',
+      doctorFile,
+      '-i',
+      patientFile,
+      '-filter_complex',
+      'amix=inputs=2:duration=longest:normalize=0',
+      '-c:a',
+      'libopus',
+      outputFile,
+    ]);
+
+    await prisma.consultationRecording.update({
+      where,
+      data: {
+        status: 'ready',
+        completedAt: new Date(),
+        durationSeconds: Math.max(doctor.durationSeconds ?? 0, patient.durationSeconds ?? 0) || null,
+      },
+    });
+
+    console.log(`[recording] mixed ${outputName}`);
+  } catch (error) {
+    console.warn(`Unable to mix recording for ${call.roomName}`, error);
+    await prisma.consultationRecording.update({
+      where,
+      data: {
+        status: 'failed',
+        completedAt: new Date(),
+        errorMessage: error instanceof Error ? error.message : 'ffmpeg mixdown failed.',
+      },
+    });
+  }
+}
+
+async function stopCallRecordings(recordings: ConsultationRecordingRecord[]): Promise<void> {
+  const live = recordings.filter(
+    (recording) =>
+      recording.egressId && ['starting', 'recording', 'processing'].includes(recording.status),
+  );
+
+  await Promise.all(
+    live.map(async (recording) => {
+      try {
+        await getEgressClient().stopEgress(recording.egressId as string);
+        await prisma.consultationRecording.update({
+          where: { id: recording.id },
+          data: { status: 'processing' },
+        });
+      } catch (error) {
+        console.warn(`Unable to stop ${recording.participantRole} recording`, error);
+      }
+    }),
+  );
+}
+
+async function startParticipantRecording(
+  call: { id: string; roomName: string },
+  identity: string,
+  role: 'doctor' | 'patient',
+  audioTrackSid: string,
+): Promise<void> {
+  const filepath = recordingStoragePath(call.roomName, role);
+  const where = {
+    consultationCallId_participantRole: {
+      consultationCallId: call.id,
+      participantRole: role,
+    },
+  };
+
+  // The unique (consultationCallId, participantRole) index is the lock. Concurrent
+  // webhooks for the same participant race here, and the loser bails out.
+  try {
+    await prisma.consultationRecording.create({
+      data: {
+        consultationCallId: call.id,
+        participantRole: role,
+        participantIdentity: identity,
+        status: 'starting',
+        storagePath: filepath,
+      },
+    });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return;
+    }
+    throw error;
+  }
+
+  try {
+    let egress;
+
+    if (LIVEKIT_RECORDING_AUDIO_ONLY) {
+      // Track egress on the mic track alone. Participant egress cannot do this: it has no
+      // audio-only flag, so it always plans for video too, and then fails with "no
+      // supported codec is compatible with all outputs" against an audio container.
+      //
+      // A DirectFileOutput writes the publisher's Opus straight to disk with no transcode
+      // and no Chrome, which is both the cheapest option available and natively ingestible
+      // by speech-to-text.
+      egress = await getEgressClient().startTrackEgress(
+        call.roomName,
+        new DirectFileOutput({ filepath }),
+        audioTrackSid,
+      );
+    } else {
+      egress = await getEgressClient().startParticipantEgress(call.roomName, identity, {
+        file: new EncodedFileOutput({ fileType: EncodedFileType.MP4, filepath }),
+      });
+    }
+
+    const startedAt = new Date();
+
+    await prisma.$transaction([
+      prisma.consultationCall.updateMany({
+        where: { id: call.id, recordingStartedAt: null },
+        data: { recordingStartedAt: startedAt },
+      }),
+      prisma.consultationRecording.update({
+        where,
+        data: {
+          egressId: egress.egressId,
+          status: 'recording',
+          startedAt,
+          errorMessage: null,
+        },
+      }),
+    ]);
+  } catch (error) {
+    // One participant failing to record must not tear down the call or the request that
+    // triggered this. The failure surfaces through the aggregated recording status.
+    console.warn(`Unable to start ${role} recording`, error);
+    await prisma.consultationRecording.update({
+      where,
+      data: {
+        status: 'failed',
+        errorMessage: error instanceof Error ? error.message : 'Unable to start recording.',
+      },
+    });
+  }
+}
+
+/**
+ * Tears a consultation call down. Either side can end the call, so this runs for both the
+ * doctor's End and the patient's Leave, and is idempotent for an already-ended call.
+ *
+ * Deleting the room is what disconnects whoever is still in it — that is how the other side
+ * learns the call is over. Recordings are stopped first so egress finalises its files rather
+ * than being cut off mid-write.
+ */
+async function endConsultationCall(
+  call: ConsultationCallRecord,
+): Promise<ConsultationCallRecord | null> {
+  await stopCallRecordings(call.recordings ?? []);
+
+  try {
+    await getRoomServiceClient().deleteRoom(call.roomName);
+  } catch (error) {
+    console.warn('Unable to delete LiveKit room on call end', error);
+  }
+
+  const endedCall = await prisma.consultationCall.update({
+    where: { id: call.id },
+    data: {
+      status: 'ended',
+      endedAt: call.endedAt ?? new Date(),
+    },
+    include: {
+      recordings: true,
+      consents: { select: { userId: true } },
+    },
+  });
+
+  await syncCallRecordings(endedCall.recordings);
+
+  // Usually a no-op here — egress is still finalising, so the mix is normally kicked off by the
+  // egress_ended webhook instead. This covers the case where both files were already complete.
+  await maybeMixCallRecording(endedCall.id);
+
+  return prisma.consultationCall.findUnique({
+    where: { id: endedCall.id },
+    include: {
+      recordings: true,
+      consents: { select: { userId: true } },
+    },
+  });
+}
+
+/**
+ * Starts participant egress for everyone in the room who is publishing audio and is not
+ * recorded yet. Idempotent, so it is safe to call from both the join route and the LiveKit
+ * webhook — whoever gets there first wins, and late publishers are picked up on their
+ * track_published event.
+ */
+async function reconcileCallRecordings(roomName: string): Promise<void> {
+  if (!LIVEKIT_RECORDING_ENABLED) {
+    return;
+  }
+
+  const call = await prisma.consultationCall.findUnique({
+    where: { roomName },
+    include: {
+      recordings: true,
+      consents: { select: { userId: true } },
+      consultation: { select: { userId: true } },
+    },
+  });
+
+  if (!call || call.status === 'ended') {
+    return;
+  }
+
+  // Consent gates every recording in the room, the doctor's included.
+  if (!hasPatientConsent(call, call.consultation.userId)) {
+    return;
+  }
+
+  let participants;
+  try {
+    participants = await getRoomServiceClient().listParticipants(roomName);
+  } catch (error) {
+    console.warn('Unable to list participants while reconciling recordings', error);
+    return;
+  }
+
+  for (const participant of participants) {
+    const role = roleFromIdentity(participant.identity);
+    if (!role || call.recordings.some((recording) => recording.participantRole === role)) {
+      continue;
+    }
+
+    // Egress attaches to a live audio track, so anyone who has joined but not yet published
+    // a mic is skipped here and picked up on their track_published webhook instead.
+    const audioTrack = participant.tracks.find((track) => track.type === TrackType.AUDIO);
+    if (!audioTrack) {
+      continue;
+    }
+
+    await startParticipantRecording(call, participant.identity, role, audioTrack.sid);
+  }
+}
+
+async function notifyPatientCallStarted(consultationId: string, patientId: string, doctorName: string) {
+  const rows: Array<{ token: string }> = await prisma.fcmToken.findMany({
+    where: {
+      userId: patientId,
+      status: 'ACTIVE',
+    },
+    select: {
+      token: true,
+    },
+  });
+  const tokens: string[] = [...new Set(rows.map((row) => row.token))];
+
+  if (tokens.length === 0) {
+    return;
+  }
+
+  try {
+    await sendPushToAllTokens(
+      tokens,
+      {
+        title: 'Doctor is ready',
+        body: `${doctorName} has started your consultation call.`,
+      },
+      {
+        url: `/consultations/${consultationId}/call`,
+        type: 'consultation-call',
+        consultationId,
+      },
+    );
+  } catch (error) {
+    console.warn('Unable to send consultation call push notification', error);
+  }
 }
 
 function serializeSpecialist(specialist: {
@@ -481,7 +1370,9 @@ app.get('/consultations/specialists', async (_req, res, next) => {
 
     res.json(
       consultationSpecialistsResponseSchema.parse(
-        specialists.map((specialist) => serializeSpecialist(specialist)),
+        specialists.map((specialist: Parameters<typeof serializeSpecialist>[0]) =>
+          serializeSpecialist(specialist),
+        ),
       ),
     );
   } catch (e) {
@@ -554,7 +1445,7 @@ app.post('/consultations/book', async (req, res, next) => {
     const user = await requireCurrentUser(req);
     const parsed = createConsultationBookingBodySchema.parse(req.body);
 
-    const booked = await prisma.$transaction(async (tx) => {
+    const booked = await prisma.$transaction(async (tx: any) => {
       const slot = await tx.consultationSlot.findUnique({
         where: { id: parsed.slotId },
         include: { specialist: true },
@@ -641,13 +1532,19 @@ app.get('/doctor/consultations', async (_req, res, next) => {
             endsAt: true,
           },
         },
+        call: {
+          select: {
+            status: true,
+            recordings: true,
+          },
+        },
       },
       orderBy: [{ scheduledAt: 'asc' }, { createdAt: 'desc' }],
     });
 
     res.json(
       doctorConsultationBookingsResponseSchema.parse({
-        bookings: bookings.map((booking) => ({
+        bookings: (bookings as DoctorConsultationRow[]).map((booking) => ({
           consultationId: booking.id,
           specialistKey: booking.specialist.key,
           specialistName: booking.specialist.name,
@@ -659,7 +1556,256 @@ app.get('/doctor/consultations', async (_req, res, next) => {
           status: booking.status,
           isFree: booking.isFree,
           createdAt: booking.createdAt.toISOString(),
+          callStatus: booking.call?.status ?? null,
+          recordingStatus: aggregateRecording(booking.call?.recordings)?.status ?? null,
         })),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/doctor/consultations/:id/call/start', async (req, res, next) => {
+  try {
+    await readyBookingCatalog();
+
+    const consultationId = req.params.id;
+    const consultation = await getDoctorConsultation(consultationId);
+
+    if (consultation.status !== 'confirmed') {
+      throw new HttpError(400, 'Only confirmed consultations can be started.');
+    }
+
+    const call = await ensureConsultationCall(consultation.id);
+    const token = await createJoinToken({
+      roomName: call.roomName,
+      consultationId: consultation.id,
+      role: 'doctor',
+      identity: `doctor:${consultation.id}`,
+      name: consultation.specialist.name,
+    });
+
+    await notifyPatientCallStarted(consultation.id, consultation.user.id, consultation.specialist.name);
+
+    res.json(
+      consultationCallJoinResponseSchema.parse({
+        livekitUrl: LIVEKIT_URL,
+        token,
+        call: serializeConsultationCallState(
+          consultation.id,
+          call,
+          hasPatientConsent(call, consultation.user.id),
+        ),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/doctor/consultations/:id/call', async (req, res, next) => {
+  try {
+    const consultation = await getDoctorConsultation(req.params.id);
+    if (!consultation.call) {
+      throw new HttpError(404, 'Call has not been started yet.');
+    }
+
+    const token = await createJoinToken({
+      roomName: consultation.call.roomName,
+      consultationId: consultation.id,
+      role: 'doctor',
+      identity: `doctor:${consultation.id}`,
+      name: consultation.specialist.name,
+    });
+
+    res.json(
+      consultationCallJoinResponseSchema.parse({
+        livekitUrl: LIVEKIT_URL,
+        token,
+        call: serializeConsultationCallState(
+          consultation.id,
+          consultation.call,
+          hasPatientConsent(consultation.call, consultation.user.id),
+        ),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/doctor/consultations/:id/call/end', async (req, res, next) => {
+  try {
+    const consultation = await getDoctorConsultation(req.params.id);
+    if (!consultation.call) {
+      throw new HttpError(404, 'Call has not been started yet.');
+    }
+
+    const refreshed = await endConsultationCall(consultation.call);
+
+    res.json(
+      consultationCallEndResponseSchema.parse({
+        ok: true,
+        call: serializeConsultationCallState(
+          consultation.id,
+          refreshed,
+          hasPatientConsent(refreshed, consultation.user.id),
+        ),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * The patient leaving ends the consultation for both sides. A 1:1 call with one party gone is
+ * over, and leaving it open would keep egress recording an empty room.
+ */
+app.post('/consultations/:id/call/end', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const consultation = await getPatientConsultation(req.params.id, user.id);
+
+    if (!consultation.call) {
+      throw new HttpError(404, 'Call has not been started yet.');
+    }
+
+    const refreshed = await endConsultationCall(consultation.call);
+
+    res.json(
+      consultationCallEndResponseSchema.parse({
+        ok: true,
+        call: serializeConsultationCallState(consultation.id, refreshed, true),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/consultations/:id/call', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const consultation = await getPatientConsultation(req.params.id, user.id);
+
+    res.json(
+      consultationCallStateResponseSchema.parse({
+        call: serializeConsultationCallState(
+          consultation.id,
+          consultation.call,
+          hasPatientConsent(consultation.call, user.id),
+        ),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/consultations/:id/call/consent', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const parsed = consultationCallConsentBodySchema.parse({
+      consentTextVersion: CALL_CONSENT_TEXT_VERSION,
+      ...(req.body ?? {}),
+    });
+    const consultation = await getPatientConsultation(req.params.id, user.id);
+
+    if (!consultation.call || consultation.call.status === 'ended') {
+      throw new HttpError(404, 'Call has not been started yet.');
+    }
+
+    await prisma.consultationCallConsent.upsert({
+      where: {
+        consultationCallId_userId: {
+          consultationCallId: consultation.call.id,
+          userId: user.id,
+        },
+      },
+      create: {
+        consultationCallId: consultation.call.id,
+        userId: user.id,
+        consentTextVersion: parsed.consentTextVersion,
+      },
+      update: {
+        consentTextVersion: parsed.consentTextVersion,
+        consentedAt: new Date(),
+      },
+    });
+
+    const refreshed = await prisma.consultationCall.findUnique({
+      where: { id: consultation.call.id },
+      include: {
+        recordings: true,
+        consents: { select: { userId: true } },
+      },
+    });
+
+    res.json(
+      consultationCallConsentResponseSchema.parse({
+        ok: true,
+        call: serializeConsultationCallState(consultation.id, refreshed, true),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/consultations/:id/call/join', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const consultation = await getPatientConsultation(req.params.id, user.id);
+
+    if (!consultation.call || consultation.call.status === 'ended') {
+      throw new HttpError(404, 'Call has not been started yet.');
+    }
+
+    if (LIVEKIT_RECORDING_ENABLED && !hasPatientConsent(consultation.call, user.id)) {
+      throw new HttpError(403, 'Recording consent is required before joining.');
+    }
+
+    await ensureLiveKitRoom(consultation.call.roomName, consultation.id);
+
+    const joinedCall = await prisma.consultationCall.update({
+      where: { id: consultation.call.id },
+      data: {
+        status: 'active',
+        patientJoinedAt: consultation.call.patientJoinedAt ?? new Date(),
+      },
+      include: {
+        recordings: true,
+        consents: { select: { userId: true } },
+      },
+    });
+
+    // Best effort: the doctor may already be publishing, so start their egress now. The
+    // patient has not connected yet — their track_published webhook picks them up.
+    await reconcileCallRecordings(joinedCall.roomName);
+
+    const refreshed = await prisma.consultationCall.findUnique({
+      where: { id: joinedCall.id },
+      include: {
+        recordings: true,
+        consents: { select: { userId: true } },
+      },
+    });
+
+    const token = await createJoinToken({
+      roomName: consultation.call.roomName,
+      consultationId: consultation.id,
+      role: 'patient',
+      identity: `patient:${user.id}:${consultation.id}`,
+      name: user.name || user.phone,
+    });
+
+    res.json(
+      consultationCallJoinResponseSchema.parse({
+        livekitUrl: LIVEKIT_URL,
+        token,
+        call: serializeConsultationCallState(consultation.id, refreshed, true),
       }),
     );
   } catch (e) {
@@ -1142,11 +2288,11 @@ app.get('/push/hello-world', async (req, res, next) => {
   try {
     requireBroadcastSecret(req);
 
-    const rows = await prisma.fcmToken.findMany({
+    const rows: Array<{ token: string }> = await prisma.fcmToken.findMany({
       where: { status: 'ACTIVE' },
       select: { token: true },
     });
-    const tokens = [...new Set(rows.map((row) => row.token))];
+    const tokens: string[] = [...new Set(rows.map((row) => row.token))];
 
     const title = 'Anuva';
     const body = 'Hello world';

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { DoctorConsultationBooking } from '@anuva/shared';
+import { useNavigate } from 'react-router-dom';
 import { fetchDoctorBookings } from './api';
 import { formatLongDateTime, formatTimeRange } from './dateTime';
 
@@ -37,8 +38,22 @@ function StatCard({
   );
 }
 
-function BookingCard({ booking }: { booking: DoctorConsultationBooking }) {
+function callLabel(booking: DoctorConsultationBooking): string {
+  if (booking.callStatus === 'active') return 'Resume call';
+  if (booking.callStatus === 'waiting') return 'Open waiting room';
+  if (booking.callStatus === 'ended') return 'Call ended';
+  return 'Start call';
+}
+
+function BookingCard({
+  booking,
+  onStartCall,
+}: {
+  booking: DoctorConsultationBooking;
+  onStartCall: (consultationId: string) => void;
+}) {
   const patientLabel = booking.patientName?.trim() || 'Patient name unavailable';
+  const canStartCall = booking.status === 'confirmed' && booking.callStatus !== 'ended';
 
   return (
     <article className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_12px_30px_rgba(94,53,102,0.06)]">
@@ -71,12 +86,30 @@ function BookingCard({ booking }: { booking: DoctorConsultationBooking }) {
           <dt className="text-[11px] text-outline">Booking</dt>
           <dd className="mt-1 font-semibold">{booking.isFree ? 'Free consult' : 'Paid consult'}</dd>
         </div>
+        <div className="rounded-[16px] bg-surface-container-low px-3 py-2.5">
+          <dt className="text-[11px] text-outline">Call</dt>
+          <dd className="mt-1 font-semibold">{booking.callStatus ?? 'Not started'}</dd>
+        </div>
+        <div className="rounded-[16px] bg-surface-container-low px-3 py-2.5">
+          <dt className="text-[11px] text-outline">Recording</dt>
+          <dd className="mt-1 font-semibold">{booking.recordingStatus ?? 'Not started'}</dd>
+        </div>
       </dl>
+
+      <button
+        type="button"
+        disabled={!canStartCall}
+        onClick={() => onStartCall(booking.consultationId)}
+        className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-secondary px-4 py-3 text-[13px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        {callLabel(booking)}
+      </button>
     </article>
   );
 }
 
 export function DoctorBookingsRoute() {
+  const navigate = useNavigate();
   const [state, setState] = useState<LoadState>('idle');
   const [bookings, setBookings] = useState<DoctorConsultationBooking[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -166,7 +199,11 @@ export function DoctorBookingsRoute() {
 
         <div className="mt-4 flex flex-col gap-3">
           {bookings.map((booking) => (
-            <BookingCard key={booking.consultationId} booking={booking} />
+            <BookingCard
+              key={booking.consultationId}
+              booking={booking}
+              onStartCall={(consultationId) => navigate(`/call/${consultationId}`)}
+            />
           ))}
         </div>
       </section>

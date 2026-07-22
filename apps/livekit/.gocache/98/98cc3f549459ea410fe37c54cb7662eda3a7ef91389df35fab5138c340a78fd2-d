@@ -1,0 +1,6 @@
+./dynacastmanageraudio.go
+./dynacastmanagerbase.go
+./dynacastmanagervideo.go
+./dynacastqualityaudio.go
+./dynacastqualityvideo.go
+./interfaces.go

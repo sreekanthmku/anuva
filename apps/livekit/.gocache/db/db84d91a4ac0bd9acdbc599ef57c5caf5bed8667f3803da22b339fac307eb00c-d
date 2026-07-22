@@ -1,0 +1,5 @@
+./bitstreamreader.go
+./bitstreamwriter.go
+./dependencydescriptorextension.go
+./dependencydescriptorreader.go
+./dependencydescriptorwriter.go

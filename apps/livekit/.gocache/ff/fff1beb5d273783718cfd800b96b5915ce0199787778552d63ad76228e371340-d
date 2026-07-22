@@ -1,0 +1,6 @@
+./dispatchruleconflictreason_string.go
+./phonenumber.go
+./sip.go
+./token.go
+./trunkconflictreason_string.go
+./trunkfilteredreason_string.go

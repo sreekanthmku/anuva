@@ -1,0 +1,38 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+jobs:
+  test:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.21']
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Go dependencies
+        run: go mod download -x
+        env:
+          GOPROXY: "https://proxy.golang.org"
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v6.1.1
+        with:
+          version: v1.62.2
+          args: --timeout 3m --verbose
+
+      - name: Build
+        run: go build -v .
+
+      - name: Test
+        run: go test -v ./...

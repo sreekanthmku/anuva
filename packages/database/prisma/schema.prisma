@@ -34,6 +34,7 @@ model User {
   userCarePaths     UserCarePath[]
   journeyStages     CareJourneyStage[]
   consultations     Consultation[]
+  callConsents      ConsultationCallConsent[]
   questions         AnonymousQuestion[]
   chatThreads       ChatThread[]
   fcmTokens         FcmToken[]
@@ -430,6 +431,33 @@ enum ConsultationStatus {
   cancelled
 }
 
+enum ConsultationCallProvider {
+  livekit
+}
+
+enum ConsultationCallStatus {
+  waiting
+  active
+  ended
+  failed
+}
+
+enum ConsultationRecordingStatus {
+  starting
+  recording
+  processing
+  ready
+  failed
+}
+
+enum ConsultationRecordingRole {
+  doctor
+  patient
+  /// Derived: the doctor and patient files mixed down to one track with ffmpeg. Has no egress
+  /// of its own, so egressId stays null.
+  mixed
+}
+
 model Consultation {
   id           String             @id @default(cuid())
   userId       String
@@ -441,9 +469,65 @@ model Consultation {
   isFree       Boolean            @default(true)
   createdAt    DateTime           @default(now())
   slot         ConsultationSlot?
+  call         ConsultationCall?
 
   @@index([userId])
   @@index([specialistId])
+}
+
+model ConsultationCall {
+  id                 String                   @id @default(cuid())
+  consultationId     String                   @unique
+  consultation       Consultation             @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  provider           ConsultationCallProvider @default(livekit)
+  roomName           String                   @unique
+  status             ConsultationCallStatus   @default(waiting)
+  doctorStartedAt    DateTime?
+  patientJoinedAt    DateTime?
+  recordingStartedAt DateTime?
+  endedAt            DateTime?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  recordings         ConsultationRecording[]
+  consents           ConsultationCallConsent[]
+
+  @@index([status])
+}
+
+/// One row per participant. Each speaker is recorded to its own audio file via
+/// LiveKit participant egress, so Phase 2 transcription gets speaker-separated
+/// audio without a diarization step.
+model ConsultationRecording {
+  id                  String                      @id @default(cuid())
+  consultationCallId  String
+  consultationCall    ConsultationCall            @relation(fields: [consultationCallId], references: [id], onDelete: Cascade)
+  participantRole     ConsultationRecordingRole
+  participantIdentity String
+  egressId            String?                     @unique
+  status              ConsultationRecordingStatus @default(starting)
+  storagePath         String?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  durationSeconds     Int?
+  errorMessage        String?
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+
+  @@unique([consultationCallId, participantRole])
+  @@index([status])
+}
+
+model ConsultationCallConsent {
+  id                 String           @id @default(cuid())
+  consultationCallId String
+  consultationCall   ConsultationCall @relation(fields: [consultationCallId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consentTextVersion String
+  consentedAt        DateTime         @default(now())
+
+  @@unique([consultationCallId, userId])
+  @@index([userId])
 }
 
 model ConsultationSlot {

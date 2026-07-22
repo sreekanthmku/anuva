@@ -1,0 +1,18 @@
+# Local LiveKit Egress worker for audio-only consultation recording.
+#
+# The API requests participant egress, one per speaker, writing files under:
+#   consultation-recordings/consultation_<id>-doctor-{time}.mp3
+#   consultation-recordings/consultation_<id>-patient-{time}.mp3
+#
+# Participant egress muxes a single publisher's tracks and never launches headless Chrome
+# (only room composite and web egress do), so there is no enable_chrome_sandbox setting
+# here and CPU per recording is a fraction of the room-composite cost.
+
+api_key: devkey
+api_secret: devsecret
+ws_url: ws://127.0.0.1:7880
+insecure: true
+log_level: info
+
+redis:
+  address: 127.0.0.1:6379

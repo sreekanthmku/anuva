@@ -14,8 +14,10 @@
     "@fontsource/dancing-script": "^5.2.8",
     "@fontsource/fraunces": "^5.2.9",
     "@fontsource/mulish": "^5.2.8",
+    "livekit-client": "^2.20.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.14.2"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.11",

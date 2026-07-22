@@ -1,0 +1,370 @@
+// Copyright notice. The following tests are partially based on
+// the following file from the Go Programming Language core repo:
+// https://github.com/golang/go/blob/831f9376d8d730b16fb33dfd775618dffe13ce7a/src/runtime/chan_test.go
+
+package xsync_test
+
+import (
+	"runtime"
+	"strconv"
+	"sync"
+	"sync/atomic"
+	"testing"
+
+	. "github.com/puzpuzpuz/xsync/v4"
+)
+
+func TestDeprecatedMPMCQueueOf(t *testing.T) {
+	q := NewMPMCQueueOf[int](5)
+	if !q.TryEnqueue(1) {
+		t.Fatal("enqueue failed")
+	}
+	if v, ok := q.TryDequeue(); !ok || v != 1 {
+		t.Fatalf("got %v/%v, want 1/true", v, ok)
+	}
+}
+
+func TestMPMCQueueInvalidSize(t *testing.T) {
+	defer func() { recover() }()
+	NewMPMCQueue[int](0)
+	t.Fatal("no panic detected")
+}
+
+func TestMPMCQueueInvalidCapacityTooLarge(t *testing.T) {
+	defer func() { recover() }()
+	NewMPMCQueue[int](int(MpmcQueueMaxRequestedCapacity + 1))
+	t.Fatal("no panic detected for overly large capacity")
+}
+
+func TestMPMCQueueWraparound(t *testing.T) {
+	const capacity = 3
+	const cycles = 5
+	q := NewMPMCQueue[int](capacity)
+	// Cycle through the queue multiple times to test index wraparound
+	for cycle := range cycles {
+		for i := range capacity {
+			if !q.TryEnqueue(cycle*capacity + i) {
+				t.Fatalf("cycle %d: enqueue %d failed", cycle, i)
+			}
+		}
+		for i := range capacity {
+			v, ok := q.TryDequeue()
+			if !ok || v != cycle*capacity+i {
+				t.Fatalf("cycle %d: got %v/%v, want %d/true", cycle, v, ok, cycle*capacity+i)
+			}
+		}
+	}
+}
+
+func TestMPMCQueueEnqueueDequeueInt(t *testing.T) {
+	q := NewMPMCQueue[int](10)
+	for i := range 10 {
+		if !q.TryEnqueue(i) {
+			t.Fatalf("failed to enqueue for %d", i)
+		}
+	}
+	for i := range 10 {
+		if got, ok := q.TryDequeue(); !ok || got != i {
+			t.Fatalf("%v got %v, want %d", ok, got, i)
+		}
+	}
+}
+
+func TestMPMCQueueEnqueueDequeueString(t *testing.T) {
+	q := NewMPMCQueue[string](10)
+	for i := range 10 {
+		if !q.TryEnqueue(strconv.Itoa(i)) {
+			t.Fatalf("failed to enqueue for %d", i)
+		}
+	}
+	for i := range 10 {
+		if got, ok := q.TryDequeue(); !ok || got != strconv.Itoa(i) {
+			t.Fatalf("%v got %v, want %d", ok, got, i)
+		}
+	}
+}
+
+func TestMPMCQueueEnqueueDequeueStruct(t *testing.T) {
+	type foo struct {
+		bar int
+		baz int
+	}
+	q := NewMPMCQueue[foo](10)
+	for i := range 10 {
+		if !q.TryEnqueue(foo{i, i}) {
+			t.Fatalf("failed to enqueue for %d", i)
+		}
+	}
+	for i := range 10 {
+		if got, ok := q.TryDequeue(); !ok || got.bar != i || got.baz != i {
+			t.Fatalf("%v got %v, want %d", ok, got, i)
+		}
+	}
+}
+
+func TestMPMCQueueEnqueueDequeueStructRef(t *testing.T) {
+	type foo struct {
+		bar int
+		baz int
+	}
+	q := NewMPMCQueue[*foo](11)
+	for i := range 10 {
+		if !q.TryEnqueue(&foo{i, i}) {
+			t.Fatalf("failed to enqueue for %d", i)
+		}
+	}
+	if !q.TryEnqueue(nil) {
+		t.Fatal("failed to enqueue for nil")
+	}
+	for i := range 10 {
+		if got, ok := q.TryDequeue(); !ok || got.bar != i || got.baz != i {
+			t.Fatalf("%v got %v, want %d", ok, got, i)
+		}
+	}
+	if last, ok := q.TryDequeue(); !ok || last != nil {
+		t.Fatalf("%v got %v, want nil", ok, last)
+	}
+}
+
+func TestMPMCQueueTryEnqueueDequeue(t *testing.T) {
+	q := NewMPMCQueue[int](10)
+	for i := range 10 {
+		if !q.TryEnqueue(i) {
+			t.Fatalf("failed to enqueue for %d", i)
+		}
+	}
+	for i := range 10 {
+		if got, ok := q.TryDequeue(); !ok || got != i {
+			t.Fatalf("got %v, want %d, for status %v", got, i, ok)
+		}
+	}
+}
+
+func TestMPMCQueueTryEnqueueOnFull(t *testing.T) {
+	q := NewMPMCQueue[string](1)
+	if !q.TryEnqueue("foo") {
+		t.Error("failed to enqueue initial item")
+	}
+	if q.TryEnqueue("bar") {
+		t.Error("got success for enqueue on full queue")
+	}
+}
+
+func TestMPMCQueueTryDequeueOnEmpty(t *testing.T) {
+	q := NewMPMCQueue[int](2)
+	if _, ok := q.TryDequeue(); ok {
+		t.Error("got success for enqueue on empty queue")
+	}
+}
+
+// Test that capacity is rounded up to the next power of 2.
+func TestMPMCQueueCapacityRounding(t *testing.T) {
+	tests := []struct {
+		requestedCapacity int
+		expectedCapacity  int
+	}{
+		{1, 1},
+		{2, 2},
+		{3, 4},
+		{4, 4},
+		{5, 8},
+		{10, 16},
+		{15, 16},
+		{16, 16},
+		{17, 32},
+	}
+
+	for _, tt := range tests {
+		q := NewMPMCQueue[int](tt.requestedCapacity)
+		// Try to enqueue exactly the expected (rounded) capacity of items
+		for i := 0; i < tt.expectedCapacity; i++ {
+			if !q.TryEnqueue(i) {
+				t.Fatalf("requestedCapacity=%d: failed to enqueue item %d (expected capacity %d)",
+					tt.requestedCapacity, i, tt.expectedCapacity)
+			}
+		}
+		// The queue should now be full, next enqueue should fail
+		if q.TryEnqueue(tt.expectedCapacity) {
+			t.Fatalf("requestedCapacity=%d: queue should be full after %d items but enqueue succeeded",
+				tt.requestedCapacity, tt.expectedCapacity)
+		}
+		// Dequeue all items to verify they were stored correctly
+		for i := 0; i < tt.expectedCapacity; i++ {
+			v, ok := q.TryDequeue()
+			if !ok {
+				t.Fatalf("requestedCapacity=%d: failed to dequeue item %d", tt.requestedCapacity, i)
+			}
+			if v != i {
+				t.Fatalf("requestedCapacity=%d: got %d, want %d", tt.requestedCapacity, v, i)
+			}
+		}
+	}
+}
+
+// Test boundary condition: for capacity N, nextPow2(N) items
+// should succeed, but nextPow2(N)+1 should fail.
+func TestMPMCQueueBoundary(t *testing.T) {
+	testCapacities := []int{3, 5, 7, 10, 15, 17}
+	expectedRounded := map[int]int{3: 4, 5: 8, 7: 8, 10: 16, 15: 16, 17: 32}
+
+	for _, capacity := range testCapacities {
+		q := NewMPMCQueue[int](capacity)
+		rounded := expectedRounded[capacity]
+
+		// Enqueue exactly rounded capacity items
+		for i := 0; i < rounded; i++ {
+			if !q.TryEnqueue(i) {
+				t.Fatalf("capacity=%d (rounded to %d): failed to enqueue item %d",
+					capacity, rounded, i)
+			}
+		}
+
+		// Next enqueue should fail (queue is full)
+		if q.TryEnqueue(rounded) {
+			t.Fatalf("capacity=%d (rounded to %d): enqueue of item %d should have failed (queue is full)",
+				capacity, rounded, rounded)
+		}
+
+		// Dequeue one item - should succeed
+		v, ok := q.TryDequeue()
+		if !ok || v != 0 {
+			t.Fatalf("capacity=%d (rounded to %d): failed to dequeue from full queue", capacity, rounded)
+		}
+
+		// Now we should be able to enqueue one more item
+		if !q.TryEnqueue(rounded) {
+			t.Fatalf("capacity=%d (rounded to %d): failed to enqueue after dequeue", capacity, rounded)
+		}
+	}
+}
+
+func hammerMPMCQueueNonBlockingCalls(t *testing.T, gomaxprocs, numOps, numThreads int) {
+	runtime.GOMAXPROCS(gomaxprocs)
+	q := NewMPMCQueue[int](numThreads)
+	startwg := sync.WaitGroup{}
+	startwg.Add(1)
+	csum := make(chan int, numThreads)
+	// Start producers.
+	for i := range numThreads {
+		go func(n int) {
+			startwg.Wait()
+			for j := n; j < numOps; j += numThreads {
+				for !q.TryEnqueue(j) {
+					// busy spin until success
+				}
+			}
+		}(i)
+	}
+	// Start consumers.
+	for i := range numThreads {
+		go func(n int) {
+			startwg.Wait()
+			sum := 0
+			for j := n; j < numOps; j += numThreads {
+				var (
+					item int
+					ok   bool
+				)
+				for {
+					// busy spin until success
+					if item, ok = q.TryDequeue(); ok {
+						sum += item
+						break
+					}
+				}
+			}
+			csum <- sum
+		}(i)
+	}
+	startwg.Done()
+	// Wait for all the sums from consumers.
+	sum := 0
+	for range numThreads {
+		s := <-csum
+		sum += s
+	}
+	// Assert the total sum.
+	expectedSum := numOps * (numOps - 1) / 2
+	if sum != expectedSum {
+		t.Fatalf("sums don't match for %d num ops, %d num threads: got %d, want %d",
+			numOps, numThreads, sum, expectedSum)
+	}
+}
+
+func TestMPMCQueueNonBlockingCalls(t *testing.T) {
+	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(-1))
+	n := 10
+	if testing.Short() {
+		n = 1
+	}
+	hammerMPMCQueueNonBlockingCalls(t, 1, n, n)
+	hammerMPMCQueueNonBlockingCalls(t, 2, 10*n, 2*n)
+	hammerMPMCQueueNonBlockingCalls(t, 4, 100*n, 4*n)
+}
+
+func benchmarkMPMCQueue(b *testing.B, queueSize, localWork int) {
+	callsPerSched := queueSize
+	procs := runtime.GOMAXPROCS(-1) / 2
+	if procs == 0 {
+		procs = 1
+	}
+	N := int32(b.N / callsPerSched)
+	c := make(chan bool, 2*procs)
+	q := NewMPMCQueue[int](queueSize)
+	for p := 0; p < procs; p++ {
+		go func() {
+			foo := 0
+			for atomic.AddInt32(&N, -1) >= 0 {
+				for range callsPerSched {
+					for range localWork {
+						foo *= 2
+						foo /= 2
+					}
+					for !q.TryEnqueue(1) {
+						runtime.Gosched()
+					}
+				}
+			}
+			for !q.TryEnqueue(0) {
+				runtime.Gosched()
+			}
+			c <- foo == 42
+		}()
+		go func() {
+			foo := 0
+			for {
+				var (
+					v  int
+					ok bool
+				)
+				for {
+					if v, ok = q.TryDequeue(); !ok {
+						runtime.Gosched()
+					} else {
+						break
+					}
+				}
+				if v == 0 {
+					break
+				}
+				for range localWork {
+					foo *= 2
+					foo /= 2
+				}
+			}
+			c <- foo == 42
+		}()
+	}
+	for p := 0; p < procs; p++ {
+		<-c
+		<-c
+	}
+}
+
+func BenchmarkMPMCQueue(b *testing.B) {
+	benchmarkMPMCQueue(b, 1000, 0)
+}
+
+func BenchmarkMPMCQueueWork100(b *testing.B) {
+	benchmarkMPMCQueue(b, 1000, 100)
+}

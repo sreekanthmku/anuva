@@ -1,0 +1,45 @@
+# macOS local-dev only.
+#
+# LiveKit Egress has no native macOS build — it needs GStreamer, Chrome and Xvfb, and is
+# shipped as a Linux container. On a production Linux server the native binary runs via
+# scripts/start.mjs and this file is not used.
+#
+# Redis lives here too, because the native redis.conf binds 127.0.0.1 and the egress
+# container cannot reach that. It is published on 6380 to stay out of the way of a
+# Homebrew redis service on the default 6379, so livekit-server has to be pointed at it:
+#
+#   docker compose -f docker-compose.egress.yml up
+#   livekit-server --config livekit.yaml --redis-host 127.0.0.1:6380
+#
+# Egress and livekit-server must share one redis — that is how egress receives jobs.
+#
+# Egress reaches the SFU over the LAN IP that livekit-server advertises as its nodeIP,
+# so signaling via host.docker.internal is enough — no IP needs hardcoding here.
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save "" --appendonly no
+    ports:
+      - '127.0.0.1:6380:6379'
+
+  egress:
+    image: livekit/egress:latest
+    depends_on:
+      - redis
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    # Recordings land in apps/livekit/consultation-recordings on the host. The API must
+    # write its filepaths under the same absolute path the container sees, so set
+    # LIVEKIT_RECORDING_FILE_PREFIX=/out in .env while using this compose file.
+    volumes:
+      - ./consultation-recordings:/out
+    environment:
+      EGRESS_CONFIG_BODY: |
+        api_key: devkey
+        api_secret: devsecret
+        ws_url: ws://host.docker.internal:7880
+        insecure: true
+        log_level: debug
+        redis:
+          address: redis:6379

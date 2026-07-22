@@ -1,0 +1,13 @@
+{
+  "name": "@anuva/livekit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/start.mjs",
+    "start:redis": "redis-server redis.conf",
+    "start:server": "livekit-server --config livekit.yaml",
+    "start:egress": "egress --config egress.yaml",
+    "check": "node scripts/check.mjs"
+  }
+}

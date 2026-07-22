@@ -28,6 +28,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3001
 
+# ffmpeg mixes the two per-speaker consultation recordings into a combined track.
+# Without it every mixdown fails; the separate recordings still work.
+RUN apk add --no-cache ffmpeg
+
 # For Coolify pre/post-deploy: prisma migrate deploy
 RUN npm install -g prisma@6.19.3
 

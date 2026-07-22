@@ -1,0 +1,88 @@
+# Production call stack: LiveKit SFU + Egress + Redis, for a single VPS running Coolify.
+#
+# Deploy in Coolify as a "Docker Compose" resource, separate from the API.
+# The API stays its own resource, built from the repo-root Dockerfile.
+#
+# Ports to open in the OVH firewall:
+#   7880/tcp   signaling  (put behind Coolify's proxy for TLS -> wss://)
+#   7881/tcp   WebRTC over TCP, fallback for restrictive networks
+#   7882/udp   WebRTC media -- ALL of it, thanks to single-port UDP mux
+#
+# Single-port mux (rtc.udp_port) is what keeps this simple: the usual 50000-60000 range
+# would mean thousands of published ports, which Docker handles badly. One UDP port carries
+# every participant instead.
+#
+# Set these in the Coolify environment for THIS resource:
+#   LIVEKIT_API_KEY, LIVEKIT_API_SECRET   generate with: livekit-server generate-keys
+#   LIVEKIT_NODE_IP                       the VPS public IPv4
+#   API_WEBHOOK_URL                       https://api.<domain>/livekit/webhook
+#   RECORDINGS_HOST_DIR                   host path for recordings, e.g. /data/anuva/recordings
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save "" --appendonly no
+    # Never published. Only LiveKit and Egress use it, over the internal compose network.
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - '7880:7880'
+      - '7881:7881'
+      - '7882:7882/udp'
+    environment:
+      # node_ip must be the public IPv4. A container cannot discover it, and clients are
+      # handed this address to send media to -- get it wrong and calls connect but stay silent.
+      LIVEKIT_CONFIG: |
+        port: 7880
+        log_level: info
+        redis:
+          address: redis:6379
+        rtc:
+          tcp_port: 7881
+          udp_port: 7882
+          use_external_ip: false
+          node_ip: ${LIVEKIT_NODE_IP}
+        keys:
+          ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+        room:
+          empty_timeout: 600
+          departure_timeout: 120
+          max_participants: 2
+        webhook:
+          api_key: ${LIVEKIT_API_KEY}
+          urls:
+            - ${API_WEBHOOK_URL}
+
+  egress:
+    image: livekit/egress:latest
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    # Egress needs elevated privileges for its media pipeline.
+    cap_add:
+      - SYS_ADMIN
+    environment:
+      EGRESS_CONFIG_BODY: |
+        api_key: ${LIVEKIT_API_KEY}
+        api_secret: ${LIVEKIT_API_SECRET}
+        ws_url: ws://livekit:7880
+        insecure: true
+        log_level: info
+        redis:
+          address: redis:6379
+    # Recordings land on the host so the API container can read them for the ffmpeg mixdown.
+    # The API must mount this same host directory (see RECORDING_LOCAL_DIR).
+    volumes:
+      - ${RECORDINGS_HOST_DIR}:/out

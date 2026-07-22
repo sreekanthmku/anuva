@@ -15,6 +15,7 @@ import CareDirectionRoute from '../features/core/CareDirectionRoute';
 import LibraryRoute from '../features/core/LibraryRoute';
 import AnonymousQARoute from '../features/core/AnonymousQARoute';
 import ConsultationBookingRoute from '../features/core/ConsultationBookingRoute';
+import ConsultationCallRoute from '../features/core/ConsultationCallRoute';
 import ProfileRoute from '../features/core/ProfileRoute';
 import LoginRoute from '../features/auth/LoginRoute';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
@@ -135,6 +136,14 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <ConsultationBookingRoute />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/consultations/:id/call"
+          element={
+            <ProtectedRoute>
+              <ConsultationCallRoute />
             </ProtectedRoute>
           }
         />

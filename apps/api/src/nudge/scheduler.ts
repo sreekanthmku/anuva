@@ -56,7 +56,7 @@ export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<D
         continue;
       }
       await sendPushToAllTokens(
-        u.fcmTokens.map((t) => t.token),
+        u.fcmTokens.map((t: { token: string }) => t.token),
         { title: dispatch.bundleTitle, body: dispatch.cards[0]!.question },
         { url: `/home?nudge=${slot}`, slot },
       );
