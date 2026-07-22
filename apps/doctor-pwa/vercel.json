@@ -4,8 +4,10 @@
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm turbo run build --filter=@anuva/doctor-pwa",
   "outputDirectory": "dist",
-  "env": {
-    "VITE_API_URL": "https://api.anuvawellness.com"
+  "build": {
+    "env": {
+      "VITE_API_URL": "https://api.anuvawellness.com"
+    }
   },
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
