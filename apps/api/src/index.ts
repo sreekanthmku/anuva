@@ -44,8 +44,13 @@ import {
   createConsultationBookingBodySchema,
   createConsultationSlotsBodySchema,
   createConsultationSlotsResponseSchema,
+  cancelConsultationResponseSchema,
   deleteConsultationSlotParamsSchema,
   deleteConsultationSlotResponseSchema,
+  myConsultationsResponseSchema,
+  myConsultationSchema,
+  rescheduleConsultationBodySchema,
+  rescheduleConsultationResponseSchema,
   logoutResponseSchema,
   registerFcmBodySchema,
   registerFcmResponseSchema,
@@ -81,6 +86,9 @@ import {
   submitDetailedAssessmentBodySchema,
   detailedAssessmentStateResponseSchema,
   detailedAssessmentQuestionKeys,
+  anuChatBodySchema,
+  anuChatResponseSchema,
+  anuChatHistoryResponseSchema,
   type AuthUser,
   type ConsultationCallState,
 } from '@anuva/shared';
@@ -99,6 +107,9 @@ import {
 } from './nudge/engine.js';
 import { runNudgeSelfTest } from './nudge/selfTest.js';
 import { randomQuickLogMessage } from './quickLogMessages.js';
+import { answer as anuAnswer } from './anu/engine.js';
+import { isAnuChatConfigured } from './anu/openai.js';
+import { loadCache, cacheStats } from './anu/cache.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -1354,6 +1365,290 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+// ─────────────────────────────────────────────
+// Patient's own bookings
+// ─────────────────────────────────────────────
+
+type MyConsultationRow = {
+  id: string;
+  scheduledAt: Date;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  isFree: boolean;
+  specialist: { key: string; name: string; role: string | null; imageUrl: string | null };
+  slot: { endsAt: Date } | null;
+  call:
+    | {
+        status: 'waiting' | 'active' | 'ended' | 'failed';
+        recordings: { participantRole: string; status: string; durationSeconds: number | null }[];
+      }
+    | null;
+};
+
+/**
+ * A booking can only be changed while it is still confirmed, still in the future, and the call
+ * has not started. Once the doctor opens the room the appointment is effectively underway, so
+ * letting the patient move or cancel it would strand the doctor in a live call.
+ */
+function isConsultationMutable(row: MyConsultationRow, now: Date): boolean {
+  if (row.status !== 'confirmed' && row.status !== 'pending') {
+    return false;
+  }
+  if (row.scheduledAt <= now) {
+    return false;
+  }
+  return row.call === null || row.call.status === 'waiting';
+}
+
+function serializeMyConsultation(row: MyConsultationRow, now: Date) {
+  // Only the combined track is offered to the patient. The per-speaker files exist for
+  // transcription, and handing them out separately would expose more than the consultation.
+  const mixed = row.call?.recordings.find((r) => r.participantRole === 'mixed') ?? null;
+  const mutable = isConsultationMutable(row, now);
+  const joinWindowOpen = row.scheduledAt > new Date(now.getTime() - 2 * 60 * 60 * 1000);
+
+  return myConsultationSchema.parse({
+    consultationId: row.id,
+    specialistKey: row.specialist.key,
+    specialistName: row.specialist.name,
+    specialistRole: row.specialist.role,
+    specialistImageUrl: row.specialist.imageUrl,
+    scheduledAt: row.scheduledAt.toISOString(),
+    endsAt: row.slot?.endsAt.toISOString() ?? null,
+    status: row.status,
+    isFree: row.isFree,
+    callStatus: row.call?.status ?? null,
+    canCancel: mutable,
+    canReschedule: mutable,
+    canJoin:
+      row.status === 'confirmed' &&
+      joinWindowOpen &&
+      (row.call?.status === 'waiting' || row.call?.status === 'active'),
+    recordingAvailable: mixed?.status === 'ready',
+    recordingStatus: (mixed?.status as never) ?? null,
+    recordingDurationSeconds: mixed?.durationSeconds ?? null,
+  });
+}
+
+const MY_CONSULTATION_INCLUDE = {
+  specialist: { select: { key: true, name: true, role: true, imageUrl: true } },
+  slot: { select: { endsAt: true } },
+  call: {
+    select: {
+      status: true,
+      recordings: {
+        select: { participantRole: true, status: true, durationSeconds: true },
+      },
+    },
+  },
+} as const;
+
+app.get('/consultations/mine', async (req, res, next) => {
+  try {
+    await readyBookingCatalog();
+    const user = await requireCurrentUser(req);
+    const now = new Date();
+
+    const rows = (await prisma.consultation.findMany({
+      where: { userId: user.id },
+      include: MY_CONSULTATION_INCLUDE,
+      orderBy: { scheduledAt: 'desc' },
+    })) as MyConsultationRow[];
+
+    // A cancelled booking is history no matter when it was scheduled — showing it under
+    // "upcoming" would imply it is still going to happen.
+    const isPast = (row: MyConsultationRow) =>
+      row.scheduledAt <= now || row.status === 'completed' || row.status === 'cancelled';
+
+    res.json(
+      myConsultationsResponseSchema.parse({
+        upcoming: rows
+          .filter((row) => !isPast(row))
+          .sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime())
+          .map((row) => serializeMyConsultation(row, now)),
+        past: rows.filter(isPast).map((row) => serializeMyConsultation(row, now)),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/consultations/:id/cancel', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const now = new Date();
+
+    const existing = (await prisma.consultation.findFirst({
+      where: { id: req.params.id, userId: user.id },
+      include: MY_CONSULTATION_INCLUDE,
+    })) as MyConsultationRow | null;
+
+    if (!existing) {
+      throw new HttpError(404, 'Consultation not found.');
+    }
+    if (!isConsultationMutable(existing, now)) {
+      throw new HttpError(400, 'This consultation can no longer be cancelled.');
+    }
+
+    const updated = (await prisma.$transaction(async (tx: any) => {
+      // Releasing the slot is the point of cancelling — it has to go back on sale.
+      await tx.consultationSlot.updateMany({
+        where: { consultationId: existing.id },
+        data: { isBooked: false, consultationId: null },
+      });
+
+      return tx.consultation.update({
+        where: { id: existing.id },
+        data: { status: 'cancelled' },
+        include: MY_CONSULTATION_INCLUDE,
+      });
+    })) as MyConsultationRow;
+
+    res.json(
+      cancelConsultationResponseSchema.parse({
+        ok: true,
+        consultation: serializeMyConsultation(updated, now),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Rescheduling and changing doctor are the same operation: the patient picks a different slot,
+ * and the slot carries its own specialist.
+ */
+app.post('/consultations/:id/reschedule', async (req, res, next) => {
+  try {
+    await readyBookingCatalog();
+    const user = await requireCurrentUser(req);
+    const parsed = rescheduleConsultationBodySchema.parse(req.body);
+    const now = new Date();
+
+    const existing = (await prisma.consultation.findFirst({
+      where: { id: req.params.id, userId: user.id },
+      include: MY_CONSULTATION_INCLUDE,
+    })) as MyConsultationRow | null;
+
+    if (!existing) {
+      throw new HttpError(404, 'Consultation not found.');
+    }
+    if (!isConsultationMutable(existing, now)) {
+      throw new HttpError(400, 'This consultation can no longer be rescheduled.');
+    }
+
+    const updated = (await prisma.$transaction(async (tx: any) => {
+      const slot = await tx.consultationSlot.findUnique({
+        where: { id: parsed.slotId },
+        include: { specialist: true },
+      });
+
+      if (!slot) {
+        throw new HttpError(404, 'Slot not found.');
+      }
+      if (slot.consultationId === existing.id) {
+        throw new HttpError(400, 'This is already your booked slot.');
+      }
+      if (!isBookableDoctorKey(slot.specialist.key)) {
+        throw new HttpError(400, 'Booking is not available for this specialist yet.');
+      }
+      if (slot.isBooked || slot.consultationId) {
+        throw new HttpError(409, 'This slot has already been booked.');
+      }
+      if (slot.startsAt <= now) {
+        throw new HttpError(400, 'This slot is no longer available.');
+      }
+
+      // Free the old slot first so it becomes bookable again.
+      await tx.consultationSlot.updateMany({
+        where: { consultationId: existing.id },
+        data: { isBooked: false, consultationId: null },
+      });
+
+      // Guarded update: if another patient claimed this slot in the meantime the count is 0
+      // and the whole transaction rolls back, leaving the original booking untouched.
+      const claimed = await tx.consultationSlot.updateMany({
+        where: { id: slot.id, isBooked: false, consultationId: null },
+        data: { isBooked: true, consultationId: existing.id },
+      });
+
+      if (claimed.count !== 1) {
+        throw new HttpError(409, 'This slot has already been booked.');
+      }
+
+      return tx.consultation.update({
+        where: { id: existing.id },
+        data: {
+          specialistId: slot.specialistId,
+          scheduledAt: slot.startsAt,
+          status: 'confirmed',
+        },
+        include: MY_CONSULTATION_INCLUDE,
+      });
+    })) as MyConsultationRow;
+
+    res.json(
+      rescheduleConsultationResponseSchema.parse({
+        ok: true,
+        consultation: serializeMyConsultation(updated, now),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Streams the combined consultation audio to the patient who owns it.
+ *
+ * The file is served through this route rather than as a static path so ownership is checked on
+ * every request — these are medical recordings, and storagePath is never exposed to clients.
+ * res.sendFile handles Range requests, which is what lets the browser seek.
+ */
+app.get('/consultations/:id/recording', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+
+    const consultation = await prisma.consultation.findFirst({
+      where: { id: req.params.id, userId: user.id },
+      select: { id: true, call: { select: { recordings: true } } },
+    });
+
+    if (!consultation) {
+      throw new HttpError(404, 'Consultation not found.');
+    }
+
+    const mixed = consultation.call?.recordings.find(
+      (r: { participantRole: string }) => r.participantRole === 'mixed',
+    );
+
+    if (!mixed || mixed.status !== 'ready' || !mixed.storagePath) {
+      throw new HttpError(404, 'No recording is available for this consultation.');
+    }
+
+    const localPath = localRecordingPath(mixed.storagePath);
+    if (!localPath) {
+      throw new HttpError(503, 'Recording storage is not configured on this server.');
+    }
+
+    try {
+      await fs.access(localPath);
+    } catch {
+      throw new HttpError(404, 'The recording file is missing from storage.');
+    }
+
+    res.type('audio/ogg');
+    res.sendFile(localPath, (error?: Error) => {
+      if (error && !res.headersSent) {
+        next(error);
+      }
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.get('/consultations/specialists', async (_req, res, next) => {
   try {
     await readyBookingCatalog();
@@ -2429,6 +2724,63 @@ app.post('/nudge/dispatch', async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────
+// ANU chat
+// ─────────────────────────────────────────────
+
+// Ask ANU a question. Red-flag messages are answered from clinician-authored
+// safety text without the model being called at all.
+app.post('/anu/chat', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    if (!isAnuChatConfigured()) {
+      throw new HttpError(503, 'ANU chat is not configured.');
+    }
+    const { message } = anuChatBodySchema.parse(req.body);
+    const result = await anuAnswer(user.id, message);
+    res.json(anuChatResponseSchema.parse(result));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Past exchanges, oldest first, so the client can render the thread as-is.
+app.get('/anu/chat', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const turns = await prisma.anuChatTurn.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        userMessage: true,
+        reply: true,
+        source: true,
+        createdAt: true,
+      },
+    });
+
+    res.json(
+      anuChatHistoryResponseSchema.parse({
+        turns: turns.reverse().map((turn) => ({
+          id: turn.id,
+          userMessage: turn.userMessage,
+          reply: turn.reply,
+          source: turn.source,
+          createdAt: turn.createdAt.toISOString(),
+        })),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/anu/cache-stats', (_req, res) => {
+  res.json(cacheStats());
+});
+
+// ─────────────────────────────────────────────
 // Cycle tracking
 // ─────────────────────────────────────────────
 
@@ -2870,6 +3222,19 @@ async function startServer() {
   await readyBookingCatalog();
 
   startNudgeScheduler();
+
+  // Warm the ANU semantic cache so a restart does not send every question
+  // straight to the model until the index refills.
+  if (isAnuChatConfigured()) {
+    try {
+      const size = await loadCache();
+      console.log(`ANU response cache loaded (${size} entries)`);
+    } catch (e) {
+      console.error('[anu] failed to load response cache', e);
+    }
+  } else {
+    console.warn('OPENAI_API_KEY is not set — POST /anu/chat will return 503.');
+  }
 
   app.listen(port, () => {
     console.log(`API listening on http://localhost:${port}`);

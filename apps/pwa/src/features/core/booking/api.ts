@@ -1,4 +1,5 @@
 import type {
+  CancelConsultationResponse,
   ConsultationBookingResponse,
   ConsultationSpecialistsResponse,
   ConsultationSlotsResponse,
@@ -6,6 +7,8 @@ import type {
   CreateConsultationSlotsBody,
   CreateConsultationSlotsResponse,
   DeleteConsultationSlotResponse,
+  MyConsultationsResponse,
+  RescheduleConsultationResponse,
 } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
 
@@ -34,6 +37,52 @@ export async function bookConsultation(
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+export async function fetchMyConsultations(): Promise<MyConsultationsResponse> {
+  return apiFetch<MyConsultationsResponse>('/api/consultations/mine');
+}
+
+export async function cancelConsultation(
+  consultationId: string
+): Promise<CancelConsultationResponse> {
+  return apiFetch<CancelConsultationResponse>(`/api/consultations/${consultationId}/cancel`, {
+    method: 'POST',
+  });
+}
+
+/** Moving to a slot owned by another specialist is also how the doctor is changed. */
+export async function rescheduleConsultation(
+  consultationId: string,
+  slotId: string
+): Promise<RescheduleConsultationResponse> {
+  return apiFetch<RescheduleConsultationResponse>(
+    `/api/consultations/${consultationId}/reschedule`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ slotId }),
+    }
+  );
+}
+
+/**
+ * The recording is streamed from an authenticated endpoint, so it cannot be handed to an
+ * <audio src> directly — the tag would not send the session cookie cross-origin. Fetching it as
+ * a blob keeps credentials attached.
+ */
+export async function fetchConsultationRecordingUrl(consultationId: string): Promise<string> {
+  const base = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
+  const url = `${base}/consultations/${consultationId}/recording`;
+
+  const response = await fetch(base ? url : `/api/consultations/${consultationId}/recording`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Recording is not available yet.');
+  }
+
+  return URL.createObjectURL(await response.blob());
 }
 
 export async function createConsultationSlots(

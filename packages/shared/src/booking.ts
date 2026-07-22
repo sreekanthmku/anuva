@@ -207,3 +207,61 @@ export const deleteConsultationSlotResponseSchema = z.object({
 });
 
 export type DeleteConsultationSlotResponse = z.infer<typeof deleteConsultationSlotResponseSchema>;
+
+// ─────────────────────────────────────────────
+// Patient's own bookings
+// ─────────────────────────────────────────────
+
+/**
+ * A booking as the patient sees it. `canCancel` / `canReschedule` are decided server-side —
+ * the rules depend on call state and slot availability, which the client cannot evaluate.
+ */
+export const myConsultationSchema = z.object({
+  consultationId: z.string(),
+  specialistKey: z.string(),
+  specialistName: z.string(),
+  specialistRole: z.string().nullable(),
+  specialistImageUrl: z.string().nullable(),
+  scheduledAt: z.string().datetime(),
+  endsAt: z.string().datetime().nullable(),
+  status: consultationStatusSchema,
+  isFree: z.boolean(),
+  callStatus: consultationCallStatusSchema.nullable(),
+  canCancel: z.boolean(),
+  canReschedule: z.boolean(),
+  canJoin: z.boolean(),
+  /** True only when a combined recording exists and is playable. */
+  recordingAvailable: z.boolean(),
+  recordingStatus: consultationRecordingStatusSchema.nullable(),
+  recordingDurationSeconds: z.number().int().nonnegative().nullable(),
+});
+
+export type MyConsultation = z.infer<typeof myConsultationSchema>;
+
+export const myConsultationsResponseSchema = z.object({
+  upcoming: z.array(myConsultationSchema),
+  past: z.array(myConsultationSchema),
+});
+
+export type MyConsultationsResponse = z.infer<typeof myConsultationsResponseSchema>;
+
+export const cancelConsultationResponseSchema = z.object({
+  ok: z.literal(true),
+  consultation: myConsultationSchema,
+});
+
+export type CancelConsultationResponse = z.infer<typeof cancelConsultationResponseSchema>;
+
+/** Moving to a slot belonging to another specialist is how a doctor change is expressed. */
+export const rescheduleConsultationBodySchema = z.object({
+  slotId: z.string().min(1),
+});
+
+export type RescheduleConsultationBody = z.infer<typeof rescheduleConsultationBodySchema>;
+
+export const rescheduleConsultationResponseSchema = z.object({
+  ok: z.literal(true),
+  consultation: myConsultationSchema,
+});
+
+export type RescheduleConsultationResponse = z.infer<typeof rescheduleConsultationResponseSchema>;

@@ -10,7 +10,13 @@ import { Eyebrow } from '../../shared/components/Eyebrow';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 
-const menuRows: { label: string; hint: string; id?: string }[] = [
+const menuRows: { label: string; hint: string; id?: string; to?: string }[] = [
+  {
+    id: 'bookings',
+    label: 'Your consultations',
+    hint: 'Upcoming, past & recordings',
+    to: '/my-bookings',
+  },
   { id: 'notifications', label: 'Notifications', hint: 'Reminders & weekly summary' },
   { label: 'Privacy & data', hint: 'DPDP · export or delete' },
   { label: 'Subscription', hint: 'Plan & billing' },
@@ -144,7 +150,11 @@ export default function ProfileRoute() {
                 <button
                   type="button"
                   onClick={
-                    row.id === 'notifications' ? () => void handleNotificationsRow() : undefined
+                    row.to
+                      ? () => navigate(row.to as string)
+                      : row.id === 'notifications'
+                        ? () => void handleNotificationsRow()
+                        : undefined
                   }
                   className="flex w-full flex-col items-start gap-0.5 px-5 py-4 text-left transition-colors hover:bg-primary-container/60"
                 >

@@ -71,6 +71,11 @@ export {
   createConsultationSlotsResponseSchema,
   deleteConsultationSlotParamsSchema,
   deleteConsultationSlotResponseSchema,
+  myConsultationSchema,
+  myConsultationsResponseSchema,
+  cancelConsultationResponseSchema,
+  rescheduleConsultationBodySchema,
+  rescheduleConsultationResponseSchema,
   type ConsultationStatus,
   type ConsultationSpecialist,
   type ConsultationSpecialistsResponse,
@@ -95,6 +100,11 @@ export {
   type CreateConsultationSlotsResponse,
   type DeleteConsultationSlotParams,
   type DeleteConsultationSlotResponse,
+  type MyConsultation,
+  type MyConsultationsResponse,
+  type CancelConsultationResponse,
+  type RescheduleConsultationBody,
+  type RescheduleConsultationResponse,
 } from './booking.js';
 
 export {
@@ -197,3 +207,16 @@ export {
   type SubmitDetailedAssessmentBody,
   type DetailedAssessmentStateResponse,
 } from './detailedAssessment.js';
+
+export {
+  anuTurnSourceSchema,
+  anuChatBodySchema,
+  anuChatResponseSchema,
+  anuChatHistoryTurnSchema,
+  anuChatHistoryResponseSchema,
+  type AnuTurnSource,
+  type AnuChatBody,
+  type AnuChatResponse,
+  type AnuChatHistoryTurn,
+  type AnuChatHistoryResponse,
+} from './anuChat.js';
