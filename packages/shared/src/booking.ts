@@ -87,6 +87,31 @@ export const consultationBookingResponseSchema = z.object({
 
 export type ConsultationBookingResponse = z.infer<typeof consultationBookingResponseSchema>;
 
+/**
+ * `doctor` sees only their own consultations; `admin` is the shared ops key and sees every
+ * booking, so the portal has to label which of the two it is looking at.
+ */
+export const doctorScopeSchema = z.enum(['admin', 'doctor']);
+
+export type DoctorScope = z.infer<typeof doctorScopeSchema>;
+
+export const doctorIdentityResponseSchema = z.object({
+  scope: doctorScopeSchema,
+  specialistKey: z.string().nullable(),
+  specialistName: z.string().nullable(),
+});
+
+export type DoctorIdentityResponse = z.infer<typeof doctorIdentityResponseSchema>;
+
+/** The plaintext key is returned once, at rotation time, and never stored server-side. */
+export const doctorAccessKeyRotateResponseSchema = z.object({
+  specialistKey: z.string(),
+  specialistName: z.string(),
+  accessKey: z.string(),
+});
+
+export type DoctorAccessKeyRotateResponse = z.infer<typeof doctorAccessKeyRotateResponseSchema>;
+
 export const doctorConsultationBookingSchema = z.object({
   consultationId: z.string(),
   specialistKey: z.string(),

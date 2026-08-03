@@ -1,42 +1,8 @@
+import { useNavigate } from 'react-router-dom';
+import type { LibraryArticleSummary } from '@anuva/shared';
 import { BottomNav } from './components/BottomNav';
-
-const articles = [
-  {
-    cat: 'Nutrition',
-    title: 'Phytoestrogens: the Indian kitchen edition',
-    time: '6 min',
-    glyph: '◇',
-    tone: 'mint' as const,
-  },
-  {
-    cat: 'Movement',
-    title: 'Why strength training matters after 40',
-    time: '8 min',
-    glyph: '◯',
-    tone: 'butter' as const,
-  },
-  {
-    cat: 'Mind',
-    title: 'The rage is real — and it has a name',
-    time: '5 min',
-    glyph: '◆',
-    tone: 'blush' as const,
-  },
-  {
-    cat: 'Clinical',
-    title: 'HRT in India: myths vs. medicine',
-    time: '11 min',
-    glyph: '✦',
-    tone: 'lilac' as const,
-  },
-];
-
-const toneColor: Record<(typeof articles)[number]['tone'], string> = {
-  mint: '#5E3566',
-  butter: '#5A4716',
-  blush: '#C97E92',
-  lilac: '#5B82C4',
-};
+import { useLibraryFeed } from './library/useLibrary';
+import { FRAUNCES, MULISH, TONE_COLOR } from './library/tone';
 
 function Eyebrow({ children, mint = false }: { children: string; mint?: boolean }) {
   return (
@@ -49,171 +15,280 @@ function Eyebrow({ children, mint = false }: { children: string; mint?: boolean 
   );
 }
 
+function FeatureCard({
+  article,
+  onOpen,
+}: {
+  article: LibraryArticleSummary;
+  onOpen: () => void;
+}) {
+  return (
+    <article
+      role="link"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      className="cursor-pointer rounded-[20px] border border-border-default bg-primary-container p-[18px] text-left"
+    >
+      <div
+        className="relative flex h-[130px] items-end overflow-hidden rounded-[20px] border border-border-default"
+        style={{ background: TONE_COLOR[article.tone] }}
+      >
+        <span
+          className="absolute bottom-2.5 left-3 right-3 text-[9.5px] uppercase tracking-[0.12em] text-on-surface/80"
+          style={{ fontFamily: '"Mulish", sans-serif' }}
+        >
+          {article.categoryLabel}
+        </span>
+      </div>
+      <div className="mt-3.5">
+        <Eyebrow mint>{`This week's feature · ${article.readMinutes} min`}</Eyebrow>
+        <h2 className="font-display mb-2 text-[22px] leading-[1.2] text-on-surface">
+          {article.title}
+        </h2>
+        <p
+          className="mb-3.5 text-[12px] leading-[1.5] text-on-surface-variant"
+          style={{ fontFamily: MULISH }}
+        >
+          {article.dek}
+        </p>
+        <div className="flex items-center justify-between border-t border-border-default pt-3">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded-full border border-border-default bg-surface-container-high" />
+            <span className="text-[11px] text-on-surface" style={{ fontFamily: MULISH }}>
+              {article.author.name}
+            </span>
+          </div>
+          <span className="text-[12px] font-medium text-primary" style={{ fontFamily: MULISH }}>
+            Read →
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ArticleRow({ article, onOpen }: { article: LibraryArticleSummary; onOpen: () => void }) {
+  const color = TONE_COLOR[article.tone];
+
+  return (
+    <article
+      role="link"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-border-default bg-surface-raised p-3"
+    >
+      <div
+        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-border-default bg-surface-container-low"
+        style={{ fontFamily: FRAUNCES, fontSize: 22, color }}
+      >
+        {article.glyph}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div
+          className="mb-1 text-[9.5px] uppercase tracking-[0.15em]"
+          style={{ fontFamily: '"Mulish", sans-serif', color }}
+        >
+          {article.categoryLabel}
+        </div>
+        <h3
+          className="mb-0.5 text-[15px] font-medium leading-tight text-on-surface"
+          style={{ fontFamily: FRAUNCES }}
+        >
+          {article.title}
+        </h3>
+        <div className="text-[11px] text-outline" style={{ fontFamily: MULISH }}>
+          {article.readMinutes} min read
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function LibraryRoute() {
+  const navigate = useNavigate();
+  const { state, error, feed, category, search, setCategory, setSearch, reload } =
+    useLibraryFeed();
+
+  const open = (slug: string) => navigate(`/library/${slug}`);
+  const filtering = Boolean(category || search.trim());
+
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface px-3 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
         <Eyebrow mint>Library</Eyebrow>
         <h1 className="font-display text-[32px] leading-[1.05] text-on-surface">
           Know your{' '}
-          <em
-            className="not-italic font-light text-primary"
-            style={{ fontFamily: '"Fraunces", sans-serif' }}
-          >
+          <em className="not-italic font-light text-primary" style={{ fontFamily: FRAUNCES }}>
             body
           </em>
           .
         </h1>
-        <p
-          className="mt-2 text-[12px] text-on-surface-variant"
-          style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-        >
+        <p className="mt-2 text-[12px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
           Expert-written. Translated for real life. Always free.
         </p>
       </header>
 
-      <section className="px-3">
-        <article
-          className="rounded-[20px] border border-border-default bg-primary-container p-[18px]"
-          style={{}}
-        >
-          <div
-            className="relative flex h-[130px] items-end overflow-hidden rounded-[20px] border border-border-default"
-            style={{
-              background: '#5E3566',
-            }}
-          >
-            <span
-              className="absolute bottom-2.5 left-3 right-3 text-[9.5px] uppercase tracking-[0.12em] text-on-surface/80"
-              style={{ fontFamily: '"Mulish", sans-serif' }}
+      <section className="px-3 pb-3">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search articles"
+          aria-label="Search articles"
+          className="h-11 w-full rounded-full border border-border-default bg-surface-raised px-4 text-[13px] text-on-surface outline-none placeholder:text-outline focus:border-primary/50"
+          style={{ fontFamily: MULISH }}
+        />
+      </section>
+
+      {feed && feed.categories.length > 0 && (
+        <section className="pb-1">
+          <div className="flex gap-2 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              type="button"
+              onClick={() => setCategory(null)}
+              className={`h-9 shrink-0 rounded-full border px-4 text-[12px] ${
+                category === null
+                  ? 'border-primary bg-primary text-on-primary'
+                  : 'border-border-default bg-surface-raised text-on-surface-variant'
+              }`}
+              style={{ fontFamily: MULISH }}
             >
-              editorial · hands holding turmeric
-            </span>
-          </div>
-          <div className="mt-3.5">
-            <Eyebrow mint>This week&apos;s feature · 9 min</Eyebrow>
-            <h2 className="font-display mb-2 text-[22px] leading-[1.2] text-on-surface">
-              The{' '}
-              <em
-                className="not-italic text-primary"
-                style={{ fontFamily: '"Fraunces", sans-serif' }}
-              >
-                forty-something
-              </em>{' '}
-              edit: what your body actually needs.
-            </h2>
-            <p
-              className="mb-3.5 text-[12px] leading-[1.5] text-on-surface-variant"
-              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-            >
-              A quiet revolution in perimenopausal care is rewriting what Indian women eat, sleep,
-              and expect.
-            </p>
-            <div className="flex items-center justify-between border-t border-border-default pt-3">
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-full border border-[rgba(180, 159, 176,0.35)] bg-surface-container-high" />
-                <span
-                  className="text-[11px] text-on-surface"
-                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+              All
+            </button>
+            {feed.categories.map((facet) => {
+              const active = category === facet.key;
+              return (
+                <button
+                  key={facet.key}
+                  type="button"
+                  onClick={() => setCategory(active ? null : facet.key)}
+                  className={`h-9 shrink-0 rounded-full border px-4 text-[12px] ${
+                    active
+                      ? 'border-primary bg-primary text-on-primary'
+                      : 'border-border-default bg-surface-raised text-on-surface-variant'
+                  }`}
+                  style={{ fontFamily: MULISH }}
                 >
-                  Dr. Meera Rao
-                </span>
-              </div>
-              <span
-                className="text-[12px] font-medium text-primary"
-                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-              >
-                Read →
-              </span>
-            </div>
+                  {facet.label} · {facet.count}
+                </button>
+              );
+            })}
           </div>
-        </article>
-      </section>
+        </section>
+      )}
 
-      <section className="px-3 pt-3.5">
-        <div
-          className="flex items-center gap-3.5 rounded-[20px] border p-4"
-          style={{
-            backgroundColor: 'rgba(91, 130, 196, 0.16)',
-            borderColor: 'rgba(91, 130, 196, 0.3)',
-          }}
-        >
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px]"
-            style={{ backgroundColor: '#5B82C4' }}
+      {state === 'loading' && (
+        <section className="flex flex-col gap-2.5 px-3 py-4">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-20 animate-pulse rounded-[20px] border border-border-default bg-surface-container-low"
+            />
+          ))}
+        </section>
+      )}
+
+      {state === 'error' && (
+        <section className="px-3 py-6 text-center">
+          <p className="text-[13px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
+            {error}
+          </p>
+          <button
+            type="button"
+            onClick={reload}
+            className="mt-3 h-11 rounded-full bg-primary px-6 text-[13px] text-on-primary"
+            style={{ fontFamily: MULISH }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#3E2542" aria-hidden="true">
-              <polygon points="8,5 20,12 8,19" />
-            </svg>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div
-              className="mb-1 text-[9.5px] uppercase tracking-[0.15em]"
-              style={{ fontFamily: '"Mulish", sans-serif', color: '#5B82C4' }}
-            >
-              ● Live · May Masterclass
-            </div>
-            <div
-              className="text-base font-medium leading-tight text-on-surface"
-              style={{ fontFamily: '"Fraunces", sans-serif' }}
-            >
-              Sleep as medicine
-            </div>
-            <div
-              className="mt-0.5 text-[11px] text-on-surface-variant"
-              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-            >
-              May 12 · 7:30 PM · Free
-            </div>
-          </div>
-        </div>
-      </section>
+            Try again
+          </button>
+        </section>
+      )}
 
-      <section className="px-3 py-[22px]">
-        <Eyebrow>Recent</Eyebrow>
-        <div className="flex flex-col gap-2.5">
-          {articles.map((a) => {
-            const c = toneColor[a.tone];
-            return (
-              <article
-                key={a.title}
-                className="flex items-center gap-3 rounded-[20px] border border-border-default bg-surface-raised p-3"
+      {state === 'ready' && feed && (
+        <>
+          {feed.feature && (
+            <section className="px-3">
+              <FeatureCard article={feed.feature} onOpen={() => open(feed.feature!.slug)} />
+            </section>
+          )}
+
+          {feed.session && !filtering && (
+            <section className="px-3 pt-3.5">
+              <div
+                className="flex items-center gap-3.5 rounded-[20px] border p-4"
+                style={{
+                  backgroundColor: 'rgba(91, 130, 196, 0.16)',
+                  borderColor: 'rgba(91, 130, 196, 0.3)',
+                }}
               >
                 <div
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-border-default bg-surface-container-low"
-                  style={{
-                    fontFamily: '"Fraunces", sans-serif',
-                    fontSize: 22,
-                    color: c,
-                  }}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px]"
+                  style={{ backgroundColor: '#5B82C4' }}
                 >
-                  {a.glyph}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#3E2542" aria-hidden="true">
+                    <polygon points="8,5 20,12 8,19" />
+                  </svg>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div
                     className="mb-1 text-[9.5px] uppercase tracking-[0.15em]"
-                    style={{ fontFamily: '"Mulish", sans-serif', color: c }}
+                    style={{ fontFamily: '"Mulish", sans-serif', color: '#5B82C4' }}
                   >
-                    {a.cat}
+                    {feed.session.live ? '● ' : ''}
+                    {feed.session.kicker}
                   </div>
-                  <h3
-                    className="mb-0.5 text-[15px] font-medium leading-tight text-on-surface"
-                    style={{ fontFamily: '"Fraunces", sans-serif' }}
-                  >
-                    {a.title}
-                  </h3>
                   <div
-                    className="text-[11px] text-outline"
-                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                    className="text-base font-medium leading-tight text-on-surface"
+                    style={{ fontFamily: FRAUNCES }}
                   >
-                    {a.time} read
+                    {feed.session.title}
+                  </div>
+                  <div
+                    className="mt-0.5 text-[11px] text-on-surface-variant"
+                    style={{ fontFamily: MULISH }}
+                  >
+                    {feed.session.dateLabel}
                   </div>
                 </div>
-              </article>
-            );
-          })}
-        </div>
-      </section>
+              </div>
+            </section>
+          )}
+
+          <section className="px-3 py-[22px]">
+            <Eyebrow>{filtering ? `${feed.articles.length} articles` : 'Recent'}</Eyebrow>
+            {feed.articles.length === 0 ? (
+              <p
+                className="rounded-[20px] border border-border-default bg-surface-raised p-4 text-[12.5px] text-on-surface-variant"
+                style={{ fontFamily: MULISH }}
+              >
+                Nothing here yet. Try another category or search term.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                {feed.articles.map((article) => (
+                  <ArticleRow
+                    key={article.slug}
+                    article={article}
+                    onOpen={() => open(article.slug)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      )}
 
       <BottomNav />
     </main>

@@ -1,0 +1,520 @@
+{
+  "session": {
+    "id": "masterclass-sleep-as-medicine",
+    "kicker": "Live · Monthly masterclass",
+    "title": "Sleep as medicine",
+    "dateLabel": "May 12 · 7:30 PM · Free",
+    "live": true
+  },
+  "categories": [
+    { "key": "nutrition", "label": "Nutrition", "tone": "mint" },
+    { "key": "movement", "label": "Movement", "tone": "butter" },
+    { "key": "mind", "label": "Mind", "tone": "blush" },
+    { "key": "clinical", "label": "Clinical", "tone": "lilac" },
+    { "key": "sleep", "label": "Sleep", "tone": "sand" }
+  ],
+  "articles": [
+    {
+      "slug": "the-forty-something-edit",
+      "category": "clinical",
+      "glyph": "✦",
+      "title": "The forty-something edit: what your body actually needs",
+      "dek": "A quiet revolution in perimenopausal care is rewriting what Indian women eat, sleep, and expect.",
+      "readMinutes": 9,
+      "featured": true,
+      "publishedAt": "2026-07-28",
+      "author": { "name": "Dr. Meera Rao", "credential": "MD, Obstetrics & Gynaecology" },
+      "heroCaption": "editorial · hands holding turmeric",
+      "keyTakeaways": [
+        "Perimenopause usually begins in the early forties and lasts four to eight years.",
+        "Cycle length changing by seven days or more is the single most reliable early marker.",
+        "Symptoms are treatable — the default of waiting it out is a choice, not medical advice."
+      ],
+      "tags": ["perimenopause", "basics", "care plan"],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "For most women in India, perimenopause arrives without an announcement. The periods get closer together, then further apart. Sleep thins out. A temper you did not have last year now surfaces at 4 p.m. And because nobody named the transition, it gets filed under stress, age, or personality."
+        },
+        {
+          "type": "heading",
+          "text": "What is actually happening"
+        },
+        {
+          "type": "paragraph",
+          "text": "Ovarian follicle numbers fall, and oestrogen stops declining smoothly — it swings. Those swings, not the eventual low level, drive most of the symptoms: hot flushes, disturbed sleep, mood volatility, joint aches, brain fog. This is why bloodwork taken on a single day so often reads 'normal' while you feel anything but."
+        },
+        {
+          "type": "callout",
+          "title": "The most useful thing you can track",
+          "text": "Cycle length, not flow. A shift of seven days or more from your own usual pattern, repeated, is the earliest reliable signal of the transition."
+        },
+        {
+          "type": "heading",
+          "text": "The four levers that actually move"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Protein: 1.0–1.2 g per kg body weight per day slows the muscle loss that accelerates after 40.",
+            "Resistance training twice a week, protecting bone density while oestrogen falls.",
+            "Sleep timing held steady within an hour, including weekends — more effective than total hours.",
+            "Naming the symptom: women who track symptoms get to a treatment decision months earlier."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "None of these replace medical care. They change the baseline you bring into a consultation, and they give a clinician something more precise than 'I have not felt like myself.'"
+        },
+        {
+          "type": "quote",
+          "text": "The women who do best are not the ones with the mildest symptoms. They are the ones who stopped treating the symptoms as a character flaw.",
+          "attribution": "Dr. Meera Rao"
+        },
+        {
+          "type": "paragraph",
+          "text": "If your symptoms interfere with work, sleep, or relationships, that is the threshold for a conversation with a clinician — not severity, not age, and certainly not how much your friends are managing to put up with."
+        }
+      ]
+    },
+    {
+      "slug": "phytoestrogens-indian-kitchen",
+      "category": "nutrition",
+      "glyph": "◇",
+      "title": "Phytoestrogens: the Indian kitchen edition",
+      "dek": "Flax, soy, sesame, chana. What the evidence supports, and what it does not.",
+      "readMinutes": 6,
+      "publishedAt": "2026-07-21",
+      "author": { "name": "Anjali Menon", "credential": "RD, Clinical Nutrition" },
+      "heroCaption": "still life · flax, sesame, chana",
+      "keyTakeaways": [
+        "Phytoestrogens are weak plant compounds — they modulate, they do not replace hormones.",
+        "Soy in whole food form has the strongest evidence for hot flush reduction.",
+        "Effects are modest and take 8–12 weeks. Supplements are not better than food."
+      ],
+      "tags": ["nutrition", "hot flushes", "food first"],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Phytoestrogens are plant compounds structurally similar enough to oestrogen to bind its receptors — weakly. That weakness is the point. They nudge; they do not override."
+        },
+        {
+          "type": "heading",
+          "text": "Where they already are in your kitchen"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Soy: tofu, tempeh, soy milk, edamame — the best-studied source, richest in isoflavones.",
+            "Flaxseed: one to two tablespoons ground, not whole; whole seeds pass through undigested.",
+            "Sesame: til, and til-based chutneys and laddoos — a lignan source hiding in plain sight.",
+            "Chana, rajma, masoor: modest isoflavone content, excellent protein and fibre alongside."
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "About the soy and breast cancer question",
+          "text": "Large cohort studies, including in Asian populations with lifelong high soy intake, find no increase in breast cancer risk from dietary soy. If you have an active hormone-sensitive cancer, decide with your oncologist rather than from an article."
+        },
+        {
+          "type": "heading",
+          "text": "What to reasonably expect"
+        },
+        {
+          "type": "paragraph",
+          "text": "Trials of dietary soy show hot flush frequency dropping by roughly a fifth to a quarter over eight to twelve weeks. Real, worth having, and nowhere near what hormone therapy achieves. Treat phytoestrogens as a floor you build, not a treatment you substitute."
+        },
+        {
+          "type": "paragraph",
+          "text": "One practical rule: choose the food over the capsule. Isolated isoflavone supplements are dosed far above dietary levels, with weaker safety data and no better results."
+        }
+      ]
+    },
+    {
+      "slug": "strength-training-after-40",
+      "category": "movement",
+      "glyph": "◯",
+      "title": "Why strength training matters after 40",
+      "dek": "Bone density and muscle mass both fall in the transition. Only one kind of exercise argues back.",
+      "readMinutes": 8,
+      "publishedAt": "2026-07-14",
+      "author": { "name": "Ritu Shah", "credential": "MSc, Exercise Physiology" },
+      "heroCaption": "studio · loaded barbell at rest",
+      "keyTakeaways": [
+        "Bone loss accelerates to 2–3% per year in the years around the final period.",
+        "Two resistance sessions a week is the effective minimum; more is optional.",
+        "Walking protects the heart but does not load bone enough to preserve density."
+      ],
+      "tags": ["movement", "bone health", "strength"],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Oestrogen restrains the cells that break bone down. As it falls, that restraint lifts, and bone loss speeds up to two or three percent a year around the final period — the fastest rate of most women's lives."
+        },
+        {
+          "type": "heading",
+          "text": "Why walking is not enough"
+        },
+        {
+          "type": "paragraph",
+          "text": "Bone adapts to load, and it needs load above what it already handles daily. Walking is excellent for cardiovascular and metabolic health, but your skeleton has been carrying your body weight for decades and finds it unremarkable. Resistance training supplies the novel load."
+        },
+        {
+          "type": "heading",
+          "text": "A workable minimum"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Two sessions a week, 30–40 minutes each, non-consecutive days.",
+            "Six compound movements: squat, hinge, push, pull, carry, and a single-leg pattern.",
+            "Two to three sets of six to ten repetitions, leaving two reps in reserve.",
+            "Add load — not repetitions — every two to three weeks, as long as form holds."
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "If you have never lifted before",
+          "text": "Body weight and resistance bands are a legitimate starting point. Four to six weeks of learning the patterns before adding load prevents most beginner injuries."
+        },
+        {
+          "type": "paragraph",
+          "text": "The second benefit is metabolic. Muscle is where most glucose is disposed of, and the insulin resistance that creeps in during the transition is partly a muscle-mass story. Keeping muscle keeps that door open."
+        },
+        {
+          "type": "quote",
+          "text": "You are not training for how you look at 45. You are training for how independently you move at 75."
+        }
+      ]
+    },
+    {
+      "slug": "the-rage-is-real",
+      "category": "mind",
+      "glyph": "◆",
+      "title": "The rage is real — and it has a name",
+      "dek": "Perimenopausal irritability is a neurological event, not a failure of patience.",
+      "readMinutes": 5,
+      "publishedAt": "2026-07-07",
+      "author": { "name": "Dr. Sneha Iyer", "credential": "MD, Psychiatry" },
+      "heroCaption": "portrait · woman at a window, mid-afternoon",
+      "keyTakeaways": [
+        "Oestrogen modulates serotonin; unstable oestrogen means unstable mood regulation.",
+        "Risk is highest for women with a history of PMS, postpartum depression, or depression.",
+        "Sudden rage with no trigger is a symptom to report, not to apologise for."
+      ],
+      "tags": ["mood", "mental health", "irritability"],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Women describe it almost identically: a fury that arrives fully formed, out of proportion to whatever set it off, and then leaves them ashamed. It is common enough in the transition to be near-diagnostic, and it is poorly served by advice to breathe deeply."
+        },
+        {
+          "type": "heading",
+          "text": "The mechanism"
+        },
+        {
+          "type": "paragraph",
+          "text": "Oestrogen influences serotonin production, receptor sensitivity, and reuptake. When oestrogen swings unpredictably, so does the system that regulates emotional response. Add sleep fragmentation from night sweats, and the neural capacity to inhibit a reaction is measurably lower."
+        },
+        {
+          "type": "callout",
+          "title": "Higher-risk histories",
+          "text": "Severe PMS, postpartum depression, or previous depressive episodes all predict a harder mood course in perimenopause. Say so early to your clinician — it changes what they offer you first."
+        },
+        {
+          "type": "heading",
+          "text": "What helps, in order of evidence"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Treating the sleep disruption, which is often the whole story underneath the mood.",
+            "Hormone therapy where mood symptoms track the cycle and there is no contraindication.",
+            "SSRIs, which help mood and independently reduce hot flushes.",
+            "CBT specifically adapted for menopause — modest, durable, no interaction risk."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "What does not help is being told this is simply the age you are. Irritability that damages your relationships or your work is a treatable symptom, and treatment starts by describing it plainly to someone who can act on it."
+        }
+      ]
+    },
+    {
+      "slug": "hrt-in-india-myths-vs-medicine",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "HRT in India: myths vs. medicine",
+      "dek": "Two decades after a misread trial, the risk picture is clearer — and narrower — than the reputation.",
+      "readMinutes": 11,
+      "publishedAt": "2026-06-30",
+      "author": { "name": "Dr. Meera Rao", "credential": "MD, Obstetrics & Gynaecology" },
+      "heroCaption": "clinical · consultation room, morning light",
+      "keyTakeaways": [
+        "For most healthy women under 60 and within 10 years of their final period, benefit outweighs risk.",
+        "Transdermal oestrogen does not carry the clot risk associated with oral forms.",
+        "It remains genuinely contraindicated for some women — the decision is individual, not ideological."
+      ],
+      "tags": ["HRT", "clinical", "decision-making"],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The 2002 Women's Health Initiative headline frightened a generation off hormone therapy. What the coverage omitted: the average participant was 63, more than a decade past menopause, and the formulation studied is not what is prescribed today."
+        },
+        {
+          "type": "heading",
+          "text": "The timing hypothesis"
+        },
+        {
+          "type": "paragraph",
+          "text": "Re-analyses consistently show the risk-benefit balance depends heavily on when therapy starts. Begun under 60, or within ten years of the final period, hormone therapy reduces hot flushes, protects bone, and shows no increase in cardiovascular mortality. Begun fifteen years later, into arteries that have already changed, the calculus reverses."
+        },
+        {
+          "type": "heading",
+          "text": "Route matters more than most people are told"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Transdermal oestrogen — patch or gel — bypasses first-pass liver metabolism and does not raise clot risk in the way oral oestrogen does.",
+            "Micronised progesterone appears to have a more favourable breast profile than older synthetic progestins.",
+            "If you still have a uterus, oestrogen must be paired with a progestogen to protect the endometrium.",
+            "Vaginal oestrogen for genitourinary symptoms is local, low dose, and a different risk conversation entirely."
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Where it is genuinely not appropriate",
+          "text": "Active or past hormone-sensitive breast cancer, unexplained vaginal bleeding, active liver disease, or a history of clot or stroke shift the decision substantially. Bring these up first — they narrow the options rather than closing the conversation."
+        },
+        {
+          "type": "heading",
+          "text": "The India-specific gaps"
+        },
+        {
+          "type": "paragraph",
+          "text": "Indian women reach menopause on average around 46 — several years earlier than Western cohorts, which means a longer post-menopausal life spent without oestrogen's protective effects on bone and vessel. Yet uptake here is very low, driven less by contraindication than by unavailability of clinicians who discuss it at all."
+        },
+        {
+          "type": "quote",
+          "text": "The question is not whether hormone therapy is safe. It is whether it is right for you, and that needs your history, not a headline."
+        },
+        {
+          "type": "paragraph",
+          "text": "Come to that appointment with a symptom record, your family history of breast cancer and clotting, your blood pressure, and a clear statement of which symptom is costing you the most. That is a decision-making consultation rather than a reassurance one."
+        }
+      ]
+    },
+    {
+      "slug": "night-sweats-and-the-3am-wake",
+      "category": "sleep",
+      "glyph": "☾",
+      "title": "Night sweats and the 3 a.m. wake",
+      "dek": "Why you wake before the sweat starts, and what changes the pattern.",
+      "readMinutes": 7,
+      "publishedAt": "2026-06-23",
+      "author": { "name": "Dr. Kavya Nair", "credential": "MD, Sleep Medicine" },
+      "heroCaption": "night · unmade bed, low lamp",
+      "keyTakeaways": [
+        "The arousal often precedes the flush — you wake first, then feel hot.",
+        "Bedroom temperature near 18–20°C measurably reduces night-time flushes.",
+        "Persistent 3 a.m. waking without sweats may be insomnia in its own right, and CBT-I treats it."
+      ],
+      "tags": ["sleep", "night sweats", "insomnia"],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The narrowed thermoneutral zone of perimenopause means a small rise in core temperature triggers a full heat-dump response: vasodilation, sweating, and a cortical arousal. Sleep labs show the arousal frequently comes first — which is why the wake can feel unexplained until the heat catches up."
+        },
+        {
+          "type": "heading",
+          "text": "Environmental changes with actual effect sizes"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Room at 18–20°C, cooler than most Indian bedrooms are kept.",
+            "Cotton or linen bedding, layered so you can shed one layer without fully waking.",
+            "A fan for air movement, which helps evaporative cooling more than a lower thermostat alone.",
+            "Alcohol finished four hours before bed — it is a reliable flush trigger and fragments the second half of the night."
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "When it is not the sweats",
+          "text": "If you wake at the same hour and lie awake for over 30 minutes, without heat, you may have developed conditioned insomnia layered on top. CBT-I is first-line for that and outperforms medication over time."
+        },
+        {
+          "type": "heading",
+          "text": "The compounding cost"
+        },
+        {
+          "type": "paragraph",
+          "text": "Fragmented sleep raises next-day insulin resistance, appetite signalling, and emotional reactivity. Much of what gets attributed to hormones directly is sleep debt with a hormonal cause — which is good news, because sleep is the more tractable target."
+        },
+        {
+          "type": "paragraph",
+          "text": "Track two weeks of wake times before your consultation. A pattern — every night at 3, or only in the week before a period — points a clinician at very different treatments."
+        }
+      ]
+    },
+    {
+      "slug": "iron-b12-and-the-heavy-period-years",
+      "category": "nutrition",
+      "glyph": "◈",
+      "title": "Iron, B12, and the heavy-period years",
+      "dek": "Perimenopausal bleeding gets heavier before it stops. Deficiency is the quiet consequence.",
+      "readMinutes": 6,
+      "publishedAt": "2026-06-16",
+      "author": { "name": "Anjali Menon", "credential": "RD, Clinical Nutrition" },
+      "heroCaption": "kitchen · dal, greens, lemon",
+      "keyTakeaways": [
+        "Ferritin under 30 ng/mL causes fatigue even when haemoglobin reads normal.",
+        "Vegetarian diets need vitamin C alongside iron sources and tea kept away from meals.",
+        "Soaking through protection hourly, or clots larger than a rupee coin, needs evaluation."
+      ],
+      "tags": ["iron", "nutrition", "heavy bleeding"],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Anovulatory cycles mean oestrogen builds the endometrium without progesterone to organise its shedding. The result is the heavier, longer, less predictable bleeding that characterises late perimenopause — and a steady iron drain."
+        },
+        {
+          "type": "heading",
+          "text": "Ask for ferritin, not just haemoglobin"
+        },
+        {
+          "type": "paragraph",
+          "text": "Haemoglobin falls last. Ferritin — stored iron — falls first, and a ferritin under 30 ng/mL is enough to produce fatigue, hair shedding, breathlessness on stairs, and restless legs while a full blood count still reads normal."
+        },
+        {
+          "type": "heading",
+          "text": "Absorption, practically"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Pair iron sources with vitamin C: lemon over dal, amla, tomato in the sabzi.",
+            "Move tea and coffee at least an hour away from meals — tannins substantially block non-heme iron.",
+            "Cook acidic foods in cast iron, which measurably raises iron content.",
+            "If supplementing, alternate-day dosing absorbs better than daily and causes less constipation."
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Bleeding that needs evaluation, not nutrition",
+          "text": "Soaking a pad or cup hourly for several hours, clots bigger than a rupee coin, bleeding beyond seven days, or any bleeding after twelve period-free months. Get these looked at rather than managed at home."
+        },
+        {
+          "type": "paragraph",
+          "text": "B12 deserves a mention alongside: vegetarian diets, common metformin use, and reduced stomach acid with age make deficiency frequent, and its fatigue and brain-fog picture is easily misfiled as 'just perimenopause'."
+        }
+      ]
+    },
+    {
+      "slug": "brain-fog-what-the-research-says",
+      "category": "mind",
+      "glyph": "◍",
+      "title": "Brain fog: what the research actually says",
+      "dek": "Verbal recall does dip in the transition. It also recovers — and that matters for how you treat it.",
+      "readMinutes": 7,
+      "publishedAt": "2026-06-09",
+      "author": { "name": "Dr. Sneha Iyer", "credential": "MD, Psychiatry" },
+      "heroCaption": "desk · notebook, half-written list",
+      "keyTakeaways": [
+        "Measurable dips are real but small, and mostly in verbal memory and processing speed.",
+        "Longitudinal studies show performance returns to baseline post-menopause.",
+        "Sleep and mood explain a large share of the effect — treating them lifts the fog."
+      ],
+      "tags": ["cognition", "brain fog", "memory"],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Roughly six in ten women report cognitive complaints in perimenopause: the lost word, the reason for walking into the room, the name that is right there. Two decades of longitudinal cohorts confirm the effect is measurable rather than imagined."
+        },
+        {
+          "type": "heading",
+          "text": "The size and shape of it"
+        },
+        {
+          "type": "paragraph",
+          "text": "The deficit concentrates in verbal memory and processing speed, and it is small in absolute terms. Crucially, the same cohorts show performance returning to pre-transition baseline in the post-menopausal years. This is a transition-phase effect, not the opening move of a decline."
+        },
+        {
+          "type": "callout",
+          "title": "The comparison worth making",
+          "text": "The cognitive cost of the perimenopausal dip is smaller than the cost of chronic sleep fragmentation. If both are present, treat the sleep first — the fog often clears with it."
+        },
+        {
+          "type": "heading",
+          "text": "What is worth doing"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Fix sleep before anything else — it is the largest modifiable contributor.",
+            "Treat mood symptoms; depression alone produces this exact cognitive profile.",
+            "Offload aggressively: one capture list, not five. The goal is function, not proving memory.",
+            "Cardiovascular exercise, which has the best evidence of any lifestyle factor for cognition."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Worth flagging to a clinician: getting lost on familiar routes, difficulty with sequences you have done for years, or word-finding trouble noticed by others before you. Those are a different assessment, and they are uncommon."
+        }
+      ]
+    },
+    {
+      "slug": "pelvic-floor-quiet-symptom",
+      "category": "movement",
+      "glyph": "◎",
+      "title": "The pelvic floor: the symptom nobody mentions",
+      "dek": "Leaking when you sneeze is common. Common is not the same as something to live with.",
+      "readMinutes": 6,
+      "publishedAt": "2026-06-02",
+      "author": { "name": "Ritu Shah", "credential": "MSc, Exercise Physiology" },
+      "heroCaption": "studio · mat, folded towel",
+      "keyTakeaways": [
+        "Falling oestrogen thins pelvic tissue and weakens support, independent of childbirth history.",
+        "Supervised pelvic floor training resolves or improves most stress incontinence.",
+        "Local vaginal oestrogen treats genitourinary symptoms with minimal systemic absorption."
+      ],
+      "tags": ["pelvic floor", "incontinence", "movement"],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Genitourinary syndrome of menopause affects a majority of women and is reported by a small minority. The tissue of the vagina, urethra, and bladder base is oestrogen-dependent; as levels fall it thins, loses elasticity, and its blood supply drops."
+        },
+        {
+          "type": "heading",
+          "text": "What it looks like"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Leaking with a cough, sneeze, or jump.",
+            "Sudden urgency, or waking more than once at night to urinate.",
+            "Vaginal dryness, discomfort during sex, recurrent urinary tract infections."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Training the floor properly"
+        },
+        {
+          "type": "paragraph",
+          "text": "Around a third of women contract the wrong muscles when told to 'do Kegels' — often bearing down, which worsens things. One session with a pelvic floor physiotherapist to confirm the contraction is the highest-value step in this entire article."
+        },
+        {
+          "type": "callout",
+          "title": "A realistic protocol",
+          "text": "Three sets of eight to twelve maximal contractions, held six to eight seconds, daily for at least three months. Improvement typically appears by six to eight weeks; stopping reverses it."
+        },
+        {
+          "type": "paragraph",
+          "text": "Where dryness or recurrent infection is the dominant issue, local vaginal oestrogen is highly effective and barely absorbed systemically — a different risk profile from systemic hormone therapy, and appropriate for many women who cannot take the systemic form."
+        }
+      ]
+    }
+  ]
+}

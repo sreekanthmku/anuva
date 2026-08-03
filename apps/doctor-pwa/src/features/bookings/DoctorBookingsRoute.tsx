@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { DoctorConsultationBooking } from '@anuva/shared';
 import { useNavigate } from 'react-router-dom';
+import { useDoctorIdentity } from '../auth/identity';
 import { fetchDoctorBookings } from './api';
 import { formatLongDateTime, formatTimeRange } from './dateTime';
 
@@ -47,9 +48,12 @@ function callLabel(booking: DoctorConsultationBooking): string {
 
 function BookingCard({
   booking,
+  showSpecialist,
   onStartCall,
 }: {
   booking: DoctorConsultationBooking;
+  /** The doctor's own list is all one specialist, so the patient leads the card instead. */
+  showSpecialist: boolean;
   onStartCall: (consultationId: string) => void;
 }) {
   const patientLabel = booking.patientName?.trim() || 'Patient name unavailable';
@@ -59,7 +63,9 @@ function BookingCard({
     <article className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_12px_30px_rgba(94,53,102,0.06)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="font-display text-[22px] leading-[1.15] text-on-surface">{booking.specialistName}</div>
+          <div className="font-display text-[22px] leading-[1.15] text-on-surface">
+            {showSpecialist ? booking.specialistName : patientLabel}
+          </div>
           <div className="mt-1 text-[13px] text-on-surface-variant">{formatLongDateTime(booking.scheduledAt)}</div>
         </div>
         <div
@@ -110,6 +116,8 @@ function BookingCard({
 
 export function DoctorBookingsRoute() {
   const navigate = useNavigate();
+  const identity = useDoctorIdentity();
+  const isAdmin = identity.scope === 'admin';
   const [state, setState] = useState<LoadState>('idle');
   const [bookings, setBookings] = useState<DoctorConsultationBooking[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -155,20 +163,50 @@ export function DoctorBookingsRoute() {
   return (
     <main className="min-h-mobile bg-surface text-on-surface">
       <header className="sticky top-0 z-20 border-b border-border-default bg-surface/95 px-4 pb-5 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
-        <div
-          className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"
-          style={{
-            backgroundColor: 'rgba(94, 53, 102, 0.16)',
-            borderColor: 'rgba(94, 53, 102, 0.3)',
-          }}
-        >
-          <span className="text-[9.5px] uppercase tracking-[0.15em] text-primary">Doctor view</span>
+        <div className="flex items-start justify-between gap-3">
+          <div
+            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"
+            style={{
+              backgroundColor: 'rgba(94, 53, 102, 0.16)',
+              borderColor: 'rgba(94, 53, 102, 0.3)',
+            }}
+          >
+            <span className="text-[9.5px] uppercase tracking-[0.15em] text-primary">
+              {isAdmin ? 'Admin view' : 'Doctor view'}
+            </span>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/questions')}
+              className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary"
+            >
+              Q&amp;A queue
+            </button>
+            <button
+              type="button"
+              onClick={identity.signOut}
+              className="rounded-full border border-border-default px-3 py-1 text-[11px] font-semibold text-on-surface-variant"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
         <h1 className="mt-3 max-w-[20rem] font-display text-[30px] leading-[1.1]">
-          All consultation <em className="not-italic text-primary">bookings</em>
+          {isAdmin ? (
+            <>
+              All consultation <em className="not-italic text-primary">bookings</em>
+            </>
+          ) : (
+            <>
+              Your consultation <em className="not-italic text-primary">bookings</em>
+            </>
+          )}
         </h1>
         <p className="mt-2 max-w-[24rem] text-[13px] leading-[1.5] text-on-surface-variant">
-          Listing every doctor booking for now. We can layer doctor-specific filtering on top next.
+          {isAdmin
+            ? 'Signed in with the admin key — every doctor’s bookings are listed.'
+            : `Bookings for ${identity.specialistName ?? 'you'}. Other doctors’ bookings are not shown.`}
         </p>
       </header>
 
@@ -202,6 +240,7 @@ export function DoctorBookingsRoute() {
             <BookingCard
               key={booking.consultationId}
               booking={booking}
+              showSpecialist={isAdmin}
               onStartCall={(consultationId) => navigate(`/call/${consultationId}`)}
             />
           ))}

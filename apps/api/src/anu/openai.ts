@@ -110,6 +110,7 @@ function parseReply(raw: string): GeneratedReply {
 export async function generateReply(
   userMessage: string,
   history: PriorTurn[] = [],
+  name: string | null = null,
 ): Promise<GeneratedReply> {
   const json = await openaiFetch<ChatResponse>('/chat/completions', {
     model: env.chatModel(),
@@ -123,7 +124,7 @@ export async function generateReply(
     // bounds the most expensive part of the turn (output bills at 4x input).
     // Raised from 220 to leave room for the JSON envelope and chips.
     max_tokens: 320,
-    messages: buildMessages(userMessage, history),
+    messages: buildMessages(userMessage, history, name),
   });
 
   const raw = json.choices[0]?.message?.content?.trim();

@@ -37,7 +37,9 @@ import {
   consultationCallJoinResponseSchema,
   consultationCallStateResponseSchema,
   consultationCallStateSchema,
+  doctorAccessKeyRotateResponseSchema,
   doctorConsultationBookingsResponseSchema,
+  doctorIdentityResponseSchema,
   consultationSlotsQuerySchema,
   consultationSlotsResponseSchema,
   consultationSpecialistsResponseSchema,
@@ -89,6 +91,23 @@ import {
   anuChatBodySchema,
   anuChatResponseSchema,
   anuChatHistoryResponseSchema,
+  libraryFeedQuerySchema,
+  libraryFeedResponseSchema,
+  libraryArticleParamsSchema,
+  libraryArticleResponseSchema,
+  anonymousQuestionTopicSchema,
+  createAnonymousQuestionBodySchema,
+  createAnonymousQuestionResponseSchema,
+  myAnonymousQuestionsResponseSchema,
+  anonymousQuestionFeedQuerySchema,
+  anonymousQuestionFeedResponseSchema,
+  doctorQuestionsQuerySchema,
+  doctorQuestionsResponseSchema,
+  answerAnonymousQuestionBodySchema,
+  answerAnonymousQuestionResponseSchema,
+  weeklyReportQuerySchema,
+  weeklyReportResponseSchema,
+  type AnonymousQuestionTopic,
   type AuthUser,
   type ConsultationCallState,
 } from '@anuva/shared';
@@ -106,8 +125,10 @@ import {
   markTrackerEngagement,
 } from './nudge/engine.js';
 import { runNudgeSelfTest } from './nudge/selfTest.js';
+import { buildWeeklyReport } from './report/build.js';
 import { randomQuickLogMessage } from './quickLogMessages.js';
 import { answer as anuAnswer } from './anu/engine.js';
+import { getLibraryArticle, getLibraryFeed } from './library.js';
 import { isAnuChatConfigured } from './anu/openai.js';
 import { loadCache, cacheStats } from './anu/cache.js';
 
@@ -141,6 +162,8 @@ const LIVEKIT_RECORDING_AUDIO_ONLY = process.env.LIVEKIT_RECORDING_AUDIO_ONLY !=
 const CALL_CONSENT_TEXT_VERSION =
   process.env.CALL_CONSENT_TEXT_VERSION?.trim() || 'recording-consent-v1';
 const DOCTOR_ACCESS_KEY = process.env.DOCTOR_ACCESS_KEY?.trim() || '';
+// Questions land in one shared specialist queue, so a single account is capped per rolling day.
+const ANONYMOUS_QA_DAILY_LIMIT = Math.max(1, Number(process.env.ANONYMOUS_QA_DAILY_LIMIT || 5));
 // Where the egress recording volume is mounted on the API's own filesystem. Required to mix the
 // per-speaker files into a combined track; without it recording still works, mixdown is skipped.
 const RECORDING_LOCAL_DIR = process.env.RECORDING_LOCAL_DIR?.trim() || '';
@@ -200,8 +223,11 @@ app.post('/livekit/webhook', express.raw({ type: '*/*', limit: '1mb' }), async (
 
 app.use(express.json());
 
-// Guards every /doctor route, including any added later.
-app.use('/doctor', requireDoctorAccess);
+// Guards every /doctor route, including any added later. Express 4 does not forward rejected
+// promises from middleware, so the async guard is wrapped and reports through next() itself.
+app.use('/doctor', (req, res, next) => {
+  void requireDoctorAccess(req, res, next);
+});
 
 class HttpError extends Error {
   status: number;
@@ -527,33 +553,93 @@ function requireBroadcastSecret(req: Request) {
 }
 
 /**
- * Every /doctor route exposes patient names, phone numbers, and the ability to mint a
- * LiveKit token for any consultation, so they are gated behind a shared key.
- *
- * Fails closed: an unset DOCTOR_ACCESS_KEY refuses the request rather than leaving the
- * routes open, because a missing env var must never silently mean "no auth".
+ * Who is behind an authenticated /doctor request. `doctor` is a single specialist holding their
+ * own key and only ever sees their own consultations; `admin` is the shared DOCTOR_ACCESS_KEY,
+ * kept for ops, and sees every booking.
  */
-function requireDoctorAccess(req: Request, _res: Response, next: NextFunction) {
-  if (!DOCTOR_ACCESS_KEY) {
-    next(new HttpError(503, 'DOCTOR_ACCESS_KEY is not configured on the server.'));
-    return;
+type DoctorIdentity =
+  | { scope: 'admin'; specialistId: null; specialistKey: null; specialistName: null }
+  | { scope: 'doctor'; specialistId: string; specialistKey: string; specialistName: string };
+
+// Keyed by request object rather than a global Express type augmentation, so the identity cannot
+// be read on a request that never went through the guard.
+const doctorIdentities = new WeakMap<Request, DoctorIdentity>();
+
+function requireDoctorIdentity(req: Request): DoctorIdentity {
+  const identity = doctorIdentities.get(req);
+  if (!identity) {
+    throw new HttpError(401, 'Invalid or missing doctor access key.');
   }
 
-  const header = req.get('x-doctor-key') ?? '';
-  const provided = Buffer.from(header);
-  const expected = Buffer.from(DOCTOR_ACCESS_KEY);
+  return identity;
+}
+
+/** Only the doctor's own consultations, or every one of them for the admin key. */
+function doctorConsultationScope(identity: DoctorIdentity): { specialistId?: string } {
+  return identity.scope === 'doctor' ? { specialistId: identity.specialistId } : {};
+}
+
+function hashDoctorAccessKey(key: string): string {
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
+
+function timingSafeEquals(a: string, b: string): boolean {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
 
   // timingSafeEqual throws on length mismatch, so the lengths are compared first. The
   // length of the key is not a secret worth protecting here.
-  const ok =
-    provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
 
-  if (!ok) {
-    next(new HttpError(401, 'Invalid or missing doctor access key.'));
-    return;
+/**
+ * Every /doctor route exposes patient names, phone numbers, and the ability to mint a
+ * LiveKit token, so they are gated behind a key. Two kinds are accepted:
+ *
+ * - a specialist's own key, matched by SHA-256 against Specialist.accessKeyHash → `doctor` scope
+ * - DOCTOR_ACCESS_KEY → `admin` scope, which still sees every booking
+ *
+ * Fails closed: an empty header, an unknown key, or a deactivated specialist is a 401, and an
+ * unset DOCTOR_ACCESS_KEY simply means no key can claim admin scope.
+ */
+async function requireDoctorAccess(req: Request, _res: Response, next: NextFunction) {
+  try {
+    const provided = (req.get('x-doctor-key') ?? '').trim();
+    if (!provided) {
+      throw new HttpError(401, 'Invalid or missing doctor access key.');
+    }
+
+    if (DOCTOR_ACCESS_KEY && timingSafeEquals(provided, DOCTOR_ACCESS_KEY)) {
+      doctorIdentities.set(req, {
+        scope: 'admin',
+        specialistId: null,
+        specialistKey: null,
+        specialistName: null,
+      });
+      next();
+      return;
+    }
+
+    const specialist = await prisma.specialist.findUnique({
+      where: { accessKeyHash: hashDoctorAccessKey(provided) },
+      select: { id: true, key: true, name: true, active: true },
+    });
+
+    if (!specialist || !specialist.active) {
+      throw new HttpError(401, 'Invalid or missing doctor access key.');
+    }
+
+    doctorIdentities.set(req, {
+      scope: 'doctor',
+      specialistId: specialist.id,
+      specialistKey: specialist.key,
+      specialistName: specialist.name,
+    });
+
+    next();
+  } catch (error) {
+    next(error);
   }
-
-  next();
 }
 
 function isBookableDoctorKey(key: string): boolean {
@@ -768,9 +854,13 @@ async function ensureLiveKitRoom(roomName: string, consultationId: string): Prom
   }
 }
 
-async function getDoctorConsultation(consultationId: string) {
-  const consultation = await prisma.consultation.findUnique({
-    where: { id: consultationId },
+/**
+ * Scoped by identity: a doctor asking for someone else's consultation gets the same 404 as one
+ * that does not exist, so the portal cannot be used to enumerate other doctors' bookings.
+ */
+async function getDoctorConsultation(consultationId: string, identity: DoctorIdentity) {
+  const consultation = await prisma.consultation.findFirst({
+    where: { id: consultationId, ...doctorConsultationScope(identity) },
     include: {
       specialist: { select: { name: true } },
       user: { select: { id: true, name: true, phone: true } },
@@ -1331,6 +1421,38 @@ async function notifyPatientCallStarted(consultationId: string, patientId: strin
   }
 }
 
+/**
+ * Tells the asker her question came back. The push flows one way only — the doctor who answered
+ * never learns who was notified.
+ */
+async function notifyAskerQuestionAnswered(userId: string, doctorName: string) {
+  const rows: Array<{ token: string }> = await prisma.fcmToken.findMany({
+    where: { userId, status: 'ACTIVE' },
+    select: { token: true },
+  });
+  const tokens: string[] = [...new Set(rows.map((row) => row.token))];
+
+  if (tokens.length === 0) {
+    return;
+  }
+
+  try {
+    await sendPushToAllTokens(
+      tokens,
+      {
+        title: 'A specialist answered you',
+        body: `${doctorName} replied to your anonymous question.`,
+      },
+      {
+        url: '/qa',
+        type: 'anonymous-qa-answer',
+      },
+    );
+  } catch (error) {
+    console.warn('Unable to send anonymous Q&A push notification', error);
+  }
+}
+
 function serializeSpecialist(specialist: {
   key: string;
   name: string;
@@ -1427,6 +1549,53 @@ function serializeMyConsultation(row: MyConsultationRow, now: Date) {
     recordingStatus: (mixed?.status as never) ?? null,
     recordingDurationSeconds: mixed?.durationSeconds ?? null,
   });
+}
+
+/** The client handed to an interactive transaction: the full client minus the top-level-only calls. */
+type BookingTx = Omit<
+  typeof prisma,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
+
+/**
+ * Serializes one patient's concurrent booking attempts. The overlap check below is a
+ * read-then-write race on its own: two requests firing at once both see a clear calendar and both
+ * insert. Locking the patient's own row is enough — bookings for different patients never contend,
+ * and every booking path takes this lock before touching a slot, so the lock order is consistent.
+ */
+async function lockUserForBooking(tx: BookingTx, userId: string): Promise<void> {
+  await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+}
+
+/**
+ * Stops a patient holding two appointments at the same time. The slot guard only prevents two
+ * patients claiming one slot — nothing stopped one patient claiming overlapping slots from two
+ * different doctors.
+ *
+ * Overlap is measured against the slot each existing booking holds; rows booked outside the slot
+ * flow (seeds, admin fixtures) carry no slot, so their scheduledAt is treated as a point in time.
+ * `excludeConsultationId` lets a reschedule ignore the booking it is about to move.
+ */
+async function assertNoOverlappingBooking(
+  tx: BookingTx,
+  args: { userId: string; startsAt: Date; endsAt: Date; excludeConsultationId?: string },
+): Promise<void> {
+  const clash = await tx.consultation.findFirst({
+    where: {
+      userId: args.userId,
+      status: { in: ['pending', 'confirmed'] },
+      ...(args.excludeConsultationId ? { id: { not: args.excludeConsultationId } } : {}),
+      OR: [
+        { slot: { is: { startsAt: { lt: args.endsAt }, endsAt: { gt: args.startsAt } } } },
+        { slot: { is: null }, scheduledAt: { gte: args.startsAt, lt: args.endsAt } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (clash) {
+    throw new HttpError(409, 'You already have an appointment at this time.');
+  }
 }
 
 const MY_CONSULTATION_INCLUDE = {
@@ -1539,6 +1708,8 @@ app.post('/consultations/:id/reschedule', async (req, res, next) => {
     }
 
     const updated = (await prisma.$transaction(async (tx: any) => {
+      await lockUserForBooking(tx, user.id);
+
       const slot = await tx.consultationSlot.findUnique({
         where: { id: parsed.slotId },
         include: { specialist: true },
@@ -1559,6 +1730,14 @@ app.post('/consultations/:id/reschedule', async (req, res, next) => {
       if (slot.startsAt <= now) {
         throw new HttpError(400, 'This slot is no longer available.');
       }
+
+      // The booking being moved is excluded — its own old window is not a clash.
+      await assertNoOverlappingBooking(tx, {
+        userId: user.id,
+        startsAt: slot.startsAt,
+        endsAt: slot.endsAt,
+        excludeConsultationId: existing.id,
+      });
 
       // Free the old slot first so it becomes bookable again.
       await tx.consultationSlot.updateMany({
@@ -1741,6 +1920,8 @@ app.post('/consultations/book', async (req, res, next) => {
     const parsed = createConsultationBookingBodySchema.parse(req.body);
 
     const booked = await prisma.$transaction(async (tx: any) => {
+      await lockUserForBooking(tx, user.id);
+
       const slot = await tx.consultationSlot.findUnique({
         where: { id: parsed.slotId },
         include: { specialist: true },
@@ -1761,6 +1942,12 @@ app.post('/consultations/book', async (req, res, next) => {
       if (slot.startsAt <= new Date()) {
         throw new HttpError(400, 'This slot is no longer available.');
       }
+
+      await assertNoOverlappingBooking(tx, {
+        userId: user.id,
+        startsAt: slot.startsAt,
+        endsAt: slot.endsAt,
+      });
 
       const consultation = await tx.consultation.create({
         data: {
@@ -1803,11 +1990,75 @@ app.post('/consultations/book', async (req, res, next) => {
   }
 });
 
-app.get('/doctor/consultations', async (_req, res, next) => {
+/** Tells the portal whose bookings it is about to show, and whether the key is even valid. */
+app.get('/doctor/me', (req, res, next) => {
   try {
+    const identity = requireDoctorIdentity(req);
+
+    res.json(
+      doctorIdentityResponseSchema.parse({
+        scope: identity.scope,
+        specialistKey: identity.specialistKey,
+        specialistName: identity.specialistName,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Mints a personal portal key for one specialist, admin key only. The plaintext is returned
+ * once and never stored, so a lost key is replaced by rotating again — which also invalidates
+ * the previous one, since a specialist holds a single hash.
+ */
+app.post('/doctor/specialists/:key/access-key', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+    if (identity.scope !== 'admin') {
+      throw new HttpError(403, 'Only the admin access key can rotate doctor access keys.');
+    }
+
+    await readyBookingCatalog();
+
+    const specialist = await prisma.specialist.findUnique({
+      where: { key: req.params.key },
+      select: { id: true, key: true, name: true },
+    });
+
+    if (!specialist) {
+      throw new HttpError(404, 'Specialist not found.');
+    }
+
+    const accessKey = crypto.randomBytes(32).toString('hex');
+
+    await prisma.specialist.update({
+      where: { id: specialist.id },
+      data: {
+        accessKeyHash: hashDoctorAccessKey(accessKey),
+        accessKeyUpdatedAt: new Date(),
+      },
+    });
+
+    res.json(
+      doctorAccessKeyRotateResponseSchema.parse({
+        specialistKey: specialist.key,
+        specialistName: specialist.name,
+        accessKey,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/doctor/consultations', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
     await readyBookingCatalog();
 
     const bookings = await prisma.consultation.findMany({
+      where: doctorConsultationScope(identity),
       include: {
         specialist: {
           select: {
@@ -1866,7 +2117,7 @@ app.post('/doctor/consultations/:id/call/start', async (req, res, next) => {
     await readyBookingCatalog();
 
     const consultationId = req.params.id;
-    const consultation = await getDoctorConsultation(consultationId);
+    const consultation = await getDoctorConsultation(consultationId, requireDoctorIdentity(req));
 
     if (consultation.status !== 'confirmed') {
       throw new HttpError(400, 'Only confirmed consultations can be started.');
@@ -1901,7 +2152,7 @@ app.post('/doctor/consultations/:id/call/start', async (req, res, next) => {
 
 app.get('/doctor/consultations/:id/call', async (req, res, next) => {
   try {
-    const consultation = await getDoctorConsultation(req.params.id);
+    const consultation = await getDoctorConsultation(req.params.id, requireDoctorIdentity(req));
     if (!consultation.call) {
       throw new HttpError(404, 'Call has not been started yet.');
     }
@@ -1932,7 +2183,7 @@ app.get('/doctor/consultations/:id/call', async (req, res, next) => {
 
 app.post('/doctor/consultations/:id/call/end', async (req, res, next) => {
   try {
-    const consultation = await getDoctorConsultation(req.params.id);
+    const consultation = await getDoctorConsultation(req.params.id, requireDoctorIdentity(req));
     if (!consultation.call) {
       throw new HttpError(404, 'Call has not been started yet.');
     }
@@ -2146,9 +2397,70 @@ app.post('/consultations/slots', async (req, res, next) => {
       };
     });
 
-    const created = await prisma.consultationSlot.createMany({
-      data,
-      skipDuplicates: true,
+    // An exact repeat inside one request stays idempotent, the way skipDuplicates already made it.
+    const seen = new Set<string>();
+    const unique = data.filter((slot) => {
+      const key = `${slot.startsAt.toISOString()}|${slot.endsAt.toISOString()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // @@unique([specialistId, startsAt]) only rejects an exact repeat, so 10:00-10:30 and
+    // 10:15-10:45 would both go on sale for the same doctor and the same quarter hour.
+    const ordered = [...unique].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+    let windowStart: Date | null = null;
+    let windowEnd: Date | null = null;
+
+    for (const slot of ordered) {
+      if (windowEnd && slot.startsAt < windowEnd) {
+        throw new HttpError(400, 'Slots in this request overlap each other.');
+      }
+      windowStart ??= slot.startsAt;
+      windowEnd = slot.endsAt;
+    }
+
+    if (!windowStart || !windowEnd) {
+      throw new HttpError(400, 'At least one slot is required.');
+    }
+
+    const rangeStartAt = windowStart;
+    const rangeEndAt = windowEnd;
+
+    const created = await prisma.$transaction(async (tx: BookingTx) => {
+      const neighbours: { startsAt: Date; endsAt: Date }[] = await tx.consultationSlot.findMany({
+        where: {
+          specialistId: specialist.id,
+          startsAt: { lt: rangeEndAt },
+          endsAt: { gt: rangeStartAt },
+        },
+        select: { startsAt: true, endsAt: true },
+      });
+
+      const clash = ordered.find((slot) =>
+        neighbours.some(
+          (existing) =>
+            existing.startsAt < slot.endsAt &&
+            existing.endsAt > slot.startsAt &&
+            // An exact repeat of an existing slot is skipped below, not an error.
+            !(
+              existing.startsAt.getTime() === slot.startsAt.getTime() &&
+              existing.endsAt.getTime() === slot.endsAt.getTime()
+            ),
+        ),
+      );
+
+      if (clash) {
+        throw new HttpError(
+          409,
+          `Slot ${clash.startsAt.toISOString()} overlaps an existing slot for this specialist.`,
+        );
+      }
+
+      return tx.consultationSlot.createMany({
+        data: unique,
+        skipDuplicates: true,
+      });
     });
 
     res.json(
@@ -2736,7 +3048,7 @@ app.post('/anu/chat', async (req, res, next) => {
       throw new HttpError(503, 'ANU chat is not configured.');
     }
     const { message } = anuChatBodySchema.parse(req.body);
-    const result = await anuAnswer(user.id, message);
+    const result = await anuAnswer(user.id, message, user.name);
     res.json(anuChatResponseSchema.parse(result));
   } catch (e) {
     next(e);
@@ -3072,6 +3384,19 @@ async function getTodayQuickLogCounts(userId: string) {
   return counts;
 }
 
+app.get('/report', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { week } = weeklyReportQuerySchema.parse(req.query);
+    // Weeks run from the trial start so week 1 is the user's first seven days.
+    const anchor = user.subscription?.startedAt ?? user.createdAt;
+    const report = await buildWeeklyReport(user.id, anchor, week);
+    res.json(weeklyReportResponseSchema.parse(report));
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.get('/quick-log', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
@@ -3197,6 +3522,302 @@ app.post('/detailed-assessment/submit', async (req, res, next) => {
       select: { status: true, completedAt: true, answers: { select: { questionKey: true, value: true } } },
     });
     res.json(serializeDetailedAssessment(assessment));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
+// Anonymous Q&A
+//
+// The asker's identity is stored (so she can follow her own thread) but never served. Every
+// response below is built from ANONYMOUS_QUESTION_SELECT, which has no `userId` and no `user`
+// relation — so a doctor route cannot leak the asker even by accident.
+// ─────────────────────────────────────────────
+
+/** The only shape a question is ever serialized from. Deliberately omits userId. */
+const ANONYMOUS_QUESTION_SELECT = {
+  id: true,
+  topic: true,
+  body: true,
+  status: true,
+  createdAt: true,
+  answers: {
+    select: {
+      id: true,
+      expertName: true,
+      expertRole: true,
+      body: true,
+      verified: true,
+      answeredAt: true,
+    },
+    orderBy: { answeredAt: 'asc' },
+  },
+} as const;
+
+type AnonymousQuestionRow = {
+  id: string;
+  topic: string;
+  body: string;
+  status: 'pending' | 'answered';
+  createdAt: Date;
+  answers: {
+    id: string;
+    expertName: string;
+    expertRole: string | null;
+    body: string;
+    verified: boolean;
+    answeredAt: Date;
+  }[];
+};
+
+/** `topic` is a free-text column, so anything seeded outside the enum degrades to `other`. */
+function toQuestionTopic(value: string): AnonymousQuestionTopic {
+  const parsed = anonymousQuestionTopicSchema.safeParse(value);
+  return parsed.success ? parsed.data : 'other';
+}
+
+function serializeAnonymousQuestion(row: AnonymousQuestionRow) {
+  return {
+    id: row.id,
+    topic: toQuestionTopic(row.topic),
+    body: row.body,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    answers: row.answers.map((answer) => ({
+      id: answer.id,
+      expertName: answer.expertName,
+      expertRole: answer.expertRole,
+      body: answer.body,
+      verified: answer.verified,
+      answeredAt: answer.answeredAt.toISOString(),
+    })),
+  };
+}
+
+/** Keeps one account from flooding the shared specialist queue. */
+async function remainingQuestionsToday(userId: string): Promise<number> {
+  const asked = await prisma.anonymousQuestion.count({
+    where: { userId, createdAt: { gte: addDays(new Date(), -1) } },
+  });
+
+  return Math.max(0, ANONYMOUS_QA_DAILY_LIMIT - asked);
+}
+
+app.post('/questions', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { topic, body } = createAnonymousQuestionBodySchema.parse(req.body);
+
+    if ((await remainingQuestionsToday(user.id)) <= 0) {
+      throw new HttpError(
+        429,
+        `You can ask up to ${ANONYMOUS_QA_DAILY_LIMIT} questions a day. Please come back tomorrow.`,
+      );
+    }
+
+    const question = await prisma.anonymousQuestion.create({
+      data: { userId: user.id, topic, body },
+      select: ANONYMOUS_QUESTION_SELECT,
+    });
+
+    res.status(201).json(
+      createAnonymousQuestionResponseSchema.parse({
+        question: serializeAnonymousQuestion(question as AnonymousQuestionRow),
+        remainingToday: await remainingQuestionsToday(user.id),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/questions/mine', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+
+    const questions = await prisma.anonymousQuestion.findMany({
+      where: { userId: user.id },
+      select: ANONYMOUS_QUESTION_SELECT,
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    res.json(
+      myAnonymousQuestionsResponseSchema.parse({
+        questions: (questions as AnonymousQuestionRow[]).map(serializeAnonymousQuestion),
+        remainingToday: await remainingQuestionsToday(user.id),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * The public wall of answered questions. Every asker is anonymous to every reader, including the
+ * asker's own questions — they are indistinguishable here, and found under /questions/mine.
+ */
+app.get('/questions/feed', async (req, res, next) => {
+  try {
+    await requireCurrentUser(req);
+    const { topic, limit } = anonymousQuestionFeedQuerySchema.parse(req.query);
+
+    const questions = await prisma.anonymousQuestion.findMany({
+      where: {
+        status: 'answered',
+        ...(topic ? { topic } : {}),
+      },
+      select: ANONYMOUS_QUESTION_SELECT,
+      orderBy: { answeredAt: 'desc' },
+      take: limit ?? 20,
+    });
+
+    res.json(
+      anonymousQuestionFeedResponseSchema.parse({
+        questions: (questions as AnonymousQuestionRow[]).map(serializeAnonymousQuestion),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * The specialist queue. Unlike consultations, questions are not assigned to a doctor — the queue
+ * is shared and whoever is qualified picks one up, so both scopes see the same list.
+ */
+app.get('/doctor/questions', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+    const { status, topic, limit } = doctorQuestionsQuerySchema.parse(req.query);
+
+    const where = {
+      ...(status ? { status } : {}),
+      ...(topic ? { topic } : {}),
+    };
+
+    const [questions, pendingCount, answeredCount] = await Promise.all([
+      prisma.anonymousQuestion.findMany({
+        where,
+        select: ANONYMOUS_QUESTION_SELECT,
+        // Pending first, oldest first inside each group: the longest wait is answered next.
+        orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
+        take: limit ?? 100,
+      }),
+      prisma.anonymousQuestion.count({ where: { status: 'pending' } }),
+      prisma.anonymousQuestion.count({ where: { status: 'answered' } }),
+    ]);
+
+    res.json(
+      doctorQuestionsResponseSchema.parse({
+        questions: (questions as AnonymousQuestionRow[]).map(serializeAnonymousQuestion),
+        pendingCount,
+        answeredCount,
+        canAnswer: identity.scope === 'doctor',
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Answers are signed with the specialist behind the key, never with a name from the request, so
+ * an answer cannot be attributed to a doctor who did not write it. The shared admin key has no
+ * specialist to sign as and is read-only here.
+ */
+app.post('/doctor/questions/:id/answer', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+    if (identity.scope !== 'doctor') {
+      throw new HttpError(403, 'Answers must be written from a specialist’s own portal key.');
+    }
+
+    const { body } = answerAnonymousQuestionBodySchema.parse(req.body);
+
+    const specialist = await prisma.specialist.findUnique({
+      where: { id: identity.specialistId },
+      select: { id: true, name: true, role: true, subtitle: true },
+    });
+
+    if (!specialist) {
+      throw new HttpError(401, 'Invalid or missing doctor access key.');
+    }
+
+    const existing = await prisma.anonymousQuestion.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, userId: true, answeredAt: true },
+    });
+
+    if (!existing) {
+      throw new HttpError(404, 'Question not found.');
+    }
+
+    const answeredAt = new Date();
+
+    const question = await prisma.$transaction(async (tx) => {
+      await tx.expertAnswer.create({
+        data: {
+          questionId: existing.id,
+          specialistId: specialist.id,
+          expertName: specialist.name,
+          expertRole: specialist.role ?? specialist.subtitle ?? null,
+          body,
+          verified: true,
+          answeredAt,
+        },
+      });
+
+      return tx.anonymousQuestion.update({
+        where: { id: existing.id },
+        data: {
+          status: 'answered',
+          // Stamped once: it marks when the question stopped waiting, so a second answer on the
+          // same thread does not push it back to the top of the feed.
+          answeredAt: existing.answeredAt ?? answeredAt,
+        },
+        select: ANONYMOUS_QUESTION_SELECT,
+      });
+    });
+
+    if (existing.userId) {
+      void notifyAskerQuestionAnswered(existing.userId, specialist.name);
+    }
+
+    res.json(
+      answerAnonymousQuestionResponseSchema.parse({
+        question: serializeAnonymousQuestion(question as AnonymousQuestionRow),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
+// Library
+// ─────────────────────────────────────────────
+
+// Editorial feed. Public — the library is readable without a session so it can
+// be linked to from onboarding and marketing.
+app.get('/library', (req, res, next) => {
+  try {
+    const query = libraryFeedQuerySchema.parse(req.query);
+    res.json(libraryFeedResponseSchema.parse(getLibraryFeed(query)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/library/articles/:slug', (req, res, next) => {
+  try {
+    const { slug } = libraryArticleParamsSchema.parse(req.params);
+    const result = getLibraryArticle(slug);
+    if (!result) {
+      throw new HttpError(404, 'Article not found.');
+    }
+    res.json(libraryArticleResponseSchema.parse(result));
   } catch (e) {
     next(e);
   }

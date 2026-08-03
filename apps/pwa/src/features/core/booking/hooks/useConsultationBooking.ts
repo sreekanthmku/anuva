@@ -1,5 +1,5 @@
 import type { ConsultationSpecialist } from '@anuva/shared';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError } from '../../../../shared/lib/api';
 import { bookConsultation, fetchConsultationSlots, fetchConsultationSpecialists } from '../api';
 import {
@@ -73,44 +73,74 @@ export function useConsultationBooking() {
 
   const isSelectedSpecialistBookable = Boolean(selectedSpecialist?.bookable);
 
-  useEffect(() => {
-    if (!selectedSpecialist?.bookable) {
-      setSlotDates([]);
-      setPickedDateId(null);
-      setPickedTimeId(null);
-      return;
-    }
+  // Bumped per request so a slow response from a previous specialist or date page cannot land
+  // after a newer one and overwrite it.
+  const slotsRequestRef = useRef(0);
 
-    let cancelled = false;
-    const from = localYmd(dateAtLocalNoonFromTodayOffset(datePageStartOffset));
+  /**
+   * `keepSelection` is for reloading under the user's feet — after a slot is lost to someone else
+   * — where wiping the whole grid and their chosen date would be more disorienting than the race
+   * itself. Anything the refresh no longer returns is dropped from the selection.
+   */
+  const loadSlots = useCallback(
+    async ({ keepSelection }: { keepSelection: boolean }) => {
+      if (!selectedSpecialist?.bookable) {
+        setSlotDates([]);
+        setPickedDateId(null);
+        setPickedTimeId(null);
+        return;
+      }
 
-    setLoadingSlots(true);
-    setError(null);
-    setSlotDates([]);
-    setPickedDateId(null);
-    setPickedTimeId(null);
+      const requestId = slotsRequestRef.current + 1;
+      slotsRequestRef.current = requestId;
+      const from = localYmd(dateAtLocalNoonFromTodayOffset(datePageStartOffset));
 
-    fetchConsultationSlots({ specialistKey: selectedSpecialist.key, from, days: DATES_PER_PAGE })
-      .then((response) => {
-        if (cancelled) return;
+      setLoadingSlots(true);
+      if (!keepSelection) {
+        setError(null);
+        setSlotDates([]);
+        setPickedDateId(null);
+        setPickedTimeId(null);
+      }
+
+      try {
+        const response = await fetchConsultationSlots({
+          specialistKey: selectedSpecialist.key,
+          from,
+          days: DATES_PER_PAGE,
+        });
+        if (requestId !== slotsRequestRef.current) return;
+
         setSlotDates(response.dates);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
+
+        if (keepSelection) {
+          setPickedDateId((date) =>
+            date && response.dates.some((item) => item.date === date) ? date : null
+          );
+          setPickedTimeId((time) =>
+            time &&
+            response.dates.some((item) => item.slots.some((slot) => slot.id === time))
+              ? time
+              : null
+          );
+        }
+      } catch (err: unknown) {
+        if (requestId !== slotsRequestRef.current) return;
         setError(
           err instanceof Error ? err.message : 'Unable to load appointment slots right now.'
         );
-      })
-      .finally(() => {
-        if (!cancelled) {
+      } finally {
+        if (requestId === slotsRequestRef.current) {
           setLoadingSlots(false);
         }
-      });
+      }
+    },
+    [datePageStartOffset, selectedSpecialist?.bookable, selectedSpecialist?.key]
+  );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [datePageStartOffset, selectedSpecialist?.bookable, selectedSpecialist?.key]);
+  useEffect(() => {
+    void loadSlots({ keepSelection: false });
+  }, [loadSlots]);
 
   const dateSlots = useMemo(() => slotDates.map((item) => bookingDateCard(item.date)), [slotDates]);
 
@@ -173,7 +203,15 @@ export function useConsultationBooking() {
       setPhase('confirmed');
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setError('That slot was just booked. Please choose another time.');
+        // The grid still shows the slot that was just lost, and re-submitting it would only 409
+        // again — refresh before telling her to pick another time. The API sends the same 409 when
+        // she already has an overlapping appointment, so pass its own wording through.
+        await loadSlots({ keepSelection: true });
+        setError(
+          err.message.startsWith('Request failed with status')
+            ? 'That slot was just booked. Please choose another time.'
+            : err.message
+        );
       } else if (err instanceof Error) {
         setError(err.message);
       } else {

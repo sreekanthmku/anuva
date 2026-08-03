@@ -13,6 +13,7 @@ import SymptomTrackRoute from '../features/core/SymptomTrackRoute';
 import WeeklyReportRoute from '../features/core/WeeklyReportRoute';
 import CareDirectionRoute from '../features/core/CareDirectionRoute';
 import LibraryRoute from '../features/core/LibraryRoute';
+import LibraryArticleRoute from '../features/core/LibraryArticleRoute';
 import AnonymousQARoute from '../features/core/AnonymousQARoute';
 import ConsultationBookingRoute from '../features/core/ConsultationBookingRoute';
 import MyBookingsRoute from '../features/core/MyBookingsRoute';
@@ -121,6 +122,14 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <LibraryRoute />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/library/:slug"
+          element={
+            <ProtectedRoute>
+              <LibraryArticleRoute />
             </ProtectedRoute>
           }
         />

@@ -403,6 +403,11 @@ model Specialist {
   id             String                    @id @default(cuid())
   key            String                    @unique // gynec | psych | nutri | riz
   name           String
+  /// SHA-256 of the doctor's personal portal access key. Null means this specialist cannot
+  /// sign in to the doctor portal yet. Stored hashed so a DB dump does not hand out logins;
+  /// SHA-256 (not bcrypt) because the key is high-entropy random and must be looked up by hash.
+  accessKeyHash      String?               @unique
+  accessKeyUpdatedAt DateTime?
   subtitle       String?
   role           String?
   specialization String?
@@ -414,6 +419,7 @@ model Specialist {
   qualifications SpecialistQualification[]
   consultations  Consultation[]
   slots          ConsultationSlot[]
+  expertAnswers  ExpertAnswer[]
 }
 
 model SpecialistQualification {
@@ -584,24 +590,33 @@ enum QuestionStatus {
   answered
 }
 
+/// `userId` is how the asker gets back to her own thread, and is the ONE field that must never
+/// reach the doctor portal. No /doctor route selects it, and no shared schema has a slot for it.
 model AnonymousQuestion {
-  id        String         @id @default(cuid())
-  userId    String? // nullable: anonymity preserved
-  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  topic     String
-  body      String
-  status    QuestionStatus @default(pending)
-  createdAt DateTime       @default(now())
-  answers   ExpertAnswer[]
+  id         String         @id @default(cuid())
+  userId     String? // nullable: anonymity preserved
+  user       User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  topic      String
+  body       String
+  status     QuestionStatus @default(pending)
+  createdAt  DateTime       @default(now())
+  answeredAt DateTime?
+  answers    ExpertAnswer[]
 
   @@index([topic])
   @@index([status])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model ExpertAnswer {
   id         String            @id @default(cuid())
   questionId String
   question   AnonymousQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  /// Which specialist signed the answer. Null for answers written with the shared admin key or
+  /// seeded by hand; `expertName`/`expertRole` are denormalized so the card renders either way.
+  specialistId String?
+  specialist   Specialist?     @relation(fields: [specialistId], references: [id], onDelete: SetNull)
   expertName String
   expertRole String?
   body       String
@@ -609,6 +624,7 @@ model ExpertAnswer {
   answeredAt DateTime          @default(now())
 
   @@index([questionId])
+  @@index([specialistId])
 }
 
 // ─────────────────────────────────────────────
