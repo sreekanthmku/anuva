@@ -15,7 +15,7 @@ const navItems: NavItem[] = [
   { to: '/home', label: 'Home', icon: 'home' },
   { to: '/chat', label: 'ANU', icon: 'anu' },
   { to: '/track', label: 'Track', icon: 'track' },
-  { to: '/report', label: 'Report', icon: 'report' },
+  { to: '/report', label: 'Summary', icon: 'report' },
   { to: '/more', label: 'More', icon: 'more', isMore: true },
 ];
 

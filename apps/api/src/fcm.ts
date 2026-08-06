@@ -2,8 +2,10 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import admin from 'firebase-admin';
+import { logger } from './logger.js';
 
 const FCM_BATCH_SIZE = 500;
+const log = logger.child({ module: 'fcm' });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
@@ -73,6 +75,23 @@ export async function sendPushToAllTokens(
 
     successCount += response.successCount;
     failureCount += response.failureCount;
+
+    // Per-token failures were only ever counted, never reported. Codes, not tokens: a token is
+    // a device credential, and `registration-token-not-registered` is the one worth acting on.
+    if (response.failureCount > 0) {
+      const codes: Record<string, number> = {};
+      for (const result of response.responses) {
+        if (result.success) {
+          continue;
+        }
+        const code = result.error?.code ?? 'unknown';
+        codes[code] = (codes[code] ?? 0) + 1;
+      }
+      log.warn(
+        { attempted: batch.length, failed: response.failureCount, codes },
+        'Some push tokens failed',
+      );
+    }
   }
 
   return { successCount, failureCount };

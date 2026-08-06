@@ -1,7 +1,18 @@
-import type { ReportRing, ReportRingKey, ReportStat, WeeklyReportResponse } from '@anuva/shared';
+import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type {
+  ReportRing,
+  ReportRingKey,
+  ReportStat,
+  SummaryPeriod,
+  SummaryWeekBreakdown,
+  WeeklyReportResponse,
+} from '@anuva/shared';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { BottomNav } from './components/BottomNav';
-import { useWeeklyReport } from './hooks/useWeeklyReport';
+import { PeriodToggle } from './components/PeriodToggle';
+import { Sparkline } from './components/Sparkline';
+import { useSummary } from './hooks/useWeeklyReport';
 
 const RING_COLORS: Record<ReportRingKey, { color: string; track: string }> = {
   sleep: { color: '#5E3566', track: 'rgba(94, 53, 102, 0.13)' },
@@ -19,16 +30,87 @@ const STAT_COLORS: Record<string, string> = {
 };
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
+const FRAUNCES = '"Fraunces", sans-serif';
+
+/** Remembered within the session only — a fresh open always lands on Daily. */
+const PERIOD_STORAGE_KEY = 'anuva.summary.period';
+
+const TRACKER_EYEBROW: Record<SummaryPeriod, string> = {
+  daily: 'Daily tracker',
+  weekly: 'Weekly tracker',
+  monthly: 'Monthly tracker',
+};
+
+const RESET_LABEL: Record<SummaryPeriod, string> = {
+  daily: 'Today',
+  weekly: 'This week',
+  monthly: 'This month',
+};
+
+// ── Date formatting ──────────────────────────────────────────
+// Server returns plain ISO days; formatting stays here so it follows the
+// device locale.
+
+function parseIso(iso: string): Date {
+  return new Date(`${iso}T00:00:00`);
+}
+
+function formatDay(iso: string): string {
+  return parseIso(iso).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatShortDay(iso: string): string {
+  return parseIso(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
 function formatRange(startIso: string, endIso: string): string {
-  const start = new Date(`${startIso}T00:00:00`);
-  const end = new Date(`${endIso}T00:00:00`);
+  if (startIso === endIso) return formatShortDay(startIso);
+  const start = parseIso(startIso);
+  const end = parseIso(endIso);
   const month = (d: Date) => d.toLocaleDateString(undefined, { month: 'short' });
-  const sameMonth = start.getMonth() === end.getMonth();
-  return sameMonth
+  return start.getMonth() === end.getMonth()
     ? `${month(start)} ${start.getDate()} – ${end.getDate()}`
     : `${month(start)} ${start.getDate()} – ${month(end)} ${end.getDate()}`;
 }
+
+function formatMonth(iso: string): string {
+  return parseIso(iso).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+
+/** Headline for the window — relative wording where it reads better than a date. */
+function periodHeadline(data: WeeklyReportResponse): string {
+  if (data.period === 'daily') {
+    if (data.offset === 0) return 'Today';
+    if (data.offset === 1) return 'Yesterday';
+    return formatDay(data.periodStart);
+  }
+  if (data.period === 'weekly') {
+    if (data.offset === 0) return 'This week';
+    if (data.offset === 1) return 'Last week';
+    return formatRange(data.periodStart, data.periodEnd);
+  }
+  return data.offset === 0 ? 'This month' : formatMonth(data.periodStart);
+}
+
+/** The concrete dates behind the headline, plus a note when the user joined mid-period. */
+function periodDetail(data: WeeklyReportResponse): string {
+  const base =
+    data.period === 'daily'
+      ? formatDay(data.periodStart)
+      : data.period === 'weekly'
+        ? formatRange(data.periodStart, data.periodEnd)
+        : formatMonth(data.periodStart);
+
+  return data.coverageStart !== data.periodStart
+    ? `${base} · your data from ${formatShortDay(data.coverageStart)}`
+    : base;
+}
+
+// ── Rings ────────────────────────────────────────────────────
 
 function ReportRingCard({ ring }: { ring: ReportRing }) {
   const svgSize = 88;
@@ -38,9 +120,9 @@ function ReportRingCard({ ring }: { ring: ReportRing }) {
   const { color, track } = RING_COLORS[ring.key];
   const hasData = ring.pct != null;
   const progress = Math.min(Math.max((ring.pct ?? 0) / 100, 0), 1);
-  const medianAngle = (ring.cohortMedian / 100) * 360 - 90;
-  const medianX = center + radius * Math.cos((medianAngle * Math.PI) / 180);
-  const medianY = center + radius * Math.sin((medianAngle * Math.PI) / 180);
+  const referenceAngle = (ring.reference.value / 100) * 360 - 90;
+  const referenceX = center + radius * Math.cos((referenceAngle * Math.PI) / 180);
+  const referenceY = center + radius * Math.sin((referenceAngle * Math.PI) / 180);
 
   return (
     <div className="flex flex-col items-center rounded-starchart-lg bg-surface-bright px-1 py-1.5">
@@ -52,8 +134,8 @@ function ReportRingCard({ ring }: { ring: ReportRing }) {
           role="img"
           aria-label={
             hasData
-              ? `${ring.label} ${ring.pct}% with reference marker at ${ring.cohortMedian}%`
-              : `${ring.label} — not logged this week`
+              ? `${ring.label} ${ring.pct}%, ${ring.reference.label} is ${ring.reference.value}%. ${ring.delta}`
+              : `${ring.label} — not logged`
           }
           className="block"
         >
@@ -71,7 +153,14 @@ function ReportRingCard({ ring }: { ring: ReportRing }) {
               transform={`rotate(-90 ${center} ${center})`}
             />
           )}
-          <circle cx={medianX} cy={medianY} r="2.2" fill="#FBF6F0" stroke={color} strokeWidth="1.4" />
+          <circle
+            cx={referenceX}
+            cy={referenceY}
+            r="2.2"
+            fill="#FBF6F0"
+            stroke={color}
+            strokeWidth="1.4"
+          />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <span
@@ -87,7 +176,7 @@ function ReportRingCard({ ring }: { ring: ReportRing }) {
           {ring.label}
         </p>
         <span
-          className="mt-0.5 block text-[9.5px] font-medium leading-none tracking-[0.04em]"
+          className="mt-0.5 block min-h-[22px] text-[9.5px] font-medium leading-[1.15] tracking-[0.04em]"
           style={{ color: hasData ? color : '#B9A79A', fontFamily: '"Mulish", sans-serif' }}
         >
           {hasData ? ring.delta : 'Not logged'}
@@ -114,8 +203,9 @@ function ReportProgressRings({ rings }: { rings: ReportRing[] }) {
   );
 }
 
+// ── Stats ────────────────────────────────────────────────────
+
 function StatCard({ stat, wide }: { stat: ReportStat; wide?: boolean }) {
-  const maxT = Math.max(...stat.trend, 1);
   const color = STAT_COLORS[stat.key] ?? '#5E3566';
 
   return (
@@ -136,21 +226,141 @@ function StatCard({ stat, wide }: { stat: ReportStat; wide?: boolean }) {
       >
         {stat.label}
       </div>
-      <div className="mt-2.5 flex h-[22px] items-end gap-0.5">
-        {stat.trend.map((t, i) => (
-          <div
-            key={i}
-            className="min-h-[2px] flex-1 rounded-sm"
-            style={{
-              height: `${Math.max(8, (t / maxT) * 100)}%`,
-              backgroundColor: i === stat.trend.length - 1 && t > 0 ? color : '#ECDFD0',
-            }}
-          />
-        ))}
+      <div className="mt-2.5">
+        <Sparkline values={stat.trend} color={color} />
       </div>
     </article>
   );
 }
+
+// ── Week-by-week strip (monthly) ─────────────────────────────
+
+function WeekStrip({ weeks }: { weeks: SummaryWeekBreakdown[] }) {
+  return (
+    <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
+      <Eyebrow tone="gold">Week by week</Eyebrow>
+      <div className="flex flex-col gap-2.5">
+        {weeks.map((week) => (
+          <div key={week.startDate} className="flex items-center gap-3">
+            <span
+              className="w-[76px] shrink-0 text-[11px] leading-none text-on-surface-variant"
+              style={{ fontFamily: MULISH }}
+            >
+              {formatRange(week.startDate, week.endDate)}
+            </span>
+            <div className="h-[8px] flex-1 overflow-hidden rounded-full bg-surface-bright">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${week.wellness ?? 0}%`, backgroundColor: '#5E3566' }}
+              />
+            </div>
+            <span
+              className="w-[30px] shrink-0 text-right text-[12px] leading-none text-on-surface"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
+              {week.wellness ?? '—'}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p
+        className="mt-3 text-[11px] leading-[1.35] text-on-surface-variant"
+        style={{ fontFamily: MULISH }}
+      >
+        Wellness per week, so a hard stretch does not disappear into the month&apos;s average.
+      </p>
+    </article>
+  );
+}
+
+// ── Period navigation ────────────────────────────────────────
+
+function ArrowButton({
+  direction,
+  disabled,
+  onClick,
+  label,
+}: {
+  direction: 'prev' | 'next';
+  disabled: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface transition-opacity disabled:opacity-25"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d={direction === 'prev' ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'}
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
+function PeriodNav({
+  data,
+  period,
+  onStep,
+  onReset,
+}: {
+  data: WeeklyReportResponse | null;
+  period: SummaryPeriod;
+  onStep: (delta: number) => void;
+  onReset: () => void;
+}) {
+  return (
+    <div className="mt-3 flex flex-col items-center">
+      <div className="flex items-center gap-1">
+        <ArrowButton
+          direction="prev"
+          disabled={!data?.canGoBack}
+          onClick={() => onStep(1)}
+          label={`Previous ${period === 'daily' ? 'day' : period === 'weekly' ? 'week' : 'month'}`}
+        />
+        <span
+          aria-live="polite"
+          className="min-w-[150px] text-center text-[15px] font-semibold leading-none text-on-surface"
+          style={{ fontFamily: '"Mulish", sans-serif' }}
+        >
+          {data ? periodHeadline(data) : '—'}
+        </span>
+        <ArrowButton
+          direction="next"
+          disabled={!data?.canGoForward}
+          onClick={() => onStep(-1)}
+          label={`Next ${period === 'daily' ? 'day' : period === 'weekly' ? 'week' : 'month'}`}
+        />
+      </div>
+
+      <p className="mt-0.5 text-[11px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
+        {data ? periodDetail(data) : ' '}
+      </p>
+
+      {data && data.canGoForward && (
+        <button
+          type="button"
+          onClick={onReset}
+          className="mt-2 min-h-[34px] rounded-full bg-surface-bright px-4 text-[12px] font-medium text-primary"
+          style={{ fontFamily: MULISH }}
+        >
+          Back to {RESET_LABEL[period].toLowerCase()}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Body ─────────────────────────────────────────────────────
 
 function ReportSkeleton() {
   return (
@@ -165,22 +375,35 @@ function ReportSkeleton() {
   );
 }
 
+const INSIGHT_STYLES: Record<string, { card: string; tone: 'plum' | 'ember' | 'muted' }> = {
+  positive: { card: 'border-primary/20 bg-primary-container', tone: 'plum' },
+  attention: { card: 'border-error/25 bg-error-container', tone: 'ember' },
+  neutral: { card: 'border-border-default bg-surface-raised', tone: 'muted' },
+};
+
 function ReportBody({ report }: { report: WeeklyReportResponse }) {
+  const navigate = useNavigate();
+  const isDaily = report.period === 'daily';
+  const isMonthly = report.period === 'monthly';
+
   const wellness = report.stats.find((s) => s.key === 'wellness');
   const others = report.stats.filter((s) => s.key !== 'wellness');
   const hasAnyData = report.daysLogged > 0;
+  const metricsLogged = report.rings.filter((r) => r.pct != null).length;
 
   return (
     <>
       <section className="px-3 pb-4 pt-2">
         <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
           <div className="mb-2.5 flex items-center justify-between">
-            <Eyebrow className="mb-0">Weekly tracker</Eyebrow>
+            <Eyebrow className="mb-0">{TRACKER_EYEBROW[report.period]}</Eyebrow>
             <span
               className="rounded-full bg-surface-bright px-3 py-1 text-[10px] uppercase tracking-[0.08em] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              {report.daysLogged}/{report.daysElapsed} days logged
+              {isDaily
+                ? `${metricsLogged} of ${report.rings.length} logged`
+                : `${report.daysLogged}/${report.daysElapsed} days logged`}
             </span>
           </div>
           <ReportProgressRings rings={report.rings} />
@@ -188,45 +411,73 @@ function ReportBody({ report }: { report: WeeklyReportResponse }) {
             className="mt-2 rounded-starchart-lg bg-surface-bright px-3 py-1.5 text-center text-[11px] leading-[1.35] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
-            Small dots mark the typical level for {report.cohortLabel}.
+            {report.referenceNote}
           </p>
         </article>
       </section>
 
       <section className="flex flex-col gap-3 px-3 pb-[22px]">
-        {hasAnyData && (
-          <div className="grid grid-cols-2 gap-2.5">
-            {others.map((stat) => (
-              <StatCard key={stat.key} stat={stat} />
-            ))}
-            {wellness && <StatCard stat={wellness} wide />}
-          </div>
+        {!hasAnyData && (
+          <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
+            <Eyebrow tone="muted">Nothing logged</Eyebrow>
+            <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
+              {isDaily
+                ? 'No check-ins for this day. A couple of answers is all it takes to fill the rings.'
+                : `No check-ins in this ${report.period === 'weekly' ? 'week' : 'month'} yet.`}
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/track')}
+              className="mt-3 min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-medium text-on-secondary"
+              style={{ fontFamily: MULISH }}
+            >
+              Log how you feel
+            </button>
+          </article>
         )}
+
+        {hasAnyData && isMonthly && report.weekBreakdown.length > 0 && (
+          <WeekStrip weeks={report.weekBreakdown} />
+        )}
+
+        {hasAnyData &&
+          (isMonthly ? (
+            // A month's chart needs the full width; the 2-up grid would squeeze
+            // 31 days into a card half this wide.
+            <div className="flex flex-col gap-2.5">
+              {report.stats.map((stat) => (
+                <StatCard key={stat.key} stat={stat} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              {others.map((stat) => (
+                <StatCard key={stat.key} stat={stat} />
+              ))}
+              {wellness && <StatCard stat={wellness} wide />}
+            </div>
+          ))}
 
         {report.calibrating && (
           <article className="rounded-[20px] border border-tertiary/25 bg-surface-raised p-4">
             <Eyebrow tone="gold">Still calibrating</Eyebrow>
             <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
-              Day {report.daysElapsed} of 7. These numbers settle once your first full week is in.
+              Your first week is still filling in. These numbers settle once seven days are logged.
             </p>
           </article>
         )}
 
-        {report.insights.map((insight) => (
-          <article
-            key={insight.title}
-            className={
-              insight.tone === 'positive'
-                ? 'rounded-[20px] border border-primary/20 bg-primary-container p-4'
-                : 'rounded-[20px] border border-error/25 bg-error-container p-4'
-            }
-          >
-            <Eyebrow tone={insight.tone === 'positive' ? 'plum' : 'ember'}>{insight.title}</Eyebrow>
-            <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
-              {insight.body}
-            </p>
-          </article>
-        ))}
+        {report.insights.map((insight) => {
+          const style = INSIGHT_STYLES[insight.tone] ?? INSIGHT_STYLES.attention!;
+          return (
+            <article key={insight.title} className={`rounded-[20px] border p-4 ${style.card}`}>
+              <Eyebrow tone={style.tone}>{insight.title}</Eyebrow>
+              <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
+                {insight.body}
+              </p>
+            </article>
+          );
+        })}
 
         <article className="rounded-[20px] border border-border-default bg-primary-container p-[18px]">
           <div className="mb-2.5 flex items-center gap-3">
@@ -235,10 +486,7 @@ function ReportBody({ report }: { report: WeeklyReportResponse }) {
               ANU reflects
             </Eyebrow>
           </div>
-          <p
-            className="text-[17px] leading-[1.4] text-on-surface"
-            style={{ fontFamily: '"Fraunces", sans-serif' }}
-          >
+          <p className="text-[17px] leading-[1.4] text-on-surface" style={{ fontFamily: FRAUNCES }}>
             &quot;{report.anuReflection}&quot;
           </p>
         </article>
@@ -247,25 +495,52 @@ function ReportBody({ report }: { report: WeeklyReportResponse }) {
   );
 }
 
+// ── Route ────────────────────────────────────────────────────
+
+function initialPeriod(): SummaryPeriod {
+  try {
+    const stored = sessionStorage.getItem(PERIOD_STORAGE_KEY);
+    if (stored === 'weekly' || stored === 'monthly' || stored === 'daily') return stored;
+  } catch {
+    // Storage unavailable (private mode) — fall through to the default.
+  }
+  return 'daily';
+}
+
 export default function WeeklyReportRoute() {
-  const { data, loading, error, refresh } = useWeeklyReport();
+  const [period, setPeriod] = useState<SummaryPeriod>(initialPeriod);
+  const [offset, setOffset] = useState(0);
+  const { data, loading, error, refresh } = useSummary(period, offset);
+
+  const changePeriod = useCallback((next: SummaryPeriod) => {
+    setPeriod(next);
+    // Offsets count periods, so they do not carry across a granularity change.
+    setOffset(0);
+    try {
+      sessionStorage.setItem(PERIOD_STORAGE_KEY, next);
+    } catch {
+      // Non-fatal — the choice just will not survive navigation.
+    }
+  }, []);
+
+  const step = useCallback((delta: number) => {
+    setOffset((o) => Math.max(0, o + delta));
+  }, []);
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface">
-        <div className="px-3 pb-[22px] pt-[max(0.875rem,env(safe-area-inset-top))]">
-          <Eyebrow tone="plum">
-            {data ? `Week ${data.weekNumber} · ${formatRange(data.weekStart, data.weekEnd)}` : 'Your week'}
-          </Eyebrow>
-          <h1 className="font-display mb-1.5 text-[30px] leading-[1.1] text-on-surface">
+        <div className="px-3 pb-4 pt-[max(0.875rem,env(safe-area-inset-top))]">
+          <Eyebrow tone="plum">Your summary</Eyebrow>
+          <h1 className="font-display mb-3 text-[30px] leading-[1.1] text-on-surface">
             Your{' '}
-            <em className="not-italic text-primary" style={{ fontFamily: '"Fraunces", sans-serif' }}>
+            <em className="not-italic text-primary" style={{ fontFamily: FRAUNCES }}>
               benchmark
             </em>
           </h1>
-          <p className="mb-0 text-[12px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
-            Compared to {data?.cohortLabel ?? 'women 42–50 in early perimenopause'}
-          </p>
+
+          <PeriodToggle value={period} onChange={changePeriod} />
+          <PeriodNav data={data} period={period} onStep={step} onReset={() => setOffset(0)} />
         </div>
       </header>
 

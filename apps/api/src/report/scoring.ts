@@ -97,3 +97,16 @@ export function mean(values: number[]): number | null {
   if (values.length === 0) return null;
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
+
+/**
+ * Sample standard deviation. Used to size the "typical for you" band on the
+ * daily view from the user's own volatility rather than a fixed constant —
+ * someone with erratic sleep should need a bigger move before we call a day
+ * unusual. Needs at least 3 points to mean anything.
+ */
+export function stdev(values: number[]): number | null {
+  if (values.length < 3) return null;
+  const avg = mean(values)!;
+  const variance = values.reduce((sum, v) => sum + (v - avg) ** 2, 0) / (values.length - 1);
+  return Math.sqrt(variance);
+}

@@ -8,9 +8,11 @@ import cron from 'node-cron';
 import { prisma } from '@anuva/database';
 import type { NudgeSlot } from '@anuva/shared';
 import { sendPushToAllTokens } from '../fcm.js';
+import { logger } from '../logger.js';
 import { buildDispatch, recordSend, recordSuppression } from './engine.js';
 
 const TZ = process.env.NUDGE_TIMEZONE ?? 'Asia/Kolkata';
+const log = logger.child({ module: 'nudge' });
 
 type SuppressedDetail = {
   userId: string;
@@ -52,7 +54,7 @@ export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<D
         if (nudgeId !== 'UNKNOWN') {
           await recordSuppression(u.id, nudgeId, slot, reason, now);
         }
-        console.log(`[nudge] ${slot} suppressed user=${u.id} nudge=${nudgeId} reason=${reason}`);
+        log.debug({ slot, userId: u.id, nudgeId, reason }, 'Nudge suppressed');
         continue;
       }
       await sendPushToAllTokens(
@@ -70,25 +72,24 @@ export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<D
       );
       sent += 1;
     } catch (e) {
-      console.error('[nudge] dispatch failed for user', u.id, e);
+      log.error({ err: e, slot, userId: u.id }, 'Nudge dispatch failed');
     }
   }
 
-  console.log(
-    `[nudge] ${slot} dispatch — sent=${sent} suppressed=${suppressed} reasons=${JSON.stringify(
-      suppressedReasons,
-    )}`,
+  log.info(
+    { slot, candidates: users.length, sent, suppressed, reasons: suppressedReasons },
+    'Nudge slot dispatched',
   );
   return { sent, suppressed, suppressedReasons, suppressedDetails };
 }
 
 export function startNudgeScheduler(): void {
   if (process.env.NUDGE_SCHEDULER_DISABLED === 'true') {
-    console.log('[nudge] scheduler disabled via NUDGE_SCHEDULER_DISABLED');
+    log.warn('Scheduler disabled via NUDGE_SCHEDULER_DISABLED');
     return;
   }
   cron.schedule('30 7 * * *', () => void dispatchSlot('morning'), { timezone: TZ });
   cron.schedule('30 12 * * *', () => void dispatchSlot('afternoon'), { timezone: TZ });
   cron.schedule('30 20 * * *', () => void dispatchSlot('evening'), { timezone: TZ });
-  console.log(`[nudge] scheduler started (slots 07:30/12:30/20:30 ${TZ})`);
+  log.info({ timezone: TZ, slots: ['07:30', '12:30', '20:30'] }, 'Scheduler started');
 }

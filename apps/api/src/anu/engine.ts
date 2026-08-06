@@ -10,6 +10,7 @@
 
 import { prisma } from '@anuva/database';
 import type { AnuChatResponse } from '@anuva/shared';
+import { logger } from '../logger.js';
 import { matchRedFlag } from './redFlags.js';
 import { embedQuestion, generateReply } from './openai.js';
 import { lookup, store } from './cache.js';
@@ -19,6 +20,10 @@ import { findSymptom, followUpChips, logChip } from './symptoms.js';
 /// A thread is considered continuous while replies keep coming within this
 /// window; after it, the next message starts fresh.
 const THREAD_IDLE_MS = 30 * 60 * 1000;
+
+// Questions and replies are never logged — they are the user's symptom history. Only the
+// routing decision (which path served the turn, and how well it scored) is.
+const log = logger.child({ module: 'anu' });
 
 async function loadHistory(userId: string): Promise<PriorTurn[]> {
   const rows = await prisma.anuChatTurn.findMany({
@@ -83,7 +88,7 @@ async function recordTurn(turn: TurnRecord): Promise<void> {
     });
   } catch (e) {
     // The audit write must never cost the user her reply.
-    console.error('[anu] failed to record chat turn', e);
+    log.error({ err: e, userId: turn.userId, source: turn.source }, 'Failed to record chat turn');
   }
 }
 
@@ -196,6 +201,10 @@ export async function answer(
       source: 'red_flag',
       redFlagArea: rule.area,
     });
+    log.warn(
+      { userId, area: rule.area, urgency: rule.urgency, specialist: rule.recommendedSpecialist },
+      'Red flag matched — clinician safety reply served',
+    );
     return {
       reply: rule.response,
       suggestions: [],
@@ -235,6 +244,16 @@ export async function answer(
         cacheHitId: result.hit.id,
         similarity: result.hit.similarity,
       });
+      log.info(
+        {
+          userId,
+          source: 'cache',
+          cacheHitId: result.hit.id,
+          similarity: Number(result.hit.similarity.toFixed(4)),
+          symptom: result.hit.symptom,
+        },
+        'ANU turn served',
+      );
       return {
         reply: hitReply,
         suggestions: result.hit.suggestions,
@@ -271,7 +290,7 @@ export async function answer(
     if (cacheReply) {
       await store(userMessage, cacheReply, suggestions, symptom?.label ?? null, embedding).catch(
         (e) => {
-          console.error('[anu] failed to store cache entry', e);
+          log.error({ err: e, userId }, 'Failed to store cache entry');
         },
       );
     }
@@ -285,6 +304,19 @@ export async function answer(
     source: 'model',
     similarity: bestScore,
   });
+
+  log.info(
+    {
+      userId,
+      source: 'model',
+      symptom: symptom?.label ?? null,
+      // The near-miss score: how close the cache came to serving this without the model.
+      bestScore: bestScore === null ? null : Number(bestScore.toFixed(4)),
+      cacheable,
+      historyTurns: history.length,
+    },
+    'ANU turn served',
+  );
 
   return { reply, suggestions, source: 'model', escalation: null };
 }

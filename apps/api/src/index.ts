@@ -125,12 +125,13 @@ import {
   markTrackerEngagement,
 } from './nudge/engine.js';
 import { runNudgeSelfTest } from './nudge/selfTest.js';
-import { buildWeeklyReport } from './report/build.js';
+import { buildSummary } from './report/build.js';
 import { randomQuickLogMessage } from './quickLogMessages.js';
 import { answer as anuAnswer } from './anu/engine.js';
 import { getLibraryArticle, getLibraryFeed } from './library.js';
 import { isAnuChatConfigured } from './anu/openai.js';
 import { loadCache, cacheStats } from './anu/cache.js';
+import { httpLogger, logger } from './logger.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -170,6 +171,10 @@ const RECORDING_LOCAL_DIR = process.env.RECORDING_LOCAL_DIR?.trim() || '';
 
 app.use(cors({ origin: true, credentials: true }));
 
+// Mounted ahead of every route, including the raw-body LiveKit webhook below, so nothing
+// reaches a handler unlogged. Gives each request `req.log` with a reqId already attached.
+app.use(httpLogger);
+
 /**
  * LiveKit signs the raw request body, so this route has to see the unparsed bytes and must
  * therefore be registered ahead of express.json().
@@ -189,7 +194,7 @@ app.post('/livekit/webhook', express.raw({ type: '*/*', limit: '1mb' }), async (
     const receiver = new WebhookReceiver(LIVEKIT_API_KEY, LIVEKIT_API_SECRET);
     event = await receiver.receive(req.body.toString('utf8'), req.get('Authorization'));
   } catch (error) {
-    console.warn('Rejected LiveKit webhook', error);
+    req.log.warn({ err: error }, 'Rejected LiveKit webhook: signature verification failed');
     res.status(401).end();
     return;
   }
@@ -217,7 +222,10 @@ app.post('/livekit/webhook', express.raw({ type: '*/*', limit: '1mb' }), async (
       }
     }
   } catch (error) {
-    console.warn(`Failed handling LiveKit webhook ${event.event}`, error);
+    req.log.error(
+      { err: error, event: event.event, room: event.room?.name, egressId: event.egressInfo?.egressId },
+      'Failed handling LiveKit webhook',
+    );
   }
 });
 
@@ -538,6 +546,10 @@ async function requireCurrentUser(req: Request) {
     data: { lastSeenAt: new Date() },
   });
 
+  // Every later log line on this request — including the completion line and any error —
+  // carries the user it belonged to.
+  req.log = req.log.child({ userId: session.userId });
+
   return loadUserWithSubscription(session.userId);
 }
 
@@ -616,6 +628,7 @@ async function requireDoctorAccess(req: Request, _res: Response, next: NextFunct
         specialistKey: null,
         specialistName: null,
       });
+      req.log = req.log.child({ doctorScope: 'admin' });
       next();
       return;
     }
@@ -635,6 +648,8 @@ async function requireDoctorAccess(req: Request, _res: Response, next: NextFunct
       specialistKey: specialist.key,
       specialistName: specialist.name,
     });
+
+    req.log = req.log.child({ doctorScope: 'doctor', specialistKey: specialist.key });
 
     next();
   } catch (error) {
@@ -1113,7 +1128,10 @@ async function maybeMixCallRecording(consultationCallId: string): Promise<void> 
   try {
     await Promise.all([fs.access(doctorFile), fs.access(patientFile)]);
   } catch {
-    console.warn(`Cannot mix ${call.roomName}: participant files are not readable from the API`);
+    logger.warn(
+      { room: call.roomName, doctorFile, patientFile },
+      'Cannot mix recording: participant files are not readable from the API',
+    );
     return;
   }
 
@@ -1166,9 +1184,9 @@ async function maybeMixCallRecording(consultationCallId: string): Promise<void> 
       },
     });
 
-    console.log(`[recording] mixed ${outputName}`);
+    logger.info({ room: call.roomName, file: outputName }, 'Recording mixdown complete');
   } catch (error) {
-    console.warn(`Unable to mix recording for ${call.roomName}`, error);
+    logger.error({ err: error, room: call.roomName }, 'ffmpeg mixdown failed');
     await prisma.consultationRecording.update({
       where,
       data: {
@@ -1195,7 +1213,10 @@ async function stopCallRecordings(recordings: ConsultationRecordingRecord[]): Pr
           data: { status: 'processing' },
         });
       } catch (error) {
-        console.warn(`Unable to stop ${recording.participantRole} recording`, error);
+        logger.error(
+          { err: error, role: recording.participantRole, egressId: recording.egressId },
+          'Unable to stop recording',
+        );
       }
     }),
   );
@@ -1273,10 +1294,15 @@ async function startParticipantRecording(
         },
       }),
     ]);
+
+    logger.info(
+      { room: call.roomName, role, egressId: egress.egressId, audioOnly: LIVEKIT_RECORDING_AUDIO_ONLY },
+      'Recording started',
+    );
   } catch (error) {
     // One participant failing to record must not tear down the call or the request that
     // triggered this. The failure surfaces through the aggregated recording status.
-    console.warn(`Unable to start ${role} recording`, error);
+    logger.error({ err: error, role, room: call.roomName }, 'Unable to start recording');
     await prisma.consultationRecording.update({
       where,
       data: {
@@ -1303,7 +1329,7 @@ async function endConsultationCall(
   try {
     await getRoomServiceClient().deleteRoom(call.roomName);
   } catch (error) {
-    console.warn('Unable to delete LiveKit room on call end', error);
+    logger.error({ err: error, room: call.roomName }, 'Unable to delete LiveKit room on call end');
   }
 
   const endedCall = await prisma.consultationCall.update({
@@ -1319,6 +1345,15 @@ async function endConsultationCall(
   });
 
   await syncCallRecordings(endedCall.recordings);
+
+  logger.info(
+    {
+      room: endedCall.roomName,
+      callId: endedCall.id,
+      recordings: endedCall.recordings.length,
+    },
+    'Consultation call ended',
+  );
 
   // Usually a no-op here — egress is still finalising, so the mix is normally kicked off by the
   // egress_ended webhook instead. This covers the case where both files were already complete.
@@ -1366,7 +1401,10 @@ async function reconcileCallRecordings(roomName: string): Promise<void> {
   try {
     participants = await getRoomServiceClient().listParticipants(roomName);
   } catch (error) {
-    console.warn('Unable to list participants while reconciling recordings', error);
+    logger.error(
+      { err: error, room: roomName },
+      'Unable to list participants while reconciling recordings',
+    );
     return;
   }
 
@@ -1416,8 +1454,15 @@ async function notifyPatientCallStarted(consultationId: string, patientId: strin
         consultationId,
       },
     );
+    logger.info(
+      { consultationId, userId: patientId, tokens: tokens.length, type: 'consultation-call' },
+      'Push sent',
+    );
   } catch (error) {
-    console.warn('Unable to send consultation call push notification', error);
+    logger.error(
+      { err: error, consultationId, userId: patientId, tokens: tokens.length },
+      'Unable to send consultation call push notification',
+    );
   }
 }
 
@@ -1448,8 +1493,12 @@ async function notifyAskerQuestionAnswered(userId: string, doctorName: string) {
         type: 'anonymous-qa-answer',
       },
     );
+    logger.info({ userId, tokens: tokens.length, type: 'anonymous-qa-answer' }, 'Push sent');
   } catch (error) {
-    console.warn('Unable to send anonymous Q&A push notification', error);
+    logger.error(
+      { err: error, userId, tokens: tokens.length },
+      'Unable to send anonymous Q&A push notification',
+    );
   }
 }
 
@@ -2571,6 +2620,13 @@ app.post('/auth/request-otp', async (req, res, next) => {
       },
     });
 
+    // Phone numbers are masked in logs — an OTP flow is traceable without the log becoming a
+    // list of user phone numbers.
+    req.log.info(
+      { purpose: parsed.purpose, phone: maskPhone(phone), challengeId: challenge.id },
+      'OTP sent',
+    );
+
     res.json(
       requestOtpResponseSchema.parse({
         challengeId: challenge.id,
@@ -2676,6 +2732,9 @@ app.post('/auth/verify-otp', async (req, res, next) => {
         expiresAt,
       },
     });
+
+    req.log = req.log.child({ userId: user.id });
+    req.log.info({ isNewUser, phone: maskPhone(phone) }, 'Session created');
 
     setSessionCookie(res, sessionToken, expiresAt);
     res.json(
@@ -3387,10 +3446,12 @@ async function getTodayQuickLogCounts(userId: string) {
 app.get('/report', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
-    const { week } = weeklyReportQuerySchema.parse(req.query);
-    // Weeks run from the trial start so week 1 is the user's first seven days.
+    const { period, offset } = weeklyReportQuerySchema.parse(req.query);
+    // Windows are calendar-aligned (Mon-Sun weeks, 1st-EOM months); the trial
+    // start only clamps how far back the user can travel and how much of a
+    // period counts as coverage.
     const anchor = user.subscription?.startedAt ?? user.createdAt;
-    const report = await buildWeeklyReport(user.id, anchor, week);
+    const report = await buildSummary(user.id, anchor, period, offset);
     res.json(weeklyReportResponseSchema.parse(report));
   } catch (e) {
     next(e);
@@ -3825,18 +3886,22 @@ app.get('/library/articles/:slug', (req, res, next) => {
 
 app.use(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  (err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  (err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    // Expected rejections are logged at warn with the reason, so a 400/401/404 is no longer
+    // invisible — the request line alone never explained why the client was turned away.
     if (err instanceof ZodError) {
+      req.log.warn({ issues: err.flatten() }, 'Request rejected: validation failed');
       res.status(400).json({ error: 'Validation failed', issues: err.flatten() });
       return;
     }
 
     if (err instanceof HttpError) {
+      req.log.warn({ status: err.status }, `Request rejected: ${err.message}`);
       res.status(err.status).json({ error: err.message });
       return;
     }
 
-    console.error(err);
+    req.log.error({ err }, 'Unhandled error');
     res.status(500).json({ error: 'Internal server error' });
   }
 );
@@ -3851,20 +3916,57 @@ async function startServer() {
   if (isAnuChatConfigured()) {
     try {
       const size = await loadCache();
-      console.log(`ANU response cache loaded (${size} entries)`);
+      logger.info({ entries: size }, 'ANU response cache loaded');
     } catch (e) {
-      console.error('[anu] failed to load response cache', e);
+      logger.error({ err: e }, '[anu] failed to load response cache');
     }
   } else {
-    console.warn('OPENAI_API_KEY is not set — POST /anu/chat will return 503.');
+    logger.warn('OPENAI_API_KEY is not set — POST /anu/chat will return 503');
   }
 
-  app.listen(port, () => {
-    console.log(`API listening on http://localhost:${port}`);
+  const server = app.listen(port, () => {
+    logger.info(
+      {
+        port,
+        env: process.env.NODE_ENV ?? 'development',
+        logLevel: logger.level,
+        recordingDir: RECORDING_LOCAL_DIR || null,
+      },
+      'API listening',
+    );
   });
+
+  // A port clash or permission error on listen() emits on the server, not the promise, so
+  // without this it surfaces as an unhandled 'error' event with no log line of our own.
+  server.on('error', (err) => {
+    logger.fatal({ err, port }, 'Server failed to bind');
+    process.exit(1);
+  });
+
+  // Coolify sends SIGTERM on redeploy. Without a handler the process is killed outright and the
+  // shutdown is invisible in the logs, which reads identically to a crash.
+  for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+    process.on(signal, () => {
+      logger.info({ signal }, 'Shutting down');
+      server.close(() => process.exit(0));
+      // node-cron timers and open Prisma handles can hold the loop open past close().
+      setTimeout(() => process.exit(0), 10_000).unref();
+    });
+  }
 }
 
+// Both are silent today: an unhandled rejection prints a bare V8 warning to stderr with no
+// context, and an uncaught exception kills the container with nothing in the log to explain it.
+process.on('unhandledRejection', (reason) => {
+  logger.error({ err: reason }, 'Unhandled promise rejection');
+});
+
+process.on('uncaughtException', (err) => {
+  logger.fatal({ err }, 'Uncaught exception — exiting');
+  process.exit(1);
+});
+
 startServer().catch((err) => {
-  console.error(err);
+  logger.fatal({ err }, 'API failed to start');
   process.exit(1);
 });

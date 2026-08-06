@@ -275,16 +275,22 @@ export {
 } from './library.js';
 
 export {
+  summaryPeriodSchema,
   reportRingKeySchema,
+  reportReferenceSchema,
   reportRingSchema,
   reportStatSchema,
   reportInsightSchema,
+  summaryWeekBreakdownSchema,
   weeklyReportQuerySchema,
   weeklyReportResponseSchema,
+  type SummaryPeriod,
   type ReportRingKey,
+  type ReportReference,
   type ReportRing,
   type ReportStat,
   type ReportInsight,
+  type SummaryWeekBreakdown,
   type WeeklyReportQuery,
   type WeeklyReportResponse,
 } from './report.js';
