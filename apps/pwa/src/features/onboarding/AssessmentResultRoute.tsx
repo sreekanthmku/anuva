@@ -75,7 +75,7 @@ export default function AssessmentResultRoute() {
       <AssessmentResultNavBar onBack={() => navigate(assessmentPath())} />
       <AssessmentResultSummary score={score} status={status} riskItems={summaryItems} />
 
-      <section className="px-3 pb-[18px] pt-1">
+      <section className="px-3 pb-[calc(18px+env(safe-area-inset-bottom,0px))] pt-1">
         <NextStepsCard steps={steps} />
         <AssessmentResultCTA
           onPrimary={() => void handlePrimaryAction()}

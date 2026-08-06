@@ -94,6 +94,7 @@ import {
   submitDetailedAssessmentBodySchema,
   detailedAssessmentStateResponseSchema,
   detailedAssessmentQuestionKeys,
+  findMissingDetailedAnswers,
   anuChatBodySchema,
   anuChatResponseSchema,
   anuChatHistoryResponseSchema,
@@ -244,7 +245,10 @@ app.post('/livekit/webhook', express.raw({ type: '*/*', limit: '1mb' }), async (
   }
 });
 
-app.use(express.json());
+// 512kb rather than the 100kb default: the detailed assessment posts every answer in one body,
+// and one of them is a drawn signature carried as a PNG data URL. Zod still caps that single value
+// at DETAILED_SIGNATURE_VALUE_MAX and requires it to parse as a PNG data URL.
+app.use(express.json({ limit: '512kb' }));
 
 // Guards every /doctor route, including any added later. Express 4 does not forward rejected
 // promises from middleware, so the async guard is wrapped and reports through next() itself.
@@ -3942,6 +3946,12 @@ function filterValidAnswers(answers: { questionKey: string; value: string }[]) {
   return answers.filter((answer) => detailedAssessmentQuestionKeys.has(answer.questionKey));
 }
 
+/**
+ * Applies one batch of answers. An empty value is a deletion, not a no-op: the client sends a
+ * blank string when the patient clears a field, and without the delete the old value would survive
+ * and reappear on the next load. Writes and deletes share one transaction so a partial save can
+ * never leave a cleared field looking answered.
+ */
 async function upsertDetailedAnswers(userId: string, answers: { questionKey: string; value: string }[]) {
   const assessment = await prisma.detailedAssessment.upsert({
     where: { userId },
@@ -3951,29 +3961,44 @@ async function upsertDetailedAnswers(userId: string, answers: { questionKey: str
   });
 
   const valid = filterValidAnswers(answers);
-  if (valid.length > 0) {
-    await prisma.$transaction(
-      valid.map((answer) =>
-        prisma.detailedAnswer.upsert({
-          where: { assessmentId_questionKey: { assessmentId: assessment.id, questionKey: answer.questionKey } },
-          create: { assessmentId: assessment.id, questionKey: answer.questionKey, value: answer.value },
-          update: { value: answer.value },
-        }),
-      ),
-    );
+  const cleared = valid.filter((answer) => answer.value === '').map((answer) => answer.questionKey);
+  const written = valid.filter((answer) => answer.value !== '');
+
+  const operations = [
+    ...written.map((answer) =>
+      prisma.detailedAnswer.upsert({
+        where: { assessmentId_questionKey: { assessmentId: assessment.id, questionKey: answer.questionKey } },
+        create: { assessmentId: assessment.id, questionKey: answer.questionKey, value: answer.value },
+        update: { value: answer.value },
+      }),
+    ),
+    ...(cleared.length > 0
+      ? [
+          prisma.detailedAnswer.deleteMany({
+            where: { assessmentId: assessment.id, questionKey: { in: cleared } },
+          }),
+        ]
+      : []),
+  ];
+
+  if (operations.length > 0) {
+    await prisma.$transaction(operations);
   }
 
   return assessment.id;
 }
 
+async function readDetailedAssessment(userId: string) {
+  return prisma.detailedAssessment.findUnique({
+    where: { userId },
+    select: { status: true, completedAt: true, answers: { select: { questionKey: true, value: true } } },
+  });
+}
+
 app.get('/detailed-assessment', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
-    const assessment = await prisma.detailedAssessment.findUnique({
-      where: { userId: user.id },
-      select: { status: true, completedAt: true, answers: { select: { questionKey: true, value: true } } },
-    });
-    res.json(serializeDetailedAssessment(assessment));
+    res.json(serializeDetailedAssessment(await readDetailedAssessment(user.id)));
   } catch (e) {
     next(e);
   }
@@ -3984,30 +4009,45 @@ app.put('/detailed-assessment', async (req, res, next) => {
     const user = await requireCurrentUser(req);
     const { answers } = saveDetailedAssessmentBodySchema.parse(req.body);
     await upsertDetailedAnswers(user.id, answers);
-    const assessment = await prisma.detailedAssessment.findUnique({
-      where: { userId: user.id },
-      select: { status: true, completedAt: true, answers: { select: { questionKey: true, value: true } } },
-    });
-    res.json(serializeDetailedAssessment(assessment));
+    res.json(serializeDetailedAssessment(await readDetailedAssessment(user.id)));
   } catch (e) {
     next(e);
   }
 });
 
+/**
+ * Marks the assessment complete only once every required question — the signature included — holds
+ * a value. The batch is saved either way so a rejected submit never costs the patient their
+ * progress; completeness is judged on what is stored afterwards, not on the batch alone, because
+ * the client sends only what changed since its last save.
+ */
 app.post('/detailed-assessment/submit', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     const { answers } = submitDetailedAssessmentBodySchema.parse(req.body);
     await upsertDetailedAnswers(user.id, answers);
+
+    const saved = await readDetailedAssessment(user.id);
+    const stored: Record<string, string> = {};
+    for (const answer of saved?.answers ?? []) {
+      stored[answer.questionKey] = answer.value;
+    }
+
+    const missing = findMissingDetailedAnswers(stored);
+    if (missing.length > 0) {
+      req.log.warn({ missing: missing.length }, 'Detailed assessment submit rejected: incomplete');
+      res.status(400).json({
+        error: 'Some required questions are still unanswered.',
+        missing,
+      });
+      return;
+    }
+
     await prisma.detailedAssessment.update({
       where: { userId: user.id },
       data: { status: 'completed', completedAt: new Date() },
     });
-    const assessment = await prisma.detailedAssessment.findUnique({
-      where: { userId: user.id },
-      select: { status: true, completedAt: true, answers: { select: { questionKey: true, value: true } } },
-    });
-    res.json(serializeDetailedAssessment(assessment));
+    res.json(serializeDetailedAssessment(await readDetailedAssessment(user.id)));
   } catch (e) {
     next(e);
   }
@@ -4309,6 +4349,15 @@ app.get('/library/articles/:slug', (req, res, next) => {
   }
 });
 
+/** body-parser tags its size rejection with this type; it carries no dedicated error class. */
+function isPayloadTooLarge(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    (err as { type?: unknown }).type === 'entity.too.large'
+  );
+}
+
 app.use(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   (err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -4323,6 +4372,14 @@ app.use(
     if (err instanceof HttpError) {
       req.log.warn({ status: err.status }, `Request rejected: ${err.message}`);
       res.status(err.status).json({ error: err.message });
+      return;
+    }
+
+    // body-parser rejects an oversized JSON body before any route sees it. Without this branch it
+    // falls through to the 500 below and reads as a server fault rather than an over-large request.
+    if (isPayloadTooLarge(err)) {
+      req.log.warn('Request rejected: body exceeds the JSON size limit');
+      res.status(413).json({ error: 'That request was too large. Try again with less data.' });
       return;
     }
 

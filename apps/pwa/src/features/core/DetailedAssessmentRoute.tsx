@@ -2,12 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   detailedAssessmentSections,
+  findMissingDetailedAnswers,
+  MULTISELECT_SEPARATOR,
+  PRACTITIONER_LABELS,
   QOL_OPTIONS,
   SEVERITY_OPTIONS,
   YESNO_OPTIONS,
   type DetailedAnswer,
+  type DetailedAssessmentSection,
   type DetailedQuestion,
 } from '@anuva/shared';
+import { ApiError } from '../../shared/lib/api';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 import { StepDots } from '../onboarding/components/StepDots';
@@ -17,10 +22,57 @@ type AnswersMap = Record<string, string>;
 
 const sections = detailedAssessmentSections;
 
-function answersToList(answers: AnswersMap): DetailedAnswer[] {
-  return Object.entries(answers)
-    .filter(([, value]) => value !== '' && value != null)
-    .map(([questionKey, value]) => ({ questionKey, value }));
+/**
+ * Answers that differ from what the server last acknowledged. Sending the delta rather than the
+ * whole map keeps each save proportional to what was typed, and — because a field emptied by the
+ * patient shows up here as a blank value — it is also what lets the server delete a cleared answer
+ * instead of silently keeping the old one.
+ */
+function changedAnswers(answers: AnswersMap, saved: AnswersMap): DetailedAnswer[] {
+  const keys = new Set([...Object.keys(answers), ...Object.keys(saved)]);
+  const changes: DetailedAnswer[] = [];
+  for (const questionKey of keys) {
+    const value = answers[questionKey] ?? '';
+    if (value !== (saved[questionKey] ?? '')) {
+      changes.push({ questionKey, value });
+    }
+  }
+  return changes;
+}
+
+function requiredKeysOf(section: DetailedAssessmentSection): string[] {
+  return section.questions.filter((question) => !question.optional).map((question) => question.key);
+}
+
+function todayIso(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+  ).padStart(2, '0')}`;
+}
+
+/**
+ * Stamps today's date onto every `autoFill: 'today'` question that is still blank. Applied once at
+ * hydration so a resumed draft keeps the date it was first opened with rather than drifting forward.
+ */
+function withAutoFilledDates(answers: AnswersMap): AnswersMap {
+  const today = todayIso();
+  const next = { ...answers };
+  for (const section of sections) {
+    for (const question of section.questions) {
+      if (question.autoFill === 'today' && !next[question.key]) {
+        next[question.key] = today;
+      }
+    }
+  }
+  return next;
+}
+
+function practitionerLine(section: DetailedAssessmentSection): string {
+  const primary = PRACTITIONER_LABELS[section.primary];
+  if (section.primary === 'all') return primary;
+  const secondary = section.secondary ? PRACTITIONER_LABELS[section.secondary] : null;
+  return secondary ? `${primary} · ${secondary}` : primary;
 }
 
 export default function DetailedAssessmentRoute() {
@@ -33,12 +85,18 @@ export default function DetailedAssessmentRoute() {
   const [hydrated, setHydrated] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRequired, setShowRequired] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  /** What the server is known to hold, so each save can send only the difference. */
+  const savedRef = useRef<AnswersMap>({});
 
   // Hydrate saved answers once loaded.
   useEffect(() => {
     if (!hydrated && data) {
-      setAnswers(data.answers ?? {});
+      const stored = data.answers ?? {};
+      savedRef.current = stored;
+      setAnswers(withAutoFilledDates(stored));
       setHydrated(true);
     }
   }, [data, hydrated]);
@@ -51,24 +109,67 @@ export default function DetailedAssessmentRoute() {
     [step, totalSteps]
   );
 
+  const missingHere = useMemo(
+    () => (section ? findMissingDetailedAnswers(answers, requiredKeysOf(section)) : []),
+    [answers, section]
+  );
+
   const setAnswer = (key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const goToStep = (next: number) => {
+    setStep(next);
+    window.scrollTo({ top: 0 });
   };
 
   const handleNext = async () => {
     setError(null);
     setSaving(true);
+
+    // Snapshot before awaiting: anything typed mid-request stays pending for the next save.
+    const snapshot = { ...answers };
+    const changes = changedAnswers(snapshot, savedRef.current);
+
     try {
-      await saveDraft(answersToList(answers));
+      if (changes.length > 0) {
+        await saveDraft(changes);
+        savedRef.current = snapshot;
+      }
+
+      // The draft is stored either way — an unfinished section costs the patient nothing.
+      if (missingHere.length > 0) {
+        setShowRequired(true);
+        setError(
+          missingHere.length === 1
+            ? 'Please answer the highlighted question before continuing.'
+            : `Please answer the ${missingHere.length} highlighted questions before continuing.`
+        );
+        return;
+      }
+
+      setShowRequired(false);
+
       if (isLastStep) {
-        await submit(answersToList(answers));
+        await submit([]);
         await refreshUser();
         setSubmitted(true);
         return;
       }
-      setStep((prev) => prev + 1);
-      window.scrollTo({ top: 0 });
-    } catch {
+
+      goToStep(step + 1);
+    } catch (err) {
+      // The server runs the same completeness rule; if it disagrees, send them to the gap.
+      if (err instanceof ApiError && err.status === 400) {
+        const missing = new Set(findMissingDetailedAnswers(snapshot));
+        const target = sections.findIndex((entry) =>
+          requiredKeysOf(entry).some((key) => missing.has(key))
+        );
+        setShowRequired(true);
+        setError(err.message);
+        if (target >= 0 && target !== step) goToStep(target);
+        return;
+      }
       setError('Could not save. Please try again.');
     } finally {
       setSaving(false);
@@ -80,8 +181,9 @@ export default function DetailedAssessmentRoute() {
       navigate('/home');
       return;
     }
-    setStep((prev) => prev - 1);
-    window.scrollTo({ top: 0 });
+    setError(null);
+    setShowRequired(false);
+    goToStep(step - 1);
   };
 
   if (submitted) {
@@ -131,6 +233,12 @@ export default function DetailedAssessmentRoute() {
         >
           Detailed assessment
         </p>
+        <p
+          className="mt-1 text-[12px] text-outline"
+          style={{ fontFamily: '"Mulish", sans-serif' }}
+        >
+          Reviewed by {practitionerLine(section)}
+        </p>
 
         <div className="mt-6 flex flex-col gap-3">
           {section.questions.map((question) => (
@@ -138,6 +246,7 @@ export default function DetailedAssessmentRoute() {
               key={question.key}
               question={question}
               value={answers[question.key] ?? ''}
+              invalid={showRequired && missingHere.includes(question.key)}
               onChange={(value) => setAnswer(question.key, value)}
             />
           ))}
@@ -178,9 +287,17 @@ type FieldProps = {
   onChange: (value: string) => void;
 };
 
-function QuestionField({ question, value, onChange }: FieldProps) {
+function QuestionField({
+  question,
+  value,
+  invalid,
+  onChange,
+}: FieldProps & { invalid?: boolean }) {
   return (
-    <div className="rounded-[20px] border border-border-default bg-surface-raised p-4">
+    <div
+      className="rounded-[20px] border border-border-default bg-surface-raised p-4"
+      style={{ borderColor: invalid ? '#B3261E' : undefined }}
+    >
       <label
         className="block text-[15px] leading-[1.4] text-on-surface"
         style={{ fontFamily: '"Mulish", sans-serif' }}
@@ -191,6 +308,11 @@ function QuestionField({ question, value, onChange }: FieldProps) {
       <div className="mt-2.5">
         <FieldInput question={question} value={value} onChange={onChange} />
       </div>
+      {invalid && (
+        <p className="mt-2 text-[12px] text-error" style={{ fontFamily: '"Mulish", sans-serif' }}>
+          This one is required.
+        </p>
+      )}
     </div>
   );
 }
@@ -205,6 +327,10 @@ function FieldInput({ question, value, onChange }: FieldProps) {
       return <ChipGroup options={[...QOL_OPTIONS]} value={value} onChange={onChange} />;
     case 'select':
       return <ChipGroup options={question.options ?? []} value={value} onChange={onChange} />;
+    case 'multiselect':
+      return <ChipMultiGroup options={question.options ?? []} value={value} onChange={onChange} />;
+    case 'signature':
+      return <SignaturePad value={value} onChange={onChange} />;
     case 'number':
       return (
         <TextInput
@@ -215,13 +341,17 @@ function FieldInput({ question, value, onChange }: FieldProps) {
         />
       );
     case 'date':
-      return <DatePicker value={value} onChange={onChange} />;
+      return question.autoFill === 'today' ? (
+        <ReadOnlyDate value={value} />
+      ) : (
+        <DatePicker value={value} onChange={onChange} />
+      );
     case 'textarea':
       return <TextArea value={value} onChange={onChange} placeholder={question.placeholder} />;
     case 'textlist':
       return <TextList rows={question.rows ?? 5} value={value} onChange={onChange} />;
     case 'dynlist':
-      return <DynList value={value} onChange={onChange} />;
+      return <DynList columns={question.columns} value={value} onChange={onChange} />;
     case 'text':
     default:
       return (
@@ -269,8 +399,75 @@ function ChipGroup({
   );
 }
 
+/** Same chips as ChipGroup, but several may be active. Stored comma-joined. */
+function ChipMultiGroup({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const selected = useMemo(
+    () =>
+      value
+        .split(MULTISELECT_SEPARATOR.trim())
+        .map((entry) => entry.trim())
+        .filter((entry) => entry !== ''),
+    [value]
+  );
+
+  const toggle = (option: string) => {
+    const next = selected.includes(option)
+      ? selected.filter((entry) => entry !== option)
+      : [...selected, option];
+    // Re-emit in catalog order so the stored string is stable regardless of tap order.
+    const ordered = options.filter((entry) => next.includes(entry));
+    onChange(ordered.join(MULTISELECT_SEPARATOR));
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const active = selected.includes(option);
+        return (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={active}
+            onClick={() => toggle(option)}
+            className="rounded-full border px-4 py-2 text-[14px] transition-colors"
+            style={{
+              fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+              borderColor: active ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
+              background: active ? 'rgba(94, 53, 102, 0.16)' : '#FBF6F0',
+              color: active ? '#5E3566' : '#6E5870',
+            }}
+          >
+            {option}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 const inputClass =
   'w-full rounded-2xl border border-border-default bg-surface-container-lowest px-4 py-3 text-[15px] text-on-surface placeholder:text-outline focus:border-primary focus:outline-none';
+
+/** Auto-filled dates are shown, not edited — the value is stamped at hydration. */
+function ReadOnlyDate({ value }: { value: string }) {
+  return (
+    <div
+      className="flex w-full items-center justify-between rounded-2xl border border-border-default bg-surface-container-lowest px-4 py-3 text-[15px] text-on-surface"
+      style={{ fontFamily: '"Mulish", sans-serif' }}
+    >
+      <span>{formatDisplay(value)}</span>
+      <span className="text-[11px] uppercase tracking-[0.12em] text-outline">Auto</span>
+    </div>
+  );
+}
 
 function TextInput({
   type,
@@ -631,72 +828,99 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
 
 // ─────────────────────────────────────────────
 // DynList — starts with 1 row, add more on demand
-// Stores as JSON string array same as TextList
+// Single-column rows store a JSON string array (as TextList does). With `columns`, each row
+// stores a JSON array of cell strings; single-string rows written by the earlier one-column
+// version are widened into the first cell so saved drafts survive the change.
 // ─────────────────────────────────────────────
 
-function DynList({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const items = useMemo<string[]>(() => {
-    try {
-      const parsed = value ? (JSON.parse(value) as unknown) : [];
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed.map((item) => String(item));
-    } catch {
-      /* fall through */
+function parseRows(value: string, columnCount: number): string[][] {
+  const blank = () => Array.from({ length: columnCount }, () => '');
+  try {
+    const parsed = value ? (JSON.parse(value) as unknown) : [];
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed.map((row) => {
+        const cells = blank();
+        if (Array.isArray(row)) {
+          row.slice(0, columnCount).forEach((cell, i) => {
+            cells[i] = String(cell);
+          });
+        } else {
+          cells[0] = String(row);
+        }
+        return cells;
+      });
     }
-    return [''];
-  }, [value]);
+  } catch {
+    /* fall through */
+  }
+  return [blank()];
+}
 
-  const [lines, setLines] = useState<string[]>(items);
+function DynList({
+  columns,
+  value,
+  onChange,
+}: {
+  columns?: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const headers = columns ?? [];
+  const columnCount = Math.max(headers.length, 1);
+
+  const [rows, setRows] = useState<string[][]>(() => parseRows(value, columnCount));
 
   // Sync external value changes (e.g. hydration)
   useEffect(() => {
-    try {
-      const parsed = value ? (JSON.parse(value) as unknown) : [];
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        setLines(parsed.map((item) => String(item)));
-        return;
-      }
-    } catch {
-      /* fall through */
-    }
-    setLines(['']);
+    setRows(parseRows(value, columnCount));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const emit = (next: string[]) => {
-    setLines(next);
-    const filled = next.filter((l) => l.trim() !== '');
-    onChange(filled.length > 0 ? JSON.stringify(next) : '');
+  const emit = (next: string[][]) => {
+    setRows(next);
+    const filled = next.some((row) => row.some((cell) => cell.trim() !== ''));
+    if (!filled) {
+      onChange('');
+      return;
+    }
+    onChange(JSON.stringify(columnCount > 1 ? next : next.map((row) => row[0] ?? '')));
   };
 
-  const update = (index: number, line: string) => {
-    const next = [...lines];
-    next[index] = line;
+  const update = (rowIndex: number, cellIndex: number, cell: string) => {
+    const next = rows.map((row, i) =>
+      i === rowIndex ? row.map((existing, j) => (j === cellIndex ? cell : existing)) : row
+    );
     emit(next);
   };
 
-  const add = () => emit([...lines, '']);
+  const add = () => emit([...rows, Array.from({ length: columnCount }, () => '')]);
 
-  const remove = (index: number) => {
-    const next = lines.filter((_, i) => i !== index);
-    emit(next.length > 0 ? next : ['']);
+  const remove = (rowIndex: number) => {
+    const next = rows.filter((_, i) => i !== rowIndex);
+    emit(next.length > 0 ? next : [Array.from({ length: columnCount }, () => '')]);
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      {lines.map((line, index) => (
-        <div key={index} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={line}
-            placeholder={`Medication ${index + 1}`}
-            onChange={(event) => update(index, event.target.value)}
-            className={inputClass}
-            style={{ fontFamily: '"Mulish", sans-serif' }}
-          />
-          {lines.length > 1 && (
+    <div className="flex flex-col gap-3">
+      {rows.map((row, rowIndex) => (
+        <div key={rowIndex} className="flex items-start gap-2">
+          <div className="flex flex-1 flex-col gap-2">
+            {row.map((cell, cellIndex) => (
+              <input
+                key={cellIndex}
+                type="text"
+                value={cell}
+                placeholder={headers[cellIndex] ?? `Medication ${rowIndex + 1}`}
+                onChange={(event) => update(rowIndex, cellIndex, event.target.value)}
+                className={inputClass}
+                style={{ fontFamily: '"Mulish", sans-serif' }}
+              />
+            ))}
+          </div>
+          {rows.length > 1 && (
             <button
               type="button"
-              onClick={() => remove(index)}
+              onClick={() => remove(rowIndex)}
               className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border border-border-default bg-surface-container-lowest text-outline transition-colors hover:border-error hover:text-error"
               aria-label="Remove"
             >
@@ -716,6 +940,133 @@ function DynList({ value, onChange }: { value: string; onChange: (v: string) => 
         </span>
         Add another
       </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SignaturePad — draw with finger or mouse, stored as a PNG data URL
+// ─────────────────────────────────────────────
+
+const SIGNATURE_WIDTH = 600;
+const SIGNATURE_HEIGHT = 200;
+
+function SignaturePad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawing = useRef(false);
+  const dirty = useRef(false);
+  const [hasInk, setHasInk] = useState(false);
+
+  // Prepare the backing store once, then paint any already-saved signature back onto it.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = SIGNATURE_WIDTH * ratio;
+    canvas.height = SIGNATURE_HEIGHT * ratio;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#3E2542';
+
+    if (value) {
+      const image = new Image();
+      image.onload = () => {
+        ctx.drawImage(image, 0, 0, SIGNATURE_WIDTH, SIGNATURE_HEIGHT);
+        setHasInk(true);
+      };
+      image.src = value;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Canvas pixels are a fixed 600×200 grid; CSS scales it, so pointer coords need the same scale. */
+  const pointFor = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) / rect.width) * SIGNATURE_WIDTH,
+      y: ((event.clientY - rect.top) / rect.height) * SIGNATURE_HEIGHT,
+    };
+  };
+
+  const start = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const ctx = canvasRef.current?.getContext('2d');
+    const point = pointFor(event);
+    if (!ctx || !point) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drawing.current = true;
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+  };
+
+  const move = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!drawing.current) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    const point = pointFor(event);
+    if (!ctx || !point) return;
+    event.preventDefault();
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+    dirty.current = true;
+  };
+
+  // Export on release rather than per-move: toDataURL on every pointermove drops frames on mobile.
+  const end = () => {
+    if (!drawing.current) return;
+    drawing.current = false;
+    const canvas = canvasRef.current;
+    if (!canvas || !dirty.current) return;
+    dirty.current = false;
+    setHasInk(true);
+    onChange(canvas.toDataURL('image/png'));
+  };
+
+  const clear = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    ctx.clearRect(0, 0, SIGNATURE_WIDTH, SIGNATURE_HEIGHT);
+    dirty.current = false;
+    setHasInk(false);
+    onChange('');
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <canvas
+        ref={canvasRef}
+        onPointerDown={start}
+        onPointerMove={move}
+        onPointerUp={end}
+        onPointerLeave={end}
+        onPointerCancel={end}
+        aria-label="Signature area"
+        className="w-full rounded-2xl border bg-surface-container-lowest"
+        style={{
+          aspectRatio: `${SIGNATURE_WIDTH} / ${SIGNATURE_HEIGHT}`,
+          borderColor: hasInk ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
+          touchAction: 'none',
+        }}
+      />
+      <div className="flex items-center justify-between">
+        <span className="text-[12px] text-outline" style={{ fontFamily: '"Mulish", sans-serif' }}>
+          {hasInk ? 'Signed' : 'Draw your signature above'}
+        </span>
+        <button
+          type="button"
+          onClick={clear}
+          disabled={!hasInk}
+          className="text-[13px] text-primary transition-opacity hover:opacity-70 disabled:opacity-40"
+          style={{ fontFamily: '"Mulish", sans-serif' }}
+        >
+          Clear
+        </button>
+      </div>
     </div>
   );
 }

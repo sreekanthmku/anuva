@@ -54,7 +54,7 @@ export default function AssessmentPairedRoute() {
 
   return (
     <main
-      className={`relative min-h-mobile overflow-x-hidden overflow-y-auto bg-surface text-on-surface ${showMascot ? 'pt-[100px]' : 'pt-6'}`}
+      className={`relative flex min-h-mobile flex-col overflow-x-hidden bg-surface pb-[calc(112px+env(safe-area-inset-bottom,0px))] text-on-surface ${showMascot ? 'pt-[clamp(24px,7vh,100px)]' : 'pt-6'}`}
     >
       {showMascot && (
         <section className="relative z-10 flex flex-col items-center px-6 pt-0">
@@ -96,8 +96,7 @@ export default function AssessmentPairedRoute() {
       )}
 
       <section
-        className={`relative z-10 flex flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-3 pb-[22px] pt-[26px] ${showMascot ? 'mt-6 min-h-[calc(100svh-288px)]' : 'mt-0 min-h-[calc(100svh-48px)]'}`}
-        style={{ minHeight: showMascot ? 'calc(100dvh - 288px)' : 'calc(100dvh - 48px)' }}
+        className={`relative z-10 flex flex-1 flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-3 pb-[22px] pt-[26px] ${showMascot ? 'mt-6' : 'mt-0'}`}
       >
         <div className="mb-[22px] flex items-center justify-between">
           <StepDots total={totalSteps} current={step} />
@@ -117,7 +116,7 @@ export default function AssessmentPairedRoute() {
           Pre-assessment · 2 min
         </div>
 
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto">
+        <div className="flex flex-1 flex-col gap-6">
           {questions.map(({ index, question }) => (
             <div key={question.id}>
               <h2
@@ -143,7 +142,16 @@ export default function AssessmentPairedRoute() {
           ))}
         </div>
 
-        <div className="mb-3 mt-3.5">
+      </section>
+
+      {/*
+        Fixed, not in-flow: Android Chrome anchors fixed elements to the visual
+        viewport, so the CTA stays tappable no matter how the URL bar, gesture
+        nav bar, or a large system font size shrinks the visible area. `main`
+        reserves matching bottom padding so nothing is covered.
+      */}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border-default bg-surface px-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] pt-2.5">
+        <div className="mb-2.5">
           <TrustStrip />
         </div>
 
@@ -169,7 +177,7 @@ export default function AssessmentPairedRoute() {
             />
           </svg>
         </button>
-      </section>
+      </div>
     </main>
   );
 }
