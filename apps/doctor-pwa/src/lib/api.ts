@@ -22,6 +22,11 @@ export function clearDoctorKey(): void {
   localStorage.removeItem(DOCTOR_KEY_STORAGE);
 }
 
+/** The absolute URL for an `/api/...` path — needed where fetch is bypassed, e.g. an XHR upload. */
+export function apiUrl(path: string): string {
+  return String(toAbsoluteUrl(path));
+}
+
 function toAbsoluteUrl(input: RequestInfo | URL): RequestInfo | URL {
   if (typeof input !== 'string' || !API_BASE_URL || /^https?:\/\//.test(input)) {
     return input;

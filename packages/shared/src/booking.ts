@@ -126,6 +126,7 @@ export const doctorConsultationBookingSchema = z.object({
   createdAt: z.string().datetime(),
   callStatus: consultationCallStatusSchema.nullable(),
   recordingStatus: consultationRecordingStatusSchema.nullable(),
+  documentCount: z.number().int().nonnegative(),
 });
 
 export type DoctorConsultationBooking = z.infer<typeof doctorConsultationBookingSchema>;
@@ -259,6 +260,8 @@ export const myConsultationSchema = z.object({
   recordingAvailable: z.boolean(),
   recordingStatus: consultationRecordingStatusSchema.nullable(),
   recordingDurationSeconds: z.number().int().nonnegative().nullable(),
+  /** Prescriptions and diet plans the doctor shared. Counted here so the list can badge without a second fetch. */
+  documentCount: z.number().int().nonnegative(),
 });
 
 export type MyConsultation = z.infer<typeof myConsultationSchema>;
@@ -290,3 +293,74 @@ export const rescheduleConsultationResponseSchema = z.object({
 });
 
 export type RescheduleConsultationResponse = z.infer<typeof rescheduleConsultationResponseSchema>;
+
+// ─────────────────────────────────────────────
+// Consultation documents (prescriptions, diet plans)
+// ─────────────────────────────────────────────
+
+export const consultationDocumentKindSchema = z.enum(['prescription', 'diet_plan', 'other']);
+
+export type ConsultationDocumentKind = z.infer<typeof consultationDocumentKindSchema>;
+
+/** Mime types the upload route accepts. SVG is deliberately excluded — it can carry script. */
+export const CONSULTATION_DOCUMENT_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'application/pdf',
+] as const;
+
+export const CONSULTATION_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
+
+export const CONSULTATION_DOCUMENT_MAX_FILES = 5;
+
+/**
+ * A document as either side sees it. The on-disk path is never included — the file is fetched from
+ * `/consultations/:id/documents/:docId/file`, which re-checks ownership on every request.
+ */
+export const consultationDocumentSchema = z.object({
+  id: z.string(),
+  consultationId: z.string(),
+  kind: consultationDocumentKindSchema,
+  title: z.string().nullable(),
+  originalName: z.string(),
+  mimeType: z.string(),
+  sizeBytes: z.number().int().nonnegative(),
+  uploadedByName: z.string().nullable(),
+  createdAt: z.string().datetime(),
+});
+
+export type ConsultationDocument = z.infer<typeof consultationDocumentSchema>;
+
+export const consultationDocumentsResponseSchema = z.object({
+  documents: z.array(consultationDocumentSchema),
+});
+
+export type ConsultationDocumentsResponse = z.infer<typeof consultationDocumentsResponseSchema>;
+
+/** Multipart fields that ride alongside the file. Parsed from `req.body`, so both arrive as strings. */
+export const uploadConsultationDocumentBodySchema = z.object({
+  kind: consultationDocumentKindSchema,
+  title: z.string().trim().max(120).optional(),
+});
+
+export type UploadConsultationDocumentBody = z.infer<typeof uploadConsultationDocumentBodySchema>;
+
+export const uploadConsultationDocumentResponseSchema = z.object({
+  ok: z.literal(true),
+  document: consultationDocumentSchema,
+});
+
+export type UploadConsultationDocumentResponse = z.infer<
+  typeof uploadConsultationDocumentResponseSchema
+>;
+
+export const deleteConsultationDocumentResponseSchema = z.object({
+  ok: z.literal(true),
+});
+
+export type DeleteConsultationDocumentResponse = z.infer<
+  typeof deleteConsultationDocumentResponseSchema
+>;

@@ -420,6 +420,7 @@ model Specialist {
   consultations  Consultation[]
   slots          ConsultationSlot[]
   expertAnswers  ExpertAnswer[]
+  uploadedDocs   ConsultationDocument[]
 }
 
 model SpecialistQualification {
@@ -440,6 +441,12 @@ enum ConsultationStatus {
 
 enum ConsultationCallProvider {
   livekit
+}
+
+enum ConsultationDocumentKind {
+  prescription
+  diet_plan
+  other
 }
 
 enum ConsultationCallStatus {
@@ -477,9 +484,34 @@ model Consultation {
   createdAt    DateTime           @default(now())
   slot         ConsultationSlot?
   call         ConsultationCall?
+  documents    ConsultationDocument[]
 
   @@index([userId])
   @@index([specialistId])
+}
+
+/// A prescription or diet plan the doctor uploaded after the consultation. Files live outside the
+/// database (CONSULTATION_DOC_DIR); `storagePath` is server-generated and never sent to a client —
+/// every read goes through an ownership-checked route.
+model ConsultationDocument {
+  id             String                   @id @default(cuid())
+  consultationId String
+  consultation   Consultation             @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  kind           ConsultationDocumentKind
+  title          String?
+  /// The name the doctor's device gave the file. Display only — never used to build a path.
+  originalName   String
+  mimeType       String
+  sizeBytes      Int
+  storagePath    String
+  uploadedById   String
+  uploadedBy     Specialist               @relation(fields: [uploadedById], references: [id])
+  /// Soft delete: a withdrawn prescription stays on disk for the medico-legal trail.
+  deletedAt      DateTime?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  @@index([consultationId, deletedAt])
 }
 
 model ConsultationCall {

@@ -1,8 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { ConsultationSpecialist, MyConsultation } from '@anuva/shared';
+import type {
+  ConsultationDocument,
+  ConsultationDocumentKind,
+  ConsultationSpecialist,
+  MyConsultation,
+} from '@anuva/shared';
 import {
   cancelConsultation,
+  fetchConsultationDocumentUrl,
+  fetchConsultationDocuments,
   fetchConsultationRecordingUrl,
   fetchConsultationSlots,
   fetchConsultationSpecialists,
@@ -82,6 +89,168 @@ function RecordingPlayer({ consultationId }: { consultationId: string }) {
         {loading ? 'Loading…' : 'Play recording'}
       </button>
       {error ? <p className="mt-2 text-[12px] text-error">{error}</p> : null}
+    </div>
+  );
+}
+
+const DOCUMENT_KIND_LABEL: Record<ConsultationDocumentKind, string> = {
+  prescription: 'Prescription',
+  diet_plan: 'Diet plan',
+  other: 'Document',
+};
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function documentDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+/**
+ * The prescriptions and diet plans the doctor shared for one consultation. Files come from an
+ * authenticated route, so each is fetched as a blob on tap — images open in a viewer, PDFs in a
+ * new tab. Only rendered when the booking already reports a document, so no wasted request.
+ */
+function ConsultationDocuments({ consultationId }: { consultationId: string }) {
+  const [documents, setDocuments] = useState<ConsultationDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<{ doc: ConsultationDocument; url: string } | null>(null);
+  // Every blob URL handed to an <img> or a new tab stays alive until the card unmounts.
+  const blobUrls = useRef<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchConsultationDocuments(consultationId)
+      .then((response) => {
+        if (!cancelled) setDocuments(response.documents);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load documents.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [consultationId]);
+
+  useEffect(() => {
+    return () => {
+      blobUrls.current.forEach((url) => URL.revokeObjectURL(url));
+      blobUrls.current = [];
+    };
+  }, []);
+
+  const open = useCallback(
+    async (doc: ConsultationDocument) => {
+      setOpeningId(doc.id);
+      setError(null);
+      try {
+        const url = await fetchConsultationDocumentUrl(consultationId, doc.id);
+        blobUrls.current.push(url);
+
+        if (doc.mimeType.startsWith('image/')) {
+          setViewing({ doc, url });
+        } else {
+          window.open(url, '_blank', 'noopener');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not open this document.');
+      } finally {
+        setOpeningId(null);
+      }
+    },
+    [consultationId],
+  );
+
+  if (loading) {
+    return <p className="mt-3 text-[12px] text-on-surface-variant">Loading documents…</p>;
+  }
+
+  if (documents.length === 0 && !error) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 rounded-[16px] border border-border-default bg-surface-container-low px-3 py-3">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-tertiary">
+        Prescription &amp; plans
+      </div>
+
+      <ul className="mt-2 flex flex-col gap-2">
+        {documents.map((doc) => (
+          <li key={doc.id}>
+            <button
+              type="button"
+              disabled={openingId === doc.id}
+              onClick={() => void open(doc)}
+              className="flex w-full items-center gap-3 rounded-[14px] border border-border-default bg-surface-raised px-3 py-2.5 text-left disabled:opacity-45"
+            >
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-fixed text-[15px]">
+                {doc.mimeType === 'application/pdf' ? '📄' : '🖼️'}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] font-semibold">
+                  {doc.title?.trim() || DOCUMENT_KIND_LABEL[doc.kind]}
+                </span>
+                <span className="block truncate text-[11px] text-on-surface-variant">
+                  {DOCUMENT_KIND_LABEL[doc.kind]} · {documentDate(doc.createdAt)} ·{' '}
+                  {formatFileSize(doc.sizeBytes)}
+                </span>
+              </span>
+              <span className="shrink-0 text-[12px] font-semibold text-primary">
+                {openingId === doc.id ? 'Opening…' : 'View'}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {error ? <p className="mt-2 text-[12px] text-error">{error}</p> : null}
+
+      {viewing ? (
+        <div
+          className="fixed inset-0 z-50 flex flex-col bg-black/85"
+          onClick={() => setViewing(null)}
+        >
+          <div className="flex items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <span className="truncate text-[13px] font-semibold text-white">
+              {viewing.doc.title?.trim() || DOCUMENT_KIND_LABEL[viewing.doc.kind]}
+            </span>
+            <div className="flex shrink-0 items-center gap-3">
+              <a
+                href={viewing.url}
+                download={viewing.doc.originalName}
+                onClick={(event) => event.stopPropagation()}
+                className="text-[12px] font-semibold text-white/80"
+              >
+                Save
+              </a>
+              <button
+                type="button"
+                onClick={() => setViewing(null)}
+                className="text-[12px] font-semibold text-white"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+          <img
+            src={viewing.url}
+            alt={viewing.doc.title?.trim() || DOCUMENT_KIND_LABEL[viewing.doc.kind]}
+            className="min-h-0 flex-1 object-contain"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -409,6 +578,10 @@ export default function MyBookingsRoute() {
                     </button>
                   ) : null}
                 </div>
+              ) : null}
+
+              {booking.documentCount > 0 ? (
+                <ConsultationDocuments consultationId={booking.consultationId} />
               ) : null}
 
               {tab === 'past' && booking.recordingAvailable ? (

@@ -14,6 +14,7 @@ config({ path: path.join(__dirname, '../../../.env') });
 import cors from 'cors';
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
+import { MulterError } from 'multer';
 import { prisma } from '@anuva/database';
 import {
   AccessToken,
@@ -37,6 +38,11 @@ import {
   consultationCallJoinResponseSchema,
   consultationCallStateResponseSchema,
   consultationCallStateSchema,
+  consultationDocumentSchema,
+  consultationDocumentsResponseSchema,
+  deleteConsultationDocumentResponseSchema,
+  uploadConsultationDocumentBodySchema,
+  uploadConsultationDocumentResponseSchema,
   doctorAccessKeyRotateResponseSchema,
   doctorConsultationBookingsResponseSchema,
   doctorIdentityResponseSchema,
@@ -113,6 +119,15 @@ import {
 } from '@anuva/shared';
 import { ZodError } from 'zod';
 import { BOOKABLE_DOCTOR_KEYS, ensureBookingCatalog } from './bookingCatalog.js';
+import {
+  CONSULTATION_DOC_DIR,
+  UnsupportedDocumentTypeError,
+  resolveConsultationDocumentPath,
+  safeDownloadName,
+  sniffDocumentMimeType,
+  uploadConsultationDocument,
+  writeConsultationDocument,
+} from './consultationDocuments.js';
 import { sendPushToAllTokens } from './fcm.js';
 import { computeAvgPeriodLength, computeCycleState } from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
@@ -734,6 +749,7 @@ type DoctorConsultationRow = {
   slot: {
     endsAt: Date;
   } | null;
+  documents: { id: string }[];
   call: {
     status: 'waiting' | 'active' | 'ended' | 'failed';
     recordings: ConsultationRecordingRecord[];
@@ -1547,6 +1563,7 @@ type MyConsultationRow = {
   isFree: boolean;
   specialist: { key: string; name: string; role: string | null; imageUrl: string | null };
   slot: { endsAt: Date } | null;
+  documents: { id: string }[];
   call:
     | {
         status: 'waiting' | 'active' | 'ended' | 'failed';
@@ -1597,6 +1614,7 @@ function serializeMyConsultation(row: MyConsultationRow, now: Date) {
     recordingAvailable: mixed?.status === 'ready',
     recordingStatus: (mixed?.status as never) ?? null,
     recordingDurationSeconds: mixed?.durationSeconds ?? null,
+    documentCount: row.documents.length,
   });
 }
 
@@ -1650,6 +1668,7 @@ async function assertNoOverlappingBooking(
 const MY_CONSULTATION_INCLUDE = {
   specialist: { select: { key: true, name: true, role: true, imageUrl: true } },
   slot: { select: { endsAt: true } },
+  documents: { where: { deletedAt: null }, select: { id: true } },
   call: {
     select: {
       status: true,
@@ -1872,6 +1891,407 @@ app.get('/consultations/:id/recording', async (req, res, next) => {
         next(error);
       }
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
+// Consultation documents (prescriptions, diet plans)
+// ─────────────────────────────────────────────
+
+/**
+ * A cap per consultation, not per upload: a prescription is a page or two, and an unbounded list
+ * would let a compromised doctor key fill the volume.
+ */
+const CONSULTATION_DOCUMENT_MAX_PER_CONSULTATION = 20;
+
+const CONSULTATION_DOCUMENT_SELECT = {
+  id: true,
+  consultationId: true,
+  kind: true,
+  title: true,
+  originalName: true,
+  mimeType: true,
+  sizeBytes: true,
+  storagePath: true,
+  createdAt: true,
+  uploadedBy: { select: { name: true } },
+} as const;
+
+type ConsultationDocumentRow = {
+  id: string;
+  consultationId: string;
+  kind: 'prescription' | 'diet_plan' | 'other';
+  title: string | null;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  storagePath: string;
+  createdAt: Date;
+  uploadedBy: { name: string } | null;
+};
+
+function serializeConsultationDocument(row: ConsultationDocumentRow) {
+  // storagePath is deliberately dropped — clients address the file by document id only.
+  return consultationDocumentSchema.parse({
+    id: row.id,
+    consultationId: row.consultationId,
+    kind: row.kind,
+    title: row.title,
+    originalName: row.originalName,
+    mimeType: row.mimeType,
+    sizeBytes: row.sizeBytes,
+    uploadedByName: row.uploadedBy?.name ?? null,
+    createdAt: row.createdAt.toISOString(),
+  });
+}
+
+/**
+ * Streams one document once the caller's claim to it has been checked. Served through a route
+ * rather than a static mount for the same reason as the recordings: these are medical records, and
+ * the on-disk layout must never become guessable.
+ */
+async function sendConsultationDocumentFile(
+  res: Response,
+  next: NextFunction,
+  doc: Pick<ConsultationDocumentRow, 'storagePath' | 'mimeType' | 'originalName'>,
+) {
+  const absolutePath = resolveConsultationDocumentPath(doc.storagePath);
+  if (!absolutePath) {
+    throw new HttpError(500, 'This document is stored outside the configured directory.');
+  }
+
+  try {
+    await fs.access(absolutePath);
+  } catch {
+    throw new HttpError(404, 'The document file is missing from storage.');
+  }
+
+  res.type(doc.mimeType);
+  // Inline so an image or PDF opens in place; the filename is rebuilt from a sanitized base.
+  res.setHeader(
+    'Content-Disposition',
+    `inline; filename="${safeDownloadName(doc.originalName, doc.mimeType)}"`,
+  );
+  // A prescription must not sit in a shared cache.
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.sendFile(absolutePath, (error?: Error) => {
+    if (error && !res.headersSent) {
+      next(error);
+    }
+  });
+}
+
+/** Display text only, but it still goes into a header, so control characters come out. */
+function sanitizeOriginalName(value: string | undefined): string {
+  const cleaned = (value ?? '')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f"\\]/g, '')
+    .trim()
+    .slice(0, 160);
+
+  return cleaned || 'document';
+}
+
+async function notifyPatientDocumentShared(args: {
+  consultationId: string;
+  patientId: string;
+  doctorName: string;
+  kind: 'prescription' | 'diet_plan' | 'other';
+}) {
+  const rows: Array<{ token: string }> = await prisma.fcmToken.findMany({
+    where: { userId: args.patientId, status: 'ACTIVE' },
+    select: { token: true },
+  });
+  const tokens: string[] = [...new Set(rows.map((row) => row.token))];
+
+  if (tokens.length === 0) {
+    return;
+  }
+
+  const label =
+    args.kind === 'prescription'
+      ? 'prescription'
+      : args.kind === 'diet_plan'
+        ? 'diet plan'
+        : 'document';
+
+  try {
+    await sendPushToAllTokens(
+      tokens,
+      {
+        title: 'New from your consultation',
+        body: `${args.doctorName} shared your ${label}.`,
+      },
+      {
+        url: '/my-bookings',
+        type: 'consultation-document',
+        consultationId: args.consultationId,
+      },
+    );
+    logger.info(
+      {
+        consultationId: args.consultationId,
+        userId: args.patientId,
+        tokens: tokens.length,
+        type: 'consultation-document',
+      },
+      'Push sent',
+    );
+  } catch (error) {
+    logger.error(
+      { err: error, consultationId: args.consultationId, userId: args.patientId },
+      'Unable to send consultation document push notification',
+    );
+  }
+}
+
+/** The patient's own prescriptions and plans for one consultation. */
+app.get('/consultations/:id/documents', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+
+    const consultation = await prisma.consultation.findFirst({
+      where: { id: req.params.id, userId: user.id },
+      select: { id: true },
+    });
+
+    if (!consultation) {
+      throw new HttpError(404, 'Consultation not found.');
+    }
+
+    const documents = (await prisma.consultationDocument.findMany({
+      where: { consultationId: consultation.id, deletedAt: null },
+      select: CONSULTATION_DOCUMENT_SELECT,
+      orderBy: { createdAt: 'asc' },
+    })) as ConsultationDocumentRow[];
+
+    res.json(
+      consultationDocumentsResponseSchema.parse({
+        documents: documents.map(serializeConsultationDocument),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/consultations/:id/documents/:docId/file', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+
+    // Ownership is asserted through the consultation relation, so a valid document id belonging to
+    // someone else is a 404 rather than a leak.
+    const doc = (await prisma.consultationDocument.findFirst({
+      where: {
+        id: req.params.docId,
+        consultationId: req.params.id,
+        deletedAt: null,
+        consultation: { userId: user.id },
+      },
+      select: CONSULTATION_DOCUMENT_SELECT,
+    })) as ConsultationDocumentRow | null;
+
+    if (!doc) {
+      throw new HttpError(404, 'Document not found.');
+    }
+
+    await sendConsultationDocumentFile(res, next, doc);
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/doctor/consultations/:id/documents', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+
+    const consultation = await prisma.consultation.findFirst({
+      where: { id: req.params.id, ...doctorConsultationScope(identity) },
+      select: { id: true },
+    });
+
+    if (!consultation) {
+      throw new HttpError(404, 'Consultation not found.');
+    }
+
+    const documents = (await prisma.consultationDocument.findMany({
+      where: { consultationId: consultation.id, deletedAt: null },
+      select: CONSULTATION_DOCUMENT_SELECT,
+      orderBy: { createdAt: 'asc' },
+    })) as ConsultationDocumentRow[];
+
+    res.json(
+      consultationDocumentsResponseSchema.parse({
+        documents: documents.map(serializeConsultationDocument),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Uploads one prescription or diet plan. The file is held in memory by multer and only written once
+ * this doctor's claim to the consultation has been checked, so an unauthorized id never touches the
+ * filesystem. The declared Content-Type is re-derived from the leading bytes before anything is
+ * stored — that sniffed type, not the client's claim, is what the file is later served as.
+ */
+app.post(
+  '/doctor/consultations/:id/documents',
+  uploadConsultationDocument,
+  async (req, res, next) => {
+    try {
+      const identity = requireDoctorIdentity(req);
+      const file = req.file;
+
+      if (!file) {
+        throw new HttpError(400, 'Attach a file to upload.');
+      }
+
+      const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+      const body = uploadConsultationDocumentBodySchema.parse({
+        kind: req.body?.kind,
+        ...(rawTitle ? { title: rawTitle } : {}),
+      });
+
+      const consultation = await prisma.consultation.findFirst({
+        where: { id: req.params.id, ...doctorConsultationScope(identity) },
+        select: {
+          id: true,
+          userId: true,
+          specialistId: true,
+          status: true,
+          specialist: { select: { name: true } },
+        },
+      });
+
+      if (!consultation) {
+        throw new HttpError(404, 'Consultation not found.');
+      }
+
+      if (consultation.status === 'cancelled') {
+        throw new HttpError(400, 'This consultation was cancelled.');
+      }
+
+      const existing = await prisma.consultationDocument.count({
+        where: { consultationId: consultation.id, deletedAt: null },
+      });
+
+      if (existing >= CONSULTATION_DOCUMENT_MAX_PER_CONSULTATION) {
+        throw new HttpError(
+          409,
+          `This consultation already has ${CONSULTATION_DOCUMENT_MAX_PER_CONSULTATION} documents. Remove one first.`,
+        );
+      }
+
+      const sniffed = sniffDocumentMimeType(file.buffer);
+      if (!sniffed) {
+        throw new HttpError(415, 'That file is not a readable image or PDF.');
+      }
+
+      const storagePath = await writeConsultationDocument({
+        consultationId: consultation.id,
+        mimeType: sniffed,
+        buffer: file.buffer,
+      });
+
+      // The admin key is not a specialist, so uploads made with it are attributed to the doctor
+      // the consultation belongs to.
+      const uploadedById = identity.specialistId ?? consultation.specialistId;
+
+      const document = (await prisma.consultationDocument.create({
+        data: {
+          consultationId: consultation.id,
+          kind: body.kind,
+          title: body.title ?? null,
+          originalName: sanitizeOriginalName(file.originalname),
+          mimeType: sniffed,
+          sizeBytes: file.size,
+          storagePath,
+          uploadedById,
+        },
+        select: CONSULTATION_DOCUMENT_SELECT,
+      })) as ConsultationDocumentRow;
+
+      req.log.info(
+        { consultationId: consultation.id, documentId: document.id, kind: body.kind },
+        'Consultation document uploaded',
+      );
+
+      void notifyPatientDocumentShared({
+        consultationId: consultation.id,
+        patientId: consultation.userId,
+        doctorName: consultation.specialist.name,
+        kind: body.kind,
+      });
+
+      res.status(201).json(
+        uploadConsultationDocumentResponseSchema.parse({
+          ok: true,
+          document: serializeConsultationDocument(document),
+        }),
+      );
+    } catch (e) {
+      next(e);
+    }
+  },
+);
+
+app.get('/doctor/consultations/:id/documents/:docId/file', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+
+    const doc = (await prisma.consultationDocument.findFirst({
+      where: {
+        id: req.params.docId,
+        consultationId: req.params.id,
+        deletedAt: null,
+        consultation: doctorConsultationScope(identity),
+      },
+      select: CONSULTATION_DOCUMENT_SELECT,
+    })) as ConsultationDocumentRow | null;
+
+    if (!doc) {
+      throw new HttpError(404, 'Document not found.');
+    }
+
+    await sendConsultationDocumentFile(res, next, doc);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Withdraws a document. Soft delete: the row is hidden from both portals but the file and the
+ * record of who uploaded it stay, because a prescription that was briefly visible to a patient is
+ * part of the medico-legal trail.
+ */
+app.delete('/doctor/consultations/:id/documents/:docId', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+
+    const removed = await prisma.consultationDocument.updateMany({
+      where: {
+        id: req.params.docId,
+        consultationId: req.params.id,
+        deletedAt: null,
+        consultation: doctorConsultationScope(identity),
+      },
+      data: { deletedAt: new Date() },
+    });
+
+    if (removed.count === 0) {
+      throw new HttpError(404, 'Document not found.');
+    }
+
+    req.log.info(
+      { consultationId: req.params.id, documentId: req.params.docId },
+      'Consultation document withdrawn',
+    );
+
+    res.json(deleteConsultationDocumentResponseSchema.parse({ ok: true }));
   } catch (e) {
     next(e);
   }
@@ -2127,6 +2547,10 @@ app.get('/doctor/consultations', async (req, res, next) => {
             endsAt: true,
           },
         },
+        documents: {
+          where: { deletedAt: null },
+          select: { id: true },
+        },
         call: {
           select: {
             status: true,
@@ -2153,6 +2577,7 @@ app.get('/doctor/consultations', async (req, res, next) => {
           createdAt: booking.createdAt.toISOString(),
           callStatus: booking.call?.status ?? null,
           recordingStatus: aggregateRecording(booking.call?.recordings)?.status ?? null,
+          documentCount: booking.documents.length,
         })),
       }),
     );
@@ -3901,6 +4326,24 @@ app.use(
       return;
     }
 
+    // Upload failures are the client's fault, not the server's: too big, too many, wrong field.
+    if (err instanceof MulterError) {
+      const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+      const message =
+        err.code === 'LIMIT_FILE_SIZE'
+          ? 'That file is larger than 10MB. Retake the photo or compress the PDF.'
+          : `Upload rejected: ${err.message}`;
+      req.log.warn({ code: err.code }, `Request rejected: ${message}`);
+      res.status(status).json({ error: message });
+      return;
+    }
+
+    if (err instanceof UnsupportedDocumentTypeError) {
+      req.log.warn({ status: 415 }, `Request rejected: ${err.message}`);
+      res.status(415).json({ error: err.message });
+      return;
+    }
+
     req.log.error({ err }, 'Unhandled error');
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -3931,6 +4374,7 @@ async function startServer() {
         env: process.env.NODE_ENV ?? 'development',
         logLevel: logger.level,
         recordingDir: RECORDING_LOCAL_DIR || null,
+        consultationDocDir: CONSULTATION_DOC_DIR,
       },
       'API listening',
     );

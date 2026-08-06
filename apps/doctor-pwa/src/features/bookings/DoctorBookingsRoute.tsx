@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DoctorConsultationBooking } from '@anuva/shared';
 import { useNavigate } from 'react-router-dom';
 import { useDoctorIdentity } from '../auth/identity';
 import { fetchDoctorBookings } from './api';
+import { ConsultationDocumentsSheet } from './ConsultationDocumentsSheet';
 import { formatLongDateTime, formatTimeRange } from './dateTime';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -50,11 +51,13 @@ function BookingCard({
   booking,
   showSpecialist,
   onStartCall,
+  onOpenDocuments,
 }: {
   booking: DoctorConsultationBooking;
   /** The doctor's own list is all one specialist, so the patient leads the card instead. */
   showSpecialist: boolean;
   onStartCall: (consultationId: string) => void;
+  onOpenDocuments: (booking: DoctorConsultationBooking) => void;
 }) {
   const patientLabel = booking.patientName?.trim() || 'Patient name unavailable';
   const canStartCall = booking.status === 'confirmed' && booking.callStatus !== 'ended';
@@ -110,6 +113,18 @@ function BookingCard({
       >
         {callLabel(booking)}
       </button>
+
+      {/* Sharing stays available after the call — a prescription is usually written up afterwards. */}
+      <button
+        type="button"
+        disabled={booking.status === 'cancelled'}
+        onClick={() => onOpenDocuments(booking)}
+        className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-border-default px-4 py-3 text-[13px] font-semibold disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        {booking.documentCount > 0
+          ? `Prescription & plans (${booking.documentCount})`
+          : 'Upload prescription / plan'}
+      </button>
     </article>
   );
 }
@@ -121,32 +136,25 @@ export function DoctorBookingsRoute() {
   const [state, setState] = useState<LoadState>('idle');
   const [bookings, setBookings] = useState<DoctorConsultationBooking[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [documentsFor, setDocumentsFor] = useState<DoctorConsultationBooking | null>(null);
+
+  const load = useCallback(async () => {
+    setState('loading');
+    setError(null);
+
+    try {
+      const response = await fetchDoctorBookings();
+      setBookings(response.bookings);
+      setState('ready');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load bookings.');
+      setState('error');
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setState('loading');
-      setError(null);
-
-      try {
-        const response = await fetchDoctorBookings();
-        if (cancelled) return;
-        setBookings(response.bookings);
-        setState('ready');
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Unable to load bookings.');
-        setState('error');
-      }
-    }
-
     void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }, [load]);
 
   const summary = useMemo(() => {
     const now = Date.now();
@@ -242,10 +250,22 @@ export function DoctorBookingsRoute() {
               booking={booking}
               showSpecialist={isAdmin}
               onStartCall={(consultationId) => navigate(`/call/${consultationId}`)}
+              onOpenDocuments={setDocumentsFor}
             />
           ))}
         </div>
       </section>
+
+      {documentsFor ? (
+        <ConsultationDocumentsSheet
+          consultationId={documentsFor.consultationId}
+          patientLabel={documentsFor.patientName?.trim() || documentsFor.patientPhone}
+          onClose={() => setDocumentsFor(null)}
+          onChanged={() => {
+            void load();
+          }}
+        />
+      ) : null}
     </main>
   );
 }

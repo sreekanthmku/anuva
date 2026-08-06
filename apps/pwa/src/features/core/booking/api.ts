@@ -1,6 +1,7 @@
 import type {
   CancelConsultationResponse,
   ConsultationBookingResponse,
+  ConsultationDocumentsResponse,
   ConsultationSpecialistsResponse,
   ConsultationSlotsResponse,
   CreateConsultationBookingBody,
@@ -80,6 +81,37 @@ export async function fetchConsultationRecordingUrl(consultationId: string): Pro
 
   if (!response.ok) {
     throw new Error('Recording is not available yet.');
+  }
+
+  return URL.createObjectURL(await response.blob());
+}
+
+export async function fetchConsultationDocuments(
+  consultationId: string
+): Promise<ConsultationDocumentsResponse> {
+  return apiFetch<ConsultationDocumentsResponse>(
+    `/api/consultations/${consultationId}/documents`
+  );
+}
+
+/**
+ * Prescriptions sit behind the same authenticated pattern as the recording, so the file is pulled
+ * as a blob rather than handed to an <img src> — a tag would drop the session cookie when the API
+ * lives on another origin.
+ */
+export async function fetchConsultationDocumentUrl(
+  consultationId: string,
+  documentId: string
+): Promise<string> {
+  const base = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
+  const path = `/consultations/${consultationId}/documents/${documentId}/file`;
+
+  const response = await fetch(base ? `${base}${path}` : `/api${path}`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('This document could not be opened.');
   }
 
   return URL.createObjectURL(await response.blob());

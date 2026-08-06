@@ -317,6 +317,13 @@ function formatPointDelta(current: number | null, previous: number | null): stri
   return `${diff > 0 ? '+' : '−'}${Math.abs(diff)} pts`;
 }
 
+/** The span `ring.series` and `stat.trend` cover — shared so both stay aligned to `seriesStart`. */
+function seriesRange(w: PeriodWindow): { start: Date; end: Date } {
+  return w.period === 'daily'
+    ? { start: addDays(w.start, -(DAILY_BASELINE_DAYS - 1)), end: w.start }
+    : { start: w.coverageStart, end: w.coverageEnd };
+}
+
 function buildDailyRing(src: RingSource, w: PeriodWindow): RingDraft {
   const pct = rangeMean(src.scores, w.start, w.end);
   const baseline = rangeMean(src.scores, w.prevStart, w.prevEnd);
@@ -360,6 +367,7 @@ function buildDailyRing(src: RingSource, w: PeriodWindow): RingDraft {
     delta,
     reference,
     daysLogged: pct == null ? 0 : 1,
+    series: dailySeries(src.scores, seriesRange(w).start, seriesRange(w).end),
     pctRaw: pct,
     deltaValue: pct != null && baseline != null ? pct - baseline : null,
     status,
@@ -377,6 +385,7 @@ function buildPeriodRing(src: RingSource, w: PeriodWindow): RingDraft {
     delta: formatPointDelta(pct, previous),
     reference: { value: COHORT_REFERENCES[src.key].value, label: 'typical' },
     daysLogged: rangeDaysLogged(src.scores, w.coverageStart, w.coverageEnd),
+    series: dailySeries(src.scores, seriesRange(w).start, seriesRange(w).end),
     pctRaw: pct,
     deltaValue: pct != null && previous != null ? pct - previous : null,
     status: null,
@@ -780,8 +789,7 @@ export async function buildSummary(
   // ── Stat cards ───────────────────────────────────────────
   // Daily shows the trailing week for context with the selected day last;
   // weekly and monthly show the window itself.
-  const trendStart = isDaily ? addDays(w.start, -(DAILY_BASELINE_DAYS - 1)) : w.coverageStart;
-  const trendEnd = isDaily ? w.start : w.coverageEnd;
+  const { start: trendStart, end: trendEnd } = seriesRange(w);
 
   const sleepHours = collect(
     sleepRows,
@@ -850,6 +858,7 @@ export async function buildSummary(
     periodEnd: isoDate(w.end),
     coverageStart: isoDate(w.coverageStart),
     coverageEnd: isoDate(w.coverageEnd),
+    seriesStart: isoDate(trendStart),
     canGoBack: w.canGoBack,
     canGoForward: w.canGoForward,
     calibrating,
@@ -864,6 +873,7 @@ export async function buildSummary(
       delta: ring.delta,
       reference: ring.reference,
       daysLogged: ring.daysLogged,
+      series: ring.series,
     })),
     stats,
     insights:

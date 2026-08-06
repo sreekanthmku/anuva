@@ -10,18 +10,13 @@ import type {
 } from '@anuva/shared';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { BottomNav } from './components/BottomNav';
+import { MetricRing } from './components/MetricRing';
 import { PeriodToggle } from './components/PeriodToggle';
+import { RingDetailSheet } from './components/RingDetailSheet';
 import { Sparkline } from './components/Sparkline';
 import { useSummary } from './hooks/useWeeklyReport';
-
-const RING_COLORS: Record<ReportRingKey, { color: string; track: string }> = {
-  sleep: { color: '#5E3566', track: 'rgba(94, 53, 102, 0.13)' },
-  energy: { color: '#5B82C4', track: 'rgba(91, 130, 196, 0.15)' },
-  stress: { color: '#7A3A4C', track: 'rgba(122, 58, 76, 0.15)' },
-  mood: { color: '#C97E92', track: 'rgba(201, 126, 146, 0.17)' },
-  focus: { color: '#B8923C', track: 'rgba(184, 146, 60, 0.17)' },
-  hotFlashes: { color: '#C0405A', track: 'rgba(192, 64, 90, 0.15)' },
-};
+import { RING_COLORS, RING_EMPTY_COLOR } from './ringColors';
+import { PERIOD_NOUN, formatRange, periodDetail, periodHeadline } from './summaryDates';
 
 const STAT_COLORS: Record<string, string> = {
   avgSleep: '#5E3566',
@@ -47,156 +42,83 @@ const RESET_LABEL: Record<SummaryPeriod, string> = {
   monthly: 'This month',
 };
 
-// ── Date formatting ──────────────────────────────────────────
-// Server returns plain ISO days; formatting stays here so it follows the
-// device locale.
-
-function parseIso(iso: string): Date {
-  return new Date(`${iso}T00:00:00`);
-}
-
-function formatDay(iso: string): string {
-  return parseIso(iso).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function formatShortDay(iso: string): string {
-  return parseIso(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
-function formatRange(startIso: string, endIso: string): string {
-  if (startIso === endIso) return formatShortDay(startIso);
-  const start = parseIso(startIso);
-  const end = parseIso(endIso);
-  const month = (d: Date) => d.toLocaleDateString(undefined, { month: 'short' });
-  return start.getMonth() === end.getMonth()
-    ? `${month(start)} ${start.getDate()} – ${end.getDate()}`
-    : `${month(start)} ${start.getDate()} – ${month(end)} ${end.getDate()}`;
-}
-
-function formatMonth(iso: string): string {
-  return parseIso(iso).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-}
-
-/** Headline for the window — relative wording where it reads better than a date. */
-function periodHeadline(data: WeeklyReportResponse): string {
-  if (data.period === 'daily') {
-    if (data.offset === 0) return 'Today';
-    if (data.offset === 1) return 'Yesterday';
-    return formatDay(data.periodStart);
-  }
-  if (data.period === 'weekly') {
-    if (data.offset === 0) return 'This week';
-    if (data.offset === 1) return 'Last week';
-    return formatRange(data.periodStart, data.periodEnd);
-  }
-  return data.offset === 0 ? 'This month' : formatMonth(data.periodStart);
-}
-
-/** The concrete dates behind the headline, plus a note when the user joined mid-period. */
-function periodDetail(data: WeeklyReportResponse): string {
-  const base =
-    data.period === 'daily'
-      ? formatDay(data.periodStart)
-      : data.period === 'weekly'
-        ? formatRange(data.periodStart, data.periodEnd)
-        : formatMonth(data.periodStart);
-
-  return data.coverageStart !== data.periodStart
-    ? `${base} · your data from ${formatShortDay(data.coverageStart)}`
-    : base;
-}
-
 // ── Rings ────────────────────────────────────────────────────
 
-function ReportRingCard({ ring }: { ring: ReportRing }) {
-  const svgSize = 88;
-  const center = svgSize / 2;
-  const radius = 37;
-  const circumference = 2 * Math.PI * radius;
-  const { color, track } = RING_COLORS[ring.key];
+function ReportRingCard({
+  ring,
+  onSelect,
+}: {
+  ring: ReportRing;
+  onSelect?: (key: ReportRingKey) => void;
+}) {
+  const { color } = RING_COLORS[ring.key];
   const hasData = ring.pct != null;
-  const progress = Math.min(Math.max((ring.pct ?? 0) / 100, 0), 1);
-  const referenceAngle = (ring.reference.value / 100) * 360 - 90;
-  const referenceX = center + radius * Math.cos((referenceAngle * Math.PI) / 180);
-  const referenceY = center + radius * Math.sin((referenceAngle * Math.PI) / 180);
 
-  return (
-    <div className="flex flex-col items-center rounded-starchart-lg bg-surface-bright px-1 py-1.5">
-      <div className="relative h-[88px] w-[88px] shrink-0">
-        <svg
-          width={svgSize}
-          height={svgSize}
-          viewBox={`0 0 ${svgSize} ${svgSize}`}
-          role="img"
-          aria-label={
-            hasData
-              ? `${ring.label} ${ring.pct}%, ${ring.reference.label} is ${ring.reference.value}%. ${ring.delta}`
-              : `${ring.label} — not logged`
-          }
-          className="block"
-        >
-          <circle cx={center} cy={center} r={radius} fill="none" stroke={track} strokeWidth="9" />
-          {hasData && (
-            <circle
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="none"
-              stroke={color}
-              strokeWidth="9"
-              strokeDasharray={`${circumference * progress} ${circumference}`}
-              strokeLinecap="round"
-              transform={`rotate(-90 ${center} ${center})`}
-            />
-          )}
-          <circle
-            cx={referenceX}
-            cy={referenceY}
-            r="2.2"
-            fill="#FBF6F0"
-            stroke={color}
-            strokeWidth="1.4"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span
-            className="text-[16px] font-semibold leading-none"
-            style={{ color: hasData ? color : '#B9A79A', fontFamily: '"Mulish", sans-serif' }}
-          >
-            {hasData ? `${ring.pct}%` : '—'}
-          </span>
-        </div>
-      </div>
+  const label = hasData
+    ? `${ring.label} ${ring.pct}%, ${ring.reference.label} is ${ring.reference.value}%. ${ring.delta}`
+    : `${ring.label} — not logged`;
+
+  const inner = (
+    <>
+      <MetricRing
+        pct={ring.pct}
+        referenceValue={ring.reference.value}
+        ringKey={ring.key}
+        size={88}
+        ariaLabel={onSelect ? undefined : label}
+      />
       <div className="mt-1 min-w-0 text-center">
         <p className="truncate text-[11.5px] leading-[1.2] text-on-surface" style={{ fontFamily: MULISH }}>
           {ring.label}
         </p>
         <span
           className="mt-0.5 block min-h-[22px] text-[9.5px] font-medium leading-[1.15] tracking-[0.04em]"
-          style={{ color: hasData ? color : '#B9A79A', fontFamily: '"Mulish", sans-serif' }}
+          style={{ color: hasData ? color : RING_EMPTY_COLOR, fontFamily: '"Mulish", sans-serif' }}
         >
           {hasData ? ring.delta : 'Not logged'}
         </span>
       </div>
-    </div>
+    </>
+  );
+
+  // A single day has one value per metric, so there is nothing to expand there.
+  if (!onSelect) {
+    return (
+      <div className="flex flex-col items-center rounded-starchart-lg bg-surface-bright px-1 py-1.5">
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(ring.key)}
+      aria-label={`${label}. See day by day`}
+      className="flex flex-col items-center rounded-starchart-lg bg-surface-bright px-1 py-1.5 transition-transform active:scale-[0.97]"
+    >
+      {inner}
+    </button>
   );
 }
 
-function ReportProgressRings({ rings }: { rings: ReportRing[] }) {
+function ReportProgressRings({
+  rings,
+  onSelect,
+}: {
+  rings: ReportRing[];
+  onSelect?: (key: ReportRingKey) => void;
+}) {
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col gap-2">
       <div className="grid grid-cols-3 gap-1.5">
         {rings.slice(0, 3).map((ring) => (
-          <ReportRingCard key={ring.key} ring={ring} />
+          <ReportRingCard key={ring.key} ring={ring} onSelect={onSelect} />
         ))}
       </div>
       <div className="grid grid-cols-3 gap-1.5">
         {rings.slice(3).map((ring) => (
-          <ReportRingCard key={ring.key} ring={ring} />
+          <ReportRingCard key={ring.key} ring={ring} onSelect={onSelect} />
         ))}
       </div>
     </div>
@@ -325,7 +247,7 @@ function PeriodNav({
           direction="prev"
           disabled={!data?.canGoBack}
           onClick={() => onStep(1)}
-          label={`Previous ${period === 'daily' ? 'day' : period === 'weekly' ? 'week' : 'month'}`}
+          label={`Previous ${PERIOD_NOUN[period]}`}
         />
         <span
           aria-live="polite"
@@ -338,7 +260,7 @@ function PeriodNav({
           direction="next"
           disabled={!data?.canGoForward}
           onClick={() => onStep(-1)}
-          label={`Next ${period === 'daily' ? 'day' : period === 'weekly' ? 'week' : 'month'}`}
+          label={`Next ${PERIOD_NOUN[period]}`}
         />
       </div>
 
@@ -381,7 +303,13 @@ const INSIGHT_STYLES: Record<string, { card: string; tone: 'plum' | 'ember' | 'm
   neutral: { card: 'border-border-default bg-surface-raised', tone: 'muted' },
 };
 
-function ReportBody({ report }: { report: WeeklyReportResponse }) {
+function ReportBody({
+  report,
+  onSelectRing,
+}: {
+  report: WeeklyReportResponse;
+  onSelectRing: (key: ReportRingKey) => void;
+}) {
   const navigate = useNavigate();
   const isDaily = report.period === 'daily';
   const isMonthly = report.period === 'monthly';
@@ -406,7 +334,15 @@ function ReportBody({ report }: { report: WeeklyReportResponse }) {
                 : `${report.daysLogged}/${report.daysElapsed} days logged`}
             </span>
           </div>
-          <ReportProgressRings rings={report.rings} />
+          <ReportProgressRings rings={report.rings} onSelect={isDaily ? undefined : onSelectRing} />
+          {!isDaily && (
+            <p
+              className="mt-2 text-center text-[10.5px] leading-none text-outline"
+              style={{ fontFamily: MULISH }}
+            >
+              Tap a ring for the day-by-day breakdown
+            </p>
+          )}
           <p
             className="mt-2 rounded-starchart-lg bg-surface-bright px-3 py-1.5 text-center text-[11px] leading-[1.35] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
@@ -510,12 +446,15 @@ function initialPeriod(): SummaryPeriod {
 export default function WeeklyReportRoute() {
   const [period, setPeriod] = useState<SummaryPeriod>(initialPeriod);
   const [offset, setOffset] = useState(0);
+  const [selectedRing, setSelectedRing] = useState<ReportRingKey | null>(null);
   const { data, loading, error, refresh } = useSummary(period, offset);
 
   const changePeriod = useCallback((next: SummaryPeriod) => {
     setPeriod(next);
     // Offsets count periods, so they do not carry across a granularity change.
     setOffset(0);
+    // The detail view is scoped to one granularity; switching invalidates it.
+    setSelectedRing(null);
     try {
       sessionStorage.setItem(PERIOD_STORAGE_KEY, next);
     } catch {
@@ -564,9 +503,21 @@ export default function WeeklyReportRoute() {
         </section>
       )}
 
-      {!loading && !error && data && <ReportBody report={data} />}
+      {!loading && !error && data && <ReportBody report={data} onSelectRing={setSelectedRing} />}
 
       <BottomNav />
+
+      {/* Outside the loading gate: stepping period inside the sheet refetches,
+          and the sheet must survive that instead of unmounting. */}
+      {selectedRing && (
+        <RingDetailSheet
+          ringKey={selectedRing}
+          report={data}
+          loading={loading}
+          onStep={step}
+          onClose={() => setSelectedRing(null)}
+        />
+      )}
     </main>
   );
 }

@@ -53,6 +53,11 @@ export const reportRingSchema = z.object({
   delta: z.string(),
   reference: reportReferenceSchema,
   daysLogged: z.number().int(),
+  /**
+   * Per-day scores across the window, oldest first, starting at
+   * `seriesStart`. Null where nothing was logged. Powers the ring detail view.
+   */
+  series: z.array(z.number().nullable()),
 });
 
 export const reportStatSchema = z.object({
@@ -104,6 +109,12 @@ export const weeklyReportResponseSchema = z.object({
    */
   coverageStart: z.string(),
   coverageEnd: z.string(),
+  /**
+   * The day `ring.series[0]` and `stat.trend[0]` refer to. Equals
+   * `coverageStart` on weekly/monthly; on daily the series is the trailing week
+   * ending on the selected day, so it starts earlier.
+   */
+  seriesStart: z.string(),
   canGoBack: z.boolean(),
   canGoForward: z.boolean(),
   /** True while the user has fewer than 7 days on the app — numbers are not stable yet. */

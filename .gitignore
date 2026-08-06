@@ -5,6 +5,9 @@ coverage/
 .vite/
 .cache/
 
+# Default CONSULTATION_DOC_DIR fallback — uploaded prescriptions must never be committed.
+.data/
+
 # Environment files
 .env
 .env.local
