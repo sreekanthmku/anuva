@@ -24,9 +24,9 @@ const sections = detailedAssessmentSections;
 
 /**
  * Answers that differ from what the server last acknowledged. Sending the delta rather than the
- * whole map keeps each save proportional to what was typed, and — because a field emptied by the
- * patient shows up here as a blank value — it is also what lets the server delete a cleared answer
- * instead of silently keeping the old one.
+ * whole map keeps each save proportional to what was typed, and — because a field the user emptied
+ * shows up here as a blank value — it is also what lets the server delete a cleared answer instead
+ * of silently keeping the old one.
  */
 function changedAnswers(answers: AnswersMap, saved: AnswersMap): DetailedAnswer[] {
   const keys = new Set([...Object.keys(answers), ...Object.keys(saved)]);
@@ -137,7 +137,7 @@ export default function DetailedAssessmentRoute() {
         savedRef.current = snapshot;
       }
 
-      // The draft is stored either way — an unfinished section costs the patient nothing.
+      // The draft is stored either way — an unfinished section costs the user nothing.
       if (missingHere.length > 0) {
         setShowRequired(true);
         setError(
@@ -599,14 +599,31 @@ function formatDisplay(iso: string): string {
   return `${String(p.day).padStart(2, '0')} ${MONTHS[p.month]} ${p.year}`;
 }
 
+/** Roughly how tall the popover renders; only used to decide which way it should open. */
+const CALENDAR_HEIGHT = 340;
+
 function DatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const today = new Date();
   const parsed = parseDate(value);
   const [open, setOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const [viewYear, setViewYear] = useState(parsed?.year ?? today.getFullYear());
   const [viewMonth, setViewMonth] = useState(parsed?.month ?? today.getMonth());
   const [pickingYear, setPickingYear] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Fields low on the screen — date of birth sits under a sticky footer — have no room to open
+   * downwards, so the calendar flips above the trigger whenever below would clip it and above
+   * has more space.
+   */
+  const chooseDirection = () => {
+    const trigger = containerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const below = window.innerHeight - rect.bottom;
+    setDropUp(below < CALENDAR_HEIGHT && rect.top > below);
+  };
 
   // Close on outside tap
   useEffect(() => {
@@ -664,6 +681,7 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
       <button
         type="button"
         onClick={() => {
+          if (!open) chooseDirection();
           setOpen((o) => !o);
           setPickingYear(false);
         }}
@@ -696,7 +714,9 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
       {/* Popover */}
       {open && (
         <div
-          className="absolute left-0 z-50 mt-2 w-full overflow-hidden rounded-2xl border"
+          className={`absolute left-0 z-50 w-full overflow-hidden rounded-2xl border ${
+            dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
           style={{
             background: '#EFE4D8',
             borderColor: 'rgba(94, 53, 102, 0.2)',

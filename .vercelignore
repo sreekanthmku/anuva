@@ -1,0 +1,10 @@
+.pnpm-store
+node_modules
+**/node_modules
+**/dist
+.turbo
+**/.turbo
+anuva-claude-design-purple
+docs
+*.docx
+*.xlsx

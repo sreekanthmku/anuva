@@ -5,6 +5,7 @@ import type {
   ConsultationDocumentsResponse,
   DeleteConsultationDocumentResponse,
   DoctorConsultationBookingsResponse,
+  DoctorDetailedAssessmentResponse,
   UploadConsultationDocumentResponse,
 } from '@anuva/shared';
 import { ApiError, apiFetch, apiUrl, getDoctorKey } from '../../lib/api';
@@ -28,6 +29,15 @@ export async function endDoctorCall(consultationId: string): Promise<Consultatio
   return apiFetch<ConsultationCallEndResponse>(
     `/api/doctor/consultations/${consultationId}/call/end`,
     { method: 'POST' },
+  );
+}
+
+/** Returns only the sections this reviewer's lens covers — the narrowing is done server-side. */
+export async function fetchDetailedAssessment(
+  consultationId: string,
+): Promise<DoctorDetailedAssessmentResponse> {
+  return apiFetch<DoctorDetailedAssessmentResponse>(
+    `/api/doctor/consultations/${consultationId}/detailed-assessment`,
   );
 }
 

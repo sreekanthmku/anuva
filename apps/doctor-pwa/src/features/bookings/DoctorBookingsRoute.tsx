@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDoctorIdentity } from '../auth/identity';
 import { fetchDoctorBookings } from './api';
 import { ConsultationDocumentsSheet } from './ConsultationDocumentsSheet';
+import { DetailedAssessmentSheet } from './DetailedAssessmentSheet';
 import { formatLongDateTime, formatTimeRange } from './dateTime';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -52,12 +53,14 @@ function BookingCard({
   showSpecialist,
   onStartCall,
   onOpenDocuments,
+  onOpenAssessment,
 }: {
   booking: DoctorConsultationBooking;
   /** The doctor's own list is all one specialist, so the patient leads the card instead. */
   showSpecialist: boolean;
   onStartCall: (consultationId: string) => void;
   onOpenDocuments: (booking: DoctorConsultationBooking) => void;
+  onOpenAssessment: (booking: DoctorConsultationBooking) => void;
 }) {
   const patientLabel = booking.patientName?.trim() || 'Patient name unavailable';
   const canStartCall = booking.status === 'confirmed' && booking.callStatus !== 'ended';
@@ -125,6 +128,15 @@ function BookingCard({
           ? `Prescription & plans (${booking.documentCount})`
           : 'Upload prescription / plan'}
       </button>
+
+      {/* Read before the call, so the sections belonging to this specialty are already in mind. */}
+      <button
+        type="button"
+        onClick={() => onOpenAssessment(booking)}
+        className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-border-default px-4 py-3 text-[13px] font-semibold"
+      >
+        View health assessment
+      </button>
     </article>
   );
 }
@@ -137,6 +149,7 @@ export function DoctorBookingsRoute() {
   const [bookings, setBookings] = useState<DoctorConsultationBooking[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [documentsFor, setDocumentsFor] = useState<DoctorConsultationBooking | null>(null);
+  const [assessmentFor, setAssessmentFor] = useState<DoctorConsultationBooking | null>(null);
 
   const load = useCallback(async () => {
     setState('loading');
@@ -251,6 +264,7 @@ export function DoctorBookingsRoute() {
               showSpecialist={isAdmin}
               onStartCall={(consultationId) => navigate(`/call/${consultationId}`)}
               onOpenDocuments={setDocumentsFor}
+              onOpenAssessment={setAssessmentFor}
             />
           ))}
         </div>
@@ -264,6 +278,14 @@ export function DoctorBookingsRoute() {
           onChanged={() => {
             void load();
           }}
+        />
+      ) : null}
+
+      {assessmentFor ? (
+        <DetailedAssessmentSheet
+          consultationId={assessmentFor.consultationId}
+          patientLabel={assessmentFor.patientName?.trim() || assessmentFor.patientPhone}
+          onClose={() => setAssessmentFor(null)}
         />
       ) : null}
     </main>

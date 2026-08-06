@@ -79,8 +79,8 @@ export const MULTISELECT_SEPARATOR = ', ';
 
 export const detailedAssessmentSections: DetailedAssessmentSection[] = [
   {
-    key: 'patient-information',
-    title: 'Patient Information',
+    key: 'your-information',
+    title: 'Your Information',
     primary: 'all',
     questions: [
       { key: 'full-name', prompt: 'Full name', inputType: 'text' },
@@ -602,7 +602,7 @@ export const detailedAssessmentSections: DetailedAssessmentSection[] = [
     title: 'Signature',
     primary: 'all',
     questions: [
-      { key: 'patient-signature', prompt: 'Sign below to confirm the above is accurate', inputType: 'signature' },
+      { key: 'signature', prompt: 'Sign below to confirm the above is accurate', inputType: 'signature' },
       { key: 'signature-date', prompt: 'Date', inputType: 'date', autoFill: 'today' },
     ],
   },
@@ -619,6 +619,33 @@ export const detailedSignatureQuestionKeys = new Set(
     section.questions.filter((q) => q.inputType === 'signature').map((q) => q.key),
   ),
 );
+
+/**
+ * The sections one reviewer may read. A specialist sees the sections their lens owns — as primary
+ * or as named secondary — plus the sections marked `all`, which carry the identifying and
+ * consent details every reviewer needs. Anything else stays out of reach: a dietician has no
+ * clinical reason to read the mood or sexual-health answers.
+ *
+ * A reviewer holding no lens gets nothing. New specialists are therefore invisible to this until
+ * a lens is assigned, which is the safe direction to fail in.
+ */
+export function detailedSectionsForLenses(
+  lenses: readonly DetailedPractitioner[],
+): DetailedAssessmentSection[] {
+  const held = new Set(lenses);
+  if (held.has('all')) return detailedAssessmentSections;
+
+  // No lens means no read at all — not even the `all` sections, which still carry a name and a
+  // date of birth. An unassigned specialist is one nobody has vouched for yet.
+  if (held.size === 0) return [];
+
+  return detailedAssessmentSections.filter(
+    (section) =>
+      section.primary === 'all' ||
+      held.has(section.primary) ||
+      (section.secondary !== undefined && held.has(section.secondary)),
+  );
+}
 
 /** Every key that must hold a value before the assessment can be submitted. */
 export const detailedAssessmentRequiredKeys = detailedAssessmentSections.flatMap((section) =>
@@ -699,3 +726,16 @@ export const detailedAssessmentStateResponseSchema = z.object({
   answers: z.record(z.string(), z.string()),
 });
 export type DetailedAssessmentStateResponse = z.infer<typeof detailedAssessmentStateResponseSchema>;
+
+/**
+ * The reviewer's view. `sectionKeys` and `answers` are both already narrowed to the reviewer's
+ * lenses server-side — the client filters nothing, so a UI mistake cannot widen access.
+ */
+export const doctorDetailedAssessmentResponseSchema = z.object({
+  status: detailedAssessmentStatusSchema,
+  completedAt: z.string().nullable(),
+  lenses: z.array(z.enum(detailedPractitioners)),
+  sectionKeys: z.array(z.string()),
+  answers: z.record(z.string(), z.string()),
+});
+export type DoctorDetailedAssessmentResponse = z.infer<typeof doctorDetailedAssessmentResponseSchema>;

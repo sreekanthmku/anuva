@@ -1,3 +1,4 @@
+import type { DetailedPractitioner } from '@anuva/shared';
 import type { prisma as prismaClient } from '@anuva/database';
 
 type SeedSpecialist = {
@@ -15,6 +16,26 @@ type SeedSpecialist = {
 };
 
 export const BOOKABLE_DOCTOR_KEYS = new Set(['kekin-gala', 'rizwana-sayed']);
+
+/**
+ * Which detailed-assessment sections each specialist may read, by lens. This is an access-control
+ * boundary, not a display hint: a specialist absent from this map reads nothing, so adding a
+ * colleague to the catalog without a deliberate entry here denies rather than grants.
+ *
+ * Jigna Shah holds two lenses because she practises as both — the role is
+ * "Menopause coach & Clinical Nutritionist (RD)".
+ */
+export const SPECIALIST_LENSES: Record<string, readonly DetailedPractitioner[]> = {
+  'kekin-gala': ['gynaecologist'],
+  'rizwana-sayed': ['gynaecologist'],
+  'jai-bapat': ['psychologist'],
+  'jigna-shah': ['dietician', 'coach'],
+};
+
+export function lensesForSpecialist(key: string | null): readonly DetailedPractitioner[] {
+  if (!key) return [];
+  return SPECIALIST_LENSES[key] ?? [];
+}
 
 const seedSpecialists: SeedSpecialist[] = [
   {

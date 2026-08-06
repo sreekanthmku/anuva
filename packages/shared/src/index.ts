@@ -215,6 +215,8 @@ export {
   detailedSignatureQuestionKeys,
   detailedAssessmentRequiredKeys,
   findMissingDetailedAnswers,
+  detailedSectionsForLenses,
+  doctorDetailedAssessmentResponseSchema,
   detailedAssessmentStatusSchema,
   detailedAnswerSchema,
   saveDetailedAssessmentBodySchema,
@@ -236,6 +238,7 @@ export {
   type SaveDetailedAssessmentBody,
   type SubmitDetailedAssessmentBody,
   type DetailedAssessmentStateResponse,
+  type DoctorDetailedAssessmentResponse,
 } from './detailedAssessment.js';
 
 export {

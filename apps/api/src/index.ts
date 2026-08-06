@@ -95,6 +95,8 @@ import {
   detailedAssessmentStateResponseSchema,
   detailedAssessmentQuestionKeys,
   findMissingDetailedAnswers,
+  detailedSectionsForLenses,
+  doctorDetailedAssessmentResponseSchema,
   anuChatBodySchema,
   anuChatResponseSchema,
   anuChatHistoryResponseSchema,
@@ -119,7 +121,7 @@ import {
   type ConsultationCallState,
 } from '@anuva/shared';
 import { ZodError } from 'zod';
-import { BOOKABLE_DOCTOR_KEYS, ensureBookingCatalog } from './bookingCatalog.js';
+import { BOOKABLE_DOCTOR_KEYS, ensureBookingCatalog, lensesForSpecialist } from './bookingCatalog.js';
 import {
   CONSULTATION_DOC_DIR,
   UnsupportedDocumentTypeError,
@@ -3948,7 +3950,7 @@ function filterValidAnswers(answers: { questionKey: string; value: string }[]) {
 
 /**
  * Applies one batch of answers. An empty value is a deletion, not a no-op: the client sends a
- * blank string when the patient clears a field, and without the delete the old value would survive
+ * blank string when the user clears a field, and without the delete the old value would survive
  * and reappear on the next load. Writes and deletes share one transaction so a partial save can
  * never leave a cleared field looking answered.
  */
@@ -4017,9 +4019,9 @@ app.put('/detailed-assessment', async (req, res, next) => {
 
 /**
  * Marks the assessment complete only once every required question — the signature included — holds
- * a value. The batch is saved either way so a rejected submit never costs the patient their
- * progress; completeness is judged on what is stored afterwards, not on the batch alone, because
- * the client sends only what changed since its last save.
+ * a value. The batch is saved either way so a rejected submit never costs anyone their progress;
+ * completeness is judged on what is stored afterwards, not on the batch alone, because the client
+ * sends only what changed since its last save.
  */
 app.post('/detailed-assessment/submit', async (req, res, next) => {
   try {
@@ -4048,6 +4050,65 @@ app.post('/detailed-assessment/submit', async (req, res, next) => {
       data: { status: 'completed', completedAt: new Date() },
     });
     res.json(serializeDetailedAssessment(await readDetailedAssessment(user.id)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * The reviewer's read of one user's detailed assessment, narrowed to the sections their lens
+ * covers. Two gates apply in order: the consultation must be this doctor's (or the caller must
+ * hold the admin key), and the answers are then cut down to the questions their lens owns. The
+ * narrowing happens here rather than in the portal, so no client bug can widen what is returned.
+ *
+ * A specialist with no lens assigned sees no sections at all — the map in bookingCatalog denies
+ * by default rather than granting.
+ */
+app.get('/doctor/consultations/:id/detailed-assessment', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+
+    const consultation = await prisma.consultation.findFirst({
+      where: { id: req.params.id, ...doctorConsultationScope(identity) },
+      select: { userId: true },
+    });
+
+    if (!consultation) {
+      throw new HttpError(404, 'Consultation not found.');
+    }
+
+    // The admin key is the operations key and already reads every consultation; it reads the whole
+    // assessment too. A specialist gets only the lenses their catalog entry grants.
+    const lenses =
+      identity.scope === 'admin' ? (['all'] as const) : lensesForSpecialist(identity.specialistKey);
+
+    const visible = detailedSectionsForLenses(lenses);
+    const visibleKeys = new Set(visible.flatMap((section) => section.questions.map((q) => q.key)));
+
+    if (visible.length === 0) {
+      req.log.warn(
+        { specialistKey: identity.scope === 'doctor' ? identity.specialistKey : null },
+        'Detailed assessment requested by a specialist with no lens assigned',
+      );
+    }
+
+    const assessment = await readDetailedAssessment(consultation.userId);
+    const answers: Record<string, string> = {};
+    for (const answer of assessment?.answers ?? []) {
+      if (visibleKeys.has(answer.questionKey)) {
+        answers[answer.questionKey] = answer.value;
+      }
+    }
+
+    res.json(
+      doctorDetailedAssessmentResponseSchema.parse({
+        status: assessment?.status ?? 'not_started',
+        completedAt: assessment?.completedAt?.toISOString() ?? null,
+        lenses: [...lenses],
+        sectionKeys: visible.map((section) => section.key),
+        answers,
+      }),
+    );
   } catch (e) {
     next(e);
   }
