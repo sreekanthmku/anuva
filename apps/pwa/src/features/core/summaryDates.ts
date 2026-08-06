@@ -15,6 +15,15 @@ export function addDaysIso(iso: string, days: number): Date {
   return d;
 }
 
+/** Inclusive day count from `startIso` to `endIso`; 0 when end precedes start. */
+export function daysBetweenIso(startIso: string, endIso: string): number {
+  const start = parseIso(startIso);
+  const end = parseIso(endIso);
+  const toDayNumber = (d: Date) =>
+    Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000);
+  return Math.max(0, toDayNumber(end) - toDayNumber(start) + 1);
+}
+
 export function formatDay(iso: string): string {
   return parseIso(iso).toLocaleDateString(undefined, {
     weekday: 'short',

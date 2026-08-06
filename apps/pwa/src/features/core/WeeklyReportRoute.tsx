@@ -12,11 +12,16 @@ import { Eyebrow } from '../../shared/components/Eyebrow';
 import { BottomNav } from './components/BottomNav';
 import { MetricRing } from './components/MetricRing';
 import { PeriodToggle } from './components/PeriodToggle';
-import { RingDetailSheet } from './components/RingDetailSheet';
 import { Sparkline } from './components/Sparkline';
 import { useSummary } from './hooks/useWeeklyReport';
 import { RING_COLORS, RING_EMPTY_COLOR } from './ringColors';
-import { PERIOD_NOUN, formatRange, periodDetail, periodHeadline } from './summaryDates';
+import {
+  PERIOD_NOUN,
+  daysBetweenIso,
+  formatRange,
+  periodDetail,
+  periodHeadline,
+} from './summaryDates';
 
 const STAT_COLORS: Record<string, string> = {
   avgSleep: '#5E3566',
@@ -127,7 +132,16 @@ function ReportProgressRings({
 
 // ── Stats ────────────────────────────────────────────────────
 
-function StatCard({ stat, wide }: { stat: ReportStat; wide?: boolean }) {
+function StatCard({
+  stat,
+  elapsed,
+  wide,
+}: {
+  stat: ReportStat;
+  /** Series entries that have actually happened — the rest are future days. */
+  elapsed: number;
+  wide?: boolean;
+}) {
   const color = STAT_COLORS[stat.key] ?? '#5E3566';
 
   return (
@@ -149,7 +163,9 @@ function StatCard({ stat, wide }: { stat: ReportStat; wide?: boolean }) {
         {stat.label}
       </div>
       <div className="mt-2.5">
-        <Sparkline values={stat.trend} color={color} />
+        {/* The detail chart shows the whole period; these compact cards stop at
+            today so they are not mostly empty space early in a month. */}
+        <Sparkline values={stat.trend.slice(0, elapsed)} color={color} />
       </div>
     </article>
   );
@@ -318,6 +334,7 @@ function ReportBody({
   const others = report.stats.filter((s) => s.key !== 'wellness');
   const hasAnyData = report.daysLogged > 0;
   const metricsLogged = report.rings.filter((r) => r.pct != null).length;
+  const elapsed = daysBetweenIso(report.seriesStart, report.coverageEnd);
 
   return (
     <>
@@ -382,15 +399,15 @@ function ReportBody({
             // 31 days into a card half this wide.
             <div className="flex flex-col gap-2.5">
               {report.stats.map((stat) => (
-                <StatCard key={stat.key} stat={stat} />
+                <StatCard key={stat.key} stat={stat} elapsed={elapsed} />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2.5">
               {others.map((stat) => (
-                <StatCard key={stat.key} stat={stat} />
+                <StatCard key={stat.key} stat={stat} elapsed={elapsed} />
               ))}
-              {wellness && <StatCard stat={wellness} wide />}
+              {wellness && <StatCard stat={wellness} elapsed={elapsed} wide />}
             </div>
           ))}
 
@@ -444,17 +461,23 @@ function initialPeriod(): SummaryPeriod {
 }
 
 export default function WeeklyReportRoute() {
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<SummaryPeriod>(initialPeriod);
   const [offset, setOffset] = useState(0);
-  const [selectedRing, setSelectedRing] = useState<ReportRingKey | null>(null);
   const { data, loading, error, refresh } = useSummary(period, offset);
+
+  // Open the metric page on the same window the user is looking at.
+  const openMetric = useCallback(
+    (key: ReportRingKey) => {
+      navigate(`/report/${key}?period=${period}&offset=${offset}`);
+    },
+    [navigate, period, offset]
+  );
 
   const changePeriod = useCallback((next: SummaryPeriod) => {
     setPeriod(next);
     // Offsets count periods, so they do not carry across a granularity change.
     setOffset(0);
-    // The detail view is scoped to one granularity; switching invalidates it.
-    setSelectedRing(null);
     try {
       sessionStorage.setItem(PERIOD_STORAGE_KEY, next);
     } catch {
@@ -503,21 +526,9 @@ export default function WeeklyReportRoute() {
         </section>
       )}
 
-      {!loading && !error && data && <ReportBody report={data} onSelectRing={setSelectedRing} />}
+      {!loading && !error && data && <ReportBody report={data} onSelectRing={openMetric} />}
 
       <BottomNav />
-
-      {/* Outside the loading gate: stepping period inside the sheet refetches,
-          and the sheet must survive that instead of unmounting. */}
-      {selectedRing && (
-        <RingDetailSheet
-          ringKey={selectedRing}
-          report={data}
-          loading={loading}
-          onStep={step}
-          onClose={() => setSelectedRing(null)}
-        />
-      )}
     </main>
   );
 }

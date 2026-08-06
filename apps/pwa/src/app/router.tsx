@@ -11,6 +11,7 @@ import DetailedAssessmentRoute from '../features/core/DetailedAssessmentRoute';
 import AnuChatRoute from '../features/core/AnuChatRoute';
 import SymptomTrackRoute from '../features/core/SymptomTrackRoute';
 import WeeklyReportRoute from '../features/core/WeeklyReportRoute';
+import MetricDetailRoute from '../features/core/MetricDetailRoute';
 import CareDirectionRoute from '../features/core/CareDirectionRoute';
 import LibraryRoute from '../features/core/LibraryRoute';
 import LibraryArticleRoute from '../features/core/LibraryArticleRoute';
@@ -106,6 +107,14 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <WeeklyReportRoute />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/report/:metric"
+          element={
+            <ProtectedRoute>
+              <MetricDetailRoute />
             </ProtectedRoute>
           }
         />

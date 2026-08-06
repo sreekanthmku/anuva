@@ -317,11 +317,43 @@ function formatPointDelta(current: number | null, previous: number | null): stri
   return `${diff > 0 ? '+' : '−'}${Math.abs(diff)} pts`;
 }
 
-/** The span `ring.series` and `stat.trend` cover — shared so both stay aligned to `seriesStart`. */
+/**
+ * The span `ring.series` and `stat.trend` cover — shared so both stay aligned
+ * to `seriesStart`.
+ *
+ * Weekly and monthly span the *whole* calendar period, including days that have
+ * not happened yet, so a chart keeps a constant width and a week always reads
+ * as seven columns. Daily instead spans the trailing week ending on the
+ * selected day, for context around a single value.
+ */
 function seriesRange(w: PeriodWindow): { start: Date; end: Date } {
   return w.period === 'daily'
     ? { start: addDays(w.start, -(DAILY_BASELINE_DAYS - 1)), end: w.start }
-    : { start: w.coverageStart, end: w.coverageEnd };
+    : { start: w.start, end: w.end };
+}
+
+/**
+ * Per-day values across `seriesRange`, with anything outside the coverage
+ * window forced to null. Keeps the invariant that a ring's `pct` is the mean of
+ * its own series: days before the user joined cannot contribute even if stray
+ * logs exist there, and future days are always empty.
+ *
+ * Daily is exempt — its trailing-week context sits outside coverage by design.
+ */
+function windowSeries(map: DayScores, w: PeriodWindow): (number | null)[] {
+  const { start, end } = seriesRange(w);
+  const span = dayOffset(start, end);
+  const out: (number | null)[] = [];
+
+  for (let i = 0; i <= span; i += 1) {
+    const day = addDays(start, i);
+    const inCoverage =
+      w.period === 'daily' ||
+      (day.getTime() >= w.coverageStart.getTime() && day.getTime() <= w.coverageEnd.getTime());
+    out.push(inCoverage ? mean(map.get(isoDate(day)) ?? []) : null);
+  }
+
+  return out;
 }
 
 function buildDailyRing(src: RingSource, w: PeriodWindow): RingDraft {
@@ -367,7 +399,7 @@ function buildDailyRing(src: RingSource, w: PeriodWindow): RingDraft {
     delta,
     reference,
     daysLogged: pct == null ? 0 : 1,
-    series: dailySeries(src.scores, seriesRange(w).start, seriesRange(w).end),
+    series: windowSeries(src.scores, w),
     pctRaw: pct,
     deltaValue: pct != null && baseline != null ? pct - baseline : null,
     status,
@@ -385,7 +417,7 @@ function buildPeriodRing(src: RingSource, w: PeriodWindow): RingDraft {
     delta: formatPointDelta(pct, previous),
     reference: { value: COHORT_REFERENCES[src.key].value, label: 'typical' },
     daysLogged: rangeDaysLogged(src.scores, w.coverageStart, w.coverageEnd),
-    series: dailySeries(src.scores, seriesRange(w).start, seriesRange(w).end),
+    series: windowSeries(src.scores, w),
     pctRaw: pct,
     deltaValue: pct != null && previous != null ? pct - previous : null,
     status: null,
@@ -789,7 +821,6 @@ export async function buildSummary(
   // ── Stat cards ───────────────────────────────────────────
   // Daily shows the trailing week for context with the selected day last;
   // weekly and monthly show the window itself.
-  const { start: trendStart, end: trendEnd } = seriesRange(w);
 
   const sleepHours = collect(
     sleepRows,
@@ -821,21 +852,21 @@ export async function buildSummary(
       label: isDaily ? 'Sleep' : 'Avg sleep',
       value: avgSleepHours == null ? null : avgSleepHours.toFixed(1),
       unit: 'hrs',
-      trend: dailySeries(sleepHours, trendStart, trendEnd),
+      trend: windowSeries(sleepHours, w),
     },
     {
       key: 'hotFlashes',
       label: 'Hot flashes',
       value: hotFlashDays.length === 0 ? null : String(hotFlashTotal),
       unit: hotFlashTotal === 1 ? 'episode' : 'episodes',
-      trend: dailySeries(hotFlashCounts, trendStart, trendEnd),
+      trend: windowSeries(hotFlashCounts, w),
     },
     {
       key: 'wellness',
       label: 'Wellness',
       value: wellnessScore == null ? null : String(Math.round(wellnessScore)),
       unit: '/100',
-      trend: dailySeries(wellnessDaily, trendStart, trendEnd),
+      trend: windowSeries(wellnessDaily, w),
     },
   ];
 
@@ -858,7 +889,7 @@ export async function buildSummary(
     periodEnd: isoDate(w.end),
     coverageStart: isoDate(w.coverageStart),
     coverageEnd: isoDate(w.coverageEnd),
-    seriesStart: isoDate(trendStart),
+    seriesStart: isoDate(seriesRange(w).start),
     canGoBack: w.canGoBack,
     canGoForward: w.canGoForward,
     calibrating,
