@@ -88,7 +88,15 @@ export class EntityService {
     if (Object.keys(parsed.data).length === 0) {
       throw new ValidationError('Update body must include at least one field');
     }
-    const row = await this.repo.update(entity, id, await this.prepareWrite(entity, parsed.data, 'update'));
+    const data = await this.prepareWrite(entity, parsed.data, 'update');
+    const row = await this.repo.update(entity, id, data);
+
+    // An admin resetting a doctor's password is nearly always responding to a lost or leaked one,
+    // so the old sessions must not survive it. The doctor's own change path does the same.
+    if (entity.prismaModel === 'doctorAccount' && 'passwordHash' in data) {
+      await this.repo.revokeDoctorSessions(id);
+    }
+
     return serializeRecord(row);
   }
 
@@ -198,6 +206,13 @@ export class EntityService {
         return serializeRecord(
           await this.repo.update(entity, id, { [entity.softDeleteField]: null }),
         );
+      case 'revoke-sessions': {
+        if (entity.prismaModel !== 'doctorAccount') {
+          throw new ValidationError('revoke-sessions is only for doctor accounts');
+        }
+        const revoked = await this.repo.revokeDoctorSessions(id);
+        return { id, revoked };
+      }
       default:
         throw new ValidationError(`Unhandled action: ${action}`);
     }

@@ -745,6 +745,11 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     actions: [
       { key: 'enable', label: 'Enable' },
       { key: 'disable', label: 'Disable' },
+      {
+        key: 'revoke-sessions',
+        label: 'Sign out everywhere',
+        description: 'Deletes every session for this account',
+      },
     ],
     createSchema: objectSchema({
       username: z

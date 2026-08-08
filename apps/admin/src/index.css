@@ -272,6 +272,77 @@ th {
   margin-bottom: 0.75rem;
 }
 
+/* Doctor Accounts */
+
+.account-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.85rem;
+  align-items: start;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.account-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.account-form label > input,
+.account-form label > select {
+  color: #e2e8f0;
+}
+
+.account-form-actions {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.issued-password {
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.issued-password p {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.issued-password-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.issued-password-row code {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  background: #0f172a;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  user-select: all;
+}
+
+.inline-reset {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.inline-reset input {
+  width: 14rem;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.45rem;
+}
+
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;

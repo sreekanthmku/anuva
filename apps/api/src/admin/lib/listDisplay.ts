@@ -107,24 +107,11 @@ const RELATION_FORMATTERS: Record<
   },
 };
 
-/** FK field → display relation key that replaced it */
-const FK_TO_RELATION: Record<string, string> = {
-  userId: 'user',
-  specialistId: 'specialist',
-  uploadedById: 'uploadedBy',
-  symptomId: 'symptom',
-  carePathId: 'carePath',
-  questionId: 'question',
-  logId: 'log',
-  reportId: 'report',
-  threadId: 'thread',
-  consultationId: 'consultation',
-  assessmentId: 'assessment',
-};
-
 /**
- * Turn nested Prisma includes into flat string labels and drop raw FK columns
- * when a label is available — so list tables show people/titles, not cuids.
+ * Turn nested Prisma includes into flat string labels — so list tables show people and titles
+ * rather than cuids. The raw FK columns are kept: a client that has to act on a row (link it,
+ * match it against another list) needs the id, and hiding it is a display decision the table
+ * already makes via `listFields` and its Show IDs toggle.
  */
 export function flattenListRow(row: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...row };
@@ -135,12 +122,6 @@ export function flattenListRow(row: Record<string, unknown>): Record<string, unk
     const label = formatter(nested);
     if (label != null) out[key] = label;
     else delete out[key];
-  }
-
-  for (const [fk, relation] of Object.entries(FK_TO_RELATION)) {
-    if (typeof out[relation] === 'string') {
-      delete out[fk];
-    }
   }
 
   // Drop any remaining nested objects (avoid dumping JSON blobs in the table)

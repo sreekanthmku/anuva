@@ -104,7 +104,7 @@ Sensitive fields (`tokenHash`, `passwordHash`, `embedding`, `providerSessionId`)
 | `symptoms`, `specialists` | `enable`, `disable` |
 | `fcm-tokens` | `activate`, `deactivate` |
 | `consultation-documents` | `archive`, `restore` (soft delete via `deletedAt`) |
-| `doctor-accounts` | `enable`, `disable` |
+| `doctor-accounts` | `enable`, `disable`, `revoke-sessions` (signs that account out everywhere) |
 
 ## Admin UI (`apps/admin`)
 

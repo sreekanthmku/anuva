@@ -7,6 +7,7 @@ import {
   type EntityMeta,
 } from '../../atoms';
 import { adminFetch, setStoredToken, type AdminApiError } from '../../lib/api';
+import { DoctorAccountsPanel } from '../doctors/DoctorAccountsPanel';
 import { EntityBrowser } from '../entities/EntityBrowser';
 
 export function AdminShell() {
@@ -107,7 +108,10 @@ export function AdminShell() {
       </aside>
       <main className="content">
         {error && <p className="error">{error}</p>}
-        {current ? (
+        {current?.resource === 'doctor-accounts' ? (
+          // Logins get a purpose-built screen; the JSON editor is the wrong tool for a password.
+          <DoctorAccountsPanel />
+        ) : current ? (
           <EntityBrowser key={current.resource} entity={current} />
         ) : (
           <p className="muted">Select an entity to manage.</p>
