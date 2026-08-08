@@ -13,7 +13,7 @@ All **61** Prisma models are registered in `ADMIN_ENTITIES` (verified by `tests/
 1. **High — login brute force**: `/admin/auth/login` has no rate limit. Mitigate at reverse proxy or add app-level throttle before internet exposure.
 2. **Medium — session secret derivation**: In non-production, secret can derive from password if `ADMIN_SESSION_SECRET` is unset. Production requires an explicit secret (empty ⇒ auth fail-closed).
 3. **Medium — privileged surface**: Full CRUD over PHI. Restrict network access to admin UI/API (VPN / IP allowlist).
-4. **Low — doctor-accounts**: `password` is accepted in create/update bodies and hashed with scrypt before it reaches Prisma; ensure TLS and no request-body logging (logger already avoids bodies).
+4. **Low — specialists**: `password` is accepted in create/update bodies and hashed with scrypt before it reaches Prisma; `passwordHash` is redacted on read. Ensure TLS and no request-body logging (logger already avoids bodies).
 
 ## Architecture findings
 

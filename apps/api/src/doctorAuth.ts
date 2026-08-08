@@ -105,58 +105,44 @@ export function normaliseDoctorUsername(username: string): string {
 }
 
 /**
- * Login throttle. In-memory and therefore per-instance — enough to stop credential stuffing from
- * a single client, not a substitute for a WAF. Keyed by username so a distributed attack cannot
- * dodge it by rotating IPs, and the window slides forward on every failure.
+ * Login throttle. The counters live on the Specialist row rather than in process memory, so a
+ * restart or a second instance cannot silently void the policy. Keyed by the account, which means
+ * an attacker rotating IPs gains nothing.
+ *
+ * These helpers are pure — they say what the next counter state should be; the caller writes it.
  */
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const LOGIN_MAX_FAILURES = 8;
+export const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
+export const LOGIN_MAX_FAILURES = 8;
 
-type Attempt = { failures: number; firstFailedAt: number; lockedUntil: number };
+export type LoginLockState = {
+  failedLoginCount: number;
+  lockedUntil: Date | null;
+};
 
-const loginAttempts = new Map<string, Attempt>();
-
-function pruneAttempts(now: number): void {
-  for (const [key, attempt] of loginAttempts) {
-    if (attempt.lockedUntil <= now && now - attempt.firstFailedAt > LOGIN_WINDOW_MS) {
-      loginAttempts.delete(key);
-    }
-  }
-}
-
-/** Seconds left on the lockout, or 0 when the caller may attempt a login. */
-export function doctorLoginLockoutSeconds(username: string, now = Date.now()): number {
-  const attempt = loginAttempts.get(normaliseDoctorUsername(username));
-  if (!attempt || attempt.lockedUntil <= now) {
+/** Seconds left on the lockout, or 0 when this account may attempt a login. */
+export function lockoutSecondsRemaining(state: LoginLockState, now = Date.now()): number {
+  if (!state.lockedUntil) {
     return 0;
   }
 
-  return Math.ceil((attempt.lockedUntil - now) / 1000);
+  const remaining = state.lockedUntil.getTime() - now;
+  return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
 }
 
-export function recordDoctorLoginFailure(username: string, now = Date.now()): void {
-  pruneAttempts(now);
+/**
+ * Counter state after one more failed attempt. A failure arriving once the previous lockout has
+ * expired starts a fresh count — serving the lockout is what clears the slate.
+ */
+export function nextFailureState(state: LoginLockState, now = Date.now()): LoginLockState {
+  const servedLockout = state.lockedUntil !== null && state.lockedUntil.getTime() <= now;
+  const failedLoginCount = (servedLockout ? 0 : state.failedLoginCount) + 1;
 
-  const key = normaliseDoctorUsername(username);
-  const existing = loginAttempts.get(key);
-  const withinWindow = existing && now - existing.firstFailedAt <= LOGIN_WINDOW_MS;
-
-  const attempt: Attempt = withinWindow
-    ? { ...existing, failures: existing.failures + 1 }
-    : { failures: 1, firstFailedAt: now, lockedUntil: 0 };
-
-  if (attempt.failures >= LOGIN_MAX_FAILURES) {
-    attempt.lockedUntil = now + LOGIN_WINDOW_MS;
-  }
-
-  loginAttempts.set(key, attempt);
+  return {
+    failedLoginCount,
+    lockedUntil:
+      failedLoginCount >= LOGIN_MAX_FAILURES ? new Date(now + LOGIN_LOCKOUT_MS) : null,
+  };
 }
 
-export function clearDoctorLoginFailures(username: string): void {
-  loginAttempts.delete(normaliseDoctorUsername(username));
-}
-
-/** Test hook — the throttle is module state and would otherwise leak between cases. */
-export function resetDoctorLoginThrottle(): void {
-  loginAttempts.clear();
-}
+/** Counter state after a successful sign-in. */
+export const CLEARED_LOCK_STATE: LoginLockState = { failedLoginCount: 0, lockedUntil: null };

@@ -178,8 +178,11 @@ describe('Admin entity CRUD API (mocked prisma)', () => {
     expect(res.status).toBe(404);
   });
 
-  it('rejects disallowed sort fields', async () => {
+  it('falls back to the default sort when the field is not sortable', async () => {
+    // Deliberate: a stale sort carried over from another entity should not 400 the whole list.
+    // See PrismaEntityRepository.list.
     const res = await get('/admin/entities/users?sort=password');
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
+    expect(res.body.meta.sort).toBe('createdAt');
   });
 });

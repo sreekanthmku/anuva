@@ -241,12 +241,12 @@ export class PrismaEntityRepository {
   }
 
   /**
-   * Signs one doctor account out everywhere. Not expressible through the generic delete path,
-   * which is single-row and keyed by id; this is a deleteMany scoped to the account.
+   * Signs one specialist out everywhere. Not expressible through the generic delete path, which is
+   * single-row and keyed by id; this is a deleteMany scoped to the person.
    */
-  async revokeDoctorSessions(accountId: string): Promise<number> {
+  async revokeSpecialistSessions(specialistId: string): Promise<number> {
     try {
-      const result = await this.prisma.doctorSession.deleteMany({ where: { accountId } });
+      const result = await this.prisma.specialistSession.deleteMany({ where: { specialistId } });
       return result.count;
     } catch (err) {
       mapPrismaError(err);

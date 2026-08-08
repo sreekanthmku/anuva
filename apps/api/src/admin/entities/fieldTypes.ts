@@ -276,6 +276,6 @@ export const ADMIN_NO_CREATE = new Set([
   'nudge-send-logs',
   'l3-trigger-logs',
   'nudge-daily-states',
-  'doctor-sessions',
+  'specialist-sessions',
   'support-tickets',
 ]);

@@ -1,12 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  clearDoctorLoginFailures,
-  doctorLoginLockoutSeconds,
+  CLEARED_LOCK_STATE,
   DUMMY_DOCTOR_PASSWORD_HASH,
   hashDoctorPassword,
+  LOGIN_LOCKOUT_MS,
+  LOGIN_MAX_FAILURES,
+  lockoutSecondsRemaining,
+  nextFailureState,
   normaliseDoctorUsername,
-  recordDoctorLoginFailure,
-  resetDoctorLoginThrottle,
   verifyDoctorPassword,
 } from '../src/doctorAuth.js';
 
@@ -59,63 +60,57 @@ describe('normaliseDoctorUsername', () => {
   });
 });
 
-describe('login throttle', () => {
-  beforeEach(() => {
-    resetDoctorLoginThrottle();
-  });
+describe('login lockout', () => {
+  const NOW = 1_000_000;
+  const fresh = { failedLoginCount: 0, lockedUntil: null };
 
   it('does not lock before the failure limit', () => {
-    for (let i = 0; i < 7; i += 1) {
-      recordDoctorLoginFailure('doc');
+    let state = fresh;
+    for (let i = 0; i < LOGIN_MAX_FAILURES - 1; i += 1) {
+      state = nextFailureState(state, NOW);
     }
-    expect(doctorLoginLockoutSeconds('doc')).toBe(0);
+    expect(state.failedLoginCount).toBe(LOGIN_MAX_FAILURES - 1);
+    expect(state.lockedUntil).toBeNull();
+    expect(lockoutSecondsRemaining(state, NOW)).toBe(0);
   });
 
-  it('locks the username once the limit is reached', () => {
-    for (let i = 0; i < 8; i += 1) {
-      recordDoctorLoginFailure('doc');
+  it('locks once the limit is reached', () => {
+    let state = fresh;
+    for (let i = 0; i < LOGIN_MAX_FAILURES; i += 1) {
+      state = nextFailureState(state, NOW);
     }
-    expect(doctorLoginLockoutSeconds('doc')).toBeGreaterThan(0);
+    expect(state.lockedUntil).not.toBeNull();
+    expect(lockoutSecondsRemaining(state, NOW)).toBe(LOGIN_LOCKOUT_MS / 1000);
   });
 
-  it('is case-insensitive, so casing cannot dodge the lockout', () => {
-    for (let i = 0; i < 8; i += 1) {
-      recordDoctorLoginFailure('Doc');
-    }
-    expect(doctorLoginLockoutSeconds('doc')).toBeGreaterThan(0);
+  it('reports no lockout once it has expired', () => {
+    const state = { failedLoginCount: LOGIN_MAX_FAILURES, lockedUntil: new Date(NOW + 1000) };
+    expect(lockoutSecondsRemaining(state, NOW)).toBe(1);
+    expect(lockoutSecondsRemaining(state, NOW + 2000)).toBe(0);
   });
 
-  it('locks one username without touching another', () => {
-    for (let i = 0; i < 8; i += 1) {
-      recordDoctorLoginFailure('doc');
-    }
-    expect(doctorLoginLockoutSeconds('other')).toBe(0);
+  it('starts a fresh count after a served lockout, so one late failure does not relock', () => {
+    const served = {
+      failedLoginCount: LOGIN_MAX_FAILURES,
+      lockedUntil: new Date(NOW - 1),
+    };
+    const next = nextFailureState(served, NOW);
+    expect(next.failedLoginCount).toBe(1);
+    expect(next.lockedUntil).toBeNull();
   });
 
-  it('forgets failures older than the window', () => {
-    const start = 1_000_000;
-    for (let i = 0; i < 7; i += 1) {
-      recordDoctorLoginFailure('doc', start);
-    }
-    // One more failure, but outside the 15 minute window — the count restarts at 1.
-    recordDoctorLoginFailure('doc', start + 16 * 60 * 1000);
-    expect(doctorLoginLockoutSeconds('doc', start + 16 * 60 * 1000)).toBe(0);
+  it('keeps counting while the lockout is still standing', () => {
+    const locked = {
+      failedLoginCount: LOGIN_MAX_FAILURES,
+      lockedUntil: new Date(NOW + LOGIN_LOCKOUT_MS),
+    };
+    const next = nextFailureState(locked, NOW);
+    expect(next.failedLoginCount).toBe(LOGIN_MAX_FAILURES + 1);
+    expect(next.lockedUntil).not.toBeNull();
   });
 
-  it('releases the lock once it expires', () => {
-    const start = 1_000_000;
-    for (let i = 0; i < 8; i += 1) {
-      recordDoctorLoginFailure('doc', start);
-    }
-    expect(doctorLoginLockoutSeconds('doc', start)).toBeGreaterThan(0);
-    expect(doctorLoginLockoutSeconds('doc', start + 16 * 60 * 1000)).toBe(0);
-  });
-
-  it('clears the record on a successful sign-in', () => {
-    for (let i = 0; i < 8; i += 1) {
-      recordDoctorLoginFailure('doc');
-    }
-    clearDoctorLoginFailures('doc');
-    expect(doctorLoginLockoutSeconds('doc')).toBe(0);
+  it('clears both counters on a successful sign-in', () => {
+    expect(CLEARED_LOCK_STATE).toEqual({ failedLoginCount: 0, lockedUntil: null });
+    expect(lockoutSecondsRemaining(CLEARED_LOCK_STATE, NOW)).toBe(0);
   });
 });

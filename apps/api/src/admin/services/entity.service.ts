@@ -44,7 +44,7 @@ export class EntityService {
     if (!parsed.success) {
       throw new ValidationError('Validation failed', parsed.error.flatten());
     }
-    const row = await this.repo.create(entity, await this.prepareWrite(entity, parsed.data, 'create'));
+    const row = await this.repo.create(entity, await this.prepareWrite(entity, parsed.data));
     await this.afterCreate(resource, row);
     return serializeRecord(row);
   }
@@ -88,28 +88,27 @@ export class EntityService {
     if (Object.keys(parsed.data).length === 0) {
       throw new ValidationError('Update body must include at least one field');
     }
-    const data = await this.prepareWrite(entity, parsed.data, 'update');
+    const data = await this.prepareWrite(entity, parsed.data);
     const row = await this.repo.update(entity, id, data);
 
     // An admin resetting a doctor's password is nearly always responding to a lost or leaked one,
     // so the old sessions must not survive it. The doctor's own change path does the same.
-    if (entity.prismaModel === 'doctorAccount' && 'passwordHash' in data) {
-      await this.repo.revokeDoctorSessions(id);
+    if (entity.prismaModel === 'specialist' && 'passwordHash' in data) {
+      await this.repo.revokeSpecialistSessions(id);
     }
 
     return serializeRecord(row);
   }
 
   /**
-   * Model-specific massaging the generic CRUD path cannot infer. Today that is only the doctor
+   * Model-specific massaging the generic CRUD path cannot infer. For a specialist that means the
    * portal login: a plaintext `password` is turned into a scrypt `passwordHash` so the column
-   * never sees a raw password, and the doctor/admin split is enforced here rather than in the Zod
-   * schema, which cannot see the row's existing role on a partial update.
+   * never sees a raw password, and a blank username clears the login rather than storing '' —
+   * which would collide with the next specialist to be given one, since the column is unique.
    */
   private async prepareWrite(
     entity: AdminEntityDefinition,
     data: Record<string, unknown>,
-    mode: 'create' | 'update',
   ): Promise<Record<string, unknown>> {
     // A support reply stamps its own timestamp — leaving that to whoever types the answer means a
     // ticket that reads as answered with no record of when.
@@ -124,38 +123,34 @@ export class EntityService {
       return next;
     }
 
-    if (entity.prismaModel !== 'doctorAccount') {
+    if (entity.prismaModel !== 'specialist') {
       return data;
     }
 
     const next: Record<string, unknown> = { ...data };
 
     if (typeof next.username === 'string') {
-      next.username = next.username.trim().toLowerCase();
+      const username = next.username.trim().toLowerCase();
+      next.username = username || null;
     }
 
     if ('password' in next) {
       const password = next.password;
       delete next.password;
-      if (typeof password !== 'string') {
+
+      // An empty password field means "leave it alone", not "set it to nothing" — and on create it
+      // simply means this specialist has no portal login yet, which is allowed.
+      if (password === '' || password === null || password === undefined) {
+        // Nothing to write.
+      } else if (typeof password !== 'string') {
         throw new ValidationError('password must be a string');
+      } else {
+        next.passwordHash = await hashDoctorPassword(password);
+        next.passwordUpdatedAt = new Date();
+        // A fresh password clears any standing lockout, so a reset is not swallowed by it.
+        next.failedLoginCount = 0;
+        next.lockedUntil = null;
       }
-      next.passwordHash = await hashDoctorPassword(password);
-      next.passwordUpdatedAt = new Date();
-    }
-
-    const role = mode === 'create' ? (next.role ?? 'doctor') : next.role;
-
-    if (role === 'admin' && next.specialistId) {
-      throw new ValidationError('An admin account must not be tied to a specialist');
-    }
-    if (role === 'doctor' && (mode === 'create' ? !next.specialistId : next.specialistId === null)) {
-      throw new ValidationError('A doctor account needs a specialist');
-    }
-    // On update the role may be unchanged and therefore absent, so clearing the specialist has to
-    // be paired with an explicit switch to admin — otherwise the account is left unable to log in.
-    if (mode === 'update' && role === undefined && next.specialistId === null) {
-      throw new ValidationError('Set role to admin to clear the specialist');
     }
 
     return next;
@@ -207,10 +202,10 @@ export class EntityService {
           await this.repo.update(entity, id, { [entity.softDeleteField]: null }),
         );
       case 'revoke-sessions': {
-        if (entity.prismaModel !== 'doctorAccount') {
-          throw new ValidationError('revoke-sessions is only for doctor accounts');
+        if (entity.prismaModel !== 'specialist') {
+          throw new ValidationError('revoke-sessions is only for specialists');
         }
-        const revoked = await this.repo.revokeDoctorSessions(id);
+        const revoked = await this.repo.revokeSpecialistSessions(id);
         return { id, revoked };
       }
       default:

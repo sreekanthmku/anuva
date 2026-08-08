@@ -161,12 +161,12 @@ import { httpLogger, logger } from './logger.js';
 import { createAdminRouter } from './admin/index.js';
 import { AdminError } from './admin/errors.js';
 import {
-  clearDoctorLoginFailures,
-  doctorLoginLockoutSeconds,
+  CLEARED_LOCK_STATE,
   DUMMY_DOCTOR_PASSWORD_HASH,
   hashDoctorPassword,
+  lockoutSecondsRemaining,
+  nextFailureState,
   normaliseDoctorUsername,
-  recordDoctorLoginFailure,
   verifyDoctorPassword,
 } from './doctorAuth.js';
 
@@ -636,12 +636,14 @@ function requireBroadcastSecret(req: Request) {
 }
 
 /**
- * Who is behind an authenticated /doctor request. `doctor` is one specialist's own account and
- * only ever sees their own consultations; `admin` is an ops account with no specialist attached
- * and sees every booking. Both are named DoctorAccount rows, so either is attributable in logs.
+ * Who is behind an authenticated /doctor request. `doctor` is a practitioner and only ever sees
+ * their own consultations; `admin` is an ops login — a Specialist row with `portalRole = admin`,
+ * kept out of every patient-facing query — and sees every booking. Both are named rows, so either
+ * is attributable in logs.
  */
 type DoctorIdentity = {
-  accountId: string;
+  /** The Specialist row behind the session — the same row for both scopes. */
+  specialistRowId: string;
   username: string;
 } & (
   | { scope: 'admin'; specialistId: null; specialistKey: null; specialistName: null }
@@ -672,11 +674,18 @@ function doctorConsultationScope(identity: DoctorIdentity): { specialistId?: str
  * specialist is how a doctor is taken off the portal, and it must not silently keep working.
  */
 async function resolveDoctorIdentity(token: string): Promise<DoctorIdentity | null> {
-  const session = await prisma.doctorSession.findUnique({
+  const session = await prisma.specialistSession.findUnique({
     where: { tokenHash: sha256(token) },
     include: {
-      account: {
-        include: { specialist: { select: { id: true, key: true, name: true, active: true } } },
+      specialist: {
+        select: {
+          id: true,
+          key: true,
+          name: true,
+          username: true,
+          portalRole: true,
+          active: true,
+        },
       },
     },
   });
@@ -686,44 +695,50 @@ async function resolveDoctorIdentity(token: string): Promise<DoctorIdentity | nu
   }
 
   if (session.expiresAt.getTime() <= Date.now()) {
-    await prisma.doctorSession.delete({ where: { id: session.id } }).catch(() => undefined);
+    await prisma.specialistSession.delete({ where: { id: session.id } }).catch(() => undefined);
     return null;
   }
 
-  const account = session.account;
-  if (!account.active) {
+  const specialist = session.specialist;
+  if (!specialist.active) {
     return null;
   }
 
   // lastSeenAt is best-effort telemetry; a failed write must not fail the request.
-  void prisma.doctorSession
+  void prisma.specialistSession
     .update({ where: { id: session.id }, data: { lastSeenAt: new Date() } })
     .catch(() => undefined);
 
-  if (account.role === 'admin') {
-    return {
-      accountId: account.id,
-      username: account.username,
-      scope: 'admin',
-      specialistId: null,
-      specialistKey: null,
-      specialistName: null,
-    };
-  }
+  return toDoctorIdentity(specialist);
+}
 
-  const specialist = account.specialist;
-  if (!specialist || !specialist.active) {
-    return null;
-  }
+/** The one place a Specialist row becomes an identity, so login and the guard cannot disagree. */
+function toDoctorIdentity(specialist: {
+  id: string;
+  key: string;
+  name: string;
+  username: string | null;
+  portalRole: 'doctor' | 'admin';
+}): DoctorIdentity {
+  const username = specialist.username ?? '';
 
-  return {
-    accountId: account.id,
-    username: account.username,
-    scope: 'doctor',
-    specialistId: specialist.id,
-    specialistKey: specialist.key,
-    specialistName: specialist.name,
-  };
+  return specialist.portalRole === 'admin'
+    ? {
+        specialistRowId: specialist.id,
+        username,
+        scope: 'admin',
+        specialistId: null,
+        specialistKey: null,
+        specialistName: null,
+      }
+    : {
+        specialistRowId: specialist.id,
+        username,
+        scope: 'doctor',
+        specialistId: specialist.id,
+        specialistKey: specialist.key,
+        specialistName: specialist.name,
+      };
 }
 
 /**
@@ -2369,7 +2384,9 @@ app.get('/consultations/specialists', async (_req, res, next) => {
     await readyBookingCatalog();
 
     const specialists = await prisma.specialist.findMany({
-      where: { active: true },
+      // portalRole 'admin' rows are ops logins, not practitioners — they have no profile worth
+      // showing and must never appear in the booking catalog.
+      where: { active: true, portalRole: 'doctor' },
       include: {
         qualifications: {
           orderBy: { label: 'asc' },
@@ -2537,8 +2554,8 @@ function doctorIdentityPayload(identity: DoctorIdentity) {
 
 /**
  * Username + password sign-in for the doctor portal. The same 401 covers an unknown username, a
- * wrong password, a deactivated account, and a deactivated specialist, so the response never
- * confirms which usernames exist. Repeated failures lock the username for a while.
+ * wrong password, and a deactivated specialist, so the response never confirms which usernames
+ * exist. Repeated failures lock the account for a while; the counters live on the row.
  */
 app.post('/doctor/auth/login', async (req, res, next) => {
   try {
@@ -2546,74 +2563,72 @@ app.post('/doctor/auth/login', async (req, res, next) => {
     const body = doctorLoginRequestSchema.parse(req.body);
     const username = normaliseDoctorUsername(body.username);
 
-    const lockedFor = doctorLoginLockoutSeconds(username);
-    if (lockedFor > 0) {
-      res.set('Retry-After', String(lockedFor));
-      throw new HttpError(429, 'Too many failed sign-in attempts. Try again later.');
-    }
-
-    const account = await prisma.doctorAccount.findUnique({
+    const specialist = await prisma.specialist.findUnique({
       where: { username },
-      include: { specialist: { select: { id: true, key: true, name: true, active: true } } },
+      select: {
+        id: true,
+        key: true,
+        name: true,
+        username: true,
+        portalRole: true,
+        active: true,
+        passwordHash: true,
+        failedLoginCount: true,
+        lockedUntil: true,
+      },
     });
 
-    // Verified even when the account is missing or inactive, so a wrong username and a wrong
-    // password take the same amount of time and cannot be told apart by timing.
+    if (specialist) {
+      const lockedFor = lockoutSecondsRemaining(specialist);
+      if (lockedFor > 0) {
+        res.set('Retry-After', String(lockedFor));
+        req.log.warn({ doctorUsername: username }, 'Doctor sign-in rejected while locked out');
+        throw new HttpError(429, 'Too many failed sign-in attempts. Try again later.');
+      }
+    }
+
+    // Verified even when the row is missing or inactive, so a wrong username and a wrong password
+    // take the same amount of time and cannot be told apart by timing.
     const passwordOk = await verifyDoctorPassword(
       body.password,
-      account?.passwordHash ?? DUMMY_DOCTOR_PASSWORD_HASH,
+      specialist?.passwordHash ?? DUMMY_DOCTOR_PASSWORD_HASH,
     );
 
-    const specialistUsable =
-      account?.role === 'admin' || Boolean(account?.specialist && account.specialist.active);
-
-    if (!account || !account.active || !passwordOk || !specialistUsable) {
-      recordDoctorLoginFailure(username);
+    if (!specialist || !specialist.active || !specialist.passwordHash || !passwordOk) {
+      if (specialist) {
+        await prisma.specialist.update({
+          where: { id: specialist.id },
+          data: nextFailureState(specialist),
+        });
+      }
       req.log.warn({ doctorUsername: username }, 'Doctor sign-in rejected');
       throw new HttpError(401, 'Incorrect username or password.');
     }
-
-    clearDoctorLoginFailures(username);
 
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + DOCTOR_SESSION_TTL_HOURS * 60 * 60 * 1000);
 
     await prisma.$transaction([
-      prisma.doctorSession.create({
-        data: { tokenHash: sha256(token), accountId: account.id, expiresAt },
+      prisma.specialistSession.create({
+        data: { tokenHash: sha256(token), specialistId: specialist.id, expiresAt },
       }),
-      prisma.doctorAccount.update({
-        where: { id: account.id },
-        data: { lastLoginAt: new Date() },
+      prisma.specialist.update({
+        where: { id: specialist.id },
+        data: { lastLoginAt: new Date(), ...CLEARED_LOCK_STATE },
       }),
       // Housekeeping: expired rows for this account would otherwise accumulate forever.
-      prisma.doctorSession.deleteMany({
-        where: { accountId: account.id, expiresAt: { lte: new Date() } },
+      prisma.specialistSession.deleteMany({
+        where: { specialistId: specialist.id, expiresAt: { lte: new Date() } },
       }),
     ]);
 
     setDoctorSessionCookie(res, token, expiresAt);
-    req.log.info({ doctorUsername: username, doctorScope: account.role }, 'Doctor signed in');
-
-    res.json(
-      doctorIdentityPayload({
-        accountId: account.id,
-        username: account.username,
-        ...(account.role === 'admin'
-          ? ({
-              scope: 'admin',
-              specialistId: null,
-              specialistKey: null,
-              specialistName: null,
-            } as const)
-          : ({
-              scope: 'doctor',
-              specialistId: account.specialist!.id,
-              specialistKey: account.specialist!.key,
-              specialistName: account.specialist!.name,
-            } as const)),
-      }),
+    req.log.info(
+      { doctorUsername: username, doctorScope: specialist.portalRole },
+      'Doctor signed in',
     );
+
+    res.json(doctorIdentityPayload(toDoctorIdentity(specialist)));
   } catch (e) {
     next(e);
   }
@@ -2625,7 +2640,7 @@ app.post('/doctor/auth/logout', async (req, res, next) => {
     setNoStoreHeaders(res);
     const token = getDoctorSessionToken(req);
     if (token) {
-      await prisma.doctorSession.deleteMany({ where: { tokenHash: sha256(token) } });
+      await prisma.specialistSession.deleteMany({ where: { tokenHash: sha256(token) } });
     }
 
     clearDoctorSessionCookie(res);
@@ -2636,7 +2651,7 @@ app.post('/doctor/auth/logout', async (req, res, next) => {
 });
 
 /**
- * Changing a password invalidates every other session for that account — a password is usually
+ * Changing a password invalidates every other session for that person — a password is usually
  * changed because the old one leaked, so leaving other devices signed in would defeat the point.
  * The current session survives so the doctor is not thrown out of the screen they are on.
  */
@@ -2646,16 +2661,19 @@ app.post('/doctor/auth/password', async (req, res, next) => {
     const identity = requireDoctorIdentity(req);
     const body = doctorPasswordChangeRequestSchema.parse(req.body);
 
-    const account = await prisma.doctorAccount.findUnique({
-      where: { id: identity.accountId },
+    const specialist = await prisma.specialist.findUnique({
+      where: { id: identity.specialistRowId },
       select: { id: true, passwordHash: true },
     });
 
-    if (!account || !(await verifyDoctorPassword(body.currentPassword, account.passwordHash))) {
+    if (
+      !specialist?.passwordHash ||
+      !(await verifyDoctorPassword(body.currentPassword, specialist.passwordHash))
+    ) {
       throw new HttpError(401, 'Current password is incorrect.');
     }
 
-    if (await verifyDoctorPassword(body.newPassword, account.passwordHash)) {
+    if (await verifyDoctorPassword(body.newPassword, specialist.passwordHash)) {
       throw new HttpError(400, 'Choose a password you have not used here before.');
     }
 
@@ -2663,13 +2681,13 @@ app.post('/doctor/auth/password', async (req, res, next) => {
     const passwordHash = await hashDoctorPassword(body.newPassword);
 
     await prisma.$transaction([
-      prisma.doctorAccount.update({
-        where: { id: account.id },
-        data: { passwordHash, passwordUpdatedAt: new Date() },
+      prisma.specialist.update({
+        where: { id: specialist.id },
+        data: { passwordHash, passwordUpdatedAt: new Date(), ...CLEARED_LOCK_STATE },
       }),
-      prisma.doctorSession.deleteMany({
+      prisma.specialistSession.deleteMany({
         where: {
-          accountId: account.id,
+          specialistId: specialist.id,
           ...(currentToken ? { tokenHash: { not: sha256(currentToken) } } : {}),
         },
       }),

@@ -103,45 +103,6 @@ model Session {
   @@index([userId])
 }
 
-enum DoctorAccountRole {
-  doctor
-  admin
-}
-
-/// A username + password login for the doctor portal. `doctor` accounts are tied to one
-/// Specialist and only ever see that specialist's consultations; `admin` accounts carry no
-/// specialist and see every booking, which is what replaced the old shared DOCTOR_ACCESS_KEY —
-/// every ops action is now attributable to a named account.
-model DoctorAccount {
-  id                String            @id @default(cuid())
-  username          String            @unique
-  /// scrypt hash, `scrypt$N$r$p$salt$derivedKey` (see apps/api/src/doctorAuth.ts). Passwords are
-  /// human-chosen and therefore low-entropy, so this is a slow KDF, not the SHA-256 used for
-  /// session tokens.
-  passwordHash      String
-  role              DoctorAccountRole @default(doctor)
-  specialistId      String?           @unique
-  specialist        Specialist?       @relation(fields: [specialistId], references: [id], onDelete: Cascade)
-  active            Boolean           @default(true)
-  passwordUpdatedAt DateTime          @default(now())
-  lastLoginAt       DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  sessions          DoctorSession[]
-}
-
-model DoctorSession {
-  id         String        @id @default(cuid())
-  tokenHash  String        @unique
-  accountId  String
-  account    DoctorAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  expiresAt  DateTime
-  lastSeenAt DateTime      @default(now())
-  createdAt  DateTime      @default(now())
-
-  @@index([accountId])
-}
-
 enum OtpChallengePurpose {
   login
   signup
@@ -439,13 +400,35 @@ model CareJourneyStage {
 // Specialists & booking
 // ─────────────────────────────────────────────
 
+enum SpecialistPortalRole {
+  doctor
+  admin
+}
+
+/// One row per practitioner — this is the person, not a service category. It carries both the
+/// profile patients book against and that person's portal login, because they are the same human;
+/// splitting them only bought a second `active` flag that could disagree with the first.
+///
+/// `portalRole = admin` is the exception: an ops login with no patient-facing profile. It is
+/// excluded from every patient-facing query, so it never appears in the booking catalog.
 model Specialist {
   id             String                    @id @default(cuid())
   key            String                    @unique // gynec | psych | nutri | riz
   name           String
-  /// The portal login backing this specialist, if one has been created for them. A specialist
-  /// without an account simply cannot sign in to the doctor portal.
-  account        DoctorAccount?
+  portalRole     SpecialistPortalRole      @default(doctor)
+  /// Portal sign-in. Null username means this person has no login yet; `active = false` blocks
+  /// both signing in and being booked, so there is one answer to "is this person switched on".
+  username       String?                   @unique
+  /// scrypt hash, `scrypt$N$r$p$salt$derivedKey` (see apps/api/src/doctorAuth.ts). Passwords are
+  /// human-chosen and therefore low-entropy, so this is a slow KDF, not the SHA-256 used for
+  /// session tokens.
+  passwordHash      String?
+  passwordUpdatedAt DateTime?
+  lastLoginAt       DateTime?
+  /// Lockout lives in the database, not in process memory: a restart must not silently void it.
+  failedLoginCount  Int                    @default(0)
+  lockedUntil       DateTime?
+  sessions          SpecialistSession[]
   subtitle       String?
   role           String?
   specialization String?
@@ -459,6 +442,18 @@ model Specialist {
   slots          ConsultationSlot[]
   expertAnswers  ExpertAnswer[]
   uploadedDocs   ConsultationDocument[]
+}
+
+model SpecialistSession {
+  id           String     @id @default(cuid())
+  tokenHash    String     @unique
+  specialistId String
+  specialist   Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  expiresAt    DateTime
+  lastSeenAt   DateTime   @default(now())
+  createdAt    DateTime   @default(now())
+
+  @@index([specialistId])
 }
 
 model SpecialistQualification {

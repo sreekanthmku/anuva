@@ -5,6 +5,17 @@ import { dateString, looseObjectSchema, loosePartialSchema, objectSchema } from 
 
 const RO = ['createdAt', 'updatedAt'] as const;
 
+/**
+ * Portal username. Write-only sibling `password` is hashed in EntityService.prepareWrite — the
+ * plaintext never reaches Prisma and `passwordHash` is never returned.
+ */
+const SPECIALIST_USERNAME = z
+  .string()
+  .trim()
+  .min(3)
+  .max(64)
+  .regex(/^[a-zA-Z0-9._-]+$/, 'Use letters, numbers, dot, underscore or hyphen only.');
+
 const USER_LIST = { select: { name: true, phone: true, email: true } } as const;
 const SPECIALIST_LIST = { select: { name: true, key: true } } as const;
 const SYMPTOM_LIST = { select: { label: true, key: true, category: true } } as const;
@@ -114,15 +125,15 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
    * that device out — so there is no create path and nothing here is editable.
    */
   def({
-    resource: 'doctor-sessions',
-    label: 'Doctor Sessions',
-    prismaModel: 'doctorSession',
+    resource: 'specialist-sessions',
+    label: 'Specialist Sessions',
+    prismaModel: 'specialistSession',
     group: 'Bookings',
-    searchFields: ['id', 'accountId'],
-    filterFields: ['accountId'],
+    searchFields: ['id', 'specialistId'],
+    filterFields: ['specialistId'],
     sortableFields: ['createdAt', 'expiresAt', 'lastSeenAt'],
     defaultSort: 'createdAt',
-    listFields: ['accountId', 'lastSeenAt', 'expiresAt', 'createdAt'],
+    listFields: ['specialist', 'lastSeenAt', 'expiresAt', 'createdAt'],
     readonlyFields: [...RO, 'tokenHash'],
     createSchema: objectSchema({}),
     updateSchema: objectSchema({ expiresAt: dateString }, true),
@@ -687,19 +698,35 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     label: 'Specialists',
     prismaModel: 'specialist',
     group: 'Bookings',
-    searchFields: ['key', 'name', 'role', 'id'],
-    filterFields: ['active'],
-    sortableFields: ['name', 'key'],
+    searchFields: ['key', 'name', 'role', 'username', 'id'],
+    filterFields: ['active', 'portalRole'],
+    sortableFields: ['name', 'key', 'lastLoginAt'],
     defaultSort: 'name',
-    listFields: ['name', 'key', 'role', 'specialization', 'active'],
+    listFields: ['name', 'key', 'role', 'username', 'active'],
     activeField: 'active',
+    readonlyFields: [
+      ...RO,
+      'passwordHash',
+      'passwordUpdatedAt',
+      'lastLoginAt',
+      'failedLoginCount',
+      'lockedUntil',
+    ],
     actions: [
       { key: 'enable', label: 'Enable' },
       { key: 'disable', label: 'Disable' },
+      {
+        key: 'revoke-sessions',
+        label: 'Sign out everywhere',
+        description: 'Deletes every portal session for this specialist',
+      },
     ],
     createSchema: objectSchema({
       key: z.string().min(1),
       name: z.string().min(1),
+      portalRole: z.enum(['doctor', 'admin']).optional(),
+      username: SPECIALIST_USERNAME.nullable().optional(),
+      password: z.string().min(10).max(200).nullable().optional(),
       subtitle: z.string().nullable().optional(),
       role: z.string().nullable().optional(),
       specialization: z.string().nullable().optional(),
@@ -713,6 +740,9 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
       {
         key: z.string().min(1),
         name: z.string().min(1),
+        portalRole: z.enum(['doctor', 'admin']),
+        username: SPECIALIST_USERNAME.nullable(),
+        password: z.string().min(10).max(200).nullable(),
         subtitle: z.string().nullable(),
         role: z.string().nullable(),
         specialization: z.string().nullable(),
@@ -720,61 +750,6 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
         experience: z.string().nullable(),
         tag: z.string().nullable(),
         imageUrl: z.string().nullable(),
-        active: z.boolean(),
-      },
-      true,
-    ),
-  }),
-  /**
-   * Doctor portal logins. `password` is write-only: it never comes back on a read, and the
-   * service hashes it into `passwordHash` on the way in (see EntityService.hashPasswordField).
-   * A `doctor` account needs a specialistId; an `admin` account must not have one, which is what
-   * separates "sees only their own bookings" from "sees every booking".
-   */
-  def({
-    resource: 'doctor-accounts',
-    label: 'Doctor Accounts',
-    prismaModel: 'doctorAccount',
-    group: 'Bookings',
-    searchFields: ['username', 'specialistId', 'id'],
-    filterFields: ['role', 'active', 'specialistId'],
-    sortableFields: ['username', 'createdAt', 'lastLoginAt'],
-    defaultSort: 'username',
-    listFields: ['username', 'role', 'specialist', 'active', 'lastLoginAt'],
-    activeField: 'active',
-    readonlyFields: [...RO, 'passwordHash', 'passwordUpdatedAt', 'lastLoginAt'],
-    actions: [
-      { key: 'enable', label: 'Enable' },
-      { key: 'disable', label: 'Disable' },
-      {
-        key: 'revoke-sessions',
-        label: 'Sign out everywhere',
-        description: 'Deletes every session for this account',
-      },
-    ],
-    createSchema: objectSchema({
-      username: z
-        .string()
-        .trim()
-        .min(3)
-        .max(64)
-        .regex(/^[a-zA-Z0-9._-]+$/, 'Use letters, numbers, dot, underscore or hyphen only.'),
-      password: z.string().min(10).max(200),
-      role: z.enum(['doctor', 'admin']).optional(),
-      specialistId: z.string().min(1).nullable().optional(),
-      active: z.boolean().optional(),
-    }),
-    updateSchema: objectSchema(
-      {
-        username: z
-          .string()
-          .trim()
-          .min(3)
-          .max(64)
-          .regex(/^[a-zA-Z0-9._-]+$/, 'Use letters, numbers, dot, underscore or hyphen only.'),
-        password: z.string().min(10).max(200),
-        role: z.enum(['doctor', 'admin']),
-        specialistId: z.string().min(1).nullable(),
         active: z.boolean(),
       },
       true,

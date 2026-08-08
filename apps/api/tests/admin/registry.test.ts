@@ -29,8 +29,7 @@ const PRISMA_MODELS = [
   'careJourneyStage',
   'specialist',
   'specialistQualification',
-  'doctorAccount',
-  'doctorSession',
+  'specialistSession',
   'consultation',
   'consultationDocument',
   'consultationCall',
@@ -70,6 +69,7 @@ const PRISMA_MODELS = [
   'l3TriggerLog',
   'anuChatTurn',
   'anuResponseCache',
+  'supportTicket',
 ] as const;
 
 describe('ADMIN_ENTITIES registry', () => {

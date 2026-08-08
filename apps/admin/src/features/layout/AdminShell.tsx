@@ -7,8 +7,14 @@ import {
   type EntityMeta,
 } from '../../atoms';
 import { adminFetch, setStoredToken, type AdminApiError } from '../../lib/api';
-import { DoctorAccountsPanel } from '../doctors/DoctorAccountsPanel';
+import { SpecialistLoginsPanel } from '../doctors/SpecialistLoginsPanel';
 import { EntityBrowser } from '../entities/EntityBrowser';
+
+/**
+ * Not a Prisma model, so it cannot come from the entity registry — the specialist login screen is
+ * a view over `specialists` with its own credential handling.
+ */
+const SPECIALIST_LOGINS_VIEW = '__specialist-logins';
 
 export function AdminShell() {
   const [token, setToken] = useAtom(adminTokenAtom);
@@ -104,13 +110,22 @@ export function AdminShell() {
               ))}
             </div>
           ))}
+          <div className="nav-group">
+            <div className="nav-group-title">Portal</div>
+            <button
+              type="button"
+              className={selected === SPECIALIST_LOGINS_VIEW ? 'nav-item active' : 'nav-item'}
+              onClick={() => setSelected(SPECIALIST_LOGINS_VIEW)}
+            >
+              Specialist Logins
+            </button>
+          </div>
         </nav>
       </aside>
       <main className="content">
         {error && <p className="error">{error}</p>}
-        {current?.resource === 'doctor-accounts' ? (
-          // Logins get a purpose-built screen; the JSON editor is the wrong tool for a password.
-          <DoctorAccountsPanel />
+        {selected === SPECIALIST_LOGINS_VIEW ? (
+          <SpecialistLoginsPanel />
         ) : current ? (
           <EntityBrowser key={current.resource} entity={current} />
         ) : (
