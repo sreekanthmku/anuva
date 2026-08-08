@@ -4,6 +4,28 @@ import { dateString, looseObjectSchema, loosePartialSchema, objectSchema } from 
 
 const RO = ['createdAt', 'updatedAt'] as const;
 
+const USER_LIST = { select: { name: true, phone: true, email: true } } as const;
+const SPECIALIST_LIST = { select: { name: true, key: true } } as const;
+const SYMPTOM_LIST = { select: { label: true, key: true, category: true } } as const;
+const CARE_PATH_LIST = { select: { label: true, key: true } } as const;
+
+/** Infer Prisma includes from FK fields mentioned on the entity. */
+function inferListInclude(
+  searchFields: string[],
+  filterFields: string[],
+  explicit?: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  if (explicit) return explicit;
+  const fields = new Set([...searchFields, ...filterFields]);
+  const include: Record<string, unknown> = {};
+  if (fields.has('userId')) include.user = USER_LIST;
+  if (fields.has('specialistId')) include.specialist = SPECIALIST_LIST;
+  if (fields.has('uploadedById')) include.uploadedBy = SPECIALIST_LIST;
+  if (fields.has('symptomId')) include.symptom = SYMPTOM_LIST;
+  if (fields.has('carePathId')) include.carePath = CARE_PATH_LIST;
+  return Object.keys(include).length ? include : undefined;
+}
+
 function def(
   partial: Omit<AdminEntityDefinition, 'createSchema' | 'updateSchema' | 'readonlyFields' | 'idField'> & {
     createSchema?: AdminEntityDefinition['createSchema'];
@@ -12,13 +34,14 @@ function def(
     idField?: string;
   },
 ): AdminEntityDefinition {
-  const { createSchema, updateSchema, readonlyFields, idField, ...rest } = partial;
+  const { createSchema, updateSchema, readonlyFields, idField, listInclude, ...rest } = partial;
   return {
     idField: idField ?? 'id',
     readonlyFields: readonlyFields ?? [...RO],
     createSchema: createSchema ?? looseObjectSchema,
     updateSchema: updateSchema ?? loosePartialSchema,
     ...rest,
+    listInclude: inferListInclude(rest.searchFields, rest.filterFields, listInclude),
   };
 }
 
@@ -37,6 +60,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['onboardingCompleted', 'dieticianPlanAssigned', 'familyFeatureOptOut'],
     sortableFields: ['createdAt', 'updatedAt', 'phone', 'name'],
     defaultSort: 'createdAt',
+    listFields: ['name', 'phone', 'email', 'onboardingCompleted', 'createdAt'],
     createSchema: objectSchema({
       phone: z.string().min(5).max(32),
       name: z.string().min(1).max(200).nullable().optional(),
@@ -68,6 +92,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId'],
     sortableFields: ['createdAt', 'expiresAt', 'lastSeenAt'],
     defaultSort: 'createdAt',
+    listFields: ['user', 'lastSeenAt', 'expiresAt', 'createdAt'],
     readonlyFields: [...RO, 'tokenHash'],
     createSchema: objectSchema({
       tokenHash: z.string().min(16),
@@ -83,6 +108,24 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
       true,
     ),
   }),
+  /**
+   * Doctor portal sessions. Read and delete are the point of exposing them — deleting a row signs
+   * that device out — so there is no create path and nothing here is editable.
+   */
+  def({
+    resource: 'doctor-sessions',
+    label: 'Doctor Sessions',
+    prismaModel: 'doctorSession',
+    group: 'Bookings',
+    searchFields: ['id', 'accountId'],
+    filterFields: ['accountId'],
+    sortableFields: ['createdAt', 'expiresAt', 'lastSeenAt'],
+    defaultSort: 'createdAt',
+    listFields: ['accountId', 'lastSeenAt', 'expiresAt', 'createdAt'],
+    readonlyFields: [...RO, 'tokenHash'],
+    createSchema: objectSchema({}),
+    updateSchema: objectSchema({ expiresAt: dateString }, true),
+  }),
   def({
     resource: 'otp-challenges',
     label: 'OTP Challenges',
@@ -92,6 +135,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['status', 'purpose', 'phone', 'userId'],
     sortableFields: ['createdAt', 'expiresAt', 'updatedAt'],
     defaultSort: 'createdAt',
+    listFields: ['phone', 'purpose', 'status', 'attemptCount', 'expiresAt', 'createdAt'],
     createSchema: objectSchema({
       phone: z.string().min(5),
       userId: z.string().nullable().optional(),
@@ -123,6 +167,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId', 'platform', 'status'],
     sortableFields: ['createdAt', 'updatedAt'],
     defaultSort: 'createdAt',
+    listFields: ['user', 'platform', 'status', 'deviceId', 'updatedAt'],
     activeField: undefined,
     actions: [
       { key: 'activate', label: 'Activate', description: 'Set status to ACTIVE' },
@@ -154,6 +199,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId', 'menopauseStage'],
     sortableFields: ['updatedAt'],
     defaultSort: 'updatedAt',
+    listFields: ['user', 'menopauseStage', 'dateOfBirth', 'cycleStartDate', 'updatedAt'],
     createSchema: objectSchema({
       userId: z.string().min(1),
       dateOfBirth: dateString.nullable().optional(),
@@ -185,6 +231,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: [],
     sortableFields: ['order', 'key'],
     defaultSort: 'order',
+    listFields: ['key', 'prompt', 'order'],
     createSchema: objectSchema({
       key: z.string().min(1),
       prompt: z.string().min(1),
@@ -208,6 +255,10 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['questionId'],
     sortableFields: ['order', 'score'],
     defaultSort: 'order',
+    listFields: ['question', 'label', 'score', 'order'],
+    listInclude: {
+      question: { select: { key: true, prompt: true } },
+    },
     createSchema: objectSchema({
       questionId: z.string().min(1),
       label: z.string().min(1),
@@ -232,6 +283,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId', 'status'],
     sortableFields: ['completedAt', 'score'],
     defaultSort: 'completedAt',
+    listFields: ['user', 'score', 'status', 'threshold', 'completedAt'],
     createSchema: objectSchema({
       userId: z.string().min(1),
       score: z.number().int(),
@@ -258,6 +310,11 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['assessmentId', 'questionId'],
     sortableFields: ['score', 'optionIndex'],
     defaultSort: 'score',
+    listFields: ['assessment', 'question', 'optionLabel', 'score', 'optionIndex'],
+    listInclude: {
+      assessment: { select: { score: true, user: USER_LIST } },
+      question: { select: { key: true, prompt: true } },
+    },
     createSchema: objectSchema({
       assessmentId: z.string().min(1),
       questionId: z.string().min(1),
@@ -283,6 +340,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId', 'status'],
     sortableFields: ['startedAt', 'completedAt', 'updatedAt'],
     defaultSort: 'updatedAt',
+    listFields: ['user', 'status', 'startedAt', 'completedAt', 'updatedAt'],
     createSchema: objectSchema({
       userId: z.string().min(1),
       status: z.enum(['in_progress', 'completed']).optional(),
@@ -306,6 +364,10 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['assessmentId', 'questionKey'],
     sortableFields: ['questionKey'],
     defaultSort: 'questionKey',
+    listFields: ['questionKey', 'value', 'assessment'],
+    listInclude: {
+      assessment: { select: { status: true, user: USER_LIST } },
+    },
     createSchema: objectSchema({
       assessmentId: z.string().min(1),
       questionKey: z.string().min(1),
@@ -324,6 +386,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId', 'plan', 'status'],
     sortableFields: ['startedAt', 'renewsAt', 'trialEndsAt'],
     defaultSort: 'startedAt',
+    listFields: ['user', 'plan', 'status', 'startedAt', 'renewsAt', 'trialEndsAt'],
     createSchema: objectSchema({
       userId: z.string().min(1),
       plan: z.enum(['monthly', 'annual']).nullable().optional(),
@@ -351,6 +414,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId'],
     sortableFields: ['date', 'balanceScore'],
     defaultSort: 'date',
+    listFields: ['user', 'date', 'balanceScore', 'summary'],
     createSchema: objectSchema({
       userId: z.string().min(1),
       date: dateString,
@@ -402,6 +466,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['category', 'active'],
     sortableFields: ['key', 'label', 'category'],
     defaultSort: 'key',
+    listFields: ['label', 'key', 'category', 'active'],
     activeField: 'active',
     actions: [
       { key: 'enable', label: 'Enable' },
@@ -432,6 +497,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId'],
     sortableFields: ['date', 'createdAt', 'intensity'],
     defaultSort: 'date',
+    listFields: ['user', 'date', 'intensity', 'note', 'createdAt'],
     createSchema: objectSchema({
       userId: z.string().min(1),
       date: dateString,
@@ -456,6 +522,11 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['logId', 'symptomId'],
     sortableFields: ['id'],
     defaultSort: 'id',
+    listFields: ['symptom', 'log'],
+    listInclude: {
+      symptom: SYMPTOM_LIST,
+      log: { select: { date: true, user: USER_LIST } },
+    },
     createSchema: objectSchema({
       logId: z.string().min(1),
       symptomId: z.string().min(1),
@@ -479,6 +550,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId'],
     sortableFields: ['weekStart', 'createdAt'],
     defaultSort: 'weekStart',
+    listFields: ['user', 'weekStart', 'weekEnd', 'cohort', 'createdAt'],
     createSchema: objectSchema({
       userId: z.string().min(1),
       weekStart: dateString,
@@ -503,6 +575,10 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['reportId', 'kind'],
     sortableFields: ['label', 'value'],
     defaultSort: 'label',
+    listFields: ['report', 'kind', 'label', 'value', 'unit', 'delta'],
+    listInclude: {
+      report: { select: { weekStart: true, user: USER_LIST } },
+    },
     createSchema: objectSchema({
       reportId: z.string().min(1),
       kind: z.enum(['benchmark', 'stat']),
@@ -537,6 +613,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: [],
     sortableFields: ['key', 'label'],
     defaultSort: 'key',
+    listFields: ['label', 'key', 'tag', 'description'],
     createSchema: objectSchema({
       key: z.string().min(1),
       label: z.string().min(1),
@@ -562,6 +639,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId', 'carePathId', 'status'],
     sortableFields: ['createdAt'],
     defaultSort: 'createdAt',
+    listFields: ['user', 'carePath', 'status', 'focusTags', 'createdAt'],
     createSchema: objectSchema({
       userId: z.string().min(1),
       carePathId: z.string().min(1),
@@ -585,6 +663,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId', 'status'],
     sortableFields: ['order', 'stage'],
     defaultSort: 'order',
+    listFields: ['user', 'stage', 'status', 'order'],
     createSchema: objectSchema({
       userId: z.string().min(1),
       stage: z.string().min(1),
@@ -611,12 +690,11 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['active'],
     sortableFields: ['name', 'key'],
     defaultSort: 'name',
+    listFields: ['name', 'key', 'role', 'specialization', 'active'],
     activeField: 'active',
-    readonlyFields: [...RO, 'accessKeyHash', 'accessKeyUpdatedAt'],
     actions: [
       { key: 'enable', label: 'Enable' },
       { key: 'disable', label: 'Disable' },
-      { key: 'rotate-access-key', label: 'Rotate access key' },
     ],
     createSchema: objectSchema({
       key: z.string().min(1),
@@ -646,6 +724,56 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
       true,
     ),
   }),
+  /**
+   * Doctor portal logins. `password` is write-only: it never comes back on a read, and the
+   * service hashes it into `passwordHash` on the way in (see EntityService.hashPasswordField).
+   * A `doctor` account needs a specialistId; an `admin` account must not have one, which is what
+   * separates "sees only their own bookings" from "sees every booking".
+   */
+  def({
+    resource: 'doctor-accounts',
+    label: 'Doctor Accounts',
+    prismaModel: 'doctorAccount',
+    group: 'Bookings',
+    searchFields: ['username', 'specialistId', 'id'],
+    filterFields: ['role', 'active', 'specialistId'],
+    sortableFields: ['username', 'createdAt', 'lastLoginAt'],
+    defaultSort: 'username',
+    listFields: ['username', 'role', 'specialist', 'active', 'lastLoginAt'],
+    activeField: 'active',
+    readonlyFields: [...RO, 'passwordHash', 'passwordUpdatedAt', 'lastLoginAt'],
+    actions: [
+      { key: 'enable', label: 'Enable' },
+      { key: 'disable', label: 'Disable' },
+    ],
+    createSchema: objectSchema({
+      username: z
+        .string()
+        .trim()
+        .min(3)
+        .max(64)
+        .regex(/^[a-zA-Z0-9._-]+$/, 'Use letters, numbers, dot, underscore or hyphen only.'),
+      password: z.string().min(10).max(200),
+      role: z.enum(['doctor', 'admin']).optional(),
+      specialistId: z.string().min(1).nullable().optional(),
+      active: z.boolean().optional(),
+    }),
+    updateSchema: objectSchema(
+      {
+        username: z
+          .string()
+          .trim()
+          .min(3)
+          .max(64)
+          .regex(/^[a-zA-Z0-9._-]+$/, 'Use letters, numbers, dot, underscore or hyphen only.'),
+        password: z.string().min(10).max(200),
+        role: z.enum(['doctor', 'admin']),
+        specialistId: z.string().min(1).nullable(),
+        active: z.boolean(),
+      },
+      true,
+    ),
+  }),
   def({
     resource: 'specialist-qualifications',
     label: 'Specialist Qualifications',
@@ -655,6 +783,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['specialistId'],
     sortableFields: ['label'],
     defaultSort: 'label',
+    listFields: ['specialist', 'label'],
     createSchema: objectSchema({
       specialistId: z.string().min(1),
       label: z.string().min(1),
@@ -670,6 +799,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId', 'specialistId', 'status', 'isFree'],
     sortableFields: ['scheduledAt', 'createdAt'],
     defaultSort: 'scheduledAt',
+    listFields: ['user', 'specialist', 'scheduledAt', 'status', 'isFree'],
     createSchema: objectSchema({
       userId: z.string().min(1),
       specialistId: z.string().min(1),
@@ -696,6 +826,18 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['consultationId', 'kind', 'uploadedById'],
     sortableFields: ['createdAt', 'updatedAt'],
     defaultSort: 'createdAt',
+    listFields: ['title', 'kind', 'originalName', 'uploadedBy', 'consultation', 'createdAt'],
+    listInclude: {
+      uploadedBy: SPECIALIST_LIST,
+      consultation: {
+        select: {
+          scheduledAt: true,
+          status: true,
+          user: USER_LIST,
+          specialist: SPECIALIST_LIST,
+        },
+      },
+    },
     softDeleteField: 'deletedAt',
     actions: [
       { key: 'archive', label: 'Archive (soft delete)' },
@@ -733,6 +875,17 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['status', 'provider'],
     sortableFields: ['createdAt', 'updatedAt', 'endedAt'],
     defaultSort: 'createdAt',
+    listFields: ['consultation', 'status', 'provider', 'roomName', 'endedAt', 'createdAt'],
+    listInclude: {
+      consultation: {
+        select: {
+          scheduledAt: true,
+          status: true,
+          user: USER_LIST,
+          specialist: SPECIALIST_LIST,
+        },
+      },
+    },
     createSchema: objectSchema({
       consultationId: z.string().min(1),
       provider: z.enum(['livekit']).optional(),
@@ -820,6 +973,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['specialistId', 'isBooked'],
     sortableFields: ['startsAt', 'endsAt', 'createdAt'],
     defaultSort: 'startsAt',
+    listFields: ['specialist', 'startsAt', 'endsAt', 'isBooked'],
     createSchema: objectSchema({
       specialistId: z.string().min(1),
       startsAt: dateString,
@@ -848,6 +1002,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['category', 'featured'],
     sortableFields: ['publishedAt', 'createdAt', 'title'],
     defaultSort: 'createdAt',
+    listFields: ['title', 'category', 'slug', 'featured', 'publishedAt'],
     createSchema: objectSchema({
       slug: z.string().min(1),
       category: z.string().min(1),
@@ -908,6 +1063,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['status', 'topic', 'userId'],
     sortableFields: ['createdAt', 'answeredAt'],
     defaultSort: 'createdAt',
+    listFields: ['topic', 'body', 'status', 'user', 'createdAt', 'answeredAt'],
     createSchema: objectSchema({
       userId: z.string().nullable().optional(),
       topic: z.string().min(1),
@@ -935,6 +1091,11 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['questionId', 'specialistId', 'verified'],
     sortableFields: ['answeredAt'],
     defaultSort: 'answeredAt',
+    listFields: ['expertName', 'expertRole', 'question', 'verified', 'answeredAt'],
+    listInclude: {
+      question: { select: { topic: true, body: true } },
+      specialist: SPECIALIST_LIST,
+    },
     createSchema: objectSchema({
       questionId: z.string().min(1),
       specialistId: z.string().nullable().optional(),
@@ -957,6 +1118,49 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     ),
   }),
 
+  // ── Support ──────────────────────────────────────────────
+  // Help requests written from the app. Nothing here is emailed anywhere — the reply typed into
+  // `response` is what she reads back in the PWA. `purgeAfter` is set by the API at creation and
+  // is deliberately editable here only for a deletion honoured early, never to extend retention.
+  def({
+    resource: 'support-tickets',
+    label: 'Support Tickets',
+    prismaModel: 'supportTicket',
+    group: 'Support',
+    searchFields: ['reference', 'subject', 'contactEmail', 'userId', 'id'],
+    filterFields: ['status', 'category', 'userId'],
+    sortableFields: ['createdAt', 'respondedAt', 'purgeAfter'],
+    defaultSort: 'createdAt',
+    listFields: ['reference', 'user', 'category', 'subject', 'status', 'createdAt'],
+    listInclude: { user: USER_LIST },
+    // No createSchema of substance: tickets are opened by the member, not by staff.
+    createSchema: objectSchema({
+      userId: z.string().nullable().optional(),
+      category: z.enum([
+        'account',
+        'consultation',
+        'subscription',
+        'technical',
+        'privacy',
+        'other',
+      ]),
+      subject: z.string().min(1),
+      message: z.string().min(1),
+      contactEmail: z.string().nullable().optional(),
+      consentVersion: z.string().min(1),
+      purgeAfter: dateString,
+    }),
+    updateSchema: objectSchema(
+      {
+        status: z.enum(['open', 'in_progress', 'resolved', 'closed']),
+        response: z.string().nullable(),
+        respondedAt: dateString.nullable(),
+        purgeAfter: dateString,
+      },
+      true,
+    ),
+  }),
+
   // ── Chat ─────────────────────────────────────────────────
   def({
     resource: 'chat-threads',
@@ -967,6 +1171,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['userId'],
     sortableFields: ['createdAt'],
     defaultSort: 'createdAt',
+    listFields: ['user', 'createdAt'],
     createSchema: objectSchema({ userId: z.string().min(1) }),
     updateSchema: objectSchema({ userId: z.string().min(1) }, true),
   }),
@@ -979,6 +1184,10 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['threadId', 'role'],
     sortableFields: ['createdAt'],
     defaultSort: 'createdAt',
+    listFields: ['thread', 'role', 'body', 'createdAt'],
+    listInclude: {
+      thread: { select: { createdAt: true, user: USER_LIST } },
+    },
     createSchema: objectSchema({
       threadId: z.string().min(1),
       role: z.enum(['user', 'anu']),
@@ -1198,6 +1407,7 @@ function makeDailyLogEntities(
       filterFields: ['userId', 'source', 'category'],
       sortableFields: ['date', 'loggedAt', 'createdAt'],
       defaultSort: 'date',
+      listFields: ['user', 'date', 'category', 'source', 'loggedAt'],
       createSchema: objectSchema({
         userId: z.string().min(1),
         date: dateString,
@@ -1239,6 +1449,7 @@ export function listEntityMeta() {
     filterFields: e.filterFields,
     sortableFields: e.sortableFields,
     defaultSort: e.defaultSort,
+    listFields: e.listFields ?? null,
     softDeleteField: e.softDeleteField ?? null,
     activeField: e.activeField ?? null,
     actions: e.actions ?? [],

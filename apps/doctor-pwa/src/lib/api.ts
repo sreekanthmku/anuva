@@ -1,5 +1,4 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
-const DOCTOR_KEY_STORAGE = 'anuva.doctorKey';
 
 export class ApiError extends Error {
   status: number;
@@ -8,18 +7,6 @@ export class ApiError extends Error {
     super(message);
     this.status = status;
   }
-}
-
-export function getDoctorKey(): string {
-  return localStorage.getItem(DOCTOR_KEY_STORAGE) || '';
-}
-
-export function setDoctorKey(key: string): void {
-  localStorage.setItem(DOCTOR_KEY_STORAGE, key.trim());
-}
-
-export function clearDoctorKey(): void {
-  localStorage.removeItem(DOCTOR_KEY_STORAGE);
 }
 
 /** The absolute URL for an `/api/...` path — needed where fetch is bypassed, e.g. an XHR upload. */
@@ -36,13 +23,17 @@ function toAbsoluteUrl(input: RequestInfo | URL): RequestInfo | URL {
   return `${API_BASE_URL}${path}`;
 }
 
+/**
+ * The doctor session lives in an httpOnly cookie, so nothing here reads or attaches a credential —
+ * `credentials: 'include'` is the whole of it. The API is a separate origin in production, which
+ * is why every request needs it explicitly.
+ */
 export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(toAbsoluteUrl(input), {
     credentials: 'include',
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      'x-doctor-key': getDoctorKey(),
       ...(init?.headers || {}),
     },
   });

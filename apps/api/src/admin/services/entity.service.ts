@@ -1,12 +1,12 @@
-import crypto from 'node:crypto';
 import type { AdminEntityDefinition } from '../entities/types.js';
 import { getEntityByResource } from '../entities/registry.js';
 import { stripReadonly } from '../entities/schemaHelpers.js';
 import { NotFoundError, ValidationError } from '../errors.js';
 import type { ListQuery } from '../lib/pagination.js';
+import { flattenListRows } from '../lib/listDisplay.js';
 import { serializeRecord, serializeRows } from '../lib/serialize.js';
 import type { PrismaEntityRepository } from '../repositories/prisma.repository.js';
-import { sha256Hex } from '../lib/crypto.js';
+import { hashDoctorPassword } from '../../doctorAuth.js';
 import { logger } from '../../logger.js';
 import { completeAnsweredQuestion } from '../../qaNotifications.js';
 
@@ -24,7 +24,7 @@ export class EntityService {
     const result = await this.repo.list(entity, query);
     return {
       ...result,
-      data: serializeRows(result.data),
+      data: serializeRows(flattenListRows(result.data)),
     };
   }
 
@@ -44,7 +44,7 @@ export class EntityService {
     if (!parsed.success) {
       throw new ValidationError('Validation failed', parsed.error.flatten());
     }
-    const row = await this.repo.create(entity, parsed.data);
+    const row = await this.repo.create(entity, await this.prepareWrite(entity, parsed.data, 'create'));
     await this.afterCreate(resource, row);
     return serializeRecord(row);
   }
@@ -88,8 +88,69 @@ export class EntityService {
     if (Object.keys(parsed.data).length === 0) {
       throw new ValidationError('Update body must include at least one field');
     }
-    const row = await this.repo.update(entity, id, parsed.data);
+    const row = await this.repo.update(entity, id, await this.prepareWrite(entity, parsed.data, 'update'));
     return serializeRecord(row);
+  }
+
+  /**
+   * Model-specific massaging the generic CRUD path cannot infer. Today that is only the doctor
+   * portal login: a plaintext `password` is turned into a scrypt `passwordHash` so the column
+   * never sees a raw password, and the doctor/admin split is enforced here rather than in the Zod
+   * schema, which cannot see the row's existing role on a partial update.
+   */
+  private async prepareWrite(
+    entity: AdminEntityDefinition,
+    data: Record<string, unknown>,
+    mode: 'create' | 'update',
+  ): Promise<Record<string, unknown>> {
+    // A support reply stamps its own timestamp — leaving that to whoever types the answer means a
+    // ticket that reads as answered with no record of when.
+    if (entity.prismaModel === 'supportTicket') {
+      const next: Record<string, unknown> = { ...data };
+      if (typeof next.response === 'string' && next.response.trim() && !next.respondedAt) {
+        next.respondedAt = new Date();
+        if (!next.status) {
+          next.status = 'resolved';
+        }
+      }
+      return next;
+    }
+
+    if (entity.prismaModel !== 'doctorAccount') {
+      return data;
+    }
+
+    const next: Record<string, unknown> = { ...data };
+
+    if (typeof next.username === 'string') {
+      next.username = next.username.trim().toLowerCase();
+    }
+
+    if ('password' in next) {
+      const password = next.password;
+      delete next.password;
+      if (typeof password !== 'string') {
+        throw new ValidationError('password must be a string');
+      }
+      next.passwordHash = await hashDoctorPassword(password);
+      next.passwordUpdatedAt = new Date();
+    }
+
+    const role = mode === 'create' ? (next.role ?? 'doctor') : next.role;
+
+    if (role === 'admin' && next.specialistId) {
+      throw new ValidationError('An admin account must not be tied to a specialist');
+    }
+    if (role === 'doctor' && (mode === 'create' ? !next.specialistId : next.specialistId === null)) {
+      throw new ValidationError('A doctor account needs a specialist');
+    }
+    // On update the role may be unchanged and therefore absent, so clearing the specialist has to
+    // be paired with an explicit switch to admin — otherwise the account is left unable to log in.
+    if (mode === 'update' && role === undefined && next.specialistId === null) {
+      throw new ValidationError('Set role to admin to clear the specialist');
+    }
+
+    return next;
   }
 
   async remove(resource: string, id: string) {
@@ -137,20 +198,6 @@ export class EntityService {
         return serializeRecord(
           await this.repo.update(entity, id, { [entity.softDeleteField]: null }),
         );
-      case 'rotate-access-key': {
-        if (entity.prismaModel !== 'specialist') {
-          throw new ValidationError('rotate-access-key is only for specialists');
-        }
-        const plaintext = crypto.randomBytes(32).toString('base64url');
-        const row = await this.repo.update(entity, id, {
-          accessKeyHash: sha256Hex(plaintext),
-          accessKeyUpdatedAt: new Date(),
-        });
-        return {
-          ...serializeRecord(row),
-          accessKey: plaintext,
-        };
-      }
       default:
         throw new ValidationError(`Unhandled action: ${action}`);
     }

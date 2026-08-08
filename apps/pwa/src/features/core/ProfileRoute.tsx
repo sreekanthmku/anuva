@@ -20,6 +20,7 @@ const menuRows: { label: string; hint: string; id?: string; to?: string }[] = [
   { id: 'notifications', label: 'Notifications', hint: 'Reminders & weekly summary' },
   { label: 'Privacy & data', hint: 'DPDP · export or delete' },
   { label: 'Subscription', hint: 'Plan & billing' },
+  { id: 'help', label: 'Help & support', hint: 'Ask us anything · we reply in the app', to: '/help' },
 ];
 
 function notificationStatusHint(): string {

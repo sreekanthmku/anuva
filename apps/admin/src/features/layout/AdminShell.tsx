@@ -108,7 +108,7 @@ export function AdminShell() {
       <main className="content">
         {error && <p className="error">{error}</p>}
         {current ? (
-          <EntityBrowser entity={current} />
+          <EntityBrowser key={current.resource} entity={current} />
         ) : (
           <p className="muted">Select an entity to manage.</p>
         )}

@@ -29,6 +29,8 @@ const PRISMA_MODELS = [
   'careJourneyStage',
   'specialist',
   'specialistQualification',
+  'doctorAccount',
+  'doctorSession',
   'consultation',
   'consultationDocument',
   'consultationCall',

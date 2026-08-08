@@ -43,9 +43,10 @@ import {
   deleteConsultationDocumentResponseSchema,
   uploadConsultationDocumentBodySchema,
   uploadConsultationDocumentResponseSchema,
-  doctorAccessKeyRotateResponseSchema,
   doctorConsultationBookingsResponseSchema,
   doctorIdentityResponseSchema,
+  doctorLoginRequestSchema,
+  doctorPasswordChangeRequestSchema,
   consultationSlotsQuerySchema,
   consultationSlotsResponseSchema,
   consultationSpecialistsResponseSchema,
@@ -116,6 +117,11 @@ import {
   answerAnonymousQuestionResponseSchema,
   weeklyReportQuerySchema,
   weeklyReportResponseSchema,
+  SUPPORT_TICKET_DAILY_LIMIT,
+  supportTicketSchema,
+  createSupportTicketBodySchema,
+  createSupportTicketResponseSchema,
+  mySupportTicketsResponseSchema,
   type AnonymousQuestionTopic,
   type AuthUser,
   type ConsultationCallState,
@@ -135,6 +141,7 @@ import { sendPushToAllTokens } from './fcm.js';
 import { notifyAskerQuestionAnswered } from './qaNotifications.js';
 import { computeAvgPeriodLength, computeCycleState } from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
+import { startSupportRetentionJob } from './supportRetention.js';
 import {
   buildDispatch,
   storeResponse,
@@ -153,6 +160,15 @@ import { loadCache, cacheStats } from './anu/cache.js';
 import { httpLogger, logger } from './logger.js';
 import { createAdminRouter, isAdminAuthConfigured } from './admin/index.js';
 import { AdminError } from './admin/errors.js';
+import {
+  clearDoctorLoginFailures,
+  doctorLoginLockoutSeconds,
+  DUMMY_DOCTOR_PASSWORD_HASH,
+  hashDoctorPassword,
+  normaliseDoctorUsername,
+  recordDoctorLoginFailure,
+  verifyDoctorPassword,
+} from './doctorAuth.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -183,9 +199,18 @@ const LIVEKIT_RECORDING_ENABLED = process.env.LIVEKIT_RECORDING_ENABLED !== 'fal
 const LIVEKIT_RECORDING_AUDIO_ONLY = process.env.LIVEKIT_RECORDING_AUDIO_ONLY !== 'false';
 const CALL_CONSENT_TEXT_VERSION =
   process.env.CALL_CONSENT_TEXT_VERSION?.trim() || 'recording-consent-v1';
-const DOCTOR_ACCESS_KEY = process.env.DOCTOR_ACCESS_KEY?.trim() || '';
+const DOCTOR_COOKIE_NAME = process.env.DOCTOR_SESSION_COOKIE_NAME || 'anuva_doctor_session';
+// Doctors handle patient PII on shared clinic devices, so their sessions are far shorter-lived
+// than a patient's 30 days.
+const DOCTOR_SESSION_TTL_HOURS = Math.max(1, Number(process.env.DOCTOR_SESSION_TTL_HOURS || 12));
 // Questions land in one shared specialist queue, so a single account is capped per rolling day.
 const ANONYMOUS_QA_DAILY_LIMIT = Math.max(1, Number(process.env.ANONYMOUS_QA_DAILY_LIMIT || 5));
+// How long a support ticket is kept after it is opened. Stamped onto each row as `purgeAfter`, and
+// stated in the consent notice she agrees to — the two must be changed together.
+const SUPPORT_TICKET_RETENTION_DAYS = Math.max(
+  30,
+  Number(process.env.SUPPORT_TICKET_RETENTION_DAYS || 180),
+);
 // Where the egress recording volume is mounted on the API's own filesystem. Required to mix the
 // per-speaker files into a combined track; without it recording still works, mixdown is skipped.
 const RECORDING_LOCAL_DIR = process.env.RECORDING_LOCAL_DIR?.trim() || '';
@@ -372,6 +397,24 @@ function setSessionCookie(res: Response, token: string, expiresAt: Date): void {
 
 function clearSessionCookie(res: Response): void {
   res.clearCookie(SESSION_COOKIE_NAME, getSessionCookieOptions());
+}
+
+/**
+ * The doctor portal is a separate origin from the API in production, so its cookie needs the same
+ * SameSite/domain treatment as the patient one and reuses that configuration wholesale. Only the
+ * name differs, which keeps a doctor session and a patient session independent on one browser.
+ */
+function getDoctorSessionToken(req: Request): string | null {
+  const cookies = parseCookies(req.headers.cookie);
+  return cookies[DOCTOR_COOKIE_NAME] || null;
+}
+
+function setDoctorSessionCookie(res: Response, token: string, expiresAt: Date): void {
+  res.cookie(DOCTOR_COOKIE_NAME, token, getSessionCookieOptions(expiresAt));
+}
+
+function clearDoctorSessionCookie(res: Response): void {
+  res.clearCookie(DOCTOR_COOKIE_NAME, getSessionCookieOptions());
 }
 
 function setNoStoreHeaders(res: Response): void {
@@ -593,13 +636,17 @@ function requireBroadcastSecret(req: Request) {
 }
 
 /**
- * Who is behind an authenticated /doctor request. `doctor` is a single specialist holding their
- * own key and only ever sees their own consultations; `admin` is the shared DOCTOR_ACCESS_KEY,
- * kept for ops, and sees every booking.
+ * Who is behind an authenticated /doctor request. `doctor` is one specialist's own account and
+ * only ever sees their own consultations; `admin` is an ops account with no specialist attached
+ * and sees every booking. Both are named DoctorAccount rows, so either is attributable in logs.
  */
-type DoctorIdentity =
+type DoctorIdentity = {
+  accountId: string;
+  username: string;
+} & (
   | { scope: 'admin'; specialistId: null; specialistKey: null; specialistName: null }
-  | { scope: 'doctor'; specialistId: string; specialistKey: string; specialistName: string };
+  | { scope: 'doctor'; specialistId: string; specialistKey: string; specialistName: string }
+);
 
 // Keyed by request object rather than a global Express type augmentation, so the identity cannot
 // be read on a request that never went through the guard.
@@ -608,7 +655,7 @@ const doctorIdentities = new WeakMap<Request, DoctorIdentity>();
 function requireDoctorIdentity(req: Request): DoctorIdentity {
   const identity = doctorIdentities.get(req);
   if (!identity) {
-    throw new HttpError(401, 'Invalid or missing doctor access key.');
+    throw new HttpError(401, 'Sign in to continue.');
   }
 
   return identity;
@@ -619,65 +666,95 @@ function doctorConsultationScope(identity: DoctorIdentity): { specialistId?: str
   return identity.scope === 'doctor' ? { specialistId: identity.specialistId } : {};
 }
 
-function hashDoctorAccessKey(key: string): string {
-  return crypto.createHash('sha256').update(key).digest('hex');
-}
+/**
+ * Resolves the session cookie to the account behind it, or null when there is no usable session.
+ * A `doctor` account whose specialist row has been deactivated resolves to null: deactivating the
+ * specialist is how a doctor is taken off the portal, and it must not silently keep working.
+ */
+async function resolveDoctorIdentity(token: string): Promise<DoctorIdentity | null> {
+  const session = await prisma.doctorSession.findUnique({
+    where: { tokenHash: sha256(token) },
+    include: {
+      account: {
+        include: { specialist: { select: { id: true, key: true, name: true, active: true } } },
+      },
+    },
+  });
 
-function timingSafeEquals(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
+  if (!session) {
+    return null;
+  }
 
-  // timingSafeEqual throws on length mismatch, so the lengths are compared first. The
-  // length of the key is not a secret worth protecting here.
-  return left.length === right.length && crypto.timingSafeEqual(left, right);
+  if (session.expiresAt.getTime() <= Date.now()) {
+    await prisma.doctorSession.delete({ where: { id: session.id } }).catch(() => undefined);
+    return null;
+  }
+
+  const account = session.account;
+  if (!account.active) {
+    return null;
+  }
+
+  // lastSeenAt is best-effort telemetry; a failed write must not fail the request.
+  void prisma.doctorSession
+    .update({ where: { id: session.id }, data: { lastSeenAt: new Date() } })
+    .catch(() => undefined);
+
+  if (account.role === 'admin') {
+    return {
+      accountId: account.id,
+      username: account.username,
+      scope: 'admin',
+      specialistId: null,
+      specialistKey: null,
+      specialistName: null,
+    };
+  }
+
+  const specialist = account.specialist;
+  if (!specialist || !specialist.active) {
+    return null;
+  }
+
+  return {
+    accountId: account.id,
+    username: account.username,
+    scope: 'doctor',
+    specialistId: specialist.id,
+    specialistKey: specialist.key,
+    specialistName: specialist.name,
+  };
 }
 
 /**
- * Every /doctor route exposes patient names, phone numbers, and the ability to mint a
- * LiveKit token, so they are gated behind a key. Two kinds are accepted:
+ * Every /doctor route exposes patient names, phone numbers, and the ability to mint a LiveKit
+ * token, so they are gated behind a signed-in session. The login and logout routes are the only
+ * exceptions — they are what creates and destroys the session in the first place.
  *
- * - a specialist's own key, matched by SHA-256 against Specialist.accessKeyHash → `doctor` scope
- * - DOCTOR_ACCESS_KEY → `admin` scope, which still sees every booking
- *
- * Fails closed: an empty header, an unknown key, or a deactivated specialist is a 401, and an
- * unset DOCTOR_ACCESS_KEY simply means no key can claim admin scope.
+ * Fails closed: a missing cookie, an expired or unknown session, a deactivated account, or a
+ * deactivated specialist is a 401.
  */
+const DOCTOR_PUBLIC_PATHS = new Set(['/auth/login', '/auth/logout']);
+
 async function requireDoctorAccess(req: Request, _res: Response, next: NextFunction) {
   try {
-    const provided = (req.get('x-doctor-key') ?? '').trim();
-    if (!provided) {
-      throw new HttpError(401, 'Invalid or missing doctor access key.');
-    }
-
-    if (DOCTOR_ACCESS_KEY && timingSafeEquals(provided, DOCTOR_ACCESS_KEY)) {
-      doctorIdentities.set(req, {
-        scope: 'admin',
-        specialistId: null,
-        specialistKey: null,
-        specialistName: null,
-      });
-      req.log = req.log.child({ doctorScope: 'admin' });
+    if (DOCTOR_PUBLIC_PATHS.has(req.path)) {
       next();
       return;
     }
 
-    const specialist = await prisma.specialist.findUnique({
-      where: { accessKeyHash: hashDoctorAccessKey(provided) },
-      select: { id: true, key: true, name: true, active: true },
-    });
-
-    if (!specialist || !specialist.active) {
-      throw new HttpError(401, 'Invalid or missing doctor access key.');
+    const token = getDoctorSessionToken(req);
+    const identity = token ? await resolveDoctorIdentity(token) : null;
+    if (!identity) {
+      throw new HttpError(401, 'Sign in to continue.');
     }
 
-    doctorIdentities.set(req, {
-      scope: 'doctor',
-      specialistId: specialist.id,
-      specialistKey: specialist.key,
-      specialistName: specialist.name,
+    doctorIdentities.set(req, identity);
+    req.log = req.log.child({
+      doctorScope: identity.scope,
+      doctorUsername: identity.username,
+      ...(identity.specialistKey ? { specialistKey: identity.specialistKey } : {}),
     });
-
-    req.log = req.log.child({ doctorScope: 'doctor', specialistKey: specialist.key });
 
     next();
   } catch (error) {
@@ -2449,16 +2526,92 @@ app.post('/consultations/book', async (req, res, next) => {
   }
 });
 
-/** Tells the portal whose bookings it is about to show, and whether the key is even valid. */
-app.get('/doctor/me', (req, res, next) => {
+function doctorIdentityPayload(identity: DoctorIdentity) {
+  return doctorIdentityResponseSchema.parse({
+    scope: identity.scope,
+    username: identity.username,
+    specialistKey: identity.specialistKey,
+    specialistName: identity.specialistName,
+  });
+}
+
+/**
+ * Username + password sign-in for the doctor portal. The same 401 covers an unknown username, a
+ * wrong password, a deactivated account, and a deactivated specialist, so the response never
+ * confirms which usernames exist. Repeated failures lock the username for a while.
+ */
+app.post('/doctor/auth/login', async (req, res, next) => {
   try {
-    const identity = requireDoctorIdentity(req);
+    setNoStoreHeaders(res);
+    const body = doctorLoginRequestSchema.parse(req.body);
+    const username = normaliseDoctorUsername(body.username);
+
+    const lockedFor = doctorLoginLockoutSeconds(username);
+    if (lockedFor > 0) {
+      res.set('Retry-After', String(lockedFor));
+      throw new HttpError(429, 'Too many failed sign-in attempts. Try again later.');
+    }
+
+    const account = await prisma.doctorAccount.findUnique({
+      where: { username },
+      include: { specialist: { select: { id: true, key: true, name: true, active: true } } },
+    });
+
+    // Verified even when the account is missing or inactive, so a wrong username and a wrong
+    // password take the same amount of time and cannot be told apart by timing.
+    const passwordOk = await verifyDoctorPassword(
+      body.password,
+      account?.passwordHash ?? DUMMY_DOCTOR_PASSWORD_HASH,
+    );
+
+    const specialistUsable =
+      account?.role === 'admin' || Boolean(account?.specialist && account.specialist.active);
+
+    if (!account || !account.active || !passwordOk || !specialistUsable) {
+      recordDoctorLoginFailure(username);
+      req.log.warn({ doctorUsername: username }, 'Doctor sign-in rejected');
+      throw new HttpError(401, 'Incorrect username or password.');
+    }
+
+    clearDoctorLoginFailures(username);
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + DOCTOR_SESSION_TTL_HOURS * 60 * 60 * 1000);
+
+    await prisma.$transaction([
+      prisma.doctorSession.create({
+        data: { tokenHash: sha256(token), accountId: account.id, expiresAt },
+      }),
+      prisma.doctorAccount.update({
+        where: { id: account.id },
+        data: { lastLoginAt: new Date() },
+      }),
+      // Housekeeping: expired rows for this account would otherwise accumulate forever.
+      prisma.doctorSession.deleteMany({
+        where: { accountId: account.id, expiresAt: { lte: new Date() } },
+      }),
+    ]);
+
+    setDoctorSessionCookie(res, token, expiresAt);
+    req.log.info({ doctorUsername: username, doctorScope: account.role }, 'Doctor signed in');
 
     res.json(
-      doctorIdentityResponseSchema.parse({
-        scope: identity.scope,
-        specialistKey: identity.specialistKey,
-        specialistName: identity.specialistName,
+      doctorIdentityPayload({
+        accountId: account.id,
+        username: account.username,
+        ...(account.role === 'admin'
+          ? ({
+              scope: 'admin',
+              specialistId: null,
+              specialistKey: null,
+              specialistName: null,
+            } as const)
+          : ({
+              scope: 'doctor',
+              specialistId: account.specialist!.id,
+              specialistKey: account.specialist!.key,
+              specialistName: account.specialist!.name,
+            } as const)),
       }),
     );
   } catch (e) {
@@ -2466,46 +2619,74 @@ app.get('/doctor/me', (req, res, next) => {
   }
 });
 
-/**
- * Mints a personal portal key for one specialist, admin key only. The plaintext is returned
- * once and never stored, so a lost key is replaced by rotating again — which also invalidates
- * the previous one, since a specialist holds a single hash.
- */
-app.post('/doctor/specialists/:key/access-key', async (req, res, next) => {
+/** Idempotent: signing out without a session is still a 204, so the client can always clear up. */
+app.post('/doctor/auth/logout', async (req, res, next) => {
   try {
+    setNoStoreHeaders(res);
+    const token = getDoctorSessionToken(req);
+    if (token) {
+      await prisma.doctorSession.deleteMany({ where: { tokenHash: sha256(token) } });
+    }
+
+    clearDoctorSessionCookie(res);
+    res.status(204).end();
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Changing a password invalidates every other session for that account — a password is usually
+ * changed because the old one leaked, so leaving other devices signed in would defeat the point.
+ * The current session survives so the doctor is not thrown out of the screen they are on.
+ */
+app.post('/doctor/auth/password', async (req, res, next) => {
+  try {
+    setNoStoreHeaders(res);
     const identity = requireDoctorIdentity(req);
-    if (identity.scope !== 'admin') {
-      throw new HttpError(403, 'Only the admin access key can rotate doctor access keys.');
-    }
+    const body = doctorPasswordChangeRequestSchema.parse(req.body);
 
-    await readyBookingCatalog();
-
-    const specialist = await prisma.specialist.findUnique({
-      where: { key: req.params.key },
-      select: { id: true, key: true, name: true },
+    const account = await prisma.doctorAccount.findUnique({
+      where: { id: identity.accountId },
+      select: { id: true, passwordHash: true },
     });
 
-    if (!specialist) {
-      throw new HttpError(404, 'Specialist not found.');
+    if (!account || !(await verifyDoctorPassword(body.currentPassword, account.passwordHash))) {
+      throw new HttpError(401, 'Current password is incorrect.');
     }
 
-    const accessKey = crypto.randomBytes(32).toString('hex');
+    if (await verifyDoctorPassword(body.newPassword, account.passwordHash)) {
+      throw new HttpError(400, 'Choose a password you have not used here before.');
+    }
 
-    await prisma.specialist.update({
-      where: { id: specialist.id },
-      data: {
-        accessKeyHash: hashDoctorAccessKey(accessKey),
-        accessKeyUpdatedAt: new Date(),
-      },
-    });
+    const currentToken = getDoctorSessionToken(req);
+    const passwordHash = await hashDoctorPassword(body.newPassword);
 
-    res.json(
-      doctorAccessKeyRotateResponseSchema.parse({
-        specialistKey: specialist.key,
-        specialistName: specialist.name,
-        accessKey,
+    await prisma.$transaction([
+      prisma.doctorAccount.update({
+        where: { id: account.id },
+        data: { passwordHash, passwordUpdatedAt: new Date() },
       }),
-    );
+      prisma.doctorSession.deleteMany({
+        where: {
+          accountId: account.id,
+          ...(currentToken ? { tokenHash: { not: sha256(currentToken) } } : {}),
+        },
+      }),
+    ]);
+
+    req.log.info({ doctorUsername: identity.username }, 'Doctor password changed');
+    res.status(204).end();
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** Tells the portal whose bookings it is about to show, and whether the session is still valid. */
+app.get('/doctor/me', (req, res, next) => {
+  try {
+    setNoStoreHeaders(res);
+    res.json(doctorIdentityPayload(requireDoctorIdentity(req)));
   } catch (e) {
     next(e);
   }
@@ -4367,6 +4548,171 @@ app.post('/doctor/questions/:id/answer', async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────
+// Help & support
+// ─────────────────────────────────────────────
+
+const SUPPORT_TICKET_SELECT = {
+  id: true,
+  reference: true,
+  category: true,
+  subject: true,
+  message: true,
+  contactEmail: true,
+  status: true,
+  response: true,
+  respondedAt: true,
+  createdAt: true,
+} as const;
+
+type SupportTicketRow = {
+  id: string;
+  reference: string;
+  category: 'account' | 'consultation' | 'subscription' | 'technical' | 'privacy' | 'other';
+  subject: string;
+  message: string;
+  contactEmail: string | null;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  response: string | null;
+  respondedAt: Date | null;
+  createdAt: Date;
+};
+
+function serializeSupportTicket(row: SupportTicketRow) {
+  return supportTicketSchema.parse({
+    id: row.id,
+    reference: row.reference,
+    category: row.category,
+    subject: row.subject,
+    message: row.message,
+    contactEmail: row.contactEmail,
+    status: row.status,
+    response: row.response,
+    respondedAt: row.respondedAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+  });
+}
+
+/**
+ * A short reference she can quote back to us. Crockford-ish alphabet: no O/I/1/0, because these
+ * get read out over a call. Collisions are retried by the caller against the unique index.
+ */
+function generateSupportReference(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.randomBytes(6);
+  let suffix = '';
+  for (const byte of bytes) {
+    suffix += alphabet[byte % alphabet.length];
+  }
+  return `ANV-${suffix}`;
+}
+
+/** Keeps one account from flooding the support queue. */
+async function remainingSupportTicketsToday(userId: string): Promise<number> {
+  const opened = await prisma.supportTicket.count({
+    where: { userId, createdAt: { gte: addDays(new Date(), -1) } },
+  });
+
+  return Math.max(0, SUPPORT_TICKET_DAILY_LIMIT - opened);
+}
+
+/**
+ * Opens a help request. It is stored here and answered from the admin panel — nothing is emailed,
+ * so what she writes never reaches a third party and stays erasable on request.
+ *
+ * `purgeAfter` is stamped at creation rather than derived at delete time: the retention promise in
+ * the consent notice then lives on the row itself, and changing the policy later cannot silently
+ * extend the life of tickets already collected under the old one.
+ */
+app.post('/support/tickets', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const body = createSupportTicketBodySchema.parse(req.body);
+
+    if ((await remainingSupportTicketsToday(user.id)) <= 0) {
+      throw new HttpError(
+        429,
+        `You can open up to ${SUPPORT_TICKET_DAILY_LIMIT} requests a day. We are already looking at the ones you sent.`,
+      );
+    }
+
+    const contactEmail = body.contactEmail?.trim() ? body.contactEmail.trim().toLowerCase() : null;
+    const appVersion =
+      typeof req.headers['x-app-version'] === 'string'
+        ? req.headers['x-app-version'].slice(0, 40)
+        : null;
+
+    // The unique reference is generated, not derived, so a retry on the astronomically unlikely
+    // collision is cheaper than coordinating a sequence.
+    let ticket: SupportTicketRow | null = null;
+    for (let attempt = 0; attempt < 5 && !ticket; attempt += 1) {
+      try {
+        ticket = (await prisma.supportTicket.create({
+          data: {
+            reference: generateSupportReference(),
+            userId: user.id,
+            category: body.category,
+            subject: body.subject,
+            message: body.message,
+            contactEmail,
+            consentVersion: body.consentVersion,
+            appVersion,
+            purgeAfter: addDays(new Date(), SUPPORT_TICKET_RETENTION_DAYS),
+          },
+          select: SUPPORT_TICKET_SELECT,
+        })) as SupportTicketRow;
+      } catch (error) {
+        if (!isUniqueConstraintError(error)) {
+          throw error;
+        }
+      }
+    }
+
+    if (!ticket) {
+      throw new HttpError(500, 'Could not open your request. Please try again.');
+    }
+
+    // Subject and message are deliberately absent from the log line — a support note may describe
+    // symptoms, and logs are the one place that outlives the purge job.
+    req.log.info(
+      { ticketId: ticket.id, reference: ticket.reference, category: ticket.category },
+      'Support ticket opened',
+    );
+
+    res.status(201).json(
+      createSupportTicketResponseSchema.parse({
+        ticket: serializeSupportTicket(ticket),
+        remainingToday: await remainingSupportTicketsToday(user.id),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** Her own requests and any replies, newest first. */
+app.get('/support/tickets', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+
+    const tickets = (await prisma.supportTicket.findMany({
+      where: { userId: user.id },
+      select: SUPPORT_TICKET_SELECT,
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    })) as SupportTicketRow[];
+
+    res.json(
+      mySupportTicketsResponseSchema.parse({
+        tickets: tickets.map(serializeSupportTicket),
+        remainingToday: await remainingSupportTicketsToday(user.id),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
 // Library
 // ─────────────────────────────────────────────
 
@@ -4465,6 +4811,7 @@ async function startServer() {
   await readyBookingCatalog();
 
   startNudgeScheduler();
+  startSupportRetentionJob();
 
   // Warm the ANU semantic cache so a restart does not send every question
   // straight to the model until the index refills.

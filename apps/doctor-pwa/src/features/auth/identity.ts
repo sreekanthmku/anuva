@@ -9,11 +9,11 @@ const DoctorIdentityContext = createContext<DoctorIdentityContextValue | null>(n
 
 export const DoctorIdentityProvider = DoctorIdentityContext.Provider;
 
-/** Only usable below DoctorKeyGate, which is the only thing that can resolve an identity. */
+/** Only usable below DoctorLoginGate, which is the only thing that can resolve an identity. */
 export function useDoctorIdentity(): DoctorIdentityContextValue {
   const value = useContext(DoctorIdentityContext);
   if (!value) {
-    throw new Error('useDoctorIdentity must be used inside DoctorKeyGate.');
+    throw new Error('useDoctorIdentity must be used inside DoctorLoginGate.');
   }
 
   return value;

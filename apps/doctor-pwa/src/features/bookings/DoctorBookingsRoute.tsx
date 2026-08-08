@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DoctorConsultationBooking } from '@anuva/shared';
 import { useNavigate } from 'react-router-dom';
+import { ChangePasswordSheet } from '../auth/ChangePasswordSheet';
 import { useDoctorIdentity } from '../auth/identity';
 import { fetchDoctorBookings } from './api';
 import { ConsultationDocumentsSheet } from './ConsultationDocumentsSheet';
@@ -150,6 +151,7 @@ export function DoctorBookingsRoute() {
   const [error, setError] = useState<string | null>(null);
   const [documentsFor, setDocumentsFor] = useState<DoctorConsultationBooking | null>(null);
   const [assessmentFor, setAssessmentFor] = useState<DoctorConsultationBooking | null>(null);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const load = useCallback(async () => {
     setState('loading');
@@ -203,6 +205,13 @@ export function DoctorBookingsRoute() {
               className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary"
             >
               Q&amp;A queue
+            </button>
+            <button
+              type="button"
+              onClick={() => setChangingPassword(true)}
+              className="rounded-full border border-border-default px-3 py-1 text-[11px] font-semibold text-on-surface-variant"
+            >
+              Password
             </button>
             <button
               type="button"
@@ -287,6 +296,10 @@ export function DoctorBookingsRoute() {
           patientLabel={assessmentFor.patientName?.trim() || assessmentFor.patientPhone}
           onClose={() => setAssessmentFor(null)}
         />
+      ) : null}
+
+      {changingPassword ? (
+        <ChangePasswordSheet onClose={() => setChangingPassword(false)} />
       ) : null}
     </main>
   );

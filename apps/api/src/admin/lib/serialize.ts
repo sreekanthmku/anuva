@@ -2,7 +2,7 @@
 
 const SENSITIVE_KEYS = new Set([
   'tokenHash',
-  'accessKeyHash',
+  'passwordHash',
   'embedding',
   'providerSessionId',
 ]);

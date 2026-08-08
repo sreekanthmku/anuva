@@ -88,29 +88,52 @@ export const consultationBookingResponseSchema = z.object({
 export type ConsultationBookingResponse = z.infer<typeof consultationBookingResponseSchema>;
 
 /**
- * `doctor` sees only their own consultations; `admin` is the shared ops key and sees every
- * booking, so the portal has to label which of the two it is looking at.
+ * `doctor` sees only their own consultations; `admin` is an ops account with no specialist of
+ * its own and sees every booking, so the portal has to label which of the two it is looking at.
  */
 export const doctorScopeSchema = z.enum(['admin', 'doctor']);
 
 export type DoctorScope = z.infer<typeof doctorScopeSchema>;
 
+/** Usernames are matched case-insensitively server-side; the schema only bounds the shape. */
+export const DOCTOR_USERNAME_MIN = 3;
+export const DOCTOR_USERNAME_MAX = 64;
+export const DOCTOR_PASSWORD_MIN = 10;
+export const DOCTOR_PASSWORD_MAX = 200;
+
+export const doctorUsernameSchema = z
+  .string()
+  .trim()
+  .min(DOCTOR_USERNAME_MIN)
+  .max(DOCTOR_USERNAME_MAX)
+  .regex(/^[a-zA-Z0-9._-]+$/, 'Use letters, numbers, dot, underscore or hyphen only.');
+
+export const doctorPasswordSchema = z.string().min(DOCTOR_PASSWORD_MIN).max(DOCTOR_PASSWORD_MAX);
+
+export const doctorLoginRequestSchema = z.object({
+  username: doctorUsernameSchema,
+  // Deliberately not doctorPasswordSchema: an existing password shorter than the current minimum
+  // must still be able to sign in. Length rules belong on the set/change path.
+  password: z.string().min(1).max(DOCTOR_PASSWORD_MAX),
+});
+
+export type DoctorLoginRequest = z.infer<typeof doctorLoginRequestSchema>;
+
+export const doctorPasswordChangeRequestSchema = z.object({
+  currentPassword: z.string().min(1).max(DOCTOR_PASSWORD_MAX),
+  newPassword: doctorPasswordSchema,
+});
+
+export type DoctorPasswordChangeRequest = z.infer<typeof doctorPasswordChangeRequestSchema>;
+
 export const doctorIdentityResponseSchema = z.object({
   scope: doctorScopeSchema,
+  username: z.string(),
   specialistKey: z.string().nullable(),
   specialistName: z.string().nullable(),
 });
 
 export type DoctorIdentityResponse = z.infer<typeof doctorIdentityResponseSchema>;
-
-/** The plaintext key is returned once, at rotation time, and never stored server-side. */
-export const doctorAccessKeyRotateResponseSchema = z.object({
-  specialistKey: z.string(),
-  specialistName: z.string(),
-  accessKey: z.string(),
-});
-
-export type DoctorAccessKeyRotateResponse = z.infer<typeof doctorAccessKeyRotateResponseSchema>;
 
 export const doctorConsultationBookingSchema = z.object({
   consultationId: z.string(),

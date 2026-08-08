@@ -63,6 +63,7 @@ model User {
   nudgeSendLogs      NudgeSendLog[]
   l3TriggerLogs      L3TriggerLog[]
   anuChatTurns       AnuChatTurn[]
+  supportTickets     SupportTicket[]
 }
 
 enum FcmPlatform {
@@ -100,6 +101,45 @@ model Session {
   createdAt   DateTime @default(now())
 
   @@index([userId])
+}
+
+enum DoctorAccountRole {
+  doctor
+  admin
+}
+
+/// A username + password login for the doctor portal. `doctor` accounts are tied to one
+/// Specialist and only ever see that specialist's consultations; `admin` accounts carry no
+/// specialist and see every booking, which is what replaced the old shared DOCTOR_ACCESS_KEY —
+/// every ops action is now attributable to a named account.
+model DoctorAccount {
+  id                String            @id @default(cuid())
+  username          String            @unique
+  /// scrypt hash, `scrypt$N$r$p$salt$derivedKey` (see apps/api/src/doctorAuth.ts). Passwords are
+  /// human-chosen and therefore low-entropy, so this is a slow KDF, not the SHA-256 used for
+  /// session tokens.
+  passwordHash      String
+  role              DoctorAccountRole @default(doctor)
+  specialistId      String?           @unique
+  specialist        Specialist?       @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  active            Boolean           @default(true)
+  passwordUpdatedAt DateTime          @default(now())
+  lastLoginAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  sessions          DoctorSession[]
+}
+
+model DoctorSession {
+  id         String        @id @default(cuid())
+  tokenHash  String        @unique
+  accountId  String
+  account    DoctorAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  lastSeenAt DateTime      @default(now())
+  createdAt  DateTime      @default(now())
+
+  @@index([accountId])
 }
 
 enum OtpChallengePurpose {
@@ -403,11 +443,9 @@ model Specialist {
   id             String                    @id @default(cuid())
   key            String                    @unique // gynec | psych | nutri | riz
   name           String
-  /// SHA-256 of the doctor's personal portal access key. Null means this specialist cannot
-  /// sign in to the doctor portal yet. Stored hashed so a DB dump does not hand out logins;
-  /// SHA-256 (not bcrypt) because the key is high-entropy random and must be looked up by hash.
-  accessKeyHash      String?               @unique
-  accessKeyUpdatedAt DateTime?
+  /// The portal login backing this specialist, if one has been created for them. A specialist
+  /// without an account simply cannot sign in to the doctor portal.
+  account        DoctorAccount?
   subtitle       String?
   role           String?
   specialization String?
@@ -1105,4 +1143,68 @@ model AnuResponseCache {
 
   @@index([promptVersion])
   @@index([lastUsedAt])
+}
+
+// ─────────────────────────────────────────────
+// Help & support
+// ─────────────────────────────────────────────
+
+enum SupportTicketCategory {
+  account
+  consultation
+  subscription
+  technical
+  privacy
+  other
+}
+
+enum SupportTicketStatus {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+/// A help request written from the app. Stored here and answered from the admin panel — nothing
+/// is emailed out, so what she writes stays inside systems we control and can honour an erasure
+/// request against.
+///
+/// `userId` is nullable on purpose: deleting an account detaches the ticket rather than cascading,
+/// so the support history stays auditable while ceasing to be about a person. Anything that could
+/// identify her (`subject`, `message`, `contactEmail`) is scrubbed at the same time.
+model SupportTicket {
+  id     String @id @default(cuid())
+  /// Short quotable reference shown in the app, e.g. ANV-7K3P2Q.
+  reference String @unique
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  category SupportTicketCategory
+  subject  String
+  message  String
+  /// Only present when she chose to be reached by email. Never copied from the account record.
+  contactEmail String?
+
+  status SupportTicketStatus @default(open)
+  /// The reply written from the admin panel. She reads it in the app.
+  response    String?
+  respondedAt DateTime?
+
+  /// Which consent notice was on screen when she submitted, so a later reword does not rewrite
+  /// what she agreed to.
+  consentVersion String
+  /// Where it came from, for reproducing bugs. No device fingerprint, no IP.
+  appVersion String?
+
+  /// Set at creation from the retention policy. The purge job deletes rows past this date, which
+  /// makes the promise in the consent notice provable rather than aspirational.
+  purgeAfter DateTime
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([purgeAfter])
 }

@@ -124,14 +124,11 @@ export class PrismaEntityRepository {
     query: ListQuery,
   ): Promise<PaginatedResult<Record<string, unknown>>> {
     const delegate = getDelegate(this.prisma, entity.prismaModel);
+    // Stale sort from a previous entity (e.g. completedAt) should fall back quietly.
     const sortField =
       query.sort && entity.sortableFields.includes(query.sort)
         ? query.sort
         : entity.defaultSort;
-
-    if (query.sort && !entity.sortableFields.includes(query.sort)) {
-      throw new ValidationError(`Sort field not allowed: ${query.sort}`);
-    }
 
     const searchWhere = buildSearchWhere(entity, query.q);
     const filterWhere = buildFilterWhere(entity, query.filter);
@@ -141,15 +138,19 @@ export class PrismaEntityRepository {
     };
 
     const skip = (query.page - 1) * query.pageSize;
+    const listArgs: Record<string, unknown> = {
+      where,
+      orderBy: { [sortField]: query.order },
+      skip,
+      take: query.pageSize,
+    };
+    if (entity.listInclude && Object.keys(entity.listInclude).length > 0) {
+      listArgs.include = entity.listInclude;
+    }
 
     try {
       const [rows, total] = await Promise.all([
-        delegate.findMany({
-          where,
-          orderBy: { [sortField]: query.order },
-          skip,
-          take: query.pageSize,
-        }),
+        delegate.findMany(listArgs),
         delegate.count({ where }),
       ]);
 
@@ -161,13 +162,17 @@ export class PrismaEntityRepository {
             ...filterWhere,
             OR: entity.searchFields.map((field) => ({ [field]: query.q })),
           };
+          const equalsArgs: Record<string, unknown> = {
+            where: equalsWhere,
+            orderBy: { [sortField]: query.order },
+            skip,
+            take: query.pageSize,
+          };
+          if (entity.listInclude && Object.keys(entity.listInclude).length > 0) {
+            equalsArgs.include = entity.listInclude;
+          }
           const [rows, total] = await Promise.all([
-            delegate.findMany({
-              where: equalsWhere,
-              orderBy: { [sortField]: query.order },
-              skip,
-              take: query.pageSize,
-            }),
+            delegate.findMany(equalsArgs),
             delegate.count({ where: equalsWhere }),
           ]);
           return toPaginatedResult(rows as Record<string, unknown>[], total, query, sortField);

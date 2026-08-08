@@ -8,7 +8,7 @@ import type {
   DoctorDetailedAssessmentResponse,
   UploadConsultationDocumentResponse,
 } from '@anuva/shared';
-import { ApiError, apiFetch, apiUrl, getDoctorKey } from '../../lib/api';
+import { ApiError, apiFetch, apiUrl } from '../../lib/api';
 
 export async function fetchDoctorBookings(): Promise<DoctorConsultationBookingsResponse> {
   return apiFetch<DoctorConsultationBookingsResponse>('/api/doctor/consultations');
@@ -72,7 +72,6 @@ export function uploadConsultationDocument(args: {
     const request = new XMLHttpRequest();
     request.open('POST', apiUrl(`/api/doctor/consultations/${args.consultationId}/documents`));
     request.withCredentials = true;
-    request.setRequestHeader('x-doctor-key', getDoctorKey());
     // Content-Type is left alone on purpose — the browser has to add the multipart boundary.
 
     request.upload.onprogress = (event) => {
@@ -109,8 +108,8 @@ export function uploadConsultationDocument(args: {
 }
 
 /**
- * The doctor portal authenticates with a header, so a document cannot be given to an <img src>.
- * It is fetched as a blob and shown from an object URL instead.
+ * An <img src> would not carry the session cookie cross-origin, so the document is fetched as a
+ * blob with credentials and shown from an object URL instead.
  */
 export async function fetchConsultationDocumentUrl(
   consultationId: string,
@@ -118,10 +117,7 @@ export async function fetchConsultationDocumentUrl(
 ): Promise<string> {
   const response = await fetch(
     apiUrl(`/api/doctor/consultations/${consultationId}/documents/${documentId}/file`),
-    {
-      credentials: 'include',
-      headers: { 'x-doctor-key': getDoctorKey() },
-    },
+    { credentials: 'include' },
   );
 
   if (!response.ok) {

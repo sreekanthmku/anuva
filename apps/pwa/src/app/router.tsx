@@ -20,6 +20,7 @@ import ConsultationBookingRoute from '../features/core/ConsultationBookingRoute'
 import MyBookingsRoute from '../features/core/MyBookingsRoute';
 import ConsultationCallRoute from '../features/core/ConsultationCallRoute';
 import ProfileRoute from '../features/core/ProfileRoute';
+import HelpRoute from '../features/core/HelpRoute';
 import LoginRoute from '../features/auth/LoginRoute';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import SplashRoute from '../features/auth/SplashRoute';
@@ -179,6 +180,14 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <ProfileRoute />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/help"
+          element={
+            <ProtectedRoute>
+              <HelpRoute />
             </ProtectedRoute>
           }
         />

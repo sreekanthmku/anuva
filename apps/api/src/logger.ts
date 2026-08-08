@@ -20,17 +20,16 @@ import type { RequestHandler } from 'express';
 const LOG_LEVEL = process.env.LOG_LEVEL ?? 'info';
 const USE_JSON = process.env.LOG_FORMAT === 'json';
 
-// Session cookie and x-doctor-key are bearer-equivalent: logging either hands over the account.
-// Request bodies are never logged at all — they carry symptom and cycle data.
+// Cookies (patient and doctor sessions alike) and the admin token are bearer-equivalent: logging
+// any of them hands over the account. Request bodies are never logged at all — they carry symptom
+// and cycle data, and on the doctor login route they carry a password.
 const REDACT_PATHS = [
   'req.headers.cookie',
   'req.headers.authorization',
-  'req.headers["x-doctor-key"]',
   'req.headers["x-admin-token"]',
   'res.headers["set-cookie"]',
   'headers.cookie',
   'headers.authorization',
-  'headers["x-doctor-key"]',
   'headers["x-admin-token"]',
 ];
 

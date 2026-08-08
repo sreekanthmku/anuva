@@ -16,6 +16,8 @@ import {
   createConsultationSlotsBodySchema,
   doctorConsultationBookingSchema,
   doctorIdentityResponseSchema,
+  doctorLoginRequestSchema,
+  doctorPasswordChangeRequestSchema,
   myConsultationSchema,
   myConsultationsResponseSchema,
   rescheduleConsultationBodySchema,
@@ -203,6 +205,7 @@ describe('doctorIdentityResponseSchema', () => {
     expect(
       doctorIdentityResponseSchema.parse({
         scope: 'admin',
+        username: 'ops',
         specialistKey: null,
         specialistName: null,
       }),
@@ -210,6 +213,7 @@ describe('doctorIdentityResponseSchema', () => {
     expect(
       doctorIdentityResponseSchema.parse({
         scope: 'doctor',
+        username: 'kekin',
         specialistKey: 'kekin-gala',
         specialistName: 'Dr Kekin Gala',
       }),
@@ -220,8 +224,56 @@ describe('doctorIdentityResponseSchema', () => {
     expect(
       doctorIdentityResponseSchema.safeParse({
         scope: 'nurse',
+        username: 'ops',
         specialistKey: null,
         specialistName: null,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('doctorLoginRequestSchema', () => {
+  it('trims the username and keeps the password verbatim', () => {
+    expect(doctorLoginRequestSchema.parse({ username: '  kekin ', password: ' pw ' })).toEqual({
+      username: 'kekin',
+      password: ' pw ',
+    });
+  });
+
+  it('rejects usernames with spaces or symbols', () => {
+    expect(doctorLoginRequestSchema.safeParse({ username: 'ke kin', password: 'pw' }).success).toBe(
+      false,
+    );
+    expect(doctorLoginRequestSchema.safeParse({ username: 'ke@kin', password: 'pw' }).success).toBe(
+      false,
+    );
+  });
+
+  it('accepts a short password, so an old one can still sign in', () => {
+    expect(doctorLoginRequestSchema.safeParse({ username: 'kekin', password: 'a' }).success).toBe(
+      true,
+    );
+  });
+
+  it('rejects an empty password', () => {
+    expect(doctorLoginRequestSchema.safeParse({ username: 'kekin', password: '' }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('doctorPasswordChangeRequestSchema', () => {
+  it('enforces the minimum length on the new password only', () => {
+    expect(
+      doctorPasswordChangeRequestSchema.safeParse({
+        currentPassword: 'short',
+        newPassword: 'a-long-enough-one',
+      }).success,
+    ).toBe(true);
+    expect(
+      doctorPasswordChangeRequestSchema.safeParse({
+        currentPassword: 'a-long-enough-one',
+        newPassword: 'too-short',
       }).success,
     ).toBe(false);
   });

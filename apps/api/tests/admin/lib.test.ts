@@ -56,12 +56,12 @@ describe('serializeRecord', () => {
     const out = serializeRecord({
       id: '1',
       tokenHash: 'secret',
-      accessKeyHash: 'hash',
+      passwordHash: 'scrypt$16384$8$1$aa$bb',
       createdAt: new Date('2024-01-01T00:00:00.000Z'),
       embedding: Buffer.from('abc'),
     });
     expect(out.tokenHash).toBe('[redacted]');
-    expect(out.accessKeyHash).toBe('[redacted]');
+    expect(out.passwordHash).toBe('[redacted]');
     expect(out.createdAt).toBe('2024-01-01T00:00:00.000Z');
     expect(out.embedding).toBe('[binary 3 bytes]');
   });

@@ -24,6 +24,16 @@ export type AdminEntityDefinition = {
   sortableFields: string[];
   /** Default sort field */
   defaultSort: string;
+  /**
+   * Preferred list-table columns (human-readable keys after relation flatten).
+   * When omitted, the admin UI hides id / *Id fields by default.
+   */
+  listFields?: string[];
+  /**
+   * Prisma `include` for list queries so related labels (user, specialist, …)
+   * can be flattened into display columns.
+   */
+  listInclude?: Record<string, unknown>;
   /** Fields that must never be accepted on create/update */
   readonlyFields: string[];
   /** Soft-delete field if supported */

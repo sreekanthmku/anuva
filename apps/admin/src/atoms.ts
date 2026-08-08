@@ -11,6 +11,8 @@ export type EntityMeta = {
   filterFields: string[];
   sortableFields: string[];
   defaultSort: string;
+  /** Preferred table columns; null means auto-pick human fields */
+  listFields: string[] | null;
   softDeleteField: string | null;
   activeField: string | null;
   actions: Array<{ key: string; label: string; description?: string }>;

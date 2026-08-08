@@ -88,7 +88,7 @@ See repo-root `.env.example`.
 - One / create / update / delete / action: `{ data: T }`
 - Errors: `{ error, code, details? }`
 
-Sensitive fields (`tokenHash`, `accessKeyHash`, `embedding`, `providerSessionId`) are redacted in responses.
+Sensitive fields (`tokenHash`, `passwordHash`, `embedding`, `providerSessionId`) are redacted in responses.
 
 ## Validation
 
@@ -104,7 +104,7 @@ Sensitive fields (`tokenHash`, `accessKeyHash`, `embedding`, `providerSessionId`
 | `symptoms`, `specialists` | `enable`, `disable` |
 | `fcm-tokens` | `activate`, `deactivate` |
 | `consultation-documents` | `archive`, `restore` (soft delete via `deletedAt`) |
-| `specialists` | `rotate-access-key` (returns plaintext key once) |
+| `doctor-accounts` | `enable`, `disable` |
 
 ## Admin UI (`apps/admin`)
 

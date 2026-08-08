@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { EntityMeta } from '../../atoms';
 import { adminFetch, type AdminApiError } from '../../lib/api';
 
@@ -16,6 +16,78 @@ type ListResponse = {
 
 type Mode = 'list' | 'create' | 'edit' | 'view';
 
+const MAX_COLUMNS = 7;
+
+function isIdLikeField(key: string): boolean {
+  return key === 'id' || /Id$/.test(key) || /Hash$/.test(key) || key === 'storagePath';
+}
+
+function humanLabel(key: string): string {
+  return key
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
+function pickColumns(
+  row: Record<string, unknown> | undefined,
+  listFields: string[] | null | undefined,
+  showIds: boolean,
+): string[] {
+  if (listFields?.length) {
+    const cols = listFields.filter((f) => showIds || !isIdLikeField(f));
+    if (showIds && !cols.includes('id')) return ['id', ...cols];
+    return cols.length ? cols : listFields.slice(0, MAX_COLUMNS);
+  }
+
+  if (!row) return showIds ? ['id'] : [];
+
+  const keys = Object.keys(row);
+  const preferred = keys.filter((k) => !isIdLikeField(k));
+  const ids = keys.filter((k) => isIdLikeField(k));
+  const cols = showIds ? [...preferred, ...ids] : preferred;
+  return (cols.length ? cols : keys).slice(0, MAX_COLUMNS);
+}
+
+function formatCell(value: unknown): string {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'number') return String(value);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '—';
+    if (value.every((v) => typeof v === 'string' || typeof v === 'number')) {
+      return value.join(', ');
+    }
+    return JSON.stringify(value);
+  }
+  if (typeof value === 'object') return JSON.stringify(value);
+  const str = String(value);
+  // ISO timestamps → readable local-ish short form
+  if (/^\d{4}-\d{2}-\d{2}T/.test(str)) {
+    const d = new Date(str);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const d = new Date(`${str}T00:00:00`);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    }
+  }
+  if (str.length > 120) return `${str.slice(0, 117)}…`;
+  return str;
+}
+
 export function EntityBrowser({ entity }: { entity: EntityMeta }) {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [meta, setMeta] = useState<ListResponse['meta'] | null>(null);
@@ -28,6 +100,9 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
   const [mode, setMode] = useState<Mode>('list');
   const [draft, setDraft] = useState('{\n  \n}');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showIds, setShowIds] = useState(false);
+
+  const effectiveSort = entity.sortableFields.includes(sort) ? sort : entity.defaultSort;
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -36,7 +111,7 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
       const params = new URLSearchParams({
         page: String(page),
         pageSize: '25',
-        sort,
+        sort: effectiveSort,
         order,
       });
       if (q.trim()) params.set('q', q.trim());
@@ -50,16 +125,7 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
     } finally {
       setBusy(false);
     }
-  }, [entity.resource, page, sort, order, q]);
-
-  useEffect(() => {
-    setPage(1);
-    setSort(entity.defaultSort);
-    setOrder('desc');
-    setQ('');
-    setMode('list');
-    setActiveId(null);
-  }, [entity.resource, entity.defaultSort]);
+  }, [entity.resource, page, effectiveSort, order, q]);
 
   useEffect(() => {
     if (mode === 'list') void load();
@@ -119,7 +185,7 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
   }
 
   async function onDelete(id: string) {
-    if (!confirm(`Delete ${entity.label} ${id}?`)) return;
+    if (!confirm(`Delete this ${entity.label.toLowerCase()}?`)) return;
     setBusy(true);
     setError(null);
     try {
@@ -137,13 +203,10 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
     setBusy(true);
     setError(null);
     try {
-      const result = await adminFetch<{ data: Record<string, unknown> }>(
+      await adminFetch<{ data: Record<string, unknown> }>(
         `/admin/entities/${entity.resource}/${id}/actions/${action}`,
         { method: 'POST' },
       );
-      if (action === 'rotate-access-key' && result.data.accessKey) {
-        alert(`New access key (copy now):\n${String(result.data.accessKey)}`);
-      }
       await load();
     } catch (err) {
       setError((err as AdminApiError).message);
@@ -152,7 +215,10 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
     }
   }
 
-  const columns = rows[0] ? Object.keys(rows[0]).slice(0, 6) : ['id'];
+  const columns = useMemo(
+    () => pickColumns(rows[0], entity.listFields, showIds),
+    [rows, entity.listFields, showIds],
+  );
 
   if (mode !== 'list') {
     return (
@@ -165,6 +231,9 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
             <h2>
               {mode === 'create' ? 'Create' : mode === 'edit' ? 'Edit' : 'View'} {entity.label}
             </h2>
+            {mode === 'view' && (
+              <p className="muted">Full record including technical IDs</p>
+            )}
           </div>
           <div className="actions">
             {mode === 'view' && (
@@ -205,10 +274,7 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
       <header className="panel-head">
         <div>
           <h2>{entity.label}</h2>
-          <p className="muted">
-            <code>/admin/entities/{entity.resource}</code>
-            {meta ? ` · ${meta.total} total` : ''}
-          </p>
+          <p className="muted">{meta ? `${meta.total} total` : ''}</p>
         </div>
         <button type="button" onClick={openCreate}>
           Create
@@ -219,7 +285,7 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
         <input
           placeholder={
             entity.searchFields.length
-              ? `Search ${entity.searchFields.join(', ')}…`
+              ? `Search ${entity.searchFields.filter((f) => !isIdLikeField(f)).join(', ') || entity.searchFields.join(', ')}…`
               : 'Search…'
           }
           value={q}
@@ -231,17 +297,31 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
             }
           }}
         />
-        <select value={sort} onChange={(e) => setSort(e.target.value)}>
+        <select
+          value={effectiveSort}
+          onChange={(e) => {
+            setSort(e.target.value);
+            setPage(1);
+          }}
+        >
           {entity.sortableFields.map((f) => (
             <option key={f} value={f}>
-              Sort: {f}
+              Sort: {humanLabel(f)}
             </option>
           ))}
         </select>
         <select value={order} onChange={(e) => setOrder(e.target.value as 'asc' | 'desc')}>
-          <option value="desc">Desc</option>
-          <option value="asc">Asc</option>
+          <option value="desc">Newest first</option>
+          <option value="asc">Oldest first</option>
         </select>
+        <label className="toggle-ids">
+          <input
+            type="checkbox"
+            checked={showIds}
+            onChange={(e) => setShowIds(e.target.checked)}
+          />
+          Show IDs
+        </label>
         <button type="button" onClick={() => void load()} disabled={busy}>
           Refresh
         </button>
@@ -254,7 +334,7 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
           <thead>
             <tr>
               {columns.map((c) => (
-                <th key={c}>{c}</th>
+                <th key={c}>{humanLabel(c)}</th>
               ))}
               <th>Actions</th>
             </tr>
@@ -262,7 +342,7 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={columns.length + 1} className="muted">
+                <td colSpan={Math.max(columns.length, 1) + 1} className="muted">
                   {busy ? 'Loading…' : 'No rows'}
                 </td>
               </tr>
@@ -272,7 +352,9 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
               return (
                 <tr key={id}>
                   {columns.map((c) => (
-                    <td key={c}>{formatCell(row[c])}</td>
+                    <td key={c} title={isIdLikeField(c) ? String(row[c] ?? '') : undefined}>
+                      {formatCell(row[c])}
+                    </td>
                   ))}
                   <td className="row-actions">
                     <button type="button" className="ghost" onClick={() => void openView(id)}>
@@ -322,10 +404,4 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
       )}
     </section>
   );
-}
-
-function formatCell(value: unknown): string {
-  if (value === null || value === undefined) return '—';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
 }
