@@ -860,7 +860,6 @@ type DoctorConsultationRow = {
   user: {
     id: string;
     name: string | null;
-    phone: string;
   };
   slot: {
     endsAt: Date;
@@ -1010,7 +1009,8 @@ async function getDoctorConsultation(consultationId: string, identity: DoctorIde
     where: { id: consultationId, ...doctorConsultationScope(identity) },
     include: {
       specialist: { select: { name: true } },
-      user: { select: { id: true, name: true, phone: true } },
+      // No phone: the doctor portal never shows patient contact details.
+      user: { select: { id: true, name: true } },
       call: {
         include: {
           recordings: true,
@@ -2896,11 +2896,11 @@ app.get('/doctor/consultations', async (req, res, next) => {
             name: true,
           },
         },
+        // Deliberately no phone: a patient's contact number stays out of the doctor portal.
         user: {
           select: {
             id: true,
             name: true,
-            phone: true,
           },
         },
         slot: {
@@ -2930,7 +2930,6 @@ app.get('/doctor/consultations', async (req, res, next) => {
           specialistName: booking.specialist.name,
           patientId: booking.user.id,
           patientName: booking.user.name,
-          patientPhone: booking.user.phone,
           scheduledAt: booking.scheduledAt.toISOString(),
           endsAt: booking.slot?.endsAt.toISOString() ?? null,
           status: booking.status,
@@ -3179,7 +3178,9 @@ app.post('/consultations/:id/call/join', async (req, res, next) => {
       consultationId: consultation.id,
       role: 'patient',
       identity: `patient:${user.id}:${consultation.id}`,
-      name: user.name || user.phone,
+      // The doctor's client receives this as the participant label, so an unnamed patient falls
+      // back to a generic word rather than to their phone number.
+      name: user.name || 'Patient',
     });
 
     res.json(

@@ -102,13 +102,8 @@ function BookingCard({
         </div>
       </div>
 
+      {/* No contact details here by design — the portal shows who and when, never how to reach. */}
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 px-4 text-[12px] text-on-surface-variant">
-        <span>
-          <span className="text-outline">Phone</span>{' '}
-          <a href={`tel:${booking.patientPhone}`} className="font-semibold text-primary">
-            {booking.patientPhone}
-          </a>
-        </span>
         <span>
           <span className="text-outline">Type</span>{' '}
           <span className="font-semibold">{booking.isFree ? 'Free consult' : 'Paid consult'}</span>
@@ -312,7 +307,7 @@ export function DoctorBookingsRoute() {
       {documentsFor ? (
         <ConsultationDocumentsSheet
           consultationId={documentsFor.consultationId}
-          patientLabel={documentsFor.patientName?.trim() || documentsFor.patientPhone}
+          patientLabel={documentsFor.patientName?.trim() || 'this patient'}
           onClose={() => setDocumentsFor(null)}
           onChanged={() => {
             void load();
@@ -323,7 +318,7 @@ export function DoctorBookingsRoute() {
       {assessmentFor ? (
         <DetailedAssessmentSheet
           consultationId={assessmentFor.consultationId}
-          patientLabel={assessmentFor.patientName?.trim() || assessmentFor.patientPhone}
+          patientLabel={assessmentFor.patientName?.trim() || 'this patient'}
           onClose={() => setAssessmentFor(null)}
         />
       ) : null}

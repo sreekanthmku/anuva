@@ -141,7 +141,6 @@ export const doctorConsultationBookingSchema = z.object({
   specialistName: z.string(),
   patientId: z.string(),
   patientName: z.string().nullable(),
-  patientPhone: z.string(),
   scheduledAt: z.string().datetime(),
   endsAt: z.string().datetime().nullable(),
   status: consultationStatusSchema,
