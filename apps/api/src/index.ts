@@ -158,7 +158,7 @@ import { getLibraryArticle, getLibraryFeed } from './library.js';
 import { isAnuChatConfigured } from './anu/openai.js';
 import { loadCache, cacheStats } from './anu/cache.js';
 import { httpLogger, logger } from './logger.js';
-import { createAdminRouter, isAdminAuthConfigured } from './admin/index.js';
+import { createAdminRouter } from './admin/index.js';
 import { AdminError } from './admin/errors.js';
 import {
   clearDoctorLoginFailures,
