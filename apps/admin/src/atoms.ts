@@ -1,5 +1,20 @@
 import { atom } from 'jotai';
+import { getStoredToken } from './lib/api';
 
-export type AdminTab = 'overview' | 'examples';
+export const adminTokenAtom = atom<string | null>(getStoredToken());
 
-export const adminTabAtom = atom<AdminTab>('overview');
+export type EntityMeta = {
+  resource: string;
+  label: string;
+  group: string;
+  searchFields: string[];
+  filterFields: string[];
+  sortableFields: string[];
+  defaultSort: string;
+  softDeleteField: string | null;
+  activeField: string | null;
+  actions: Array<{ key: string; label: string; description?: string }>;
+};
+
+export const entityMetaAtom = atom<EntityMeta[]>([]);
+export const selectedResourceAtom = atom<string | null>(null);

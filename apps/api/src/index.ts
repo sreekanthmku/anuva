@@ -150,6 +150,8 @@ import { getLibraryArticle, getLibraryFeed } from './library.js';
 import { isAnuChatConfigured } from './anu/openai.js';
 import { loadCache, cacheStats } from './anu/cache.js';
 import { httpLogger, logger } from './logger.js';
+import { createAdminRouter, isAdminAuthConfigured } from './admin/index.js';
+import { AdminError } from './admin/errors.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -251,6 +253,10 @@ app.post('/livekit/webhook', express.raw({ type: '*/*', limit: '1mb' }), async (
 // and one of them is a drawn signature carried as a PNG data URL. Zod still caps that single value
 // at DETAILED_SIGNATURE_VALUE_MAX and requires it to parse as a PNG data URL.
 app.use(express.json({ limit: '512kb' }));
+
+// Dedicated Admin API — completely separate from patient and doctor routes.
+// Auth, validation, and CRUD live under apps/api/src/admin/.
+app.use('/admin', createAdminRouter({ prisma }));
 
 // Guards every /doctor route, including any added later. Express 4 does not forward rejected
 // promises from middleware, so the async guard is wrapped and reports through next() itself.
@@ -4430,6 +4436,16 @@ app.use(
       return;
     }
 
+    if (err instanceof AdminError) {
+      req.log.warn({ status: err.status, code: err.code }, `Request rejected: ${err.message}`);
+      res.status(err.status).json({
+        error: err.message,
+        code: err.code,
+        ...(err.details !== undefined ? { details: err.details } : {}),
+      });
+      return;
+    }
+
     if (err instanceof HttpError) {
       req.log.warn({ status: err.status }, `Request rejected: ${err.message}`);
       res.status(err.status).json({ error: err.message });
@@ -4485,6 +4501,12 @@ async function startServer() {
     logger.warn('OPENAI_API_KEY is not set — POST /anu/chat will return 503');
   }
 
+  if (!isAdminAuthConfigured()) {
+    logger.warn(
+      'ADMIN_PASSWORD / ADMIN_SESSION_SECRET not set — /admin login will reject all credentials',
+    );
+  }
+
   const server = app.listen(port, () => {
     logger.info(
       {
@@ -4493,6 +4515,7 @@ async function startServer() {
         logLevel: logger.level,
         recordingDir: RECORDING_LOCAL_DIR || null,
         consultationDocDir: CONSULTATION_DOC_DIR,
+        adminAuthConfigured: isAdminAuthConfigured(),
       },
       'API listening',
     );

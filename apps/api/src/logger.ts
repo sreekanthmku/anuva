@@ -26,10 +26,12 @@ const REDACT_PATHS = [
   'req.headers.cookie',
   'req.headers.authorization',
   'req.headers["x-doctor-key"]',
+  'req.headers["x-admin-token"]',
   'res.headers["set-cookie"]',
   'headers.cookie',
   'headers.authorization',
   'headers["x-doctor-key"]',
+  'headers["x-admin-token"]',
 ];
 
 const stream = USE_JSON
