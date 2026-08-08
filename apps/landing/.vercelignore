@@ -1,0 +1,16 @@
+# Pre-launch the build needs only coming-soon.html and the two derived logo files, so nothing
+# else is worth uploading. `Anuva Wellness Landing.dc.html` and its runtime scripts stay listed
+# here only while the marketing page is unpublished — restoring it (see README.md) means
+# removing them from this list too.
+.DS_Store
+.thumbnail
+.image-slots.state.json
+README.md
+anuva-logo.png
+Anuva Wellness Landing.html
+Anuva Wellness Landing.dc.html
+Anuva Wellness Landing - standalone.dc.html
+support.js
+image-slot.js
+uploads
+dist

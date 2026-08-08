@@ -42,6 +42,11 @@ export type AdminEntityDefinition = {
   activeField?: string;
   /** Extra admin actions beyond CRUD */
   actions?: AdminEntityAction[];
+  /**
+   * When false, the admin UI hides Create for this resource.
+   * Defaults to true when createFields can be derived from the Zod schema.
+   */
+  canCreate?: boolean;
   /** Zod schema for create body (after readonly strip) */
   createSchema: z.ZodType<Record<string, unknown>>;
   /** Zod schema for update body (partial) */

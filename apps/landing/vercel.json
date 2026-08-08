@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo \"no dependencies\"",
+  "buildCommand": "mkdir -p dist && sed \"s|__WEB3FORMS_ACCESS_KEY__|${WEB3FORMS_ACCESS_KEY}|\" coming-soon.html > dist/index.html && cp anuva-logo-mark.png anuva-logo-icon.png anu-mascot.png dist/",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/(.*).png",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }]
+    }
+  ]
+}

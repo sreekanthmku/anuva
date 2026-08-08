@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { AdminEntityDefinition } from './types.js';
+import { ADMIN_NO_CREATE, zodToFields } from './fieldTypes.js';
 import { dateString, looseObjectSchema, loosePartialSchema, objectSchema } from './schemaHelpers.js';
 
 const RO = ['createdAt', 'updatedAt'] as const;
@@ -1446,17 +1447,46 @@ export function getEntityByResource(resource: string): AdminEntityDefinition | u
 }
 
 export function listEntityMeta() {
-  return ADMIN_ENTITIES.map((e) => ({
-    resource: e.resource,
-    label: e.label,
-    group: e.group,
-    searchFields: e.searchFields,
-    filterFields: e.filterFields,
-    sortableFields: e.sortableFields,
-    defaultSort: e.defaultSort,
-    listFields: e.listFields ?? null,
-    softDeleteField: e.softDeleteField ?? null,
-    activeField: e.activeField ?? null,
-    actions: e.actions ?? [],
-  }));
+  return ADMIN_ENTITIES.map((e) => {
+    let createFields = zodToFields(e.createSchema);
+    let updateFields = zodToFields(e.updateSchema);
+
+    // Q&A answers point at anonymous questions, not assessment questions.
+    if (e.resource === 'expert-answers') {
+      const remap = (fields: typeof createFields) =>
+        fields?.map((f) =>
+          f.name === 'questionId'
+            ? {
+                ...f,
+                relation: {
+                  resource: 'anonymous-questions',
+                  labelFields: ['topic', 'body'],
+                },
+              }
+            : f,
+        ) ?? null;
+      createFields = remap(createFields);
+      updateFields = remap(updateFields);
+    }
+
+    const canCreate =
+      e.canCreate ?? (Boolean(createFields?.length) && !ADMIN_NO_CREATE.has(e.resource));
+
+    return {
+      resource: e.resource,
+      label: e.label,
+      group: e.group,
+      searchFields: e.searchFields,
+      filterFields: e.filterFields,
+      sortableFields: e.sortableFields,
+      defaultSort: e.defaultSort,
+      listFields: e.listFields ?? null,
+      softDeleteField: e.softDeleteField ?? null,
+      activeField: e.activeField ?? null,
+      actions: e.actions ?? [],
+      canCreate,
+      createFields,
+      updateFields,
+    };
+  });
 }

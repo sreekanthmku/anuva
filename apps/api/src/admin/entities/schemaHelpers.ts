@@ -29,7 +29,10 @@ export function stripReadonly(
   return out;
 }
 
-export const dateString = z.union([z.string().datetime(), z.string().regex(/^\d{4}-\d{2}-\d{2}/)]);
+export const dateString = z
+  .union([z.string().datetime(), z.string().regex(/^\d{4}-\d{2}-\d{2}/)])
+  .describe('admin:date');
+
 
 export function objectSchema<T extends z.ZodRawShape>(shape: T, partial = false) {
   const base = z.object(shape).strict();

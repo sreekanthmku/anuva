@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { EntityMeta } from '../../atoms';
 import { adminFetch, type AdminApiError } from '../../lib/api';
+import { cleanFormValues, SchemaForm } from './SchemaForm';
 
 type ListResponse = {
   data: Record<string, unknown>[];
@@ -61,7 +62,6 @@ function formatCell(value: unknown): string {
   }
   if (typeof value === 'object') return JSON.stringify(value);
   const str = String(value);
-  // ISO timestamps → readable local-ish short form
   if (/^\d{4}-\d{2}-\d{2}T/.test(str)) {
     const d = new Date(str);
     if (!Number.isNaN(d.getTime())) {
@@ -88,6 +88,27 @@ function formatCell(value: unknown): string {
   return str;
 }
 
+function emptyFormValues(fields: NonNullable<EntityMeta['createFields']>): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  for (const field of fields) {
+    if (field.type === 'boolean') values[field.name] = false;
+    else if (field.nullable) values[field.name] = null;
+    else values[field.name] = '';
+  }
+  return values;
+}
+
+function recordToFormValues(
+  record: Record<string, unknown>,
+  fields: NonNullable<EntityMeta['updateFields']>,
+): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  for (const field of fields) {
+    values[field.name] = record[field.name] ?? (field.type === 'boolean' ? false : field.nullable ? null : '');
+  }
+  return values;
+}
+
 export function EntityBrowser({ entity }: { entity: EntityMeta }) {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [meta, setMeta] = useState<ListResponse['meta'] | null>(null);
@@ -98,11 +119,17 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<Mode>('list');
-  const [draft, setDraft] = useState('{\n  \n}');
+  const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+  const [viewRecord, setViewRecord] = useState<Record<string, unknown> | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showIds, setShowIds] = useState(false);
+  const [advancedJson, setAdvancedJson] = useState(false);
+  const [draft, setDraft] = useState('{\n  \n}');
 
   const effectiveSort = entity.sortableFields.includes(sort) ? sort : entity.defaultSort;
+  const formFields =
+    mode === 'create' ? entity.createFields : mode === 'edit' ? entity.updateFields : null;
+  const useForm = Boolean(formFields?.length) && !advancedJson;
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -134,9 +161,16 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
   async function openView(id: string) {
     setBusy(true);
     setError(null);
+    setAdvancedJson(false);
     try {
       const result = await adminFetch<{ data: Record<string, unknown> }>(
         `/admin/entities/${entity.resource}/${id}`,
+      );
+      setViewRecord(result.data);
+      setFormValues(
+        entity.updateFields?.length
+          ? recordToFormValues(result.data, entity.updateFields)
+          : result.data,
       );
       setDraft(JSON.stringify(result.data, null, 2));
       setActiveId(id);
@@ -149,21 +183,29 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
   }
 
   function openCreate() {
-    setDraft('{\n  \n}');
+    setAdvancedJson(false);
     setActiveId(null);
+    setViewRecord(null);
+    if (entity.createFields?.length) {
+      setFormValues(emptyFormValues(entity.createFields));
+      setDraft(JSON.stringify(emptyFormValues(entity.createFields), null, 2));
+    } else {
+      setFormValues({});
+      setDraft('{\n  \n}');
+      setAdvancedJson(true);
+    }
     setMode('create');
   }
 
   function openEdit() {
+    setAdvancedJson(false);
     setMode('edit');
   }
 
-  async function onSave(e: FormEvent) {
-    e.preventDefault();
+  async function savePayload(body: unknown) {
     setBusy(true);
     setError(null);
     try {
-      const body = JSON.parse(draft) as unknown;
       if (mode === 'create') {
         await adminFetch(`/admin/entities/${entity.resource}`, {
           method: 'POST',
@@ -177,10 +219,26 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
       }
       setMode('list');
     } catch (err) {
-      if (err instanceof SyntaxError) setError('Invalid JSON');
-      else setError((err as AdminApiError).message || 'Save failed');
+      setError((err as AdminApiError).message || 'Save failed');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onSaveForm(e: FormEvent) {
+    e.preventDefault();
+    if (!formFields?.length) return;
+    await savePayload(cleanFormValues(formValues, formFields));
+  }
+
+  async function onSaveJson(e: FormEvent) {
+    e.preventDefault();
+    try {
+      const body = JSON.parse(draft) as unknown;
+      await savePayload(body);
+    } catch (err) {
+      if (err instanceof SyntaxError) setError('Invalid JSON');
+      else setError((err as AdminApiError).message || 'Save failed');
     }
   }
 
@@ -221,6 +279,9 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
   );
 
   if (mode !== 'list') {
+    const title =
+      mode === 'create' ? `Create ${entity.label}` : mode === 'edit' ? `Edit ${entity.label}` : entity.label;
+
     return (
       <section className="panel">
         <header className="panel-head">
@@ -228,11 +289,9 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
             <button type="button" className="ghost" onClick={() => setMode('list')}>
               ← Back
             </button>
-            <h2>
-              {mode === 'create' ? 'Create' : mode === 'edit' ? 'Edit' : 'View'} {entity.label}
-            </h2>
+            <h2>{title}</h2>
             {mode === 'view' && (
-              <p className="muted">Full record including technical IDs</p>
+              <p className="muted">Review details. Switch to technical view only if you need IDs.</p>
             )}
           </div>
           <div className="actions">
@@ -248,23 +307,89 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
                 )}
               </>
             )}
+            {(mode === 'create' || mode === 'edit') && formFields?.length ? (
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => {
+                  if (!advancedJson) {
+                    setDraft(JSON.stringify(cleanFormValues(formValues, formFields), null, 2));
+                  } else {
+                    try {
+                      const parsed = JSON.parse(draft) as Record<string, unknown>;
+                      setFormValues(recordToFormValues(parsed, formFields));
+                    } catch {
+                      /* keep form values */
+                    }
+                  }
+                  setAdvancedJson((v) => !v);
+                }}
+              >
+                {advancedJson ? 'Simple form' : 'Advanced (JSON)'}
+              </button>
+            ) : null}
           </div>
         </header>
         {error && <p className="error">{error}</p>}
-        <form onSubmit={onSave}>
-          <textarea
-            className="json-editor"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            readOnly={mode === 'view'}
-            spellCheck={false}
+
+        {mode === 'view' && !advancedJson && entity.updateFields?.length ? (
+          <SchemaForm
+            fields={entity.updateFields}
+            values={formValues}
+            onChange={setFormValues}
+            onSubmit={(e) => e.preventDefault()}
+            readOnly
           />
-          {mode !== 'view' && (
+        ) : null}
+
+        {mode === 'view' && (!entity.updateFields?.length || advancedJson) && viewRecord ? (
+          <dl className="record-view">
+            {Object.entries(viewRecord).map(([key, value]) => (
+              <div key={key} className="record-row">
+                <dt>{humanLabel(key)}</dt>
+                <dd title={isIdLikeField(key) ? String(value ?? '') : undefined}>
+                  {formatCell(value)}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+
+        {mode === 'view' && (
+          <button type="button" className="ghost" onClick={() => setAdvancedJson((v) => !v)}>
+            {advancedJson || !entity.updateFields?.length ? 'Hide technical JSON' : 'Show technical JSON'}
+          </button>
+        )}
+
+        {mode === 'view' && (advancedJson || !entity.updateFields?.length) && (
+          <textarea className="json-editor" value={draft} readOnly spellCheck={false} />
+        )}
+
+        {(mode === 'create' || mode === 'edit') && useForm && formFields ? (
+          <SchemaForm
+            fields={formFields}
+            values={formValues}
+            onChange={setFormValues}
+            onSubmit={(e) => void onSaveForm(e)}
+            busy={busy}
+            submitLabel={mode === 'create' ? 'Create' : 'Save changes'}
+          />
+        ) : null}
+
+        {(mode === 'create' || mode === 'edit') && !useForm ? (
+          <form onSubmit={(e) => void onSaveJson(e)}>
+            <p className="muted">Technical JSON editor</p>
+            <textarea
+              className="json-editor"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              spellCheck={false}
+            />
             <button type="submit" disabled={busy}>
-              {busy ? 'Saving…' : 'Save'}
+              {busy ? 'Saving…' : mode === 'create' ? 'Create' : 'Save changes'}
             </button>
-          )}
-        </form>
+          </form>
+        ) : null}
       </section>
     );
   }
@@ -276,9 +401,11 @@ export function EntityBrowser({ entity }: { entity: EntityMeta }) {
           <h2>{entity.label}</h2>
           <p className="muted">{meta ? `${meta.total} total` : ''}</p>
         </div>
-        <button type="button" onClick={openCreate}>
-          Create
-        </button>
+        {entity.canCreate !== false && (
+          <button type="button" onClick={openCreate}>
+            Create
+          </button>
+        )}
       </header>
 
       <div className="toolbar">

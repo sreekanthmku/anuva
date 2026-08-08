@@ -1,5 +1,6 @@
 import { atom } from 'jotai';
 import { getStoredToken } from './lib/api';
+import type { AdminField } from './features/entities/fieldTypes';
 
 export const adminTokenAtom = atom<string | null>(getStoredToken());
 
@@ -16,6 +17,9 @@ export type EntityMeta = {
   softDeleteField: string | null;
   activeField: string | null;
   actions: Array<{ key: string; label: string; description?: string }>;
+  canCreate: boolean;
+  createFields: AdminField[] | null;
+  updateFields: AdminField[] | null;
 };
 
 export const entityMetaAtom = atom<EntityMeta[]>([]);
