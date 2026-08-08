@@ -1,45 +1,45 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DoctorConsultationBooking } from '@anuva/shared';
 import { useNavigate } from 'react-router-dom';
-import { ChangePasswordSheet } from '../auth/ChangePasswordSheet';
 import { useDoctorIdentity } from '../auth/identity';
+import { Avatar, PageHeading } from '../shell/AppShell';
+import { ClipboardIcon, FileIcon, VideoIcon } from '../shell/icons';
+import { Card, EmptyState, ErrorNote, Pill, Segmented, SkeletonCard, StatTile } from '../shell/ui';
 import { fetchDoctorBookings } from './api';
 import { ConsultationDocumentsSheet } from './ConsultationDocumentsSheet';
 import { DetailedAssessmentSheet } from './DetailedAssessmentSheet';
-import { formatLongDateTime, formatTimeRange } from './dateTime';
+import { formatTimeRange } from './dateTime';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
+type Tab = 'today' | 'upcoming' | 'past';
 
-function statusTone(status: DoctorConsultationBooking['status']): string {
+const DAY_FORMAT = new Intl.DateTimeFormat('en-IN', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+  );
+}
+
+function statusTone(status: DoctorConsultationBooking['status']) {
   switch (status) {
     case 'confirmed':
-      return 'bg-success/15 text-success';
+      return 'success' as const;
     case 'completed':
-      return 'bg-info/15 text-info';
+      return 'info' as const;
     case 'cancelled':
-      return 'bg-error/15 text-error';
+      return 'error' as const;
     default:
-      return 'bg-tertiary/15 text-tertiary';
+      return 'tertiary' as const;
   }
 }
 
 function statusLabel(status: DoctorConsultationBooking['status']): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function StatCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-3">
-      <div className="text-[11px] uppercase tracking-[0.12em] text-outline">{label}</div>
-      <div className="mt-1 font-display text-[28px] leading-none text-on-surface">{value}</div>
-    </article>
-  );
 }
 
 function callLabel(booking: DoctorConsultationBooking): string {
@@ -49,96 +49,126 @@ function callLabel(booking: DoctorConsultationBooking): string {
   return 'Start call';
 }
 
+/** "In 20 min" / "Starts 4:30 PM" — what the doctor actually wants to know at a glance. */
+function relativeWhen(booking: DoctorConsultationBooking, now: number): string {
+  const start = new Date(booking.scheduledAt).getTime();
+  const minutes = Math.round((start - now) / 60_000);
+
+  if (minutes > 0 && minutes <= 60) return `In ${minutes} min`;
+  if (minutes <= 0 && minutes > -60) return 'Now';
+
+  return DAY_FORMAT.format(new Date(booking.scheduledAt));
+}
+
 function BookingCard({
   booking,
   showSpecialist,
+  now,
   onStartCall,
   onOpenDocuments,
   onOpenAssessment,
 }: {
   booking: DoctorConsultationBooking;
-  /** The doctor's own list is all one specialist, so the patient leads the card instead. */
+  /** The admin login sees every doctor's list, so the specialist has to be named on the card. */
   showSpecialist: boolean;
+  now: number;
   onStartCall: (consultationId: string) => void;
   onOpenDocuments: (booking: DoctorConsultationBooking) => void;
   onOpenAssessment: (booking: DoctorConsultationBooking) => void;
 }) {
   const patientLabel = booking.patientName?.trim() || 'Patient name unavailable';
   const canStartCall = booking.status === 'confirmed' && booking.callStatus !== 'ended';
+  const live = booking.callStatus === 'active';
 
   return (
-    <article className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_12px_30px_rgba(94,53,102,0.06)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-display text-[22px] leading-[1.15] text-on-surface">
-            {showSpecialist ? booking.specialistName : patientLabel}
+    <Card className="overflow-hidden">
+      <div className="flex items-start gap-3 px-4 pt-4">
+        <Avatar name={patientLabel} size={44} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-display text-[19px] leading-tight text-on-surface">
+            {patientLabel}
           </div>
-          <div className="mt-1 text-[13px] text-on-surface-variant">{formatLongDateTime(booking.scheduledAt)}</div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-on-surface-variant">
+            <span className="font-semibold text-on-surface">
+              {formatTimeRange(booking.scheduledAt, booking.endsAt)}
+            </span>
+            <span className="text-outline">·</span>
+            <span>{relativeWhen(booking, now)}</span>
+          </div>
         </div>
-        <div
-          className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${statusTone(booking.status)}`}
-        >
-          {statusLabel(booking.status)}
+        <div className="flex flex-col items-end gap-1.5">
+          <Pill tone={statusTone(booking.status)}>{statusLabel(booking.status)}</Pill>
+          {live ? <Pill tone="primary">● Live</Pill> : null}
         </div>
       </div>
 
-      <dl className="mt-4 grid grid-cols-1 gap-3 text-[13px] text-on-surface sm:grid-cols-2">
-        <div className="rounded-[16px] bg-surface-container-low px-3 py-2.5">
-          <dt className="text-[11px] text-outline">Patient</dt>
-          <dd className="mt-1 font-semibold">{patientLabel}</dd>
-        </div>
-        <div className="rounded-[16px] bg-surface-container-low px-3 py-2.5">
-          <dt className="text-[11px] text-outline">Phone</dt>
-          <dd className="mt-1 font-semibold">{booking.patientPhone}</dd>
-        </div>
-        <div className="rounded-[16px] bg-surface-container-low px-3 py-2.5">
-          <dt className="text-[11px] text-outline">Time</dt>
-          <dd className="mt-1 font-semibold">{formatTimeRange(booking.scheduledAt, booking.endsAt)}</dd>
-        </div>
-        <div className="rounded-[16px] bg-surface-container-low px-3 py-2.5">
-          <dt className="text-[11px] text-outline">Booking</dt>
-          <dd className="mt-1 font-semibold">{booking.isFree ? 'Free consult' : 'Paid consult'}</dd>
-        </div>
-        <div className="rounded-[16px] bg-surface-container-low px-3 py-2.5">
-          <dt className="text-[11px] text-outline">Call</dt>
-          <dd className="mt-1 font-semibold">{booking.callStatus ?? 'Not started'}</dd>
-        </div>
-        <div className="rounded-[16px] bg-surface-container-low px-3 py-2.5">
-          <dt className="text-[11px] text-outline">Recording</dt>
-          <dd className="mt-1 font-semibold">{booking.recordingStatus ?? 'Not started'}</dd>
-        </div>
-      </dl>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 px-4 text-[12px] text-on-surface-variant">
+        <span>
+          <span className="text-outline">Phone</span>{' '}
+          <a href={`tel:${booking.patientPhone}`} className="font-semibold text-primary">
+            {booking.patientPhone}
+          </a>
+        </span>
+        <span>
+          <span className="text-outline">Type</span>{' '}
+          <span className="font-semibold">{booking.isFree ? 'Free consult' : 'Paid consult'}</span>
+        </span>
+        {showSpecialist ? (
+          <span>
+            <span className="text-outline">Doctor</span>{' '}
+            <span className="font-semibold">{booking.specialistName}</span>
+          </span>
+        ) : null}
+        {booking.recordingStatus ? (
+          <span>
+            <span className="text-outline">Recording</span>{' '}
+            <span className="font-semibold">{booking.recordingStatus}</span>
+          </span>
+        ) : null}
+      </div>
 
-      <button
-        type="button"
-        disabled={!canStartCall}
-        onClick={() => onStartCall(booking.consultationId)}
-        className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-secondary px-4 py-3 text-[13px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
-      >
-        {callLabel(booking)}
-      </button>
+      <div className="mt-4 flex items-center gap-2 border-t border-border-default bg-surface-container-low px-3 py-3">
+        <button
+          type="button"
+          disabled={!canStartCall}
+          onClick={() => onStartCall(booking.consultationId)}
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full bg-secondary px-4 text-[13px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <VideoIcon size={17} />
+          {callLabel(booking)}
+        </button>
 
-      {/* Sharing stays available after the call — a prescription is usually written up afterwards. */}
-      <button
-        type="button"
-        disabled={booking.status === 'cancelled'}
-        onClick={() => onOpenDocuments(booking)}
-        className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-border-default px-4 py-3 text-[13px] font-semibold disabled:cursor-not-allowed disabled:opacity-45"
-      >
-        {booking.documentCount > 0
-          ? `Prescription & plans (${booking.documentCount})`
-          : 'Upload prescription / plan'}
-      </button>
+        {/* Sharing stays available after the call — a prescription is usually written up later. */}
+        <button
+          type="button"
+          disabled={booking.status === 'cancelled'}
+          onClick={() => onOpenDocuments(booking)}
+          aria-label={
+            booking.documentCount > 0
+              ? `Prescriptions and plans (${booking.documentCount})`
+              : 'Upload prescription or plan'
+          }
+          className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border-default bg-surface-raised text-primary disabled:opacity-40"
+        >
+          <FileIcon />
+          {booking.documentCount > 0 ? (
+            <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 text-center text-[10px] font-bold leading-[18px] text-on-primary">
+              {booking.documentCount}
+            </span>
+          ) : null}
+        </button>
 
-      {/* Read before the call, so the sections belonging to this specialty are already in mind. */}
-      <button
-        type="button"
-        onClick={() => onOpenAssessment(booking)}
-        className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-border-default px-4 py-3 text-[13px] font-semibold"
-      >
-        View health assessment
-      </button>
-    </article>
+        {/* Read before the call, so the sections for this specialty are already in mind. */}
+        <button
+          type="button"
+          onClick={() => onOpenAssessment(booking)}
+          aria-label="View health assessment"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border-default bg-surface-raised text-primary"
+        >
+          <ClipboardIcon />
+        </button>
+      </div>
+    </Card>
   );
 }
 
@@ -149,9 +179,11 @@ export function DoctorBookingsRoute() {
   const [state, setState] = useState<LoadState>('idle');
   const [bookings, setBookings] = useState<DoctorConsultationBooking[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('today');
   const [documentsFor, setDocumentsFor] = useState<DoctorConsultationBooking | null>(null);
   const [assessmentFor, setAssessmentFor] = useState<DoctorConsultationBooking | null>(null);
-  const [changingPassword, setChangingPassword] = useState(false);
+  // Recomputed on every load so "In 20 min" does not go stale behind a long-open tab.
+  const [now, setNow] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     setState('loading');
@@ -160,6 +192,7 @@ export function DoctorBookingsRoute() {
     try {
       const response = await fetchDoctorBookings();
       setBookings(response.bookings);
+      setNow(Date.now());
       setState('ready');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load bookings.');
@@ -171,113 +204,110 @@ export function DoctorBookingsRoute() {
     void load();
   }, [load]);
 
-  const summary = useMemo(() => {
-    const now = Date.now();
-    const upcoming = bookings.filter((booking) => new Date(booking.scheduledAt).getTime() >= now).length;
-    const completed = bookings.filter((booking) => booking.status === 'completed').length;
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
-    return {
-      total: bookings.length,
-      upcoming,
-      completed,
-    };
-  }, [bookings]);
+  const groups = useMemo(() => {
+    const today = new Date(now);
+    const buckets: Record<Tab, DoctorConsultationBooking[]> = { today: [], upcoming: [], past: [] };
+
+    for (const booking of bookings) {
+      const at = new Date(booking.scheduledAt);
+      if (isSameDay(at, today)) {
+        buckets.today.push(booking);
+      } else if (at.getTime() > now) {
+        buckets.upcoming.push(booking);
+      } else {
+        buckets.past.push(booking);
+      }
+    }
+
+    // Newest first for what has already happened; soonest first for what is still to come.
+    buckets.past.reverse();
+
+    return buckets;
+  }, [bookings, now]);
+
+  const completed = useMemo(
+    () => bookings.filter((booking) => booking.status === 'completed').length,
+    [bookings],
+  );
+
+  const visible = groups[tab];
+  const greeting = isAdmin ? 'Every doctor’s' : 'Your';
 
   return (
-    <main className="min-h-mobile bg-surface text-on-surface">
-      <header className="sticky top-0 z-20 border-b border-border-default bg-surface/95 px-4 pb-5 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
-        <div className="flex items-start justify-between gap-3">
-          <div
-            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"
-            style={{
-              backgroundColor: 'rgba(94, 53, 102, 0.16)',
-              borderColor: 'rgba(94, 53, 102, 0.3)',
-            }}
-          >
-            <span className="text-[9.5px] uppercase tracking-[0.15em] text-primary">
-              {isAdmin ? 'Admin view' : 'Doctor view'}
-            </span>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate('/questions')}
-              className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary"
-            >
-              Q&amp;A queue
-            </button>
-            <button
-              type="button"
-              onClick={() => setChangingPassword(true)}
-              className="rounded-full border border-border-default px-3 py-1 text-[11px] font-semibold text-on-surface-variant"
-            >
-              Password
-            </button>
-            <button
-              type="button"
-              onClick={identity.signOut}
-              className="rounded-full border border-border-default px-3 py-1 text-[11px] font-semibold text-on-surface-variant"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-        <h1 className="mt-3 max-w-[20rem] font-display text-[30px] leading-[1.1]">
-          {isAdmin ? (
-            <>
-              All consultation <em className="not-italic text-primary">bookings</em>
-            </>
-          ) : (
-            <>
-              Your consultation <em className="not-italic text-primary">bookings</em>
-            </>
-          )}
-        </h1>
-        <p className="mt-2 max-w-[24rem] text-[13px] leading-[1.5] text-on-surface-variant">
-          {isAdmin
-            ? 'Signed in with the admin key — every doctor’s bookings are listed.'
-            : `Bookings for ${identity.specialistName ?? 'you'}. Other doctors’ bookings are not shown.`}
-        </p>
-      </header>
+    <>
+      <PageHeading
+        eyebrow={DAY_FORMAT.format(new Date(now))}
+        title={`${greeting} consultation`}
+        accent="schedule"
+        description={
+          isAdmin
+            ? 'Signed in with an admin login — every doctor’s bookings are listed here.'
+            : `Bookings for ${identity.specialistName ?? 'you'}. No other doctor’s bookings are shown.`
+        }
+      />
 
-      <section className="px-4 pb-8 pt-4">
-        <div className="grid grid-cols-3 gap-3">
-          <StatCard label="Total" value={String(summary.total)} />
-          <StatCard label="Upcoming" value={String(summary.upcoming)} />
-          <StatCard label="Done" value={String(summary.completed)} />
-        </div>
+      <div className="grid grid-cols-3 gap-2.5">
+        <StatTile label="Today" value={groups.today.length} tone="primary" />
+        <StatTile label="Upcoming" value={groups.upcoming.length} />
+        <StatTile label="Completed" value={completed} tone="success" />
+      </div>
 
+      <div className="mt-4">
+        <Segmented<Tab>
+          value={tab}
+          onChange={setTab}
+          options={[
+            { id: 'today', label: 'Today', count: groups.today.length },
+            { id: 'upcoming', label: 'Upcoming', count: groups.upcoming.length },
+            { id: 'past', label: 'Past', count: groups.past.length },
+          ]}
+        />
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3">
         {state === 'loading' ? (
-          <div className="mt-4 rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-6 text-[13px] text-on-surface-variant">
-            Loading bookings...
-          </div>
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
         ) : null}
 
-        {state === 'error' ? (
-          <div className="mt-4 rounded-[20px] border border-error/20 bg-error-container px-4 py-4 text-[13px] text-on-error-container">
-            {error ?? 'Unable to load bookings.'}
-          </div>
+        {state === 'error' ? <ErrorNote>{error ?? 'Unable to load bookings.'}</ErrorNote> : null}
+
+        {state === 'ready' && visible.length === 0 ? (
+          <EmptyState
+            title={
+              tab === 'today'
+                ? 'Nothing on today'
+                : tab === 'upcoming'
+                  ? 'No upcoming bookings'
+                  : 'Nothing in the past'
+            }
+            body={
+              tab === 'today'
+                ? 'New bookings land here as soon as a patient picks one of your slots.'
+                : undefined
+            }
+          />
         ) : null}
 
-        {state === 'ready' && bookings.length === 0 ? (
-          <div className="mt-4 rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-6 text-[13px] text-on-surface-variant">
-            No bookings yet.
-          </div>
-        ) : null}
-
-        <div className="mt-4 flex flex-col gap-3">
-          {bookings.map((booking) => (
-            <BookingCard
-              key={booking.consultationId}
-              booking={booking}
-              showSpecialist={isAdmin}
-              onStartCall={(consultationId) => navigate(`/call/${consultationId}`)}
-              onOpenDocuments={setDocumentsFor}
-              onOpenAssessment={setAssessmentFor}
-            />
-          ))}
-        </div>
-      </section>
+        {visible.map((booking) => (
+          <BookingCard
+            key={booking.consultationId}
+            booking={booking}
+            showSpecialist={isAdmin}
+            now={now}
+            onStartCall={(consultationId) => navigate(`/call/${consultationId}`)}
+            onOpenDocuments={setDocumentsFor}
+            onOpenAssessment={setAssessmentFor}
+          />
+        ))}
+      </div>
 
       {documentsFor ? (
         <ConsultationDocumentsSheet
@@ -297,10 +327,6 @@ export function DoctorBookingsRoute() {
           onClose={() => setAssessmentFor(null)}
         />
       ) : null}
-
-      {changingPassword ? (
-        <ChangePasswordSheet onClose={() => setChangingPassword(false)} />
-      ) : null}
-    </main>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import type { DoctorIdentityResponse } from '@anuva/shared';
+import { disableDoctorPush } from '../../lib/push';
 import { doctorLogin, doctorLogout, fetchDoctorIdentity } from './api';
 import { DoctorIdentityProvider } from './identity';
 
@@ -20,8 +21,15 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
   const [submitting, setSubmitting] = useState(false);
 
   const signOut = useCallback(() => {
-    // Fire-and-forget: the server drops the session, and the UI returns to the form either way.
-    void doctorLogout().catch(() => undefined);
+    // Signing out has to take the device's push registration with it, or a shared phone keeps
+    // buzzing with the previous doctor's bookings. Done before the session goes: the unregister
+    // call is authenticated.
+    void disableDoctorPush()
+      .catch(() => undefined)
+      .finally(() => {
+        // Fire-and-forget: the server drops the session, and the UI returns to the form either way.
+        void doctorLogout().catch(() => undefined);
+      });
     setIdentity(null);
     setUsername('');
     setPassword('');
@@ -78,8 +86,11 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
 
   if (state === 'checking') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-sm text-slate-500">
-        Checking access...
+      <div className="grid min-h-mobile place-items-center bg-surface px-6 text-center">
+        <div>
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />
+          <p className="mt-4 text-[13px] text-on-surface-variant">Checking your access…</p>
+        </div>
       </div>
     );
   }
@@ -91,57 +102,77 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <form onSubmit={onSubmit} className="w-full max-w-sm rounded-2xl bg-white p-6 shadow">
-        <h1 className="text-lg font-semibold text-slate-900">Doctor sign in</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Sign in to view your bookings and start consultations.
-        </p>
+    <div className="grid min-h-mobile place-items-center bg-surface px-5 py-10 text-on-surface">
+      <div className="w-full max-w-[400px]">
+        <div className="mb-6 text-center">
+          <div className="text-[10.5px] uppercase tracking-[0.2em] text-tertiary">Anuva</div>
+          <h1 className="mt-2 font-display text-[30px] leading-[1.1]">
+            Specialist <span className="text-primary">portal</span>
+          </h1>
+          <p className="mx-auto mt-2 max-w-[20rem] text-[13px] leading-[1.55] text-on-surface-variant">
+            Sign in to see your consultations, answer questions, and start calls.
+          </p>
+        </div>
 
-        <label className="mt-4 block text-sm font-medium text-slate-700" htmlFor="doctor-username">
-          Username
-        </label>
-        <input
-          id="doctor-username"
-          name="username"
-          type="text"
-          value={username}
-          autoFocus
-          autoComplete="username"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          onChange={(event) => setUsername(event.target.value)}
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
-        />
-
-        <label className="mt-3 block text-sm font-medium text-slate-700" htmlFor="doctor-password">
-          Password
-        </label>
-        <input
-          id="doctor-password"
-          name="password"
-          type="password"
-          value={password}
-          autoComplete="current-password"
-          onChange={(event) => setPassword(event.target.value)}
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
-        />
-
-        {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
-
-        <button
-          type="submit"
-          className="mt-4 w-full rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-          disabled={!username.trim() || !password || submitting}
+        <form
+          onSubmit={onSubmit}
+          className="rounded-[24px] border border-border-default bg-surface-raised p-5 shadow-[0_16px_40px_rgba(94,53,102,0.08)]"
         >
-          {submitting ? 'Signing in...' : 'Sign in'}
-        </button>
+          <label
+            className="block text-[11px] uppercase tracking-[0.12em] text-outline"
+            htmlFor="doctor-username"
+          >
+            Username
+          </label>
+          <input
+            id="doctor-username"
+            name="username"
+            type="text"
+            value={username}
+            autoFocus
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            onChange={(event) => setUsername(event.target.value)}
+            className="mt-1.5 min-h-[46px] w-full rounded-[14px] border border-border-default bg-surface-container-low px-3.5 text-[14px] text-on-surface outline-none focus:border-primary focus:ring-0"
+          />
 
-        <p className="mt-4 text-xs text-slate-400">
+          <label
+            className="mt-4 block text-[11px] uppercase tracking-[0.12em] text-outline"
+            htmlFor="doctor-password"
+          >
+            Password
+          </label>
+          <input
+            id="doctor-password"
+            name="password"
+            type="password"
+            value={password}
+            autoComplete="current-password"
+            onChange={(event) => setPassword(event.target.value)}
+            className="mt-1.5 min-h-[46px] w-full rounded-[14px] border border-border-default bg-surface-container-low px-3.5 text-[14px] text-on-surface outline-none focus:border-primary focus:ring-0"
+          />
+
+          {error ? (
+            <div className="mt-3 rounded-[14px] border border-error/20 bg-error-container px-3.5 py-2.5 text-[12.5px] text-on-error-container">
+              {error}
+            </div>
+          ) : null}
+
+          <button
+            type="submit"
+            className="mt-5 min-h-[48px] w-full rounded-full bg-secondary px-4 text-[14px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!username.trim() || !password || submitting}
+          >
+            {submitting ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+
+        <p className="mt-5 text-center text-[11.5px] leading-[1.5] text-outline">
           Lost your password? Ask the Anuva team to set a new one for you.
         </p>
-      </form>
+      </div>
     </div>
   );
 }

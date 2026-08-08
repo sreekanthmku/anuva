@@ -113,6 +113,11 @@ import {
   anonymousQuestionFeedResponseSchema,
   doctorQuestionsQuerySchema,
   doctorQuestionsResponseSchema,
+  doctorNotificationsQuerySchema,
+  doctorNotificationsResponseSchema,
+  markDoctorNotificationsReadBodySchema,
+  markDoctorNotificationsReadResponseSchema,
+  anonymousQuestionTopicLabel,
   answerAnonymousQuestionBodySchema,
   answerAnonymousQuestionResponseSchema,
   weeklyReportQuerySchema,
@@ -138,6 +143,12 @@ import {
   writeConsultationDocument,
 } from './consultationDocuments.js';
 import { sendPushToAllTokens } from './fcm.js';
+import {
+  notifyDoctorConsultationBooked,
+  notifyDoctorConsultationCancelled,
+  notifyDoctorsConsultationRescheduled,
+  notifyDoctorsQuestionAsked,
+} from './doctorNotifications.js';
 import { notifyAskerQuestionAnswered } from './qaNotifications.js';
 import { computeAvgPeriodLength, computeCycleState } from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
@@ -1628,8 +1639,21 @@ app.get('/health', (_req, res) => {
 // Patient's own bookings
 // ─────────────────────────────────────────────
 
+type DoctorNotificationRow = {
+  id: string;
+  type: 'consultation_booked' | 'consultation_cancelled' | 'consultation_rescheduled' | 'question_asked';
+  title: string;
+  body: string;
+  url: string | null;
+  consultationId: string | null;
+  questionId: string | null;
+  readAt: Date | null;
+  createdAt: Date;
+};
+
 type MyConsultationRow = {
   id: string;
+  specialistId: string;
   scheduledAt: Date;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   isFree: boolean;
@@ -1813,6 +1837,13 @@ app.post('/consultations/:id/cancel', async (req, res, next) => {
       });
     })) as MyConsultationRow;
 
+    void notifyDoctorConsultationCancelled({
+      specialistId: existing.specialistId,
+      consultationId: existing.id,
+      patientName: user.name,
+      scheduledAt: existing.scheduledAt,
+    });
+
     res.json(
       cancelConsultationResponseSchema.parse({
         ok: true,
@@ -1906,6 +1937,15 @@ app.post('/consultations/:id/reschedule', async (req, res, next) => {
         include: MY_CONSULTATION_INCLUDE,
       });
     })) as MyConsultationRow;
+
+    void notifyDoctorsConsultationRescheduled({
+      previousSpecialistId: existing.specialistId,
+      nextSpecialistId: updated.specialistId,
+      consultationId: existing.id,
+      patientName: user.name,
+      previousScheduledAt: existing.scheduledAt,
+      nextScheduledAt: updated.scheduledAt,
+    });
 
     res.json(
       rescheduleConsultationResponseSchema.parse({
@@ -2530,11 +2570,22 @@ app.post('/consultations/book', async (req, res, next) => {
 
       return {
         consultationId: consultation.id,
+        specialistId: slot.specialistId,
         specialistKey: slot.specialist.key,
         specialistName: slot.specialist.name,
+        scheduledAt: slot.startsAt,
         startsAt: slot.startsAt.toISOString(),
         endsAt: slot.endsAt.toISOString(),
       };
+    });
+
+    // The doctor is told after the slot is safely claimed, and out of band: a push problem must
+    // never turn a successful booking into an error for the patient.
+    void notifyDoctorConsultationBooked({
+      specialistId: booked.specialistId,
+      consultationId: booked.consultationId,
+      patientName: user.name,
+      scheduledAt: booked.scheduledAt,
     });
 
     res.json(consultationBookingResponseSchema.parse(booked));
@@ -2695,6 +2746,127 @@ app.post('/doctor/auth/password', async (req, res, next) => {
 
     req.log.info({ doctorUsername: identity.username }, 'Doctor password changed');
     res.status(204).end();
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * A device registering for doctor push. The token is bound to the Specialist row behind the
+ * session, so signing out on a shared device and signing in as someone else re-points it rather
+ * than leaving one doctor's bookings pushing to another's phone.
+ */
+app.post('/doctor/push/register', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+    const parsed = registerFcmBodySchema.parse(req.body);
+
+    await prisma.specialistFcmToken.upsert({
+      where: { token: parsed.fcmToken },
+      update: {
+        specialistId: identity.specialistRowId,
+        platform: parsed.platform,
+        status: 'ACTIVE',
+        deviceId: parsed.deviceId ?? null,
+      },
+      create: {
+        specialistId: identity.specialistRowId,
+        token: parsed.fcmToken,
+        platform: parsed.platform,
+        status: 'ACTIVE',
+        deviceId: parsed.deviceId ?? null,
+      },
+    });
+
+    res.json(registerFcmResponseSchema.parse({ ok: true }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/doctor/push/unregister', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+    const parsed = unregisterFcmBodySchema.parse(req.body);
+
+    if (!parsed.fcmToken && !parsed.deviceId) {
+      throw new HttpError(400, 'Provide fcmToken or deviceId.');
+    }
+
+    await prisma.specialistFcmToken.updateMany({
+      where: {
+        specialistId: identity.specialistRowId,
+        ...(parsed.fcmToken ? { token: parsed.fcmToken } : {}),
+        ...(parsed.deviceId ? { deviceId: parsed.deviceId } : {}),
+      },
+      data: { status: 'INACTIVE' },
+    });
+
+    res.json(unregisterFcmResponseSchema.parse({ ok: true }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** The doctor's own feed. Scoped to the session's Specialist row for admin logins too. */
+app.get('/doctor/notifications', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+    const { limit } = doctorNotificationsQuerySchema.parse(req.query);
+    setNoStoreHeaders(res);
+
+    const [rows, unreadCount] = await Promise.all([
+      prisma.doctorNotification.findMany({
+        where: { specialistId: identity.specialistRowId },
+        orderBy: { createdAt: 'desc' },
+        take: limit ?? 40,
+      }),
+      prisma.doctorNotification.count({
+        where: { specialistId: identity.specialistRowId, readAt: null },
+      }),
+    ]);
+
+    res.json(
+      doctorNotificationsResponseSchema.parse({
+        notifications: (rows as DoctorNotificationRow[]).map((row) => ({
+          id: row.id,
+          type: row.type,
+          title: row.title,
+          body: row.body,
+          url: row.url,
+          consultationId: row.consultationId,
+          questionId: row.questionId,
+          readAt: row.readAt?.toISOString() ?? null,
+          createdAt: row.createdAt.toISOString(),
+        })),
+        unreadCount,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** No ids marks the whole feed read — which is what opening the notifications tab does. */
+app.post('/doctor/notifications/read', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+    const parsed = markDoctorNotificationsReadBodySchema.parse(req.body ?? {});
+
+    await prisma.doctorNotification.updateMany({
+      where: {
+        specialistId: identity.specialistRowId,
+        readAt: null,
+        ...(parsed.ids?.length ? { id: { in: parsed.ids } } : {}),
+      },
+      data: { readAt: new Date() },
+    });
+
+    const unreadCount = await prisma.doctorNotification.count({
+      where: { specialistId: identity.specialistRowId, readAt: null },
+    });
+
+    res.json(markDoctorNotificationsReadResponseSchema.parse({ ok: true, unreadCount }));
   } catch (e) {
     next(e);
   }
@@ -4390,6 +4562,10 @@ app.post('/questions', async (req, res, next) => {
       data: { userId: user.id, topic, body },
       select: ANONYMOUS_QUESTION_SELECT,
     });
+
+    // Only the topic travels to the doctors — the question text stays in the portal, and the
+    // asker is never identified in either direction.
+    void notifyDoctorsQuestionAsked(question.id, anonymousQuestionTopicLabel(topic));
 
     res.status(201).json(
       createAnonymousQuestionResponseSchema.parse({

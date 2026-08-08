@@ -137,6 +137,21 @@ export {
 } from './booking.js';
 
 export {
+  doctorNotificationTypeSchema,
+  doctorNotificationSchema,
+  doctorNotificationsQuerySchema,
+  doctorNotificationsResponseSchema,
+  markDoctorNotificationsReadBodySchema,
+  markDoctorNotificationsReadResponseSchema,
+  type DoctorNotification,
+  type DoctorNotificationType,
+  type DoctorNotificationsQuery,
+  type DoctorNotificationsResponse,
+  type MarkDoctorNotificationsReadBody,
+  type MarkDoctorNotificationsReadResponse,
+} from './doctorNotifications.js';
+
+export {
   cycleSetupBodySchema,
   cycleSettingsBodySchema,
   logPeriodBodySchema,

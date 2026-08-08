@@ -442,6 +442,50 @@ model Specialist {
   slots          ConsultationSlot[]
   expertAnswers  ExpertAnswer[]
   uploadedDocs   ConsultationDocument[]
+  fcmTokens      SpecialistFcmToken[]
+  notifications  DoctorNotification[]
+}
+
+/// Push tokens for the doctor portal. Separate from FcmToken because that one is keyed to a User
+/// row (a patient) — a doctor is a Specialist and has no User row to hang a token off.
+model SpecialistFcmToken {
+  id           String         @id @default(cuid())
+  specialistId String
+  specialist   Specialist     @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  token        String         @unique
+  platform     FcmPlatform
+  status       FcmTokenStatus @default(ACTIVE)
+  deviceId     String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([specialistId, status])
+}
+
+enum DoctorNotificationType {
+  consultation_booked
+  consultation_cancelled
+  consultation_rescheduled
+  question_asked
+}
+
+/// The in-app notification feed for one doctor. Written alongside every push so the portal can
+/// show what was sent even when the device push was missed, denied, or cleared.
+model DoctorNotification {
+  id             String                 @id @default(cuid())
+  specialistId   String
+  specialist     Specialist             @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  type           DoctorNotificationType
+  title          String
+  body           String
+  url            String?
+  consultationId String?
+  questionId     String?
+  readAt         DateTime?
+  createdAt      DateTime               @default(now())
+
+  @@index([specialistId, createdAt])
+  @@index([specialistId, readAt])
 }
 
 model SpecialistSession {

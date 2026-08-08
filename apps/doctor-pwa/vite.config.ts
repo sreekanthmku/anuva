@@ -17,9 +17,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'doctor-pwa',
-        short_name: 'doctor-pwa',
-        description: 'Doctor bookings dashboard for Anuva consultations',
+        name: 'Anuva Specialist Portal',
+        short_name: 'Anuva Specialist Portal',
+        description: 'Consultations, anonymous questions, and alerts for Anuva specialists',
         theme_color: '#F7F0E8',
         background_color: '#F7F0E8',
         display: 'standalone',

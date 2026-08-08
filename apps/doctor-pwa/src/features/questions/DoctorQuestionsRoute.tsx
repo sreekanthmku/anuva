@@ -4,9 +4,9 @@ import {
   type AnonymousQuestion,
   type AnonymousQuestionStatus,
 } from '@anuva/shared';
-import { useNavigate } from 'react-router-dom';
-import { useDoctorIdentity } from '../auth/identity';
 import { formatLongDateTime } from '../bookings/dateTime';
+import { PageHeading } from '../shell/AppShell';
+import { Card, EmptyState, ErrorNote, Pill, Segmented, SkeletonCard, StatTile } from '../shell/ui';
 import { answerDoctorQuestion, fetchDoctorQuestions } from './api';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -15,26 +15,11 @@ type Filter = AnonymousQuestionStatus | 'all';
 const MIN_ANSWER_LENGTH = 20;
 const MAX_ANSWER_LENGTH = 4000;
 
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'pending', label: 'Waiting' },
-  { id: 'answered', label: 'Answered' },
-  { id: 'all', label: 'All' },
-];
-
 function waitingFor(iso: string): string {
   const hours = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
-  if (hours < 1) return 'Asked minutes ago';
-  if (hours < 24) return `Waiting ${hours}h`;
-  return `Waiting ${Math.floor(hours / 24)}d`;
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-3">
-      <div className="text-[11px] uppercase tracking-[0.12em] text-outline">{label}</div>
-      <div className="mt-1 font-display text-[28px] leading-none text-on-surface">{value}</div>
-    </article>
-  );
+  if (hours < 1) return 'Just now';
+  if (hours < 24) return `${hours}h waiting`;
+  return `${Math.floor(hours / 24)}d waiting`;
 }
 
 function QuestionCard({
@@ -71,29 +56,15 @@ function QuestionCard({
   }
 
   return (
-    <article className="rounded-[20px] border border-border-default bg-surface-raised p-4 shadow-[0_12px_30px_rgba(94,53,102,0.06)]">
+    <Card className="p-4">
       <div className="flex items-start justify-between gap-3">
-        <div
-          className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"
-          style={{
-            backgroundColor: 'rgba(94, 53, 102, 0.16)',
-            borderColor: 'rgba(94, 53, 102, 0.3)',
-          }}
-        >
-          <span className="text-[9.5px] uppercase tracking-[0.15em] text-primary">
-            {anonymousQuestionTopicLabel(question.topic)}
-          </span>
-        </div>
-        <div
-          className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${
-            question.status === 'answered' ? 'bg-info/15 text-info' : 'bg-tertiary/15 text-tertiary'
-          }`}
-        >
+        <Pill tone="primary">{anonymousQuestionTopicLabel(question.topic)}</Pill>
+        <Pill tone={question.status === 'answered' ? 'info' : 'tertiary'}>
           {question.status === 'answered' ? 'Answered' : waitingFor(question.createdAt)}
-        </div>
+        </Pill>
       </div>
 
-      <p className="mt-3 font-display text-[20px] leading-[1.25] text-on-surface">{question.body}</p>
+      <p className="mt-3 font-display text-[19px] leading-[1.3] text-on-surface">{question.body}</p>
       <div className="mt-2 text-[11px] text-outline">
         Asked anonymously · {formatLongDateTime(question.createdAt)}
       </div>
@@ -103,7 +74,7 @@ function QuestionCard({
           {question.answers.map((answer) => (
             <div
               key={answer.id}
-              className="rounded-[16px] bg-surface-container-low px-3.5 py-3 text-[13px] leading-[1.55] text-on-surface"
+              className="rounded-[16px] border-l-2 border-primary bg-surface-container-low px-3.5 py-3 text-[13px] leading-[1.55] text-on-surface"
             >
               <div className="mb-1.5 text-[10px] uppercase tracking-[0.12em] text-primary">
                 {answer.expertName}
@@ -125,7 +96,7 @@ function QuestionCard({
             onChange={(e) => setDraft(e.target.value.slice(0, MAX_ANSWER_LENGTH))}
             rows={4}
             placeholder="Answer in plain language. She sees your name and role, you never see hers."
-            className="mt-2 min-h-[92px] w-full resize-none border-0 bg-transparent text-[13px] leading-[1.55] text-on-surface outline-none placeholder:text-outline"
+            className="mt-2 min-h-[92px] w-full resize-none border-0 bg-transparent p-0 text-[13px] leading-[1.55] text-on-surface outline-none focus:ring-0 placeholder:text-outline"
           />
           {error ? (
             <div className="mt-2 rounded-[12px] border border-error/20 bg-error-container px-3 py-2 text-[12px] text-on-error-container">
@@ -140,20 +111,18 @@ function QuestionCard({
               type="button"
               disabled={!ready}
               onClick={() => void send()}
-              className="rounded-full bg-secondary px-4 py-2.5 text-[13px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
+              className="min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
             >
               {sending ? 'Posting…' : 'Post answer'}
             </button>
           </div>
         </div>
       ) : null}
-    </article>
+    </Card>
   );
 }
 
 export function DoctorQuestionsRoute() {
-  const navigate = useNavigate();
-  const identity = useDoctorIdentity();
   const [state, setState] = useState<LoadState>('idle');
   const [filter, setFilter] = useState<Filter>('pending');
   const [questions, setQuestions] = useState<AnonymousQuestion[]>([]);
@@ -205,95 +174,59 @@ export function DoctorQuestionsRoute() {
   }, [filter]);
 
   return (
-    <main className="min-h-mobile bg-surface text-on-surface">
-      <header className="sticky top-0 z-20 border-b border-border-default bg-surface/95 px-4 pb-5 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
-        <div className="flex items-start justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="shrink-0 rounded-full border border-border-default px-3 py-1 text-[11px] font-semibold text-on-surface-variant"
-          >
-            ← Bookings
-          </button>
-          <button
-            type="button"
-            onClick={identity.signOut}
-            className="shrink-0 rounded-full border border-border-default px-3 py-1 text-[11px] font-semibold text-on-surface-variant"
-          >
-            Sign out
-          </button>
-        </div>
-        <h1 className="mt-3 max-w-[20rem] font-display text-[30px] leading-[1.1]">
-          Anonymous <em className="not-italic text-primary">questions</em>
-        </h1>
-        <p className="mt-2 max-w-[24rem] text-[13px] leading-[1.5] text-on-surface-variant">
-          A shared queue — any specialist can pick one up. Askers are anonymous: no name, phone, or
-          profile is ever attached.
-        </p>
+    <>
+      <PageHeading
+        eyebrow="Shared queue"
+        title="Anonymous"
+        accent="questions"
+        description="Any specialist can pick one up. Askers are anonymous — no name, phone, or profile is ever attached."
+      />
 
-        <div className="mt-3 flex gap-1.5">
-          {FILTERS.map((entry) => {
-            const active = filter === entry.id;
-            return (
-              <button
-                key={entry.id}
-                type="button"
-                onClick={() => setFilter(entry.id)}
-                className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                  active
-                    ? 'border-primary bg-primary text-on-primary'
-                    : 'border-border-default bg-surface-container-low text-on-surface-variant'
-                }`}
-              >
-                {entry.label}
-              </button>
-            );
-          })}
-        </div>
-      </header>
+      <div className="grid grid-cols-2 gap-2.5">
+        <StatTile label="Waiting" value={counts.pending} tone="primary" />
+        <StatTile label="Answered" value={counts.answered} tone="success" />
+      </div>
 
-      <section className="px-4 pb-8 pt-4">
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Waiting" value={String(counts.pending)} />
-          <StatCard label="Answered" value={String(counts.answered)} />
-        </div>
+      <div className="mt-4">
+        <Segmented<Filter>
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { id: 'pending', label: 'Waiting' },
+            { id: 'answered', label: 'Answered' },
+            { id: 'all', label: 'All' },
+          ]}
+        />
+      </div>
 
+      <div className="mt-4 flex flex-col gap-3">
         {!canAnswer && state === 'ready' ? (
-          <div className="mt-4 rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3 text-[12.5px] leading-[1.5] text-on-surface-variant">
-            Read-only: the shared admin key has no specialist to sign an answer with. Sign in with a
-            doctor’s own key to answer.
+          <div className="rounded-[18px] border border-border-default bg-surface-container-low px-4 py-3 text-[12.5px] leading-[1.5] text-on-surface-variant">
+            Read-only: an admin login has no specialist to sign an answer with. Sign in with a
+            doctor’s own account to answer.
           </div>
         ) : null}
 
         {state === 'loading' ? (
-          <div className="mt-4 rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-6 text-[13px] text-on-surface-variant">
-            Loading questions...
-          </div>
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
         ) : null}
 
-        {state === 'error' ? (
-          <div className="mt-4 rounded-[20px] border border-error/20 bg-error-container px-4 py-4 text-[13px] text-on-error-container">
-            {error ?? 'Unable to load questions.'}
-          </div>
-        ) : null}
+        {state === 'error' ? <ErrorNote>{error ?? 'Unable to load questions.'}</ErrorNote> : null}
 
-        {state === 'ready' && questions.length === 0 ? (
-          <div className="mt-4 rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-6 text-[13px] text-on-surface-variant">
-            {emptyLabel}
-          </div>
-        ) : null}
+        {state === 'ready' && questions.length === 0 ? <EmptyState title={emptyLabel} /> : null}
 
-        <div className="mt-4 flex flex-col gap-3">
-          {questions.map((question) => (
-            <QuestionCard
-              key={question.id}
-              question={question}
-              canAnswer={canAnswer}
-              onAnswered={handleAnswered}
-            />
-          ))}
-        </div>
-      </section>
-    </main>
+        {questions.map((question) => (
+          <QuestionCard
+            key={question.id}
+            question={question}
+            canAnswer={canAnswer}
+            onAnswered={handleAnswered}
+          />
+        ))}
+      </div>
+    </>
   );
 }
