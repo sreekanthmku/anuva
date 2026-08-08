@@ -1,3 +1,4 @@
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
 const TOKEN_KEY = 'anuva_admin_token';
 
 export function getStoredToken(): string | null {
@@ -24,6 +25,14 @@ export type AdminApiError = {
   details?: unknown;
 };
 
+/** In dev (no VITE_API_URL) use Vite `/api` proxy; in prod hit the API origin directly. */
+function toUrl(path: string): string {
+  if (!API_BASE_URL) {
+    return `/api${path}`;
+  }
+  return `${API_BASE_URL}${path}`;
+}
+
 export async function adminFetch<T>(
   path: string,
   options: RequestInit & { token?: string | null } = {},
@@ -37,7 +46,7 @@ export async function adminFetch<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const res = await fetch(`/api${path}`, { ...init, headers });
+  const res = await fetch(toUrl(path), { ...init, headers });
   const text = await res.text();
   let body: unknown = null;
   if (text) {

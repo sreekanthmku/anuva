@@ -40,7 +40,7 @@ export default function SplashRoute() {
             fontWeight: 500,
           }}
         >
-          ANUVA
+          ANUVA WELLNESS
         </p>
         <p
           className="mt-2 text-[20px] text-secondary"

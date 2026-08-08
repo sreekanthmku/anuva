@@ -20,7 +20,6 @@ const menuRows: { label: string; hint: string; id?: string; to?: string }[] = [
   { id: 'notifications', label: 'Notifications', hint: 'Reminders & weekly summary' },
   { label: 'Privacy & data', hint: 'DPDP · export or delete' },
   { label: 'Subscription', hint: 'Plan & billing' },
-  { label: 'Help & support', hint: 'FAQs · contact care team' },
 ];
 
 function notificationStatusHint(): string {
@@ -47,7 +46,7 @@ export default function ProfileRoute() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [notificationNote, setNotificationNote] = useState<string | null>(null);
-  const displayName = user?.name?.trim() || 'Anuva Member';
+  const displayName = user?.name?.trim() || 'Anuva Wellness Member';
   const initial = displayName.charAt(0).toUpperCase() || 'A';
   const memberSince = user
     ? new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
@@ -213,13 +212,6 @@ export default function ProfileRoute() {
         >
           Sign out
         </button>
-
-        <p
-          className="mt-6 text-center text-[10px] text-outline"
-          style={{ fontFamily: '"Mulish", sans-serif' }}
-        >
-          Anuva PWA · v0
-        </p>
       </section>
 
       <BottomNav />

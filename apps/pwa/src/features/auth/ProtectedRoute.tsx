@@ -14,7 +14,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
             className="text-[22px] tracking-[0.16em] text-on-surface"
             style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 400 }}
           >
-            ANUVA
+            ANUVA WELLNESS
           </p>
           <p
             className="mt-3 text-[13px] text-on-surface-variant"

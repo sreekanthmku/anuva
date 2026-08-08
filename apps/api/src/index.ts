@@ -132,6 +132,7 @@ import {
   writeConsultationDocument,
 } from './consultationDocuments.js';
 import { sendPushToAllTokens } from './fcm.js';
+import { notifyAskerQuestionAnswered } from './qaNotifications.js';
 import { computeAvgPeriodLength, computeCycleState } from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
 import {
@@ -1494,41 +1495,8 @@ async function notifyPatientCallStarted(consultationId: string, patientId: strin
   }
 }
 
-/**
- * Tells the asker her question came back. The push flows one way only — the doctor who answered
- * never learns who was notified.
- */
-async function notifyAskerQuestionAnswered(userId: string, doctorName: string) {
-  const rows: Array<{ token: string }> = await prisma.fcmToken.findMany({
-    where: { userId, status: 'ACTIVE' },
-    select: { token: true },
-  });
-  const tokens: string[] = [...new Set(rows.map((row) => row.token))];
-
-  if (tokens.length === 0) {
-    return;
-  }
-
-  try {
-    await sendPushToAllTokens(
-      tokens,
-      {
-        title: 'A specialist answered you',
-        body: `${doctorName} replied to your anonymous question.`,
-      },
-      {
-        url: '/qa',
-        type: 'anonymous-qa-answer',
-      },
-    );
-    logger.info({ userId, tokens: tokens.length, type: 'anonymous-qa-answer' }, 'Push sent');
-  } catch (error) {
-    logger.error(
-      { err: error, userId, tokens: tokens.length },
-      'Unable to send anonymous Q&A push notification',
-    );
-  }
-}
+// notifyAskerQuestionAnswered lives in ./qaNotifications.js — the admin panel's Expert Answers
+// create needs the same push, and it cannot import this file.
 
 function serializeSpecialist(specialist: {
   key: string;
@@ -2022,20 +1990,28 @@ async function notifyPatientDocumentShared(args: {
     return;
   }
 
-  const label =
+  // Warm, plain-language copy: this lands on a phone right after a consultation, so it says what
+  // arrived and who sent it without sounding like a system alert.
+  const copy =
     args.kind === 'prescription'
-      ? 'prescription'
+      ? {
+          title: 'Your prescription is ready 💜',
+          body: `${args.doctorName} has shared your prescription. Tap to view it whenever you're ready.`,
+        }
       : args.kind === 'diet_plan'
-        ? 'diet plan'
-        : 'document';
+        ? {
+            title: 'Your diet plan is here 🌿',
+            body: `${args.doctorName} has shared your diet plan. Have a look when you have a moment.`,
+          }
+        : {
+            title: 'Something new from your consultation',
+            body: `${args.doctorName} has shared a document with you. Tap to take a look.`,
+          };
 
   try {
     await sendPushToAllTokens(
       tokens,
-      {
-        title: 'New from your consultation',
-        body: `${args.doctorName} shared your ${label}.`,
-      },
+      copy,
       {
         url: '/my-bookings',
         type: 'consultation-document',
@@ -2073,10 +2049,12 @@ app.get('/consultations/:id/documents', async (req, res, next) => {
       throw new HttpError(404, 'Consultation not found.');
     }
 
+    // Newest first — the prescription from the consultation that just ended is the one being
+    // looked for, not the one from three visits ago.
     const documents = (await prisma.consultationDocument.findMany({
       where: { consultationId: consultation.id, deletedAt: null },
       select: CONSULTATION_DOCUMENT_SELECT,
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
     })) as ConsultationDocumentRow[];
 
     res.json(
@@ -4501,12 +4479,6 @@ async function startServer() {
     logger.warn('OPENAI_API_KEY is not set — POST /anu/chat will return 503');
   }
 
-  if (!isAdminAuthConfigured()) {
-    logger.warn(
-      'ADMIN_PASSWORD / ADMIN_SESSION_SECRET not set — /admin login will reject all credentials',
-    );
-  }
-
   const server = app.listen(port, () => {
     logger.info(
       {
@@ -4515,7 +4487,6 @@ async function startServer() {
         logLevel: logger.level,
         recordingDir: RECORDING_LOCAL_DIR || null,
         consultationDocDir: CONSULTATION_DOC_DIR,
-        adminAuthConfigured: isAdminAuthConfigured(),
       },
       'API listening',
     );

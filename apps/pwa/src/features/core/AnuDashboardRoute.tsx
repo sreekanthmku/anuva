@@ -256,12 +256,16 @@ export default function AnuDashboardRoute() {
 
         <header className="mb-[18px] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/anu.png" alt="Anuva logo" className="h-5 w-5 object-contain" />
+            <img
+              src="/anuva-logo-icon.png"
+              alt="Anuva Wellness logo"
+              className="h-10 w-10 object-contain"
+            />
             <span
               className="text-[16px] tracking-[0.16em] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
             >
-              ANUVA
+              ANUVA WELLNESS
             </span>
           </div>
           <NavLink

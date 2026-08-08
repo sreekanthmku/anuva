@@ -126,7 +126,7 @@ export default function SubscriptionRoute() {
         <h1 className="font-display mb-2 text-[30px] leading-[1.1] tracking-[-0.03em] text-on-surface">
           {isTrialAvailable ? 'Begin your full ' : 'Continue your full '}
           <em className="not-italic text-primary" style={{ fontFamily: '"Fraunces", sans-serif' }}>
-            Anuva
+            Anuva Wellness
           </em>{' '}
           experience.
         </h1>
@@ -302,7 +302,7 @@ export default function SubscriptionRoute() {
           }}
         >
           {user?.hasActiveAccess
-            ? 'Continue to Anuva'
+            ? 'Continue to Anuva Wellness'
             : isSubmitting
               ? 'Activating...'
               : 'Activate 1-Day Access'}

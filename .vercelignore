@@ -4,7 +4,15 @@ node_modules
 **/dist
 .turbo
 **/.turbo
+.git
 anuva-claude-design-purple
 docs
 *.docx
 *.xlsx
+apps/livekit
+apps/landing/uploads
+**/.data
+.data
+firebase-service-account.json
+.env
+.env.*

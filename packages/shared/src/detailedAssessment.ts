@@ -104,7 +104,7 @@ export const detailedAssessmentSections: DetailedAssessmentSection[] = [
       { key: 'periods-lighter-heavier', prompt: 'Have your periods become lighter or heavier?', inputType: 'yesno' },
       { key: 'cycles-shorter', prompt: 'Have your cycles become shorter (less than 21 days)?', inputType: 'yesno' },
       { key: 'cycles-longer', prompt: 'Have your cycles become longer (more than 35 days)?', inputType: 'yesno' },
-      { key: 'skip-periods', prompt: 'Do you skip periods?', inputType: 'yesno' },
+      { key: 'skip-periods', prompt: 'Have your periods been skipped?', inputType: 'yesno' },
       { key: 'spotting-between', prompt: 'Do you experience spotting between periods?', inputType: 'yesno' },
       {
         key: 'irregular-pattern',

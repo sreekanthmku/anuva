@@ -7,6 +7,8 @@ import type { ListQuery } from '../lib/pagination.js';
 import { serializeRecord, serializeRows } from '../lib/serialize.js';
 import type { PrismaEntityRepository } from '../repositories/prisma.repository.js';
 import { sha256Hex } from '../lib/crypto.js';
+import { logger } from '../../logger.js';
+import { completeAnsweredQuestion } from '../../qaNotifications.js';
 
 export class EntityService {
   constructor(private readonly repo: PrismaEntityRepository) {}
@@ -43,7 +45,34 @@ export class EntityService {
       throw new ValidationError('Validation failed', parsed.error.flatten());
     }
     const row = await this.repo.create(entity, parsed.data);
+    await this.afterCreate(resource, row);
     return serializeRecord(row);
+  }
+
+  /**
+   * Side effects the generic CRUD path cannot infer. An expert answer written here reaches the
+   * asker exactly as one written from the specialist portal does: the question is marked answered
+   * and she gets the push. Failures are logged, never surfaced — the row is already saved, and an
+   * unreachable device must not turn a successful write into a 500.
+   */
+  private async afterCreate(resource: string, row: unknown) {
+    if (resource !== 'expert-answers') {
+      return;
+    }
+
+    const answer = row as { questionId?: string; expertName?: string } | null;
+    if (!answer?.questionId) {
+      return;
+    }
+
+    try {
+      await completeAnsweredQuestion(answer.questionId, answer.expertName ?? '');
+    } catch (error) {
+      logger.error(
+        { err: error, questionId: answer.questionId },
+        'Expert answer saved but the asker could not be notified',
+      );
+    }
   }
 
   async update(resource: string, id: string, body: unknown) {

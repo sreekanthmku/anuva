@@ -143,7 +143,7 @@ export default function LoginRoute() {
             letterSpacing: '0.16em',
           }}
         >
-          ANUVA
+          ANUVA WELLNESS
         </p>
         <p
           className="mt-0.5 text-[13px] tracking-normal text-primary"

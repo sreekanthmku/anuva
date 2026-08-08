@@ -42,9 +42,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png', 'firebase-config.js'],
       manifest: {
-        name: 'Anuva',
-        short_name: 'Anuva',
-        description: 'Anuva — your daily bloom',
+        name: 'Anuva Wellness',
+        short_name: 'Anuva Wellness',
+        description: 'Anuva Wellness — your daily bloom',
         theme_color: '#141136',
         background_color: '#141136',
         display: 'standalone',

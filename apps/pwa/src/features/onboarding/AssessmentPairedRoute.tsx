@@ -80,7 +80,7 @@ export default function AssessmentPairedRoute() {
               letterSpacing: '0.18em',
             }}
           >
-            ANUVA
+            ANUVA WELLNESS
           </p>
           <p
             className="mt-0.5 text-[13px] tracking-normal text-primary"

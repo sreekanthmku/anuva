@@ -105,8 +105,38 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function documentDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+/**
+ * When the doctor shared it, in the words a person would use. Same-day and previous-day uploads
+ * read as "Today"/"Yesterday" because that is how a prescription is remembered right after a
+ * consultation; anything older falls back to a dated label (with the year once it is not this one).
+ */
+function documentUploadedAt(iso: string): string {
+  const uploaded = new Date(iso);
+  if (Number.isNaN(uploaded.getTime())) {
+    return '';
+  }
+
+  const time = uploaded.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const dayDiff = Math.floor((startOfToday.getTime() - uploaded.getTime()) / 86_400_000);
+
+  if (uploaded.getTime() >= startOfToday.getTime()) {
+    return `Today at ${time}`;
+  }
+  if (dayDiff < 1) {
+    return `Yesterday at ${time}`;
+  }
+
+  const sameYear = uploaded.getFullYear() === new Date().getFullYear();
+  const date = uploaded.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  });
+
+  return `${date} at ${time}`;
 }
 
 /**
@@ -128,7 +158,12 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
 
     fetchConsultationDocuments(consultationId)
       .then((response) => {
-        if (!cancelled) setDocuments(response.documents);
+        // Newest upload first. The API already orders this way; sorting here keeps the list right
+        // against an older API build too.
+        const newestFirst = [...response.documents].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+        if (!cancelled) setDocuments(newestFirst);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load documents.');
@@ -202,7 +237,7 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
                   {doc.title?.trim() || DOCUMENT_KIND_LABEL[doc.kind]}
                 </span>
                 <span className="block truncate text-[11px] text-on-surface-variant">
-                  {DOCUMENT_KIND_LABEL[doc.kind]} · {documentDate(doc.createdAt)} ·{' '}
+                  {DOCUMENT_KIND_LABEL[doc.kind]} · {documentUploadedAt(doc.createdAt)} ·{' '}
                   {formatFileSize(doc.sizeBytes)}
                 </span>
               </span>
