@@ -8,7 +8,8 @@ describe('getLibraryFeed', () => {
     expect(feed.feature).not.toBeNull();
     expect(feed.feature?.featured).toBe(true);
     expect(feed.feature?.slug).toBe('hot-flashes-and-your-sleep');
-    expect(feed.session?.id).toBe('masterclass-sleep-as-medicine');
+    // No masterclass is scheduled yet; the card is hidden while this is null.
+    expect(feed.session).toBeNull();
     expect(feed.categories.length).toBeGreaterThan(0);
 
     const featuredInList = feed.articles.find((a) => a.slug === feed.feature!.slug);

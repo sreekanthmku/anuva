@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { LibraryBlock } from '@anuva/shared';
 import { BottomNav } from './components/BottomNav';
 import { useLibraryArticle } from './library/useLibrary';
+import { libraryImage } from './library/image';
 import { FRAUNCES, MULISH, TONE_COLOR } from './library/tone';
 
 function formatDate(iso: string): string {
@@ -160,23 +161,6 @@ export default function LibraryArticleRoute() {
                   decoding="async"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
-                {data.article.heroCaption && (
-                  <>
-                    {/* Scrim: the credit sits over an unknown photo, so it needs its own contrast. */}
-                    <div
-                      className="absolute inset-x-0 bottom-0 h-16"
-                      style={{
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))',
-                      }}
-                    />
-                    <span
-                      className="absolute bottom-2.5 left-3 right-3 text-[9.5px] uppercase tracking-[0.12em] text-white/85"
-                      style={{ fontFamily: '"Mulish", sans-serif' }}
-                    >
-                      {data.article.heroCaption}
-                    </span>
-                  </>
-                )}
               </div>
             )}
 
@@ -202,7 +186,11 @@ export default function LibraryArticleRoute() {
             </p>
 
             <div className="mt-4 flex items-center gap-2.5 border-y border-border-default py-3">
-              <div className="h-8 w-8 rounded-full border border-border-default bg-surface-container-high" />
+              <img
+                src="/anu.png"
+                alt=""
+                className="h-8 w-8 rounded-full border border-border-default bg-surface-container-high object-contain p-0.5"
+              />
               <div className="min-w-0">
                 <div className="text-[12px] text-on-surface" style={{ fontFamily: MULISH }}>
                   {data.article.author.name}
@@ -286,16 +274,26 @@ export default function LibraryArticleRoute() {
                     onClick={() => navigate(`/library/${related.slug}`)}
                     className="flex items-center gap-3 rounded-[20px] border border-border-default bg-surface-raised p-3 text-left"
                   >
-                    <div
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px] border border-border-default bg-surface-container-low"
-                      style={{
-                        fontFamily: FRAUNCES,
-                        fontSize: 20,
-                        color: TONE_COLOR[related.tone],
-                      }}
-                    >
-                      {related.glyph}
-                    </div>
+                    {related.image ? (
+                      <img
+                        src={libraryImage(related.image, 140)}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="h-12 w-12 shrink-0 rounded-[20px] border border-border-default object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px] border border-border-default bg-surface-container-low"
+                        style={{
+                          fontFamily: FRAUNCES,
+                          fontSize: 20,
+                          color: TONE_COLOR[related.tone],
+                        }}
+                      >
+                        {related.glyph}
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <div
                         className="mb-0.5 text-[9.5px] uppercase tracking-[0.15em]"

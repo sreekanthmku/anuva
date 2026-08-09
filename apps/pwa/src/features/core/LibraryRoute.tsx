@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import type { LibraryArticleSummary } from '@anuva/shared';
 import { BottomNav } from './components/BottomNav';
 import { useLibraryFeed } from './library/useLibrary';
+import { libraryImage } from './library/image';
 import { FRAUNCES, MULISH, TONE_COLOR } from './library/tone';
 
 function Eyebrow({ children, mint = false }: { children: string; mint?: boolean }) {
@@ -39,8 +40,26 @@ function FeatureCard({
         className="relative flex h-[130px] items-end overflow-hidden rounded-[20px] border border-border-default"
         style={{ background: TONE_COLOR[article.tone] }}
       >
+        {article.image && (
+          <img
+            src={libraryImage(article.image, 800)}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+        {/* The label sits over an unpredictable photo, so it carries its own scrim. */}
+        {article.image && (
+          <div
+            className="absolute inset-x-0 bottom-0 h-14"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.5), rgba(0,0,0,0))' }}
+          />
+        )}
         <span
-          className="absolute bottom-2.5 left-3 right-3 text-[9.5px] uppercase tracking-[0.12em] text-on-surface/80"
+          className={`absolute bottom-2.5 left-3 right-3 text-[9.5px] uppercase tracking-[0.12em] ${
+            article.image ? 'text-white/85' : 'text-on-surface/80'
+          }`}
           style={{ fontFamily: '"Mulish", sans-serif' }}
         >
           {article.categoryLabel}
@@ -59,7 +78,11 @@ function FeatureCard({
         </p>
         <div className="flex items-center justify-between border-t border-border-default pt-3">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full border border-border-default bg-surface-container-high" />
+            <img
+              src="/anu.png"
+              alt=""
+              className="h-6 w-6 rounded-full border border-border-default bg-surface-container-high object-contain p-0.5"
+            />
             <span className="text-[11px] text-on-surface" style={{ fontFamily: MULISH }}>
               {article.author.name}
             </span>
@@ -89,12 +112,22 @@ function ArticleRow({ article, onOpen }: { article: LibraryArticleSummary; onOpe
       }}
       className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-border-default bg-surface-raised p-3"
     >
-      <div
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-border-default bg-surface-container-low"
-        style={{ fontFamily: FRAUNCES, fontSize: 22, color }}
-      >
-        {article.glyph}
-      </div>
+      {article.image ? (
+        <img
+          src={libraryImage(article.image, 160)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-14 w-14 shrink-0 rounded-[20px] border border-border-default object-cover"
+        />
+      ) : (
+        <div
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-border-default bg-surface-container-low"
+          style={{ fontFamily: FRAUNCES, fontSize: 22, color }}
+        >
+          {article.glyph}
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div
           className="mb-1 text-[9.5px] uppercase tracking-[0.15em]"

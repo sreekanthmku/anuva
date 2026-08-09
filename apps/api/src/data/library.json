@@ -1,11 +1,5 @@
 {
-  "session": {
-    "id": "masterclass-sleep-as-medicine",
-    "kicker": "Live · Monthly masterclass",
-    "title": "Sleep as medicine",
-    "dateLabel": "May 12 · 7:30 PM · Free",
-    "live": true
-  },
+  "session": null,
   "categories": [
     {
       "key": "nutrition",
@@ -47,8 +41,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1601276174812-63280a55656e?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Liz Vo / Unsplash",
+      "image": "https://images.unsplash.com/photo-1688383454974-1aec959a5163?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Slaapwijsheid.nl / Unsplash",
       "keyTakeaways": [
         "A cool bedroom, 16 to 18 degrees, keeps an oversensitive thermostat from tipping into a sweat cascade.",
         "Caffeine before 2 PM and no alcohol within three hours of bed both make temperature regulation easier.",
@@ -112,8 +106,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1637069585336-827b298fe84a?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Claire Abdo / Unsplash",
+      "image": "https://images.unsplash.com/photo-1475178626620-a4d074967452?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Tamara Bellis / Unsplash",
       "keyTakeaways": [
         "Strength training two to three times a week raises resting metabolic rate and protects muscle.",
         "25 to 30 grams of protein at breakfast and lunch supports muscle retention and satiety.",
@@ -173,8 +167,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1671485927315-f56c7a65a051?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Simona D'Auria / Unsplash",
+      "image": "https://images.unsplash.com/photo-1758876022104-368b0f3fb6c9?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Vitaly Gariev / Unsplash",
       "keyTakeaways": [
         "Fog usually peaks between 45 and 50 and lifts within one to two years post-menopause.",
         "Deep sleep rebuilds clarity faster than any supplement; one good night beats five fragmented ones.",
@@ -239,8 +233,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1509635022432-0220ac12960b?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Suhyeon Choi / Unsplash",
+      "image": "https://images.unsplash.com/photo-1471572560064-dec47ffeeb02?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Priscilla Du Preez / Unsplash",
       "keyTakeaways": [
         "Fluctuating estrogen and progesterone move serotonin availability, which produces quick mood swings.",
         "Magnesium glycinate, 200 to 300 mg daily, calms an overstimulated nervous system.",
@@ -314,8 +308,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1552858725-2758b5fb1286?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Jp Valery / Unsplash",
+      "image": "https://images.unsplash.com/photo-1522587750645-7e0e798b2b59?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Bruno van der Kraan / Unsplash",
       "keyTakeaways": [
         "Progesterone deepens sleep, and it plummets during perimenopause, which fragments the whole night.",
         "Magnesium glycinate or threonate, one to two hours before bed, works through the nervous system rather than melatonin alone.",
@@ -381,8 +375,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1525972757199-cf2ad7cc4f4b?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Tom Crew / Unsplash",
+      "image": "https://images.unsplash.com/photo-1758876200947-932123412834?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Vitaly Gariev / Unsplash",
       "keyTakeaways": [
         "Most relationship strain in this phase comes from perimenopause being invisible and unexplained.",
         "Give a partner a specific role, because most want to help and do not know how.",
@@ -442,8 +436,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1422433555807-2559a27433bd?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: David Mao / Unsplash",
+      "image": "https://images.unsplash.com/photo-1646237216919-0101bc10bbee?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: BABI / Unsplash",
       "keyTakeaways": [
         "Low iron and low vitamin D are frequently missed causes of perimenopause fatigue; a blood test settles it.",
         "25 to 30 grams of protein at breakfast prevents the blood sugar crash behind 3 PM exhaustion.",
@@ -509,8 +503,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1558025137-0b406e9cc169?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Monica Sauro / Unsplash",
+      "image": "https://images.unsplash.com/photo-1769029174021-b305fa92f0ae?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Sasun Bughdaryan / Unsplash",
       "keyTakeaways": [
         "With no ovulation there is no progesterone, so the lining either spots unpredictably or builds and floods.",
         "NSAIDs started the day before a heavy period reduce flow by 20 to 40 percent for many women.",
@@ -576,8 +570,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1646239646963-b0b9be56d6b5?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Samantha Sheppard / Unsplash",
+      "image": "https://images.unsplash.com/photo-1758272421829-7028296dee8f?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Vitaly Gariev / Unsplash",
       "keyTakeaways": [
         "The pattern is usually symmetrical and worst in the morning, when inflammation peaks.",
         "Two to three strength sessions a week protect joints by protecting the muscle around them.",
@@ -643,8 +637,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1576426863848-c21f53c60b19?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Content Pixie / Unsplash",
+      "image": "https://images.unsplash.com/photo-1654611918435-124e78b72c10?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Volant / Unsplash",
       "keyTakeaways": [
         "Less estrogen means less hyaluronic acid and fewer ceramides, so the barrier weakens and redness rises.",
         "Hyaluronic acid on damp skin, then a ceramide moisturizer, rebuilds hydration and barrier together.",
@@ -707,8 +701,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1518019671582-55004f1bc9ab?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Luca Laurence / Unsplash",
+      "image": "https://images.unsplash.com/photo-1525562723836-dca67a71d5f1?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Cam Morin / Unsplash",
       "keyTakeaways": [
         "Falling estrogen heightens pain and touch perception, so seams and pressure register more strongly.",
         "Bamboo, modal and merino sit more gently on reactive skin than cotton does.",
@@ -769,8 +763,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1674501679769-a56d5450df58?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Omer Gulcu / Unsplash",
+      "image": "https://images.unsplash.com/photo-1573032780225-a67b1b866312?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Faizan / Unsplash",
       "keyTakeaways": [
         "Magnesium at 400 to 600 mg daily cuts migraine frequency by roughly 40 percent in susceptible women.",
         "Riboflavin at 400 mg and CoQ10 at 100 to 300 mg both support the mitochondrial side of migraine.",
@@ -833,8 +827,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1468581264429-2548ef9eb732?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Thomas Vimare / Unsplash",
+      "image": "https://images.unsplash.com/photo-1616991019655-b1d6ab71476a?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Rae Angela / Unsplash",
       "keyTakeaways": [
         "Estrogen moves GABA and serotonin, which leaves your threat-detection system running hot.",
         "Anxiety often peaks in the two weeks before a period, when calming progesterone is also dropping.",
@@ -900,8 +894,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1633104060731-32143505bacc?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Shayna Douglas / Unsplash",
+      "image": "https://images.unsplash.com/photo-1596370175676-bfc19ba489f8?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Svitlana / Unsplash",
       "keyTakeaways": [
         "Progesterone slows transit time, so constipation and bloating track the hormonal swings.",
         "Add soluble fiber 5 grams at a time weekly; a sudden jump causes the bloating it was meant to fix.",
@@ -965,8 +959,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1610571181717-fd5f7645888b?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Olga Budko / Unsplash",
+      "image": "https://images.unsplash.com/photo-1604881991720-f91add269bed?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Priscilla Du Preez / Unsplash",
       "keyTakeaways": [
         "Fix sleep, hot flashes and fatigue first; desire rarely returns while you are wired and depleted.",
         "Vaginal estrogen supports local arousal and lubrication, with results in two to three weeks.",
@@ -1032,8 +1026,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1580133318324-f2f76d987dd8?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Clay Banks / Unsplash",
+      "image": "https://images.unsplash.com/photo-1627626487034-0a3dc7278c18?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Eduardo Barrios / Unsplash",
       "keyTakeaways": [
         "Vaginal estrogen goes to the tissue with minimal systemic absorption and works within two to three weeks.",
         "Hyaluronic acid moisturizer two to three times weekly maintains hydration without hormones.",
@@ -1095,8 +1089,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1703353288357-c7efb9e6573a?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Mikhail Seleznev / Unsplash",
+      "image": "https://images.unsplash.com/photo-1614329850775-e9d80a40d73a?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Rendy Novantino / Unsplash",
       "keyTakeaways": [
         "Estrogen extends the growth phase, so as it falls more hairs shed at once.",
         "Heavy periods drop iron, and low iron drives shedding; confirm with a blood test before supplementing.",
@@ -1163,8 +1157,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1594350532402-72001d9fe5a0?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Sarah Claeys / Unsplash",
+      "image": "https://images.unsplash.com/photo-1511145573746-0a8f97b8c173?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Genessa Panainte / Unsplash",
       "keyTakeaways": [
         "Cold flashes are the opposite swing of the same dysregulated thermostat.",
         "They often arrive with anxiety or dread, which makes them more distressing than a hot flash.",
@@ -1225,8 +1219,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1701905365018-da6f66042ee6?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Enes Gundogdu / Unsplash",
+      "image": "https://images.unsplash.com/photo-1653762381632-2945469edb7b?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Brooke Cagle / Unsplash",
       "keyTakeaways": [
         "Ask for specific help rather than more patience; specifics are actionable, patience is not.",
         "Build connection rituals that cost no energy: walking together, sitting quietly, non-sexual affection.",
@@ -1283,8 +1277,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Howard Bouchevereau / Unsplash",
+      "image": "https://images.unsplash.com/photo-1544717302-de2939b7ef71?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Icons8 Team / Unsplash",
       "keyTakeaways": [
         "Put complex thinking in your sharpest hours and leave admin and meetings for the fog.",
         "Batch similar tasks; context-switching costs more during cognitive dimming than it used to.",
@@ -1342,8 +1336,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1685633224688-6a77675eb119?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Ambitious Studio / Unsplash",
+      "image": "https://images.unsplash.com/photo-1546483875-ad9014c88eba?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Cathy Pham / Unsplash",
       "keyTakeaways": [
         "Weight-bearing and resistance work is the single most effective bone-building intervention.",
         "1000 to 1200 mg calcium and 300 to 400 mg magnesium daily support mineralization.",
@@ -1400,8 +1394,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Christine Sandu / Unsplash",
+      "image": "https://images.unsplash.com/photo-1758691461935-202e2ef6b69f?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Vitaly Gariev / Unsplash",
       "keyTakeaways": [
         "HRT reduces hot flashes by 80 to 90 percent, which lifts sleep, mood and quality of life with it.",
         "Bioidentical hormones are not inherently safer than synthetic ones, whatever the marketing says.",
@@ -1455,8 +1449,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1679094223530-739065aca37d?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Lindsey / Unsplash",
+      "image": "https://images.unsplash.com/photo-1519087630026-63fb0dab69bb?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Vinicius Amano / Unsplash",
       "keyTakeaways": [
         "Grieving the version of yourself that is changing is legitimate, not self-indulgent.",
         "Connecting with other women in this phase is one of the most validating interventions available.",
@@ -1514,8 +1508,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1534616042650-80f5c9b61f09?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Manu Schwendener / Unsplash",
+      "image": "https://images.unsplash.com/photo-1613679358839-d897e8dc1437?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Giorgio Trovato / Unsplash",
       "keyTakeaways": [
         "Thinning tissue and a shifting pH raise the risk of infection and incontinence together.",
         "Pelvic floor physiotherapy resolves stress incontinence for 60 to 70 percent of women.",
@@ -1577,8 +1571,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1585128719715-46776b56a0d1?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Julia / Unsplash",
+      "image": "https://images.unsplash.com/photo-1528436610461-e9be9d1f7d6b?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Rufus O'Dea / Unsplash",
       "keyTakeaways": [
         "Perimenopause insomnia is hormonal and neurological, so behavior change alone cannot override it.",
         "Nervous system regulation, magnesium, weighted blankets, somatic practices, does more than habit tweaks.",
@@ -1635,8 +1629,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1590309285152-3a4919040b78?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Photoholgic / Unsplash",
+      "image": "https://images.unsplash.com/photo-1552360708-ebcdf76845ac?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Liz Sanchez-Vegas / Unsplash",
       "keyTakeaways": [
         "Tracking mood alongside sleep and stress usually reveals a cycle, and seeing it reduces the shame.",
         "Protecting sleep stabilizes mood more than almost any other single change.",
@@ -1699,8 +1693,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1547104442-044448b73426?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Sincerely Media / Unsplash",
+      "image": "https://images.unsplash.com/photo-1514679448510-68a3adfb3795?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Frank Flores / Unsplash",
       "keyTakeaways": [
         "Atrophy is the most common cause, and vaginal estrogen addresses it within two to three weeks.",
         "Pelvic floor tension is a frequent second cause, and physiotherapy releases it.",
@@ -1758,8 +1752,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Hush Naidoo Jade Photography / Unsplash",
+      "image": "https://images.unsplash.com/photo-1758691463198-dc663b8a64e4?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Vitaly Gariev / Unsplash",
       "keyTakeaways": [
         "Cyclical tenderness, fluctuating swelling and general lumpiness are the hormonal pattern.",
         "New hard or fixed lumps, discharge, dimpling or one-sided change need evaluation.",
@@ -1843,8 +1837,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1722074754161-b8f2ab48cc41?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Viktoriya / Unsplash",
+      "image": "https://images.unsplash.com/photo-1700070220976-1f167b2a92f7?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Ummano Dias / Unsplash",
       "keyTakeaways": [
         "Cardiovascular exercise is the strongest brain-protective intervention there is: 150 minutes weekly.",
         "Learning something genuinely new builds neural connections that crosswords do not.",
@@ -1903,8 +1897,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1623697899811-f2403f50685e?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Kelly Sikkema / Unsplash",
+      "image": "https://images.unsplash.com/photo-1579017308347-e53e0d2fc5e9?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Marcos Paulo Prado / Unsplash",
       "keyTakeaways": [
         "The point shifts from prediction to pattern: which symptoms cluster with which cycle phase.",
         "Recorded bleeding patterns are what separate normal variability from a change worth investigating.",
@@ -1969,8 +1963,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Chantal Garnier / Unsplash",
+      "image": "https://images.unsplash.com/photo-1636647511729-6703539ba71f?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Douglas Fehr / Unsplash",
       "keyTakeaways": [
         "Protein at 25 to 30 grams per meal is the single most useful nutritional change in this phase.",
         "Iron, vitamin D, magnesium and B vitamins are the deficiencies that most often drive symptoms.",
@@ -2035,8 +2029,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1571727153934-b9e0059b7ab2?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Tanvi Sharma / Unsplash",
+      "image": "https://images.unsplash.com/photo-1753354868656-53671f69602a?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Vitaly Gariev / Unsplash",
       "keyTakeaways": [
         "Plastics, cosmetics and pesticide residues are the everyday sources worth addressing first.",
         "Not heating food in plastic and filtering drinking water are the two cheapest changes.",
@@ -2100,8 +2094,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Sporlab / Unsplash",
+      "image": "https://images.unsplash.com/photo-1603455778956-d71832eafa4e?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: McCarthy Beckan / Unsplash",
       "keyTakeaways": [
         "Strength training two to three times weekly is the non-negotiable part.",
         "HIIT raises cortisol sharply, which can worsen hot flashes, anxiety and sleep if you are already dysregulated.",
@@ -2173,8 +2167,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1633171036157-78d53387fdc0?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Anirudh / Unsplash",
+      "image": "https://images.unsplash.com/photo-1734607402853-d360fd6443c8?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Shruti Mishra / Unsplash",
       "keyTakeaways": [
         "Magnesium glycinate, 200 to 400 mg one to two hours before bed, is the sensible starting point.",
         "Melatonin helps you fall asleep, not stay asleep, and more than 5 mg is counterproductive.",
@@ -2249,8 +2243,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1600340053706-32d1278206ef?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Michael Held / Unsplash",
+      "image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Jared Rice / Unsplash",
       "keyTakeaways": [
         "High cortisol increases hot flashes, destabilizes mood, drives visceral fat and disrupts sleep.",
         "Slow breathing lowers cortisol within minutes; 20 minutes in green space lowers it too.",
@@ -2313,8 +2307,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1563822249548-9a72b6353cd1?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Alice Pasqual / Unsplash",
+      "image": "https://images.unsplash.com/photo-1598555763574-dca77e10427e?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Katherine Hanlon / Unsplash",
       "keyTakeaways": [
         "Acupuncture shows a 30 to 40 percent reduction in hot flashes, over 8 to 10 sessions.",
         "Sage leaf extract is the best studied herb; black cohosh remains contested.",
@@ -2391,8 +2385,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1743385779431-45d26d9775b1?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Kelly Sikkema / Unsplash",
+      "image": "https://images.unsplash.com/photo-1758691462878-6edc3d3da1be?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Vitaly Gariev / Unsplash",
       "keyTakeaways": [
         "Bring tracked data and severity ratings; clinicians respond to data more than description.",
         "Name perimenopause explicitly, then ask about specific interventions rather than describing symptoms alone.",
@@ -2449,8 +2443,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1444044205806-38f3ed106c10?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Jonathan Bean / Unsplash",
+      "image": "https://images.unsplash.com/photo-1749189516333-168cfd97de0b?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Litoon Dev / Unsplash",
       "keyTakeaways": [
         "Hot flashes, sleep, mood and brain fog typically settle within one to two years post-menopause.",
         "Vaginal dryness, bone loss and a lower metabolic rate persist and need continued treatment.",
@@ -2524,8 +2518,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1471970394675-613138e45da3?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Hope House Press / Unsplash",
+      "image": "https://images.unsplash.com/photo-1590650046871-92c887180603?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: LinkedIn Sales Solutions / Unsplash",
       "keyTakeaways": [
         "Sleep first. When sleep is broken, every other intervention works less well.",
         "Then movement, then adequate protein and the few supplements that fill real gaps.",
@@ -2602,8 +2596,8 @@
         "name": "Anuva Care Team",
         "credential": "Perimenopause education"
       },
-      "image": "https://images.unsplash.com/photo-1689689753534-30a3182ed023?auto=format&fit=crop&w=1200&q=75",
-      "heroCaption": "Photo: Monika Guzikowska / Unsplash",
+      "image": "https://images.unsplash.com/photo-1556833232-52da3e4bd5d8?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Neal E. Johnson / Unsplash",
       "keyTakeaways": [
         "Perimenopause runs 4 to 10 years, with symptoms usually peaking around year four or five.",
         "Most acute symptoms begin resolving between years six and eight.",

@@ -38,6 +38,9 @@ export const libraryArticleSummarySchema = z.object({
   title: z.string(),
   /// Standfirst under the title — one or two sentences.
   dek: z.string(),
+  /// Hero artwork, also used as the card thumbnail. Absent means the card falls
+  /// back to its category glyph and the detail view renders no hero.
+  image: z.string().url().optional(),
   readMinutes: z.number().int().positive(),
   author: libraryAuthorSchema,
   publishedAt: z.string(),
@@ -45,10 +48,8 @@ export const libraryArticleSummarySchema = z.object({
 });
 
 export const libraryArticleSchema = libraryArticleSummarySchema.extend({
-  /// Hero artwork. Absent means the detail view renders no hero at all, rather
-  /// than an empty coloured placeholder.
-  image: z.string().url().optional(),
-  /// Photo credit shown over the hero. Only meaningful alongside `image`.
+  /// Provenance record for the hero photo, kept in the content file so the source of every
+  /// image stays traceable. Deliberately not rendered.
   heroCaption: z.string().optional(),
   keyTakeaways: z.array(z.string()),
   tags: z.array(z.string()),

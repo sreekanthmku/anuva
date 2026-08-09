@@ -77,6 +77,7 @@ function toSummary(article: LibraryArticle): LibraryArticleSummary {
     glyph: article.glyph,
     title: article.title,
     dek: article.dek,
+    image: article.image,
     readMinutes: article.readMinutes,
     author: article.author,
     publishedAt: article.publishedAt,
