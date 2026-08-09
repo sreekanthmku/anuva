@@ -45,7 +45,11 @@ export const libraryArticleSummarySchema = z.object({
 });
 
 export const libraryArticleSchema = libraryArticleSummarySchema.extend({
-  heroCaption: z.string(),
+  /// Hero artwork. Absent means the detail view renders no hero at all, rather
+  /// than an empty coloured placeholder.
+  image: z.string().url().optional(),
+  /// Photo credit shown over the hero. Only meaningful alongside `image`.
+  heroCaption: z.string().optional(),
   keyTakeaways: z.array(z.string()),
   tags: z.array(z.string()),
   blocks: z.array(libraryBlockSchema).min(1),

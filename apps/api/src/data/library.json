@@ -7,512 +7,2659 @@
     "live": true
   },
   "categories": [
-    { "key": "nutrition", "label": "Nutrition", "tone": "mint" },
-    { "key": "movement", "label": "Movement", "tone": "butter" },
-    { "key": "mind", "label": "Mind", "tone": "blush" },
-    { "key": "clinical", "label": "Clinical", "tone": "lilac" },
-    { "key": "sleep", "label": "Sleep", "tone": "sand" }
+    {
+      "key": "nutrition",
+      "label": "Nutrition",
+      "tone": "mint"
+    },
+    {
+      "key": "movement",
+      "label": "Movement",
+      "tone": "butter"
+    },
+    {
+      "key": "mind",
+      "label": "Mind",
+      "tone": "blush"
+    },
+    {
+      "key": "clinical",
+      "label": "Clinical",
+      "tone": "lilac"
+    },
+    {
+      "key": "sleep",
+      "label": "Sleep",
+      "tone": "sand"
+    }
   ],
   "articles": [
     {
-      "slug": "the-forty-something-edit",
-      "category": "clinical",
-      "glyph": "✦",
-      "title": "The forty-something edit: what your body actually needs",
-      "dek": "A quiet revolution in perimenopausal care is rewriting what Indian women eat, sleep, and expect.",
-      "readMinutes": 9,
-      "featured": true,
-      "publishedAt": "2026-07-28",
-      "author": { "name": "Dr. Meera Rao", "credential": "MD, Obstetrics & Gynaecology" },
-      "heroCaption": "editorial · hands holding turmeric",
-      "keyTakeaways": [
-        "Perimenopause usually begins in the early forties and lasts four to eight years.",
-        "Cycle length changing by seven days or more is the single most reliable early marker.",
-        "Symptoms are treatable — the default of waiting it out is a choice, not medical advice."
-      ],
-      "tags": ["perimenopause", "basics", "care plan"],
-      "blocks": [
-        {
-          "type": "paragraph",
-          "text": "For most women in India, perimenopause arrives without an announcement. The periods get closer together, then further apart. Sleep thins out. A temper you did not have last year now surfaces at 4 p.m. And because nobody named the transition, it gets filed under stress, age, or personality."
-        },
-        {
-          "type": "heading",
-          "text": "What is actually happening"
-        },
-        {
-          "type": "paragraph",
-          "text": "Ovarian follicle numbers fall, and oestrogen stops declining smoothly — it swings. Those swings, not the eventual low level, drive most of the symptoms: hot flushes, disturbed sleep, mood volatility, joint aches, brain fog. This is why bloodwork taken on a single day so often reads 'normal' while you feel anything but."
-        },
-        {
-          "type": "callout",
-          "title": "The most useful thing you can track",
-          "text": "Cycle length, not flow. A shift of seven days or more from your own usual pattern, repeated, is the earliest reliable signal of the transition."
-        },
-        {
-          "type": "heading",
-          "text": "The four levers that actually move"
-        },
-        {
-          "type": "list",
-          "items": [
-            "Protein: 1.0–1.2 g per kg body weight per day slows the muscle loss that accelerates after 40.",
-            "Resistance training twice a week, protecting bone density while oestrogen falls.",
-            "Sleep timing held steady within an hour, including weekends — more effective than total hours.",
-            "Naming the symptom: women who track symptoms get to a treatment decision months earlier."
-          ]
-        },
-        {
-          "type": "paragraph",
-          "text": "None of these replace medical care. They change the baseline you bring into a consultation, and they give a clinician something more precise than 'I have not felt like myself.'"
-        },
-        {
-          "type": "quote",
-          "text": "The women who do best are not the ones with the mildest symptoms. They are the ones who stopped treating the symptoms as a character flaw.",
-          "attribution": "Dr. Meera Rao"
-        },
-        {
-          "type": "paragraph",
-          "text": "If your symptoms interfere with work, sleep, or relationships, that is the threshold for a conversation with a clinician — not severity, not age, and certainly not how much your friends are managing to put up with."
-        }
-      ]
-    },
-    {
-      "slug": "phytoestrogens-indian-kitchen",
-      "category": "nutrition",
-      "glyph": "◇",
-      "title": "Phytoestrogens: the Indian kitchen edition",
-      "dek": "Flax, soy, sesame, chana. What the evidence supports, and what it does not.",
-      "readMinutes": 6,
-      "publishedAt": "2026-07-21",
-      "author": { "name": "Anjali Menon", "credential": "RD, Clinical Nutrition" },
-      "heroCaption": "still life · flax, sesame, chana",
-      "keyTakeaways": [
-        "Phytoestrogens are weak plant compounds — they modulate, they do not replace hormones.",
-        "Soy in whole food form has the strongest evidence for hot flush reduction.",
-        "Effects are modest and take 8–12 weeks. Supplements are not better than food."
-      ],
-      "tags": ["nutrition", "hot flushes", "food first"],
-      "blocks": [
-        {
-          "type": "paragraph",
-          "text": "Phytoestrogens are plant compounds structurally similar enough to oestrogen to bind its receptors — weakly. That weakness is the point. They nudge; they do not override."
-        },
-        {
-          "type": "heading",
-          "text": "Where they already are in your kitchen"
-        },
-        {
-          "type": "list",
-          "items": [
-            "Soy: tofu, tempeh, soy milk, edamame — the best-studied source, richest in isoflavones.",
-            "Flaxseed: one to two tablespoons ground, not whole; whole seeds pass through undigested.",
-            "Sesame: til, and til-based chutneys and laddoos — a lignan source hiding in plain sight.",
-            "Chana, rajma, masoor: modest isoflavone content, excellent protein and fibre alongside."
-          ]
-        },
-        {
-          "type": "callout",
-          "title": "About the soy and breast cancer question",
-          "text": "Large cohort studies, including in Asian populations with lifelong high soy intake, find no increase in breast cancer risk from dietary soy. If you have an active hormone-sensitive cancer, decide with your oncologist rather than from an article."
-        },
-        {
-          "type": "heading",
-          "text": "What to reasonably expect"
-        },
-        {
-          "type": "paragraph",
-          "text": "Trials of dietary soy show hot flush frequency dropping by roughly a fifth to a quarter over eight to twelve weeks. Real, worth having, and nowhere near what hormone therapy achieves. Treat phytoestrogens as a floor you build, not a treatment you substitute."
-        },
-        {
-          "type": "paragraph",
-          "text": "One practical rule: choose the food over the capsule. Isolated isoflavone supplements are dosed far above dietary levels, with weaker safety data and no better results."
-        }
-      ]
-    },
-    {
-      "slug": "strength-training-after-40",
-      "category": "movement",
-      "glyph": "◯",
-      "title": "Why strength training matters after 40",
-      "dek": "Bone density and muscle mass both fall in the transition. Only one kind of exercise argues back.",
-      "readMinutes": 8,
-      "publishedAt": "2026-07-14",
-      "author": { "name": "Ritu Shah", "credential": "MSc, Exercise Physiology" },
-      "heroCaption": "studio · loaded barbell at rest",
-      "keyTakeaways": [
-        "Bone loss accelerates to 2–3% per year in the years around the final period.",
-        "Two resistance sessions a week is the effective minimum; more is optional.",
-        "Walking protects the heart but does not load bone enough to preserve density."
-      ],
-      "tags": ["movement", "bone health", "strength"],
-      "blocks": [
-        {
-          "type": "paragraph",
-          "text": "Oestrogen restrains the cells that break bone down. As it falls, that restraint lifts, and bone loss speeds up to two or three percent a year around the final period — the fastest rate of most women's lives."
-        },
-        {
-          "type": "heading",
-          "text": "Why walking is not enough"
-        },
-        {
-          "type": "paragraph",
-          "text": "Bone adapts to load, and it needs load above what it already handles daily. Walking is excellent for cardiovascular and metabolic health, but your skeleton has been carrying your body weight for decades and finds it unremarkable. Resistance training supplies the novel load."
-        },
-        {
-          "type": "heading",
-          "text": "A workable minimum"
-        },
-        {
-          "type": "list",
-          "items": [
-            "Two sessions a week, 30–40 minutes each, non-consecutive days.",
-            "Six compound movements: squat, hinge, push, pull, carry, and a single-leg pattern.",
-            "Two to three sets of six to ten repetitions, leaving two reps in reserve.",
-            "Add load — not repetitions — every two to three weeks, as long as form holds."
-          ]
-        },
-        {
-          "type": "callout",
-          "title": "If you have never lifted before",
-          "text": "Body weight and resistance bands are a legitimate starting point. Four to six weeks of learning the patterns before adding load prevents most beginner injuries."
-        },
-        {
-          "type": "paragraph",
-          "text": "The second benefit is metabolic. Muscle is where most glucose is disposed of, and the insulin resistance that creeps in during the transition is partly a muscle-mass story. Keeping muscle keeps that door open."
-        },
-        {
-          "type": "quote",
-          "text": "You are not training for how you look at 45. You are training for how independently you move at 75."
-        }
-      ]
-    },
-    {
-      "slug": "the-rage-is-real",
-      "category": "mind",
-      "glyph": "◆",
-      "title": "The rage is real — and it has a name",
-      "dek": "Perimenopausal irritability is a neurological event, not a failure of patience.",
-      "readMinutes": 5,
-      "publishedAt": "2026-07-07",
-      "author": { "name": "Dr. Sneha Iyer", "credential": "MD, Psychiatry" },
-      "heroCaption": "portrait · woman at a window, mid-afternoon",
-      "keyTakeaways": [
-        "Oestrogen modulates serotonin; unstable oestrogen means unstable mood regulation.",
-        "Risk is highest for women with a history of PMS, postpartum depression, or depression.",
-        "Sudden rage with no trigger is a symptom to report, not to apologise for."
-      ],
-      "tags": ["mood", "mental health", "irritability"],
-      "blocks": [
-        {
-          "type": "paragraph",
-          "text": "Women describe it almost identically: a fury that arrives fully formed, out of proportion to whatever set it off, and then leaves them ashamed. It is common enough in the transition to be near-diagnostic, and it is poorly served by advice to breathe deeply."
-        },
-        {
-          "type": "heading",
-          "text": "The mechanism"
-        },
-        {
-          "type": "paragraph",
-          "text": "Oestrogen influences serotonin production, receptor sensitivity, and reuptake. When oestrogen swings unpredictably, so does the system that regulates emotional response. Add sleep fragmentation from night sweats, and the neural capacity to inhibit a reaction is measurably lower."
-        },
-        {
-          "type": "callout",
-          "title": "Higher-risk histories",
-          "text": "Severe PMS, postpartum depression, or previous depressive episodes all predict a harder mood course in perimenopause. Say so early to your clinician — it changes what they offer you first."
-        },
-        {
-          "type": "heading",
-          "text": "What helps, in order of evidence"
-        },
-        {
-          "type": "list",
-          "items": [
-            "Treating the sleep disruption, which is often the whole story underneath the mood.",
-            "Hormone therapy where mood symptoms track the cycle and there is no contraindication.",
-            "SSRIs, which help mood and independently reduce hot flushes.",
-            "CBT specifically adapted for menopause — modest, durable, no interaction risk."
-          ]
-        },
-        {
-          "type": "paragraph",
-          "text": "What does not help is being told this is simply the age you are. Irritability that damages your relationships or your work is a treatable symptom, and treatment starts by describing it plainly to someone who can act on it."
-        }
-      ]
-    },
-    {
-      "slug": "hrt-in-india-myths-vs-medicine",
-      "category": "clinical",
-      "glyph": "✧",
-      "title": "HRT in India: myths vs. medicine",
-      "dek": "Two decades after a misread trial, the risk picture is clearer — and narrower — than the reputation.",
-      "readMinutes": 11,
-      "publishedAt": "2026-06-30",
-      "author": { "name": "Dr. Meera Rao", "credential": "MD, Obstetrics & Gynaecology" },
-      "heroCaption": "clinical · consultation room, morning light",
-      "keyTakeaways": [
-        "For most healthy women under 60 and within 10 years of their final period, benefit outweighs risk.",
-        "Transdermal oestrogen does not carry the clot risk associated with oral forms.",
-        "It remains genuinely contraindicated for some women — the decision is individual, not ideological."
-      ],
-      "tags": ["HRT", "clinical", "decision-making"],
-      "blocks": [
-        {
-          "type": "paragraph",
-          "text": "The 2002 Women's Health Initiative headline frightened a generation off hormone therapy. What the coverage omitted: the average participant was 63, more than a decade past menopause, and the formulation studied is not what is prescribed today."
-        },
-        {
-          "type": "heading",
-          "text": "The timing hypothesis"
-        },
-        {
-          "type": "paragraph",
-          "text": "Re-analyses consistently show the risk-benefit balance depends heavily on when therapy starts. Begun under 60, or within ten years of the final period, hormone therapy reduces hot flushes, protects bone, and shows no increase in cardiovascular mortality. Begun fifteen years later, into arteries that have already changed, the calculus reverses."
-        },
-        {
-          "type": "heading",
-          "text": "Route matters more than most people are told"
-        },
-        {
-          "type": "list",
-          "items": [
-            "Transdermal oestrogen — patch or gel — bypasses first-pass liver metabolism and does not raise clot risk in the way oral oestrogen does.",
-            "Micronised progesterone appears to have a more favourable breast profile than older synthetic progestins.",
-            "If you still have a uterus, oestrogen must be paired with a progestogen to protect the endometrium.",
-            "Vaginal oestrogen for genitourinary symptoms is local, low dose, and a different risk conversation entirely."
-          ]
-        },
-        {
-          "type": "callout",
-          "title": "Where it is genuinely not appropriate",
-          "text": "Active or past hormone-sensitive breast cancer, unexplained vaginal bleeding, active liver disease, or a history of clot or stroke shift the decision substantially. Bring these up first — they narrow the options rather than closing the conversation."
-        },
-        {
-          "type": "heading",
-          "text": "The India-specific gaps"
-        },
-        {
-          "type": "paragraph",
-          "text": "Indian women reach menopause on average around 46 — several years earlier than Western cohorts, which means a longer post-menopausal life spent without oestrogen's protective effects on bone and vessel. Yet uptake here is very low, driven less by contraindication than by unavailability of clinicians who discuss it at all."
-        },
-        {
-          "type": "quote",
-          "text": "The question is not whether hormone therapy is safe. It is whether it is right for you, and that needs your history, not a headline."
-        },
-        {
-          "type": "paragraph",
-          "text": "Come to that appointment with a symptom record, your family history of breast cancer and clotting, your blood pressure, and a clear statement of which symptom is costing you the most. That is a decision-making consultation rather than a reassurance one."
-        }
-      ]
-    },
-    {
-      "slug": "night-sweats-and-the-3am-wake",
+      "slug": "hot-flashes-and-your-sleep",
       "category": "sleep",
       "glyph": "☾",
-      "title": "Night sweats and the 3 a.m. wake",
-      "dek": "Why you wake before the sweat starts, and what changes the pattern.",
-      "readMinutes": 7,
-      "publishedAt": "2026-06-23",
-      "author": { "name": "Dr. Kavya Nair", "credential": "MD, Sleep Medicine" },
-      "heroCaption": "night · unmade bed, low lamp",
+      "title": "The Night You Stop Sleeping: What Hot Flashes Really Do to Your Rest",
+      "dek": "Night sweats are a temperature-control problem, not a hygiene problem. What changes the pattern.",
+      "readMinutes": 3,
+      "featured": true,
+      "publishedAt": "2026-08-09",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1601276174812-63280a55656e?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Liz Vo / Unsplash",
       "keyTakeaways": [
-        "The arousal often precedes the flush — you wake first, then feel hot.",
-        "Bedroom temperature near 18–20°C measurably reduces night-time flushes.",
-        "Persistent 3 a.m. waking without sweats may be insomnia in its own right, and CBT-I treats it."
+        "A cool bedroom, 16 to 18 degrees, keeps an oversensitive thermostat from tipping into a sweat cascade.",
+        "Caffeine before 2 PM and no alcohol within three hours of bed both make temperature regulation easier.",
+        "Sage leaf and black cohosh reduce flash frequency for 40 to 60 percent of women, over 4 to 8 weeks."
       ],
-      "tags": ["sleep", "night sweats", "insomnia"],
+      "tags": [
+        "hot flashes",
+        "night sweats",
+        "sleep"
+      ],
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The narrowed thermoneutral zone of perimenopause means a small rise in core temperature triggers a full heat-dump response: vasodilation, sweating, and a cortical arousal. Sleep labs show the arousal frequently comes first — which is why the wake can feel unexplained until the heat catches up."
+          "text": "You wake at 2:47 AM, sheets soaked. Again. You lie there counting the wasted hours ahead, wondering if this broken sleep is permanent. That's not just fatigue talking. It's the specific terror that your body has become unreliable, and no amount of good bedtime hygiene will fix it."
+        },
+        {
+          "type": "paragraph",
+          "text": "Hot flashes aren't just heat spikes. During perimenopause, your brain's temperature regulation center becomes sensitive to tiny hormone fluctuations. When estrogen dips, your brain overcompensates, triggering a cascade: blood vessels dilate, your core temperature spikes, sweat floods, and your nervous system jolts awake. For many women, this repeats 5–10 times nightly."
+        },
+        {
+          "type": "paragraph",
+          "text": "The impact isn't merely physical. Fragmented sleep disrupts memory consolidation, glucose regulation, and emotional resilience. You're not lazy or weak. You're sleep-deprived in a way that looks invisible to everyone around you."
         },
         {
           "type": "heading",
-          "text": "Environmental changes with actual effect sizes"
+          "text": "What actually helps"
         },
         {
           "type": "list",
           "items": [
-            "Room at 18–20°C, cooler than most Indian bedrooms are kept.",
-            "Cotton or linen bedding, layered so you can shed one layer without fully waking.",
-            "A fan for air movement, which helps evaporative cooling more than a lower thermostat alone.",
-            "Alcohol finished four hours before bed — it is a reliable flush trigger and fragments the second half of the night."
+            "Bedroom temperature: keep it 16–18°C. This small change prevents your already-oversensitive thermostat from pushing you into a sweat cascade.",
+            "Moisture-wicking fabrics: bamboo or linen sheets and lightweight layers you can shed without getting up.",
+            "Black cohosh or sage leaf extract: emerging evidence suggests these herbal options reduce hot flash frequency and intensity in 40–60% of women. Results take 4–8 weeks.",
+            "Caffeine and alcohol cutoff: both trigger vasodilation and make temperature regulation harder. End caffeine by 2 PM; avoid alcohol within 3 hours of bedtime.",
+            "Core body temperature drop: a 20-minute walk after dinner lowers core temperature, creating a deeper sleep window."
           ]
         },
         {
-          "type": "callout",
-          "title": "When it is not the sweats",
-          "text": "If you wake at the same hour and lie awake for over 30 minutes, without heat, you may have developed conditioned insomnia layered on top. CBT-I is first-line for that and outperforms medication over time."
-        },
-        {
-          "type": "heading",
-          "text": "The compounding cost"
+          "type": "paragraph",
+          "text": "Night sweats often feel more disruptive than daytime flashes because they interrupt the one time your nervous system is supposed to be offline. You're not exaggerating the disruption."
         },
         {
           "type": "paragraph",
-          "text": "Fragmented sleep raises next-day insulin resistance, appetite signalling, and emotional reactivity. Much of what gets attributed to hormones directly is sleep debt with a hormonal cause — which is good news, because sleep is the more tractable target."
+          "text": "Some women find that their hot flashes peak around 3–5 years into perimenopause and settle afterward. Others describe 10+ years of temperature chaos. The timeline is personal, not predictable."
         },
         {
           "type": "paragraph",
-          "text": "Track two weeks of wake times before your consultation. A pattern — every night at 3, or only in the week before a period — points a clinician at very different treatments."
+          "text": "The sleepless nights are real. The exhaustion is real. Your irritability the next day isn't a character flaw. It's what happens when your prefrontal cortex has been starved of REM sleep. Permission to stop minimizing this."
         }
       ]
     },
     {
-      "slug": "iron-b12-and-the-heavy-period-years",
+      "slug": "why-your-jeans-dont-fit",
       "category": "nutrition",
       "glyph": "◈",
-      "title": "Iron, B12, and the heavy-period years",
-      "dek": "Perimenopausal bleeding gets heavier before it stops. Deficiency is the quiet consequence.",
-      "readMinutes": 6,
-      "publishedAt": "2026-06-16",
-      "author": { "name": "Anjali Menon", "credential": "RD, Clinical Nutrition" },
-      "heroCaption": "kitchen · dal, greens, lemon",
+      "title": "Why Your Jeans Don't Fit (And It's Not About Willpower)",
+      "dek": "Falling estrogen moves fat to the abdomen and slows your metabolic rate. Neither is a willpower problem.",
+      "readMinutes": 3,
+      "publishedAt": "2026-08-08",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1637069585336-827b298fe84a?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Claire Abdo / Unsplash",
       "keyTakeaways": [
-        "Ferritin under 30 ng/mL causes fatigue even when haemoglobin reads normal.",
-        "Vegetarian diets need vitamin C alongside iron sources and tea kept away from meals.",
-        "Soaking through protection hourly, or clots larger than a rupee coin, needs evaluation."
+        "Strength training two to three times a week raises resting metabolic rate and protects muscle.",
+        "25 to 30 grams of protein at breakfast and lunch supports muscle retention and satiety.",
+        "A 2 to 4 kg upward shift during perimenopause is normal, and some of that swing is fluid, not fat."
       ],
-      "tags": ["iron", "nutrition", "heavy bleeding"],
+      "tags": [
+        "weight",
+        "metabolism",
+        "belly fat"
+      ],
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Anovulatory cycles mean oestrogen builds the endometrium without progesterone to organise its shedding. The result is the heavier, longer, less predictable bleeding that characterises late perimenopause — and a steady iron drain."
-        },
-        {
-          "type": "heading",
-          "text": "Ask for ferritin, not just haemoglobin"
+          "text": "Three months ago, your favorite jeans fit perfectly. Now they're tight around the belly despite no change in your eating or exercise. You feel thicker, bloated, and inexplicably heavier. The mirror lies, or your body has."
         },
         {
           "type": "paragraph",
-          "text": "Haemoglobin falls last. Ferritin — stored iron — falls first, and a ferritin under 30 ng/mL is enough to produce fatigue, hair shedding, breathlessness on stairs, and restless legs while a full blood count still reads normal."
+          "text": "During perimenopause, your fat distribution shifts. Falling estrogen redirects fat storage from hips and thighs toward the abdomen, a process called visceral fat deposition. This isn't laziness or age catching up. It's hormonal, it's metabolic, and it's a predictable part of perimenopause."
+        },
+        {
+          "type": "paragraph",
+          "text": "Simultaneously, perimenopause slows your metabolic rate by 2–8% per year, depending on your activity level and estrogen decline. Your body burns fewer calories at rest. Muscle mass also decreases (sarcopenia) without strength training, further dropping your baseline calorie burn."
+        },
+        {
+          "type": "paragraph",
+          "text": "The bloating is real too. Fluctuating estrogen and progesterone levels increase water retention, especially in the 7–10 days before menstruation. Your weight can swing 2–4 kg in a week. That's not fat, it's fluid, but it feels heavy and demoralizing."
         },
         {
           "type": "heading",
-          "text": "Absorption, practically"
+          "text": "What shifts the equation"
         },
         {
           "type": "list",
           "items": [
-            "Pair iron sources with vitamin C: lemon over dal, amla, tomato in the sabzi.",
-            "Move tea and coffee at least an hour away from meals — tannins substantially block non-heme iron.",
-            "Cook acidic foods in cast iron, which measurably raises iron content.",
-            "If supplementing, alternate-day dosing absorbs better than daily and causes less constipation."
+            "Strength training 2–3 times weekly: builds lean muscle, which raises resting metabolic rate and anchors your body's composition even as hormones fluctuate.",
+            "Protein at every meal: supports muscle retention and boosts satiety. Aim for 25–30 grams at breakfast and lunch.",
+            "Consistent sleep: sleep deprivation increases cortisol, which drives visceral fat storage. This loops back to hot flashes disrupting rest.",
+            "Walking post-meals: a 10-minute walk after eating stabilizes blood sugar and prevents the afternoon energy crash many perimenopause women experience.",
+            "Patience with the scale: expect a 2–4 kg shift upward during perimenopause even with no lifestyle change. This is normal, not a failure."
           ]
         },
         {
-          "type": "callout",
-          "title": "Bleeding that needs evaluation, not nutrition",
-          "text": "Soaking a pad or cup hourly for several hours, clots bigger than a rupee coin, bleeding beyond seven days, or any bleeding after twelve period-free months. Get these looked at rather than managed at home."
-        },
-        {
           "type": "paragraph",
-          "text": "B12 deserves a mention alongside: vegetarian diets, common metformin use, and reduced stomach acid with age make deficiency frequent, and its fatigue and brain-fog picture is easily misfiled as 'just perimenopause'."
+          "text": "Your body hasn't betrayed you. It's shifted its priorities as hormones change. Jeans that don't fit are frustrating, but they're not a referendum on your discipline or worth."
         }
       ]
     },
     {
-      "slug": "brain-fog-what-the-research-says",
+      "slug": "brain-fog-lower-fuel",
+      "category": "mind",
+      "glyph": "◆",
+      "title": "Brain Fog Isn't Forgetfulness: It's Your Brain Running on Lower Fuel",
+      "dek": "Estrogen runs attention, memory and processing speed. The dip while it falls is real and it recovers.",
+      "readMinutes": 3,
+      "publishedAt": "2026-08-07",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1671485927315-f56c7a65a051?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Simona D'Auria / Unsplash",
+      "keyTakeaways": [
+        "Fog usually peaks between 45 and 50 and lifts within one to two years post-menopause.",
+        "Deep sleep rebuilds clarity faster than any supplement; one good night beats five fragmented ones.",
+        "Schedule complex thinking in your sharpest hours and monotask, because context-switching compounds the lag."
+      ],
+      "tags": [
+        "brain fog",
+        "memory",
+        "focus"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You walk into a room and forget why. Mid-sentence, the word vanishes. You read a paragraph and absorb nothing. You've always been sharp, and your memory was a point of pride. Now you feel like you're thinking through cotton."
+        },
+        {
+          "type": "paragraph",
+          "text": "This isn't early dementia, and it's not normal aging. It's a specific perimenopause symptom called \"brain fog\" or \"cognitive dimming,\" and it's driven by dropping estrogen."
+        },
+        {
+          "type": "paragraph",
+          "text": "Estrogen plays a surprising role in brain function. It regulates acetylcholine (essential for attention and memory), dopamine (motivation and focus), and GABA (calm and processing speed). As estrogen declines, your brain adapts, but the transition period creates a temporary dip in cognitive performance."
+        },
+        {
+          "type": "paragraph",
+          "text": "Brain fog typically peaks in the early-to-mid perimenopause phase (ages 45–50) and improves after menopause. For many women, it's most noticeable during the luteal phase of your cycle, when progesterone and estrogen both drop."
+        },
+        {
+          "type": "paragraph",
+          "text": "The fog is real, measurable, and profoundly frustrating. It's not vanity or age. It's neurobiology."
+        },
+        {
+          "type": "heading",
+          "text": "What lifts the fog"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Sleep quality over quantity: brain consolidation happens in deep sleep. One night of good sleep rebuilds cognitive clarity more than five nights of fragmented rest.",
+            "Omega-3 supplementation: 1–2 grams EPA/DHA daily supports neural resilience. Results visible in 6–12 weeks.",
+            "Blood sugar stability: spikes and crashes tank focus. Eat balanced meals with protein, fat, and complex carbs. Skip sugary snacks.",
+            "Movement, especially cardio: 20 minutes of elevated heart rate increases BDNF (brain-derived neurotrophic factor), which sharpens focus and memory.",
+            "Structured work in your \"peak hours\": if brain fog hits at 2 PM, schedule complex thinking before noon.",
+            "Limit context-switching: multitasking during perimenopause brain fog creates a compounding lag. Monotask instead."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Your brain isn't permanently dimmed. It's recalibrating. Most women regain sharp focus within 1–2 years post-menopause."
+        }
+      ]
+    },
+    {
+      "slug": "irritability-not-depression",
       "category": "mind",
       "glyph": "◍",
-      "title": "Brain fog: what the research actually says",
-      "dek": "Verbal recall does dip in the transition. It also recovers — and that matters for how you treat it.",
-      "readMinutes": 7,
-      "publishedAt": "2026-06-09",
-      "author": { "name": "Dr. Sneha Iyer", "credential": "MD, Psychiatry" },
-      "heroCaption": "desk · notebook, half-written list",
+      "title": "The Mood Shift No One Warns You About: Irritability, Not Depression",
+      "dek": "The short fuse is a serotonin story, not a character change. What restores your baseline.",
+      "readMinutes": 3,
+      "publishedAt": "2026-08-06",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1509635022432-0220ac12960b?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Suhyeon Choi / Unsplash",
       "keyTakeaways": [
-        "Measurable dips are real but small, and mostly in verbal memory and processing speed.",
-        "Longitudinal studies show performance returns to baseline post-menopause.",
-        "Sleep and mood explain a large share of the effect — treating them lifts the fog."
+        "Fluctuating estrogen and progesterone move serotonin availability, which produces quick mood swings.",
+        "Magnesium glycinate, 200 to 300 mg daily, calms an overstimulated nervous system.",
+        "Naming the shift out loud to the people near you removes the shame that makes it worse."
       ],
-      "tags": ["cognition", "brain fog", "memory"],
+      "tags": [
+        "mood",
+        "irritability",
+        "serotonin"
+      ],
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Roughly six in ten women report cognitive complaints in perimenopause: the lost word, the reason for walking into the room, the name that is right there. Two decades of longitudinal cohorts confirm the effect is measurable rather than imagined."
-        },
-        {
-          "type": "heading",
-          "text": "The size and shape of it"
+          "text": "You snapped at your partner over a minor thing. You felt instant regret, but underneath it, genuine anger that felt proportional to nothing. Then it passed. Two days later, it happened again over something equally small."
         },
         {
           "type": "paragraph",
-          "text": "The deficit concentrates in verbal memory and processing speed, and it is small in absolute terms. Crucially, the same cohorts show performance returning to pre-transition baseline in the post-menopausal years. This is a transition-phase effect, not the opening move of a decline."
+          "text": "You're wondering if you're becoming someone harder, sharper, less patient. But you're not. You're perimenopause."
         },
         {
-          "type": "callout",
-          "title": "The comparison worth making",
-          "text": "The cognitive cost of the perimenopausal dip is smaller than the cost of chronic sleep fragmentation. If both are present, treat the sleep first — the fog often clears with it."
+          "type": "paragraph",
+          "text": "Mood shifts during perimenopause are complex. Dropping estrogen and progesterone affect serotonin, the neurotransmitter that moderates mood and emotional regulation. As hormone levels fluctuate wildly, serotonin availability fluctuates too. The result is mood lability: quick shifts between irritability, tearfulness, and flatness."
+        },
+        {
+          "type": "paragraph",
+          "text": "Many women describe feeling emotionally \"raw\": thinner-skinned, quicker to anger or tears, less able to let small things roll off. This isn't depression, though it can be distressing. It's your nervous system operating with less neurochemical cushion."
+        },
+        {
+          "type": "paragraph",
+          "text": "The timing often follows your cycle (or what's left of it during perimenopause). Irritability peaks when progesterone crashes. For some women, this is predictable; for others, hormonal patterns are erratic."
+        },
+        {
+          "type": "paragraph",
+          "text": "What makes this harder is shame. You judge yourself for the snap, the tears, the impatience. But you're not broken. You're hormonally vulnerable in a way that's temporary and treatable."
         },
         {
           "type": "heading",
-          "text": "What is worth doing"
+          "text": "What restores baseline"
         },
         {
           "type": "list",
           "items": [
-            "Fix sleep before anything else — it is the largest modifiable contributor.",
-            "Treat mood symptoms; depression alone produces this exact cognitive profile.",
-            "Offload aggressively: one capture list, not five. The goal is function, not proving memory.",
-            "Cardiovascular exercise, which has the best evidence of any lifestyle factor for cognition."
+            "Magnesium glycinate: 200–300 mg daily calms an overstimulated nervous system. Glycinate is gentler on digestion than other forms.",
+            "Omega-3s: support serotonin production and mood stability.",
+            "Movement, especially yoga or tai chi: regulates nervous system arousal. High-intensity exercise can feel de-regulating during mood swings.",
+            "Naming the shift: telling your partner \"I'm experiencing perimenopause mood changes, and that snap wasn't about you\" removes shame and creates space for grace.",
+            "Therapy or somatic work: if irritability is new or intense, processing through a therapist who understands perimenopause helps.",
+            "Lifestyle triggers: alcohol, sleep loss, and high stress worsen mood lability."
           ]
         },
         {
           "type": "paragraph",
-          "text": "Worth flagging to a clinician: getting lost on familiar routes, difficulty with sequences you have done for years, or word-finding trouble noticed by others before you. Those are a different assessment, and they are uncommon."
+          "text": "You're not becoming a worse person. Your neurochemical landscape is shifting temporarily."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "Talk to a clinician if mood changes are new or severe. If you are having thoughts of self-harm, seek help the same day."
         }
       ]
     },
     {
-      "slug": "pelvic-floor-quiet-symptom",
-      "category": "movement",
-      "glyph": "◎",
-      "title": "The pelvic floor: the symptom nobody mentions",
-      "dek": "Leaking when you sneeze is common. Common is not the same as something to live with.",
-      "readMinutes": 6,
-      "publishedAt": "2026-06-02",
-      "author": { "name": "Ritu Shah", "credential": "MSc, Exercise Physiology" },
-      "heroCaption": "studio · mat, folded towel",
+      "slug": "perimenopause-insomnia",
+      "category": "sleep",
+      "glyph": "☾",
+      "title": "The Sleep That Feels Like It Isn't Happening: Insomnia in Perimenopause",
+      "dek": "Tired but wired, night after night. Your sleep architecture changed, so habits alone will not fix it.",
+      "readMinutes": 3,
+      "publishedAt": "2026-08-05",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1552858725-2758b5fb1286?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Jp Valery / Unsplash",
       "keyTakeaways": [
-        "Falling oestrogen thins pelvic tissue and weakens support, independent of childbirth history.",
-        "Supervised pelvic floor training resolves or improves most stress incontinence.",
-        "Local vaginal oestrogen treats genitourinary symptoms with minimal systemic absorption."
+        "Progesterone deepens sleep, and it plummets during perimenopause, which fragments the whole night.",
+        "Magnesium glycinate or threonate, one to two hours before bed, works through the nervous system rather than melatonin alone.",
+        "Do not check the clock when you wake; the arithmetic of lost sleep is what keeps you awake."
       ],
-      "tags": ["pelvic floor", "incontinence", "movement"],
+      "tags": [
+        "insomnia",
+        "sleep",
+        "nervous system"
+      ],
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Genitourinary syndrome of menopause affects a majority of women and is reported by a small minority. The tissue of the vagina, urethra, and bladder base is oestrogen-dependent; as levels fall it thins, loses elasticity, and its blood supply drops."
+          "text": "You lie awake for an hour after going to bed. Or you wake at 3 AM and can't fall back asleep. Or you sleep, but it feels shallow, and you're aware of every sound and every position shift. You're exhausted but wired."
+        },
+        {
+          "type": "paragraph",
+          "text": "This isn't a sleep hygiene problem. Your sleep architecture itself has changed."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause insomnia has multiple drivers: hot flashes wake you abruptly; progesterone (which deepens sleep) plummets; your nervous system becomes more reactive to ambient noise and light; and the anxiety about not sleeping creates a self-perpetuating cycle."
+        },
+        {
+          "type": "paragraph",
+          "text": "Many women describe feeling \"tired but wired\": the body wants sleep, but the nervous system won't settle. This is partly hormonal and partly the accumulated stress of sleepless nights."
+        },
+        {
+          "type": "paragraph",
+          "text": "Unlike the hot flash wake-ups (which are sudden and temperature-driven), perimenopause insomnia often feels like shallow, fragmented sleep where you're semi-conscious the whole night. You wake up having \"slept\" 8 hours but feeling like you got none."
         },
         {
           "type": "heading",
-          "text": "What it looks like"
+          "text": "What actually improves perimenopause insomnia"
         },
         {
           "type": "list",
           "items": [
-            "Leaking with a cough, sneeze, or jump.",
-            "Sudden urgency, or waking more than once at night to urinate.",
-            "Vaginal dryness, discomfort during sex, recurrent urinary tract infections."
+            "Magnesium glycinate or threonate: 200–400 mg 1–2 hours before bed. This is gentler than melatonin alone and works via the nervous system, not just melatonin.",
+            "Weighted blanket: the gentle pressure activates your parasympathetic nervous system, countering the wired feeling.",
+            "Early-evening exercise: a walk after lunch (not close to bedtime) tires your body without overstimulating your nervous system late in the day.",
+            "Blackout curtains and white noise: reduces micro-arousals from sound and light changes.",
+            "Cool bedroom: 16–18°C promotes sleep initiation and prevents heat-driven arousal.",
+            "Avoiding clock-watching: if you wake, don't check the time. Your brain will calculate \"how much sleep you've lost,\" triggering anxiety that prevents return to sleep.",
+            "Cognitive behavioral therapy for insomnia (CBT-I): evidence-based and effective. Many therapists now specialize in perimenopause-specific CBT-I."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Sleep won't fully normalize until your hormones stabilize post-menopause. But it can improve measurably in weeks with targeted support."
+        }
+      ]
+    },
+    {
+      "slug": "when-your-partner-doesnt-understand",
+      "category": "mind",
+      "glyph": "◍",
+      "title": "Your Partner Doesn't Understand: A Myth About Relationships",
+      "dek": "Your partner is not unsupportive. Nobody prepared them for this either.",
+      "readMinutes": 3,
+      "publishedAt": "2026-08-04",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1525972757199-cf2ad7cc4f4b?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Tom Crew / Unsplash",
+      "keyTakeaways": [
+        "Most relationship strain in this phase comes from perimenopause being invisible and unexplained.",
+        "Give a partner a specific role, because most want to help and do not know how.",
+        "Lower libido reads as rejection unless you name what is actually happening."
+      ],
+      "tags": [
+        "relationships",
+        "partner",
+        "communication"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your partner seems frustrated that you're less interested in sex, more irritable, and sleeping in separate rooms because of night sweats. They're not being unsupportive. They're confused. No one prepared them for this."
+        },
+        {
+          "type": "paragraph",
+          "text": "Many relationships strain during perimenopause not because partners don't love each other, but because perimenopause is invisible and unfamiliar. Your partner hasn't read about it. They don't understand why sleep disruption drives your mood. They interpret your lower libido as rejection. They don't know that this phase is temporary."
+        },
+        {
+          "type": "paragraph",
+          "text": "The relationship myth most partnerships hit is this: \"If they loved me, they'd just understand.\" But understanding perimenopause requires knowledge your partner doesn't have, not more love."
+        },
+        {
+          "type": "paragraph",
+          "text": "The fix isn't mysterious. It's information, specificity, and lowered expectations for the transition period."
+        },
+        {
+          "type": "heading",
+          "text": "How to navigate this with your partner"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Share the facts, not just complaints: \"My estrogen is dropping, which means I'm having night sweats that break my sleep, which makes me irritable the next day. It's not about you or our relationship. It's temporary.\" Concrete information defuses blame.",
+            "Reframe intimacy: sexual desire naturally decreases during perimenopause due to hormonal changes and fatigue. But affection, touch, and non-sexual intimacy can increase. Renegotiate what closeness looks like for now.",
+            "Assign them a role: \"I need you to wake me gently if I'm thrashing, not roll over frustrated.\" Give them something to do, because most partners want to help and don't know how.",
+            "Include them in assessment: if you're working with an Anuva Care Companion, explain the recommendations to your partner. Knowing there's a plan reduces their anxiety.",
+            "Set a timeline expectation: \"This phase is typically 3–10 years, but most acute symptoms peak around year 4. We're building a life design that works for both of us during this window.\""
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Many partnerships deepen during perimenopause if both people understand what's happening and renegotiate together."
+        }
+      ]
+    },
+    {
+      "slug": "exhausted-even-though-sleeping",
+      "category": "clinical",
+      "glyph": "✦",
+      "title": "Why You're Exhausted (Even Though You're Sleeping): Energy and Fatigue in Perimenopause",
+      "dek": "Cellular tiredness that more sleep does not touch, and the blood tests worth asking for.",
+      "readMinutes": 3,
+      "publishedAt": "2026-08-03",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1422433555807-2559a27433bd?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: David Mao / Unsplash",
+      "keyTakeaways": [
+        "Low iron and low vitamin D are frequently missed causes of perimenopause fatigue; a blood test settles it.",
+        "25 to 30 grams of protein at breakfast prevents the blood sugar crash behind 3 PM exhaustion.",
+        "A 20 to 30 minute nap is restorative, not lazy; your energy architecture has genuinely changed."
+      ],
+      "tags": [
+        "fatigue",
+        "energy",
+        "iron"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're sleeping 7 hours, you're not working overtime, you're eating fine, and yet you're tired in a way rest doesn't fix. You move through your day like you're underwater. By 3 PM, you need to sit down."
+        },
+        {
+          "type": "paragraph",
+          "text": "This exhaustion is different from regular tiredness. It's a deep, cellular fatigue that responds poorly to more sleep or caffeine."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause fatigue stems from several sources: hot flashes fragment sleep quality even if duration is adequate; anemia or thyroid shifts (common during perimenopause) reduce oxygen transport; dropping estrogen changes how your body metabolizes glucose for energy; and the constant hormonal recalibration taxes your adrenal system."
+        },
+        {
+          "type": "paragraph",
+          "text": "Many women describe it as \"running on empty even when you've refueled.\" Your body is actively managing a massive hormonal transition. That takes energy."
+        },
+        {
+          "type": "heading",
+          "text": "What actually restores energy"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Iron and vitamin D screening: low iron (from heavier perimenopause periods) or low vitamin D are frequently overlooked causes of fatigue. A simple blood test clarifies this.",
+            "B-vitamin complex: supports methylation and energy metabolism. Many perimenopause women benefit from B6, B12, and folate.",
+            "Protein consistency: 25–30 grams at breakfast prevents the blood sugar crash that drives 3 PM fatigue.",
+            "Movement (not exercise) in the morning: a 10-minute walk after waking activates your parasympathetic system and sets your circadian rhythm for steady energy.",
+            "Afternoon naps: 20–30 minutes is restorative, not lazy. Your energy architecture is different during perimenopause, and honoring it works better than fighting it.",
+            "Reducing \"invisible load\": fatigue often masks emotional burnout. If you're carrying everyone's emotional labor, your body has no energy left."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Your fatigue is real and physiological, not a character flaw."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "If fatigue is new, sudden, or comes with shortness of breath, ask your clinician to rule out anemia and thyroid problems."
+        }
+      ]
+    },
+    {
+      "slug": "perimenopause-bleeding-changes",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "The Periods That Won't Cooperate: Understanding Perimenopause Bleeding Changes",
+      "dek": "Erratic ovulation means erratic bleeding. What is expected, and what needs attention.",
+      "readMinutes": 3,
+      "publishedAt": "2026-08-02",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1558025137-0b406e9cc169?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Monica Sauro / Unsplash",
+      "keyTakeaways": [
+        "With no ovulation there is no progesterone, so the lining either spots unpredictably or builds and floods.",
+        "NSAIDs started the day before a heavy period reduce flow by 20 to 40 percent for many women.",
+        "Heavy years cost iron; ferrous glycinate plus vitamin C rebuilds stores more gently."
+      ],
+      "tags": [
+        "periods",
+        "bleeding",
+        "iron"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your period arrived twice last month. Or you skipped it for three months, then it came back heavy. Or you're spotting randomly between cycles. After decades of relative predictability, your body has entered a chaotic phase and isn't showing you the courtesy of a warning."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause bleeding is erratic because your ovulation is erratic. During early perimenopause, your follicles sometimes release an egg, sometimes don't. When there's no egg, there's no corpus luteum, which means no progesterone to support the uterine lining. The lining either sheds unpredictably (light spotting) or builds up and sheds heavily (flooding)."
+        },
+        {
+          "type": "paragraph",
+          "text": "Some months you'll ovulate and bleed normally. Other months, you'll skip. This unpredictability can last 8–10 years."
+        },
+        {
+          "type": "paragraph",
+          "text": "Many women describe the uncertainty as more frustrating than the bleeding itself. You can't plan. You can't wear white pants. The heavy bleeds can be genuinely disruptive and sometimes medically concerning if they cause severe anemia."
+        },
+        {
+          "type": "heading",
+          "text": "What helps"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Tracking your bleeding: note dates, flow amount, and any clotting. This isn't obsessive. It's data that guides treatment decisions.",
+            "Iron supplementation: heavy perimenopause bleeding often causes iron loss. Ferrous glycinate (gentler on digestion) helps if your iron stores are low.",
+            "Ibuprofen or naproxen strategically: taken starting the day before you expect a period (or when heavy bleeding starts), these NSAIDs reduce flow by 20–40% in many women.",
+            "Menstrual cup or period underwear: provides overflow protection without the waste of pads/tampons.",
+            "Hormonal support: if bleeding is severe, a progestin-only IUD (like Mirena) or low-dose birth control can stabilize the lining and reduce flow.",
+            "Dietary iron: red meat, beans, lentils, and leafy greens. Pair with vitamin C (citrus, peppers) to improve absorption."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Chaotic bleeding is part of perimenopause, not a sign that something's broken."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "Passing clots larger than a coin, soaking through protection in under an hour, or feeling faint needs prompt medical assessment."
+        }
+      ]
+    },
+    {
+      "slug": "joint-aches-perimenopause",
+      "category": "movement",
+      "glyph": "◯",
+      "title": "Joint Aches You Didn't Have Before: The Musculoskeletal Changes of Perimenopause",
+      "dek": "Estrogen supports collagen and dampens inflammation. Falling levels show up in knees, backs and shoulders.",
+      "readMinutes": 2,
+      "publishedAt": "2026-08-01",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1646239646963-b0b9be56d6b5?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Samantha Sheppard / Unsplash",
+      "keyTakeaways": [
+        "The pattern is usually symmetrical and worst in the morning, when inflammation peaks.",
+        "Two to three strength sessions a week protect joints by protecting the muscle around them.",
+        "Hydrolyzed collagen at 10 grams daily and 1 to 2 grams of EPA/DHA both take 8 to 12 weeks to show."
+      ],
+      "tags": [
+        "joints",
+        "collagen",
+        "strength"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your knees hurt when you climb stairs. Your lower back aches when you wake up. Your shoulders feel stiff and tender. You're not training harder or moving differently, yet your body feels more fragile."
+        },
+        {
+          "type": "paragraph",
+          "text": "Estrogen supports collagen production and reduces inflammation in connective tissues. As estrogen drops, your joints lose that support. Collagen becomes less elastic, cartilage has less shock absorption, and inflammation increases in tendons and ligaments."
+        },
+        {
+          "type": "paragraph",
+          "text": "This isn't arthritis (though perimenopause can unmask pre-existing arthritis). It's a temporary increase in joint and muscle vulnerability."
+        },
+        {
+          "type": "paragraph",
+          "text": "The pattern is often bilateral and symmetrical (both knees, both hips, both shoulders). It tends to be worse in the morning (when inflammation peaks) and after periods of inactivity."
+        },
+        {
+          "type": "heading",
+          "text": "What reverses this"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Strength training: maintains muscle mass, which protects joints. 2–3 sessions weekly prevents the rapid muscle loss perimenopause accelerates.",
+            "Collagen supplementation: 10 grams daily of hydrolyzed collagen supports joint cartilage regeneration. Results visible in 8–12 weeks.",
+            "Omega-3 supplementation: 1–2 grams EPA/DHA daily reduces inflammation in joints and tendons.",
+            "Stretch and mobility work: daily, not just when you're in pain. Yoga, tai chi, or simple mobility flows maintain range of motion.",
+            "Strategic NSAID use: ibuprofen before workouts (not daily) can reduce post-exercise inflammation.",
+            "Weighted blanket or warm compression: gentle warmth and pressure reduce morning stiffness and inflammation."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Joint aches during perimenopause are real and frustrating, but they're not permanent. Most women experience relief post-menopause once estrogen stabilizes (even though it's lower)."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "Joint pain that is severe or sudden, or that comes with swelling or warmth, needs a clinician to rule out other causes."
+        }
+      ]
+    },
+    {
+      "slug": "perimenopause-skin-changes",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "The Skin You Don't Recognize: Understanding Perimenopause Skin Changes",
+      "dek": "Products that worked for twenty years now sting. The skin barrier is what changed.",
+      "readMinutes": 3,
+      "publishedAt": "2026-07-31",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1576426863848-c21f53c60b19?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Content Pixie / Unsplash",
+      "keyTakeaways": [
+        "Less estrogen means less hyaluronic acid and fewer ceramides, so the barrier weakens and redness rises.",
+        "Hyaluronic acid on damp skin, then a ceramide moisturizer, rebuilds hydration and barrier together.",
+        "Start retinol low at 0.25 percent and skip fragrance entirely while the barrier is fragile."
+      ],
+      "tags": [
+        "skin",
+        "sensitivity",
+        "skincare"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your skin suddenly feels thinner, drier, or more irritable. Products that worked fine for 20 years now sting. You're getting more breakouts or more sensitivity to fragrance. Your face sometimes looks blotchy or flushed even when you're not hot."
+        },
+        {
+          "type": "paragraph",
+          "text": "Estrogen supports skin hydration by promoting hyaluronic acid and ceramide production. It also reduces sebum production (which is why oily teenage skin often improved after 20s, as estrogen rose). As estrogen drops, that balance flips: skin becomes drier on the face but sometimes oilier on the scalp. Simultaneously, the skin barrier weakens, making redness and sensitivity more common."
+        },
+        {
+          "type": "paragraph",
+          "text": "The blotchiness and flushing are sometimes mini hot flashes visible on your face: dilated blood vessels responding to estrogen fluctuations."
+        },
+        {
+          "type": "heading",
+          "text": "What restores skin resilience"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Hyaluronic acid serum: apply to damp skin before moisturizer. Hyaluronic acid holds water in the skin, counteracting dryness.",
+            "Ceramide-rich moisturizer: supports the skin barrier. Look for products with ceramides 1, 3, or 6.",
+            "Retinol or retinoid: promotes collagen and thickens the skin barrier. Start low (0.25%) and increase slowly, as perimenopause skin is more sensitive.",
+            "Gentle cleanser: skip harsh soaps. Use a creamy, non-foaming cleanser.",
+            "Sunscreen daily: UV damage is more visible on compromised skin. SPF 30+ prevents further collagen loss.",
+            "Avoid fragranced products: fragrance irritates more during perimenopause due to lowered skin barrier resilience.",
+            "Niacinamide: supports skin barrier function and reduces redness. 4–5% in a serum is effective."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Skin changes during perimenopause are predictable and reversible. Most women experience improvement post-menopause as they adapt to lower-estrogen baseline and as skin barrier strengthens."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "Skin changes with hives, severe itching, or signs of infection should be assessed promptly. They can point to something other than perimenopause."
+        }
+      ]
+    },
+    {
+      "slug": "why-your-clothes-feel-different",
+      "category": "clinical",
+      "glyph": "✦",
+      "title": "Why Your Clothes Feel Different: Body Sensitivity Changes in Perimenopause",
+      "dek": "Scratchy tags and unbearable waistbands are a sensory change, not a dramatic streak.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-30",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1518019671582-55004f1bc9ab?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Luca Laurence / Unsplash",
+      "keyTakeaways": [
+        "Falling estrogen heightens pain and touch perception, so seams and pressure register more strongly.",
+        "Bamboo, modal and merino sit more gently on reactive skin than cotton does.",
+        "Sensory tolerance returns for most women within a few years post-menopause."
+      ],
+      "tags": [
+        "sensitivity",
+        "nervous system",
+        "comfort"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Tags in clothing suddenly feel scratchy. Your waistband bothers you. Certain fabrics that never irritated you now feel unbearable. You're not being dramatic. Your nervous system is more reactive."
+        },
+        {
+          "type": "paragraph",
+          "text": "Dropping estrogen increases your nervous system's sensitivity to sensory input. Pain perception heightens (which is why migraines and fibromyalgia often worsen in perimenopause). This extends to touch sensitivity, so your skin becomes more reactive to textures, seams, and pressure."
+        },
+        {
+          "type": "paragraph",
+          "text": "Additionally, perimenopause hormonal fluctuations increase swelling and water retention, which makes tight clothing feel confining and uncomfortable."
+        },
+        {
+          "type": "heading",
+          "text": "What helps"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Soft, seam-free fabrics: bamboo, modal, and merino wool feel gentler on sensitive skin than cotton.",
+            "Seamless styles: camisoles, bralettes, and seamless underwear eliminate irritation points.",
+            "Looser silhouettes: give yourself permission to size up. Your body is shifting, and fighting it with tight clothes increases discomfort.",
+            "Cotton blends: pure synthetic fabrics trap heat and sweat; blends breathe better.",
+            "Tagless clothing: removes one constant low-level irritation."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "This sensory sensitivity is temporary. Most women regain their baseline sensory tolerance within a few years post-menopause."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "If sensitivity is extreme, meaning you cannot wear any fitted clothing or you feel burning sensations, raise it with a clinician. Neuropathy and other causes are worth ruling out."
+        }
+      ]
+    },
+    {
+      "slug": "perimenopause-migraines",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "Headaches That Weren't There Before: Understanding Perimenopause Migraines",
+      "dek": "Sharp estrogen drops trigger migraine, and in perimenopause those drops stop being predictable.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-29",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1674501679769-a56d5450df58?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Omer Gulcu / Unsplash",
+      "keyTakeaways": [
+        "Magnesium at 400 to 600 mg daily cuts migraine frequency by roughly 40 percent in susceptible women.",
+        "Riboflavin at 400 mg and CoQ10 at 100 to 300 mg both support the mitochondrial side of migraine.",
+        "Keep caffeine steady; both excess and withdrawal set off attacks."
+      ],
+      "tags": [
+        "migraine",
+        "headaches",
+        "magnesium"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your migraines changed. They're more frequent, more severe, or happening at different times than before. Or you never had migraines and now you do."
+        },
+        {
+          "type": "paragraph",
+          "text": "Estrogen is a powerful trigger for migraines. Rapid drops in estrogen can initiate migraine attacks. During perimenopause, estrogen levels fluctuate wildly and unpredictably, making migraines harder to prevent."
+        },
+        {
+          "type": "paragraph",
+          "text": "Some women experience their first migraines during perimenopause (sometimes driven by hormonal contraceptives, which amplify estrogen fluctuations). Others find their existing migraines worsen or shift timing."
+        },
+        {
+          "type": "paragraph",
+          "text": "The triggers often follow your cycle: migraines peak just before or during menstruation when estrogen drops most sharply. As your cycle becomes irregular during perimenopause, trigger timing becomes unpredictable."
+        },
+        {
+          "type": "heading",
+          "text": "What reduces migraine frequency"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Magnesium: 400–600 mg daily reduces migraine frequency by about 40% in susceptible women. Glycinate or threonate are gentler on digestion.",
+            "Riboflavin (B2): 400 mg daily supports mitochondrial function and reduces migraine frequency.",
+            "Coenzyme Q10: 100–300 mg daily supports energy metabolism in brain cells.",
+            "Consistent sleep: migraine sufferers are exquisitely sensitive to sleep disruption. Prioritize sleep quality above almost everything.",
+            "Hydration: dehydration is a potent migraine trigger. Drink water consistently, not just when thirsty.",
+            "Caffeine consistency: both excess and withdrawal trigger migraines. If you drink coffee, maintain the same daily amount.",
+            "Stress management: progressive muscle relaxation, breathwork, or somatic work reduces migraine frequency.",
+            "Hormonal IUD: in some cases, a progestin-only IUD stabilizes hormone levels enough to reduce migraines."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "If migraines are severe or accompanied by neurological symptoms (numbness, visual changes, weakness), this needs medical evaluation. You're not meant to self-manage this alone."
+        }
+      ]
+    },
+    {
+      "slug": "anxiety-out-of-nowhere",
+      "category": "mind",
+      "glyph": "◆",
+      "title": "Anxiety That Feels Like It's Coming Out of Nowhere",
+      "dek": "For many women anxiety is the main perimenopause symptom, not hot flashes. It is treatable.",
+      "readMinutes": 3,
+      "publishedAt": "2026-07-28",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1468581264429-2548ef9eb732?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Thomas Vimare / Unsplash",
+      "keyTakeaways": [
+        "Estrogen moves GABA and serotonin, which leaves your threat-detection system running hot.",
+        "Anxiety often peaks in the two weeks before a period, when calming progesterone is also dropping.",
+        "Cardio three to four times a week lowers baseline anxiety about as well as some medications."
+      ],
+      "tags": [
+        "anxiety",
+        "GABA",
+        "nervous system"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're anxious about things you never worried about before. You lie awake at night catastrophizing. Your heart races over small stressors. You feel \"on edge\" much of the time, even when objectively nothing's wrong."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause anxiety is real and neurochemical, not a character flaw or sign of weakness."
+        },
+        {
+          "type": "paragraph",
+          "text": "Estrogen affects GABA (the neurotransmitter that calms your nervous system) and serotonin (the neurotransmitter that moderates worry). As estrogen fluctuates, these systems fluctuate too. The result is an overactive threat-detection system: your amygdala (fear center) becomes more reactive and less regulated."
+        },
+        {
+          "type": "paragraph",
+          "text": "For many women, anxiety is the primary perimenopause symptom, not mood swings or hot flashes. It often peaks during the luteal phase of your cycle (the two weeks before your period), when progesterone (which calms) is also dropping."
+        },
+        {
+          "type": "paragraph",
+          "text": "The anxiety is treatable and temporary, not permanent."
+        },
+        {
+          "type": "heading",
+          "text": "What calms the nervous system"
+        },
+        {
+          "type": "list",
+          "items": [
+            "L-theanine: 100–200 mg daily supports calm focus without sedation. Results visible in days.",
+            "Magnesium glycinate: 300–400 mg daily reduces baseline anxiety. Take before bed.",
+            "Omega-3s: support serotonin production and reduce anxiety severity.",
+            "Regular cardiovascular exercise: 20–30 minutes of elevated heart rate, 3–4 times weekly, reduces baseline anxiety as effectively as some medications.",
+            "Breath work: 4-7-8 breathing (inhale 4 counts, hold 7, exhale 8) activates your parasympathetic nervous system quickly.",
+            "Therapy: somatic experiencing or trauma-informed therapy helps if anxiety is new or if you have past trauma. Your nervous system is more reactive during perimenopause, which can resurrect old patterns.",
+            "Limiting caffeine: caffeine increases heart rate and amplifies anxiety during perimenopause."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Anxiety during perimenopause is a signal that your nervous system needs support, not a sign of instability."
+        }
+      ]
+    },
+    {
+      "slug": "why-your-digestion-changed",
+      "category": "nutrition",
+      "glyph": "◈",
+      "title": "Why Your Digestion Changed: Understanding Gut Changes in Perimenopause",
+      "dek": "Hormones set the pace of your gut. When they swing, so does everything downstream.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-27",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1633104060731-32143505bacc?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Shayna Douglas / Unsplash",
+      "keyTakeaways": [
+        "Progesterone slows transit time, so constipation and bloating track the hormonal swings.",
+        "Add soluble fiber 5 grams at a time weekly; a sudden jump causes the bloating it was meant to fix.",
+        "A 10 minute walk after meals stimulates motility more reliably than any supplement."
+      ],
+      "tags": [
+        "digestion",
+        "bloating",
+        "gut"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your stomach is bloated. You're constipated (or sometimes the opposite). Foods that never bothered you now cause gas. Your digestive system feels unpredictable."
+        },
+        {
+          "type": "paragraph",
+          "text": "Estrogen and progesterone regulate gut motility (how your digestive muscles contract to move food along). Progesterone especially slows transit time, which can worsen constipation. As these hormones fluctuate during perimenopause, your gut's rhythm becomes erratic."
+        },
+        {
+          "type": "paragraph",
+          "text": "Additionally, changing estrogen affects your gut bacteria composition. Your microbiome diversity decreases as estrogen drops, which can increase bloating, gas, and food sensitivities."
+        },
+        {
+          "type": "heading",
+          "text": "What restores digestive ease"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Fiber gradually: add 5 grams of soluble fiber weekly (from oats, chia seeds, or psyllium husk), not all at once. Rapid fiber increases cause bloating.",
+            "Hydration: drink 2–3 liters of water daily. Dehydration worsens constipation.",
+            "Movement after meals: a 10-minute walk stimulates gastric motility and prevents bloating.",
+            "Probiotics: a diverse, multi-strain probiotic supports microbiome health. Look for 10+ billion CFU with multiple Lactobacillus and Bifidobacterium strains.",
+            "Fermented foods: yogurt, kefir, sauerkraut, kimchi, and miso provide live bacteria and support digestion.",
+            "Magnesium: supports muscle relaxation in your gut, aiding constipation. Glycinate is gentler than oxide.",
+            "Low-FODMAP diet (if needed): if bloating is severe, eliminating high-FODMAP foods (onions, garlic, wheat, certain fruits) for 4–6 weeks can clarify whether sensitivity is food-based.",
+            "Stress reduction: your gut is exquisitely sensitive to cortisol. Anxious perimenopause worsens digestion."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Digestive changes are temporary. Most women regain baseline gut function within 1–2 years post-menopause."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "Digestive changes that are sudden or severe, or that come with weight loss or blood in the stool, need evaluation by a gastroenterologist. Mention the perimenopause context."
+        }
+      ]
+    },
+    {
+      "slug": "desire-changes-perimenopause",
+      "category": "clinical",
+      "glyph": "✦",
+      "title": "The Sex Drive Conversation: Understanding Desire Changes in Perimenopause",
+      "dek": "Lower desire is biology plus exhaustion plus mood, which is why willpower does not shift it.",
+      "readMinutes": 3,
+      "publishedAt": "2026-07-26",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1610571181717-fd5f7645888b?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Olga Budko / Unsplash",
+      "keyTakeaways": [
+        "Fix sleep, hot flashes and fatigue first; desire rarely returns while you are wired and depleted.",
+        "Vaginal estrogen supports local arousal and lubrication, with results in two to three weeks.",
+        "Slower, longer arousal works better now than what worked before. Quality over frequency."
+      ],
+      "tags": [
+        "libido",
+        "desire",
+        "intimacy"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're less interested in sex. Your partner is confused or hurt. You're wondering if this is permanent or just a phase."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause desire changes are real, multifactorial, and often temporary."
+        },
+        {
+          "type": "paragraph",
+          "text": "Dropping estrogen directly affects arousal, because estrogen supports blood flow to the clitoris and vagina, enhances nerve sensitivity, and promotes natural lubrication. As estrogen declines, arousal can feel muted or absent."
+        },
+        {
+          "type": "paragraph",
+          "text": "But desire isn't only biological. Sleep disruption, mood swings, fatigue, body image shifts, and the emotional load of managing symptoms all dampen desire. A woman exhausted from night sweats and worried about her body doesn't suddenly feel sexy."
+        },
+        {
+          "type": "paragraph",
+          "text": "For some women, hormone shifts also lower dopamine (motivation, pleasure, desire). The result is a genuine loss of libido, not relationship dysfunction."
+        },
+        {
+          "type": "heading",
+          "text": "What restores desire"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Addressing the basics first: hot flashes, sleep, mood, and fatigue are the foundation. If you're wired and exhausted, desire won't return through willpower.",
+            "Topical estrogen: vaginal estrogen creams support local arousal and lubrication without systemic effects. Results visible in 2–3 weeks.",
+            "Hydration: vaginal dryness reduces arousal and can make sex uncomfortable. Water-based lubrication helps short-term; hormonal support helps long-term.",
+            "Reframing intimacy: recognize that perimenopause desire is different, not broken. Slow, lengthy foreplay often works better than the quickies that worked before. Quality over frequency.",
+            "Dopamine support: exercise, time in nature, new experiences, and things that once excited you rebuild motivation and pleasure.",
+            "Communication: tell your partner the truth: \"My desire has changed, but my love hasn't. Here's what I need to feel connected right now.\"",
+            "Therapy: if desire loss is tied to body image, performance anxiety, or old relational patterns, working with a therapist specializing in sexuality helps."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause often reshapes sexuality, not destroys it. Many couples report that their sex life becomes less frequent but more intentional and pleasurable."
+        }
+      ]
+    },
+    {
+      "slug": "vaginal-dryness",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "Vaginal Dryness: A Symptom No One Likes to Talk About",
+      "dek": "One of the most common perimenopause symptoms, one of the least discussed, and among the most treatable.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-25",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1580133318324-f2f76d987dd8?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Clay Banks / Unsplash",
+      "keyTakeaways": [
+        "Vaginal estrogen goes to the tissue with minimal systemic absorption and works within two to three weeks.",
+        "Hyaluronic acid moisturizer two to three times weekly maintains hydration without hormones.",
+        "Choose silicone or hyaluronic lubricants; water-based ones evaporate too quickly now."
+      ],
+      "tags": [
+        "vaginal dryness",
+        "estrogen",
+        "intimacy"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Sex is uncomfortable. Even non-sexual penetration (tampons, medical exams) creates friction or pain. Your vulva feels dry. You're considering avoiding intimacy because you're tired of discomfort."
+        },
+        {
+          "type": "paragraph",
+          "text": "Vaginal dryness is one of the most common and most distressing perimenopause symptoms, and it's rarely discussed openly enough."
+        },
+        {
+          "type": "paragraph",
+          "text": "Estrogen maintains vaginal mucosa hydration and thickness. As estrogen drops, the vaginal tissues become thinner (atrophy), drier, and more fragile. The pH becomes more alkaline, which changes your normal microbiome and can increase yeast infections or bacterial overgrowth."
+        },
+        {
+          "type": "paragraph",
+          "text": "Vaginal dryness often persists or worsens post-menopause, making it something you may manage for years. The good news: it's highly treatable."
+        },
+        {
+          "type": "heading",
+          "text": "What restores vaginal health"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Vaginal estrogen: creams, tablets, or rings deliver estrogen directly to vaginal tissue with minimal systemic absorption. Results visible in 2–3 weeks. This is different from systemic HRT and safe for most women.",
+            "Hyaluronic acid vaginal moisturizer: applied 2–3 times weekly, maintains hydration without hormones. Hyalo Gyn or similar products work well.",
+            "Vaginal lubricant: for sexual activity, use a high-quality lubricant (hyaluronic acid or silicone-based, not water-based). Water-based lubricants evaporate quickly during perimenopause.",
+            "Ospemifene: an oral medication (prescription) that promotes vaginal moisture. Effective for many women but has systemic effects, so discuss it with your doctor.",
+            "Regular sexual activity: increases blood flow to vaginal tissues and maintains elasticity. Even self-directed touch helps.",
+            "Hydration and nutrition: omega-3s and protein support mucosal health.",
+            "Avoid irritants: harsh soaps, douches, and heavily fragranced products damage your microbiome."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Vaginal dryness is medical, not cosmetic. It deserves treatment."
+        }
+      ]
+    },
+    {
+      "slug": "hair-loss-and-thinning",
+      "category": "clinical",
+      "glyph": "✦",
+      "title": "Hair Loss and Thinning: What's Happening and Why",
+      "dek": "Wider part, more hair in the drain. Usually shedding phase, not permanent baldness.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-24",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1703353288357-c7efb9e6573a?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Mikhail Seleznev / Unsplash",
+      "keyTakeaways": [
+        "Estrogen extends the growth phase, so as it falls more hairs shed at once.",
+        "Heavy periods drop iron, and low iron drives shedding; confirm with a blood test before supplementing.",
+        "Minoxidil works for perimenopause thinning, with results at three to four months and only while used."
+      ],
+      "tags": [
+        "hair loss",
+        "iron",
+        "thinning"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your hair feels thinner. You're seeing more hair in the shower drain. Your part looks wider. You're wondering if you're going bald."
+        },
+        {
+          "type": "paragraph",
+          "text": "Hair loss during perimenopause is real and often distressing. Estrogen prolongs the growth phase of your hair cycle. As estrogen drops, more hairs shift into the shedding phase simultaneously, creating noticeable thinning."
+        },
+        {
+          "type": "paragraph",
+          "text": "Additionally, dropping iron (from heavier perimenopause periods), thyroid shifts, and stress all contribute to hair loss."
+        },
+        {
+          "type": "paragraph",
+          "text": "The hair loss is usually temporary, not permanent baldness. Most women regain fuller hair within 1–2 years post-menopause, though the timeline varies."
+        },
+        {
+          "type": "heading",
+          "text": "What supports hair regrowth"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Iron supplementation: if your periods are heavy and your iron is low, supplementing (after confirming deficiency via blood test) can reduce shedding.",
+            "Vitamin D: low vitamin D is associated with hair loss. Supplementing if deficient helps.",
+            "Protein and biotin: hair is made of protein. Ensure you're eating 30+ grams of protein daily and consider biotin supplementation (2.5 mg daily).",
+            "Minoxidil (Rogaine): over-the-counter and effective for perimenopause hair loss. Results visible in 3–4 months. Use indefinitely to maintain benefits.",
+            "Scalp massage: stimulates blood flow to hair follicles. 5 minutes daily with your fingertips helps.",
+            "Gentle handling: avoid tight ponytails, harsh brushing, and heat styling during this phase.",
+            "Low-stress practices: high cortisol worsens hair loss. Stress reduction supports regrowth."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Hair thinning is common and treatable. You're not going bald permanently."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "Hair loss that is severe or patchy, or that comes with scalp symptoms, should be assessed by a dermatologist."
+        }
+      ]
+    },
+    {
+      "slug": "cold-flashes-and-chills",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "Temperature Regulation Gone Haywire: Cold Flashes and Chills",
+      "dek": "Everyone warns you about heat. Nobody mentions the chills that follow it.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-23",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1594350532402-72001d9fe5a0?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Sarah Claeys / Unsplash",
+      "keyTakeaways": [
+        "Cold flashes are the opposite swing of the same dysregulated thermostat.",
+        "They often arrive with anxiety or dread, which makes them more distressing than a hot flash.",
+        "Layers you can add or drop quickly, plus stable room temperature, reduce the contrast that triggers them."
+      ],
+      "tags": [
+        "cold flashes",
+        "temperature",
+        "chills"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Most people talk about hot flashes, but you experience the opposite: sudden, intense chills. Your teeth chatter. You're shivering in a warm room. Then it passes. Then it returns."
+        },
+        {
+          "type": "paragraph",
+          "text": "Cold flashes are a real (though less discussed) perimenopause symptom. They're thought to represent the opposite swing of your dysregulated thermostat: your brain overcompensates after a hot spike and sends you into a chill."
+        },
+        {
+          "type": "paragraph",
+          "text": "Cold flashes are often accompanied by anxiety or a sense of dread, creating a more distressing experience than simple hot flashes."
+        },
+        {
+          "type": "heading",
+          "text": "What helps"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Layering: wear clothing that you can add or remove quickly. A cardigan or shawl makes temperature shifts manageable.",
+            "Consistent room temperature: keep your environment stable to reduce the contrast that triggers compensatory chills.",
+            "Magnesium: calms an overactive nervous system, which reduces chills.",
+            "Herbal support: the same herbs that help hot flashes (sage, black cohosh) often help cold flashes.",
+            "Breathing work: slow breathing (especially extended exhales) activates your parasympathetic nervous system and reduces temperature dysregulation."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Cold flashes are temporary. They improve as your hormones stabilize."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "Chills with fever, drenching night sweats, or other signs of illness need evaluation. That pattern can point to infection rather than perimenopause."
+        }
+      ]
+    },
+    {
+      "slug": "relationships-shift-perimenopause",
+      "category": "mind",
+      "glyph": "◆",
+      "title": "Why Relationships Shift During Perimenopause (And How to Navigate It)",
+      "dek": "Symptoms change how you show up with the people you love. Naming them changes how that lands.",
+      "readMinutes": 3,
+      "publishedAt": "2026-07-22",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1701905365018-da6f66042ee6?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Enes Gundogdu / Unsplash",
+      "keyTakeaways": [
+        "Ask for specific help rather than more patience; specifics are actionable, patience is not.",
+        "Build connection rituals that cost no energy: walking together, sitting quietly, non-sexual affection.",
+        "Redistribute household and emotional labor while your capacity is genuinely lower."
+      ],
+      "tags": [
+        "relationships",
+        "family",
+        "support"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your long-term partner seems distant. Your kids are impatient with your mood swings. Your friendships feel strained. You're wondering if perimenopause is damaging your relationships permanently."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause stresses relationships because symptoms (fatigue, irritability, reduced libido, emotional rawness) directly affect how you show up with people you love. Simultaneously, you need more support of every kind, emotional, physical and practical, and many partners don't understand that perimenopause requires temporary recalibration."
+        },
+        {
+          "type": "paragraph",
+          "text": "The strain is real, but it's not permanent if both people understand what's happening."
+        },
+        {
+          "type": "heading",
+          "text": "How to communicate the shift"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Name perimenopause specifically in conversation: \"I'm managing some real hormonal changes that are affecting my mood, energy, and patience. This is temporary, and I'm working on it.\"",
+            "Ask for specific support: not \"be more patient,\" but \"when I'm irritable, remind me that it's not about you\" or \"I need help managing the house this week. Can you take point on meals?\"",
+            "Create connection rituals that don't require energy: walking together, sitting quietly, or non-sexual physical affection can maintain intimacy when sex isn't available.",
+            "Reassure about permanence: tell your partner and family, \"This phase is typically 3–10 years, but I'm not going to feel this way forever. We're getting through this together.\"",
+            "Include them in solutions: if you're working with an Anuva Care Companion, share the recommendations with your partner so they understand the plan and feel included.",
+            "Redefine roles temporarily: if you usually manage the household or emotional labor, this is the time to delegate or redistribute. Your capacity is lower, and that's okay."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Relationships often deepen through perimenopause if both people show up with understanding and flexibility."
+        }
+      ]
+    },
+    {
+      "slug": "work-performance-perimenopause",
+      "category": "mind",
+      "glyph": "◍",
+      "title": "Work Performance: Navigating Career and Symptoms",
+      "dek": "Brain fog and fatigue at work do not end a career. They change how you schedule one.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-21",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Howard Bouchevereau / Unsplash",
+      "keyTakeaways": [
+        "Put complex thinking in your sharpest hours and leave admin and meetings for the fog.",
+        "Batch similar tasks; context-switching costs more during cognitive dimming than it used to.",
+        "You can negotiate how you work without disclosing perimenopause at all."
+      ],
+      "tags": [
+        "work",
+        "career",
+        "brain fog"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're worried about your performance at work. Brain fog is making you less sharp. Fatigue makes concentration harder. Mood swings affect interactions. You're wondering if your career is over."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause can affect work performance, but it doesn't end your career. Many high-performing women navigate perimenopause while excelling professionally. They just adjust their strategies."
+        },
+        {
+          "type": "paragraph",
+          "text": "The symptoms that most affect work are brain fog, fatigue, and irritability. The solution isn't pushing harder; it's working differently."
+        },
+        {
+          "type": "heading",
+          "text": "Career strategies during perimenopause"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Schedule complex thinking during peak hours: if brain fog hits at 2 PM, schedule strategy work before noon. Use afternoons for emails, admin, and meetings.",
+            "Batch similar tasks: minimize context-switching, which exacerbates cognitive dimming.",
+            "Set clearer boundaries: if you're irritable, exhaustion is probably the cause. Protect sleep and rest time fiercely.",
+            "Communicate with your manager strategically: you don't need to disclose perimenopause, but you can say, \"I'm optimizing how I work. I'm scheduling deep work in mornings and collaborative work in afternoons. Can we adjust my meeting schedule accordingly?\"",
+            "Negotiate flexibility: if sleep disruption is severe, ask about working from home some days or adjusting your hours slightly.",
+            "Build a support system at work: colleagues who understand you're managing something temporary are often more patient and supportive.",
+            "Reframe productivity: if you're delivering 80% of your usual output due to symptoms, that's not failure. That's success under new constraints. Adjust your expectations temporarily."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Many women report that their career trajectory continues through perimenopause. They don't perform at the exact same level temporarily, but they maintain trajectory and often return to peak performance post-menopause."
+        }
+      ]
+    },
+    {
+      "slug": "bone-health-perimenopause",
+      "category": "movement",
+      "glyph": "◯",
+      "title": "The Bone Health Conversation: Protecting Your Skeleton Now",
+      "dek": "Most bone loss happens in the five to ten years after your last period. This is the window to build reserve.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-20",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1685633224688-6a77675eb119?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Ambitious Studio / Unsplash",
+      "keyTakeaways": [
+        "Weight-bearing and resistance work is the single most effective bone-building intervention.",
+        "1000 to 1200 mg calcium and 300 to 400 mg magnesium daily support mineralization.",
+        "A DEXA scan now sets the baseline that tells you whether anything is changing."
+      ],
+      "tags": [
+        "bone health",
+        "calcium",
+        "strength"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You've heard that perimenopause affects bone density. You're wondering if you should be worried and what you can do now to protect your bones for the next 40 years."
+        },
+        {
+          "type": "paragraph",
+          "text": "Bone health during perimenopause matters. Estrogen slows bone loss; as estrogen drops, bone loss accelerates. Most bone loss during perimenopause occurs in the 5–10 years immediately post-menopause, making perimenopause the time to build your bone \"reserve.\""
+        },
+        {
+          "type": "paragraph",
+          "text": "The good news: bone loss is preventable and partly reversible through targeted action now."
+        },
+        {
+          "type": "heading",
+          "text": "What builds bone density"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Strength training: weight-bearing and resistance exercise is the most effective bone-building intervention. 2–3 sessions weekly, focusing on large muscle groups, builds bone and muscle simultaneously.",
+            "Protein: 25–30 grams per meal supports bone matrix formation. Bone is partly collagen (protein-based).",
+            "Calcium and magnesium: 1000–1200 mg calcium daily (from food or supplementation) and 300–400 mg magnesium daily support bone mineralization.",
+            "Vitamin D: 1000–2000 IU daily, or enough to maintain serum levels of 30–50 ng/mL. Low vitamin D accelerates bone loss.",
+            "Limit caffeine and alcohol: excess caffeine increases calcium excretion; excess alcohol interferes with bone metabolism.",
+            "Baseline screening: a DEXA scan now establishes your baseline. If you're already showing bone loss, earlier intervention is possible."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Bone health during perimenopause is an investment in your long-term health and independence."
+        }
+      ]
+    },
+    {
+      "slug": "hrt-myths-and-facts",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "Hormone Replacement Therapy (HRT): Myths, Facts, and Your Choices",
+      "dek": "The trial that frightened a generation used older formulations and older women. Here is the current picture.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-19",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Christine Sandu / Unsplash",
+      "keyTakeaways": [
+        "HRT reduces hot flashes by 80 to 90 percent, which lifts sleep, mood and quality of life with it.",
+        "Bioidentical hormones are not inherently safer than synthetic ones, whatever the marketing says.",
+        "It is not appropriate for everyone, and it is appropriate for more women than currently use it."
+      ],
+      "tags": [
+        "HRT",
+        "treatment",
+        "evidence"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You've heard conflicting information about HRT. Your mother took it; your friend is terrified of it. You're wondering if it's right for you."
+        },
+        {
+          "type": "paragraph",
+          "text": "HRT myths are pervasive, often based on outdated or misinterpreted research. Modern HRT is safer than previously thought, but it's not right for everyone. Your choice should be informed and personal."
+        },
+        {
+          "type": "heading",
+          "text": "The real facts about HRT"
+        },
+        {
+          "type": "list",
+          "items": [
+            "HRT reduces hot flashes by 80–90%, which improves sleep, mood, and quality of life dramatically for many women.",
+            "Modern, lower-dose HRT carries a lower risk profile than older, higher-dose formulations.",
+            "The Women's Health Initiative study (which scared many women away from HRT) used older formulations and older women; newer data is more nuanced.",
+            "HRT is not a life-long commitment. You can use it for symptom relief during perimenopause and menopause, then stop.",
+            "HRT is not appropriate for all women (especially those with certain cancers or blood clotting disorders), but it's appropriate for more women than currently use it.",
+            "Bioidentical HRT (hormones identical in molecular structure to those your body makes) is not inherently safer than synthetic HRT, despite marketing claims.",
+            "HRT can be delivered via pills, patches, gels, lozenges, or implants, so you have choices about delivery method based on your preferences and absorption."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "HRT is a tool. For many women, it's transformative. For others, non-hormonal approaches work better."
+        }
+      ]
+    },
+    {
+      "slug": "confidence-and-identity-shift",
+      "category": "mind",
+      "glyph": "◆",
+      "title": "The Confidence Shift: Navigating Identity and Self-Image Changes",
+      "dek": "Not just the body. The sense of who you are shifts too, and that deserves naming.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-18",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1679094223530-739065aca37d?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Lindsey / Unsplash",
+      "keyTakeaways": [
+        "Grieving the version of yourself that is changing is legitimate, not self-indulgent.",
+        "Connecting with other women in this phase is one of the most validating interventions available.",
+        "Accepting lower energy is honoring actual capacity, not giving up."
+      ],
+      "tags": [
+        "identity",
+        "confidence",
+        "self-image"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You don't recognize yourself. Not just physically. Your sense of self feels different. You're less confident, more self-conscious, less sure of your place in the world."
+        },
+        {
+          "type": "paragraph",
+          "text": "Many women describe perimenopause as a crisis of identity, not just a physical transition. You're no longer young, but you're not yet old. Your body is changing. Your energy is different. Your sexuality is shifting. The identity you've built around your competence, attractiveness, or vitality feels shaken."
+        },
+        {
+          "type": "paragraph",
+          "text": "This identity shift is real and psychological, not just hormonal."
+        },
+        {
+          "type": "heading",
+          "text": "What restores sense of self"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Grief: let yourself grieve the version of yourself that's changing. This is legitimate.",
+            "Redefine competence: your value isn't your energy or sexual appeal. What else defines you? What strengths are still present?",
+            "Community: many women find that connecting with other women in perimenopause is profoundly validating. You're not alone, and you're not broken.",
+            "Therapy: if identity shifts are creating existential distress, working with a therapist helps you integrate the change rather than resist it.",
+            "Body appreciation: shifting from criticism to appreciation of what your body can do (walk, hold, work, rest) reframes your relationship with physical change.",
+            "Creative expression: many women find that art, writing, or movement helps process identity shifts.",
+            "Permission to rest: accepting that your energy is lower is not giving up. It's honoring your body's actual capacity."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause invites reimagining who you are beyond youth and vitality. Many women emerge with a deeper sense of self."
+        }
+      ]
+    },
+    {
+      "slug": "vaginal-and-urinary-symptoms",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "Vaginal and Urinary Symptoms Beyond Dryness",
+      "dek": "Recurrent UTIs, irritation, leaking when you laugh. All common, all treatable.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-17",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1534616042650-80f5c9b61f09?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Manu Schwendener / Unsplash",
+      "keyTakeaways": [
+        "Thinning tissue and a shifting pH raise the risk of infection and incontinence together.",
+        "Pelvic floor physiotherapy resolves stress incontinence for 60 to 70 percent of women.",
+        "D-mannose stops bacteria adhering to the bladder wall and helps with recurrent UTIs."
+      ],
+      "tags": [
+        "urinary",
+        "pelvic floor",
+        "UTI"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're experiencing recurrent UTIs, or your vulva feels itchy and irritated. You're leaking urine when you laugh or exercise. You're wondering if these are age-related or perimenopause-related, and if anything can be done."
+        },
+        {
+          "type": "paragraph",
+          "text": "Vaginal and urinary changes during perimenopause extend beyond dryness. Thinning vaginal tissue (atrophy) makes you more susceptible to irritation, infections, and urinary incontinence. The vaginal pH shifts, altering your microbiome and increasing risk of bacterial vaginosis or yeast infections."
+        },
+        {
+          "type": "paragraph",
+          "text": "Urinary incontinence during perimenopause is partly hormonal (estrogen supports urethral tissue) and partly muscular (pelvic floor weakening without targeted exercise)."
+        },
+        {
+          "type": "paragraph",
+          "text": "All of these are treatable."
+        },
+        {
+          "type": "heading",
+          "text": "What helps"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Vaginal estrogen: addresses atrophy at the root, reducing irritation, infection risk, and sometimes incontinence.",
+            "Pelvic floor physical therapy: targeted exercises strengthen the pelvic floor and significantly reduce stress incontinence in 60–70% of women.",
+            "Probiotics: vaginal probiotics (specifically Lactobacillus strains) support microbiome balance and reduce infections.",
+            "D-mannose: a supplement that prevents bacteria from adhering to bladder walls; effective for recurrent UTIs.",
+            "Hydration: counterintuitively, dehydration makes urinary symptoms worse. Drink water consistently.",
+            "Avoid irritants: fragranced soaps, douches, and scented products damage your microbiome.",
+            "Limit caffeine: caffeine irritates the bladder; reducing it often improves incontinence and urgency."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Vaginal and urinary symptoms are common, medical, and highly treatable."
+        }
+      ]
+    },
+    {
+      "slug": "sleep-hygiene-isnt-enough",
+      "category": "sleep",
+      "glyph": "☾",
+      "title": "Sleep Hygiene Alone Isn't Enough: A Perimenopause Reality Check",
+      "dek": "You did everything the checklist said and still cannot sleep. The checklist was never the whole answer.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-16",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1585128719715-46776b56a0d1?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Julia / Unsplash",
+      "keyTakeaways": [
+        "Perimenopause insomnia is hormonal and neurological, so behavior change alone cannot override it.",
+        "Nervous system regulation, magnesium, weighted blankets, somatic practices, does more than habit tweaks.",
+        "Persistent short sleep is worth screening for thyroid problems, anemia and sleep apnea."
+      ],
+      "tags": [
+        "sleep",
+        "insomnia",
+        "reality check"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You've done everything the sleep hygiene advice recommends: dark room, cool temperature, consistent bedtime, no screens before bed. And you're still not sleeping."
+        },
+        {
+          "type": "paragraph",
+          "text": "The truth is, sleep hygiene is necessary but insufficient for perimenopause insomnia. Your problem isn't habits. It's hormonal and neurological. Willpower and perfect sleep hygiene can't override your thermoregulation chaos and nervous system reactivity."
+        },
+        {
+          "type": "paragraph",
+          "text": "This is worth acknowledging because shame about \"not doing sleep right\" adds another layer of anxiety that worsens insomnia."
+        },
+        {
+          "type": "heading",
+          "text": "What actually helps perimenopause sleep"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Pharmacological support: magnesium glycinate, melatonin, or (in some cases) low-dose sleep medications prescribed by a doctor experienced in perimenopause.",
+            "Nervous system regulation: magnesium, weighted blankets, and body-centered practices (yoga, tai chi, somatic experiencing) calm your nervous system more than behavioral habits alone.",
+            "Medical investigation: sometimes sleep disruption indicates other factors (thyroid, anemia, sleep apnea) that should be screened and treated.",
+            "Temperature management: keeping your body cool through strategic bedding, room temperature, and evening cooling practices is essential, not optional.",
+            "Exercise timing: morning or afternoon exercise (not evening) settles your nervous system for nighttime.",
+            "Acceptance: some nights you won't sleep well. Fighting that creates more anxiety. Instead: accept the disruption, rest even if you're not sleeping, and don't catastrophize the next day's function."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Sleep during perimenopause often requires multiple interventions, not just a checklist of habits."
+        }
+      ]
+    },
+    {
+      "slug": "mood-cycling-perimenopause",
+      "category": "mind",
+      "glyph": "◍",
+      "title": "The Emotional Rollercoaster: Perimenopause and Mood Cycling",
+      "dek": "Fine one day, fragile the next, with no trigger you can point at. Here is the pattern underneath.",
+      "readMinutes": 3,
+      "publishedAt": "2026-07-15",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1590309285152-3a4919040b78?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Photoholgic / Unsplash",
+      "keyTakeaways": [
+        "Tracking mood alongside sleep and stress usually reveals a cycle, and seeing it reduces the shame.",
+        "Protecting sleep stabilizes mood more than almost any other single change.",
+        "Mood cycling is not depression, though depression can occur alongside it."
+      ],
+      "tags": [
+        "mood",
+        "emotions",
+        "tracking"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Some days you feel fine. Other days you feel fragile, teary, or hopeless. The mood shift can feel sudden, with no external trigger. You're wondering if you're depressed or if this is just perimenopause mood cycling."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause mood changes are partly hormonal and partly contextual. The hormonal part is the rapid fluctuations in estrogen and progesterone affecting your brain chemistry. The contextual part is the accumulated stress of managing symptoms, worry about your aging body, and the emotional toll of disrupted sleep and fatigue."
+        },
+        {
+          "type": "paragraph",
+          "text": "The result is mood lability: rapid swings between contentment, anxiety, irritability, and sadness. Most women describe it as feeling \"emotionally thin\" or \"easily activated.\""
+        },
+        {
+          "type": "heading",
+          "text": "What helps"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Tracking mood patterns: note your mood, sleep, exercise, and stress. You'll likely see patterns (e.g., mood dips post-ovulation when progesterone drops). Recognizing the pattern reduces shame, because it's hormonal, not character-based.",
+            "Consistent movement: exercise is profoundly mood-stabilizing during perimenopause.",
+            "Sleep protection: poor sleep destabilizes mood more than almost anything else. Prioritize sleep above social obligations and productivity.",
+            "Omega-3 supplementation: supports serotonin production and stabilizes mood.",
+            "Therapy: talking through the emotional impact of perimenopause with someone who understands it helps.",
+            "Community: connecting with women experiencing similar mood shifts is validating and reduces isolation.",
+            "Permission to feel what you feel: instead of resisting mood swings, accept them as temporary. \"I'm experiencing a mood shift right now. It will pass.\""
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause mood cycling is real and treatable. It's not depression (though depression can co-occur), and it's not a sign of instability."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "Mood changes that are severe or persistent need professional mental health support. If you are having thoughts of self-harm, get help immediately."
+        }
+      ]
+    },
+    {
+      "slug": "sexual-pain-dyspareunia",
+      "category": "clinical",
+      "glyph": "✦",
+      "title": "Sexual Pain (Dyspareunia): Understanding and Treating It",
+      "dek": "Painful sex has causes that can be identified and treated. Avoidance is not the only option.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-14",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1547104442-044448b73426?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Sincerely Media / Unsplash",
+      "keyTakeaways": [
+        "Atrophy is the most common cause, and vaginal estrogen addresses it within two to three weeks.",
+        "Pelvic floor tension is a frequent second cause, and physiotherapy releases it.",
+        "Anxiety tightens the pelvic floor, so treating the anxiety reduces the pain."
+      ],
+      "tags": [
+        "pain",
+        "intimacy",
+        "pelvic floor"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Sexual intercourse is painful. You're avoiding intimacy. Your partner is hurt or confused. You're wondering if sex will ever feel comfortable again."
+        },
+        {
+          "type": "paragraph",
+          "text": "Sexual pain during perimenopause has multiple causes: vaginal atrophy and thinning (most common), muscle tension from anxiety or stress, reduced arousal and lubrication, or deep pelvic pain from other sources."
+        },
+        {
+          "type": "paragraph",
+          "text": "The pain is real, and it's treatable. But it often requires a combination approach."
+        },
+        {
+          "type": "heading",
+          "text": "What helps"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Vaginal estrogen: addresses atrophy directly. Results visible in 2–3 weeks.",
+            "High-quality lubricant: use during sexual activity. Silicone-based lubricants last longer than water-based.",
+            "Pelvic floor physical therapy: sometimes pain is caused by tension or dysfunction in the pelvic floor. A PT trained in this can release tension and restore function.",
+            "Extended foreplay and slow arousal: allows time for natural lubrication and blood flow to build. Less rushing, more presence.",
+            "Communication: tell your partner where it hurts and what feels good. Exploration instead of performance.",
+            "Reduce anxiety: anxiety increases pelvic floor tension, which increases pain. Addressing anxiety (through therapy, breathing, or movement) helps.",
+            "Medical evaluation: if pain is severe or doesn't improve with standard treatments, get evaluated for endometriosis, pelvic floor dysfunction, or other conditions."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Sexual pain is medical, not inevitable, and absolutely treatable."
+        }
+      ]
+    },
+    {
+      "slug": "breast-tenderness-and-changes",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "Breast Tenderness and Changes: What's Normal and What's Not",
+      "dek": "Which breast changes track your hormones, and which ones need imaging.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-13",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Hush Naidoo Jade Photography / Unsplash",
+      "keyTakeaways": [
+        "Cyclical tenderness, fluctuating swelling and general lumpiness are the hormonal pattern.",
+        "New hard or fixed lumps, discharge, dimpling or one-sided change need evaluation.",
+        "Magnesium at 300 to 400 mg daily reduces tenderness for many women."
+      ],
+      "tags": [
+        "breast health",
+        "tenderness",
+        "screening"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your breasts feel tender, swollen, or lumpy. You're worried about cancer. You're wondering if this is perimenopause or something else."
+        },
+        {
+          "type": "paragraph",
+          "text": "Breast changes during perimenopause are common and usually benign. Fluctuating hormones can cause tenderness, swelling, and lumpiness (fibrocystic changes). But not all breast symptoms are perimenopause-related."
+        },
+        {
+          "type": "heading",
+          "text": "What's likely perimenopause"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Cyclical tenderness (worse before your period): hormonal pattern.",
+            "Swelling that fluctuates throughout the month: hormonal.",
+            "Generalized lumpiness: common benign fibrocystic changes."
           ]
         },
         {
           "type": "heading",
-          "text": "Training the floor properly"
+          "text": "What needs medical evaluation"
+        },
+        {
+          "type": "list",
+          "items": [
+            "New, persistent lumps (especially if hard or fixed).",
+            "Nipple discharge, especially bloody.",
+            "Dimpling or skin changes.",
+            "Asymmetrical changes (one breast only).",
+            "Pain localized to one spot."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "What helps tenderness"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Supportive bra: wear one that fits well and supports without digging in.",
+            "Magnesium: 300–400 mg daily reduces breast tenderness in many women.",
+            "Omega-3s: anti-inflammatory effects reduce tenderness.",
+            "Avoiding caffeine: caffeine can worsen breast tenderness in some women.",
+            "Warm compress: soothing, not preventive, but comforting.",
+            "NSAIDs: ibuprofen or naproxen can reduce pain if it's severe."
+          ]
         },
         {
           "type": "paragraph",
-          "text": "Around a third of women contract the wrong muscles when told to 'do Kegels' — often bearing down, which worsens things. One session with a pelvic floor physiotherapist to confirm the contraction is the highest-value step in this entire article."
+          "text": "Breast tenderness during perimenopause is common and usually resolves. Persistent new lumps or changes require imaging (ultrasound or mammogram) to rule out other causes."
         },
         {
           "type": "callout",
-          "title": "A realistic protocol",
-          "text": "Three sets of eight to twelve maximal contractions, held six to eight seconds, daily for at least three months. Improvement typically appears by six to eight weeks; stopping reverses it."
+          "title": "When to get checked",
+          "text": "New lumps, discharge, or pain that stays in one spot need to be evaluated by your doctor. Do not assume it is perimenopause without confirmation."
+        }
+      ]
+    },
+    {
+      "slug": "brain-health-neuroplasticity",
+      "category": "mind",
+      "glyph": "◆",
+      "title": "Brain Health and Neuroplasticity: Building Resilience During Perimenopause",
+      "dek": "Perimenopause fog does not predict decline. It is a good moment to build the habits that protect against it.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-12",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1722074754161-b8f2ab48cc41?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Viktoriya / Unsplash",
+      "keyTakeaways": [
+        "Cardiovascular exercise is the strongest brain-protective intervention there is: 150 minutes weekly.",
+        "Learning something genuinely new builds neural connections that crosswords do not.",
+        "Social connection ranks among the strongest predictors of long-term cognitive health."
+      ],
+      "tags": [
+        "brain health",
+        "exercise",
+        "resilience"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're worried about cognitive decline during perimenopause. You want to know if there's anything you can do now to protect your brain for the next 40 years."
         },
         {
           "type": "paragraph",
-          "text": "Where dryness or recurrent infection is the dominant issue, local vaginal oestrogen is highly effective and barely absorbed systemically — a different risk profile from systemic hormone therapy, and appropriate for many women who cannot take the systemic form."
+          "text": "Perimenopause brain changes are temporary and not predictive of long-term cognitive decline. But perimenopause is an opportunity to establish habits that support brain health throughout your life."
+        },
+        {
+          "type": "heading",
+          "text": "What builds brain resilience"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Cardiovascular exercise: the single most powerful brain-protective intervention. 150 minutes of moderate activity weekly increases BDNF and protects against cognitive decline.",
+            "Cognitive challenge: learning new things (language, skill, instrument) builds neural connections.",
+            "Sleep: consolidates memories and clears metabolic waste from your brain. Sleep is brain maintenance.",
+            "Social connection: strong relationships and regular social engagement are among the strongest predictors of cognitive health.",
+            "Mediterranean diet: anti-inflammatory and rich in nutrients that support brain health.",
+            "Purpose and meaning: engaging in activities that feel meaningful is protective against decline.",
+            "Stress management: chronic stress damages the hippocampus (memory center). Reducing stress protects brain health."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Brain fog during perimenopause is temporary. But using this time to establish brain-protective habits sets you up for cognitive sharpness decades out."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "If brain fog is severe, or cognitive changes go beyond the usual perimenopause pattern, ask for screening for thyroid problems, anemia, and vitamin deficiencies."
+        }
+      ]
+    },
+    {
+      "slug": "cycle-tracking-perimenopause",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "Understanding Your Menstrual Cycle Tracking During Perimenopause",
+      "dek": "Your app cannot predict anything any more. Tracking is still worth doing, for different reasons.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-11",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1623697899811-f2403f50685e?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Kelly Sikkema / Unsplash",
+      "keyTakeaways": [
+        "The point shifts from prediction to pattern: which symptoms cluster with which cycle phase.",
+        "Recorded bleeding patterns are what separate normal variability from a change worth investigating.",
+        "Tracking also shows whether a new supplement or medication is actually doing anything."
+      ],
+      "tags": [
+        "tracking",
+        "cycles",
+        "data"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your cycle is irregular. Your apps are useless for predicting anything. You're wondering if tracking is pointless during perimenopause."
+        },
+        {
+          "type": "paragraph",
+          "text": "Cycle tracking during perimenopause is harder than before, but it's still useful. Instead of predicting your period, you're gathering data about patterns, symptom relationships, and informing treatment decisions."
+        },
+        {
+          "type": "heading",
+          "text": "What tracking reveals"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Symptom patterns: if hot flashes peak on certain days, you'll see a relationship to hormonal phases.",
+            "Migraine or pain patterns: many women find their migraines or joint pain cluster around certain cycle phases.",
+            "Mood cycling: you'll see if mood dips happen post-ovulation (progesterone drop) or pre-menstruation.",
+            "Bleeding patterns: tracking helps differentiate between normal perimenopause variability and changes that need medical attention.",
+            "Treatment response: when you start a supplement or medication, tracking shows whether it's actually helping."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "How to track effectively during perimenopause"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Note start and end of bleeding, flow amount, and any clotting.",
+            "Note symptom severity: hot flashes, mood, migraines, sleep quality, energy.",
+            "Avoid predicting: don't expect regular cycles; just record what actually happens.",
+            "Use the data: share patterns with your Anuva Care Companion to inform treatment recommendations."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Tracking during perimenopause is data collection, not prediction. The data itself is valuable."
+        }
+      ]
+    },
+    {
+      "slug": "nutrition-perimenopause",
+      "category": "nutrition",
+      "glyph": "◇",
+      "title": "Nutrition During Perimenopause: Beyond Generic Dieting Advice",
+      "dek": "Beyond generic diet advice: the few nutritional shifts that actually move perimenopause symptoms.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-10",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Chantal Garnier / Unsplash",
+      "keyTakeaways": [
+        "Protein at 25 to 30 grams per meal is the single most useful nutritional change in this phase.",
+        "Iron, vitamin D, magnesium and B vitamins are the deficiencies that most often drive symptoms.",
+        "There is no perimenopause diet. Restriction adds stress, which makes symptoms worse."
+      ],
+      "tags": [
+        "nutrition",
+        "protein",
+        "supplements"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're hearing conflicting nutritional advice for perimenopause. You're wondering what actually matters and what's hype."
+        },
+        {
+          "type": "paragraph",
+          "text": "Most nutritional advice for perimenopause is generic. What matters is addressing the specific metabolic shifts and symptom drivers that occur during your perimenopause."
+        },
+        {
+          "type": "heading",
+          "text": "What actually matters"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Protein consistency: 25–30 grams at each meal supports muscle retention, satiety, and stabilizes blood sugar. This is the single most important nutritional shift for perimenopause.",
+            "Omega-3 adequate intake: 1–2 grams EPA/DHA daily reduces inflammation and supports mood, joint health, and brain function.",
+            "Fiber balance: 25–30 grams daily from whole foods, gradually increased, supports digestion and blood sugar stability.",
+            "Hydration: many perimenopause symptoms (fatigue, brain fog, headaches) are partly dehydration. Drink consistently.",
+            "Micronutrient sufficiency: iron (if bleeding is heavy), vitamin D, magnesium, and B vitamins are common deficiencies that drive symptoms.",
+            "Limiting inflammatory foods: processed foods, excess sugar, and alcohol worsen joint pain, fatigue, and mood."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "What doesn't matter as much"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Specific \"perimenopause diets\": there's no magic diet. The principles above work regardless of the framework.",
+            "Eliminating food groups: unless you have an actual intolerance, restrictive diets create stress (which worsens symptoms) without benefit.",
+            "Calorie counting: metabolic rate changes during perimenopause, but the relationship between calories and weight is complex. Focus on nourishment, not restriction."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause nutrition is about support, not restriction."
+        }
+      ]
+    },
+    {
+      "slug": "endocrine-disruptors",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "Environmental Toxin Exposure: Endocrine Disruptors and Perimenopause",
+      "dek": "Endocrine disruptors are real and worth reducing. They are not where the biggest gains are.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-09",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1571727153934-b9e0059b7ab2?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Tanvi Sharma / Unsplash",
+      "keyTakeaways": [
+        "Plastics, cosmetics and pesticide residues are the everyday sources worth addressing first.",
+        "Not heating food in plastic and filtering drinking water are the two cheapest changes.",
+        "Sleep, movement and targeted symptom support matter more than perfect product choices."
+      ],
+      "tags": [
+        "toxins",
+        "plastics",
+        "exposure"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're hearing about endocrine-disrupting chemicals in plastics, cosmetics, and personal care products. You're wondering if exposure worsens perimenopause symptoms."
+        },
+        {
+          "type": "paragraph",
+          "text": "Endocrine disruptors (chemicals that interfere with hormone function) do exist in common consumer products. Whether they significantly worsen perimenopause symptoms is less clear, but minimizing exposure is reasonable."
+        },
+        {
+          "type": "heading",
+          "text": "Where endocrine disruptors are found"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Plastics: BPA in water bottles and food containers; phthalates in flexible plastics.",
+            "Cosmetics and personal care: parabens, phthalates, and other chemicals in skincare, shampoo, and fragrances.",
+            "Food: pesticide residues; hormones in non-organic animal products."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Practical steps to reduce exposure"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Avoid heating food in plastic: use glass containers instead.",
+            "Choose products labeled \"phthalate-free\" and \"paraben-free\" where practical.",
+            "Buy organic for high-pesticide foods (strawberries, spinach, apples).",
+            "Filter your drinking water: removes some (though not all) contaminants.",
+            "Reduce artificial fragrances: use naturally scented products or no scent."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Reducing endocrine disruptor exposure is worthwhile, but it's not a primary treatment for perimenopause. The bigger impact comes from managing your symptoms through sleep, exercise, and targeted support."
+        }
+      ]
+    },
+    {
+      "slug": "exercise-perimenopause",
+      "category": "movement",
+      "glyph": "◯",
+      "title": "Exercise During Perimenopause: What Actually Works",
+      "dek": "Exercise is essential in this phase, and the dose matters more than it used to.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-08",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Sporlab / Unsplash",
+      "keyTakeaways": [
+        "Strength training two to three times weekly is the non-negotiable part.",
+        "HIIT raises cortisol sharply, which can worsen hot flashes, anxiety and sleep if you are already dysregulated.",
+        "Consistency beats intensity. More exercise is not better while hormones are in flux."
+      ],
+      "tags": [
+        "exercise",
+        "strength",
+        "recovery"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're hearing conflicting advice about exercise during perimenopause. Some sources say to avoid high-intensity exercise; others say it's essential. You're wondering what's right for your body."
+        },
+        {
+          "type": "paragraph",
+          "text": "Exercise during perimenopause is essential, but the type and intensity matter."
+        },
+        {
+          "type": "heading",
+          "text": "What works"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Strength training 2–3 times weekly: builds muscle, raises metabolism, protects bone, and stabilizes mood. This is non-negotiable.",
+            "Moderate cardiovascular exercise: 150 minutes weekly of walking, cycling, or swimming. Avoid high-intensity if your nervous system is already dysregulated (check: how's your sleep and anxiety?).",
+            "Flexibility and balance: yoga, tai chi, or Pilates support nervous system regulation and reduce injury risk.",
+            "Movement throughout the day: non-exercise movement (walking, stretching, gentle movement) is often underrated and easy to do."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "What to avoid (at least temporarily)"
+        },
+        {
+          "type": "list",
+          "items": [
+            "High-intensity interval training (HIIT) if your nervous system is dysregulated: HIIT raises cortisol acutely, which can worsen hot flashes, anxiety, and sleep disruption. If you love HIIT, do it less frequently and monitor whether it worsens symptoms.",
+            "Overtraining: more exercise isn't better when you're managing hormonal disruption. Consistency beats intensity.",
+            "Exercise as punishment: exercise during perimenopause should feel nourishing, not punitive."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "The key"
+        },
+        {
+          "type": "paragraph",
+          "text": "Exercise is medicine during perimenopause, but it must be dosed appropriately. You're not training for performance; you're supporting your nervous system and body through a major transition."
+        },
+        {
+          "type": "callout",
+          "title": "When to get checked",
+          "text": "If exercise consistently worsens your symptoms, with more hot flashes, disrupted sleep, or deeper fatigue, you are likely overextending. Scale back and refocus on recovery."
+        }
+      ]
+    },
+    {
+      "slug": "sleep-supplements",
+      "category": "sleep",
+      "glyph": "◌",
+      "title": "Sleep Supplements: What Works and What Doesn't",
+      "dek": "What the evidence supports for perimenopause sleep, what is thin, and what to skip.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-07",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1633171036157-78d53387fdc0?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Anirudh / Unsplash",
+      "keyTakeaways": [
+        "Magnesium glycinate, 200 to 400 mg one to two hours before bed, is the sensible starting point.",
+        "Melatonin helps you fall asleep, not stay asleep, and more than 5 mg is counterproductive.",
+        "Most sleep supplements need four to eight weeks to show their full effect."
+      ],
+      "tags": [
+        "supplements",
+        "magnesium",
+        "melatonin"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're considering supplements for sleep. You're wondering which ones actually work and which are hype."
+        },
+        {
+          "type": "heading",
+          "text": "Supplements with good evidence"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Magnesium glycinate (not oxide): 200–400 mg taken 1–2 hours before bed. Supports sleep and nervous system regulation. Gentle on digestion.",
+            "Magnesium threonate: crosses the blood-brain barrier more effectively than other forms. 144 mg (3 capsules of typical formulation) before bed.",
+            "Melatonin: 0.5–5 mg taken 1–2 hours before bed. Works by supporting circadian rhythm; less effective if your primary issue is staying asleep rather than falling asleep.",
+            "L-theanine: 100–200 mg taken before bed. Supports calm focus without sedation.",
+            "Valerian root: modest evidence for sleep support; works for some people, not others. Try for 2–4 weeks to assess response."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Supplements with weak evidence"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Passionflower: some studies suggest benefit, but evidence is mixed.",
+            "Chamomile: calming but weak sleep-promoting evidence. Better as a ritual (tea) than supplement.",
+            "Lavender: pleasant, but sleep-promoting evidence is limited."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Supplements to avoid"
+        },
+        {
+          "type": "list",
+          "items": [
+            "High-dose melatonin (over 5 mg): more doesn't equal better. Excess can cause grogginess and long-term tolerance.",
+            "Antihistamines (diphenhydramine): sedating but poor sleep quality; tolerance builds quickly."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "The approach"
+        },
+        {
+          "type": "paragraph",
+          "text": "Start with magnesium glycinate at a low dose. If that doesn't help, add another supplement. Combinations often work better than single supplements. Most supplements take 4–8 weeks to show full effect."
+        }
+      ]
+    },
+    {
+      "slug": "stress-and-cortisol",
+      "category": "mind",
+      "glyph": "◆",
+      "title": "Stress and Cortisol: The Hormone That Amplifies Perimenopause Symptoms",
+      "dek": "Cortisol amplifies almost every perimenopause symptom you have. Lowering your baseline is the lever.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-06",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1600340053706-32d1278206ef?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Michael Held / Unsplash",
+      "keyTakeaways": [
+        "High cortisol increases hot flashes, destabilizes mood, drives visceral fat and disrupts sleep.",
+        "Slow breathing lowers cortisol within minutes; 20 minutes in green space lowers it too.",
+        "Deep sleep is cortisol’s main antagonist, which is why sleep protection comes first."
+      ],
+      "tags": [
+        "stress",
+        "cortisol",
+        "nervous system"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're stressed. Your perimenopause symptoms feel worse when you're stressed. You're wondering if stress is making perimenopause harder or if you're just noticing things more."
+        },
+        {
+          "type": "paragraph",
+          "text": "Stress amplifies perimenopause. High cortisol (the stress hormone) increases hot flashes, worsens mood instability, drives weight gain (especially visceral fat), disrupts sleep, and dysregulates your nervous system further."
+        },
+        {
+          "type": "paragraph",
+          "text": "Stress during perimenopause isn't just unpleasant. It is physiologically amplifying your symptoms."
+        },
+        {
+          "type": "heading",
+          "text": "What lowers cortisol"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Sleep: deep sleep is cortisol's primary antagonist. Prioritize sleep protection above almost everything.",
+            "Movement: a gentle walk (not intense exercise) lowers cortisol acutely and chronically.",
+            "Breathing work: slow, deep breathing (4-7-8 breathing, box breathing) activates your parasympathetic nervous system and lowers cortisol within minutes.",
+            "Time in nature: 20 minutes in a green space lowers cortisol.",
+            "Social connection: meaningful time with loved ones lowers cortisol.",
+            "Creative expression: art, writing, music, or play lowers stress and cortisol.",
+            "Setting boundaries: learning to say no protects your cortisol by reducing chronic stress load.",
+            "Reducing stimulation: limiting news, social media, and unnecessary obligations gives your nervous system space to recover."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "The reality"
+        },
+        {
+          "type": "paragraph",
+          "text": "You can't eliminate stress, and you shouldn't try, because some stress is healthy. But you can actively lower your baseline cortisol through the practices above. That single shift often improves your perimenopause experience measurably."
+        }
+      ]
+    },
+    {
+      "slug": "complementary-therapies",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "Complementary Therapies: Acupuncture, Herbal Medicine, and Beyond",
+      "dek": "Acupuncture, herbs, yoga and the rest, sorted by what the evidence actually supports.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-05",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1563822249548-9a72b6353cd1?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Alice Pasqual / Unsplash",
+      "keyTakeaways": [
+        "Acupuncture shows a 30 to 40 percent reduction in hot flashes, over 8 to 10 sessions.",
+        "Sage leaf extract is the best studied herb; black cohosh remains contested.",
+        "Check any herb against your other medications before starting it."
+      ],
+      "tags": [
+        "acupuncture",
+        "herbal",
+        "evidence"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're curious about acupuncture, herbal medicine, and other complementary therapies for perimenopause. You're wondering if they work and which ones to try."
+        },
+        {
+          "type": "paragraph",
+          "text": "Complementary therapies have varying levels of evidence. Some are worth exploring; some are hype."
+        },
+        {
+          "type": "heading",
+          "text": "With good evidence"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Acupuncture: evidence suggests benefit for hot flashes (30–40% reduction), sleep, and mood. Results take 6–8 weeks; usually needs 8–10 sessions.",
+            "Herbal medicine (sage leaf, black cohosh, red clover): modest evidence for hot flash reduction. Sage leaf extract is particularly well-studied; black cohosh is controversial (some studies show benefit, others don't).",
+            "Yoga: evidence supports benefit for hot flashes, mood, sleep, and overall quality of life.",
+            "Massage therapy: supports relaxation and nervous system regulation; evidence for symptom-specific relief is limited but quality of life improves."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "With weak or mixed evidence"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Homeopathy: limited scientific evidence; any benefit likely placebo-mediated.",
+            "Crystal healing: no scientific evidence.",
+            "Specific \"perimenopause detox\" programs: often expensive and unsupported by evidence."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "How to evaluate"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Does it align with your values? (Some women prefer natural approaches; others prefer evidence-based medicine.)",
+            "Is it supported by research? (Look for peer-reviewed studies, not just marketing claims.)",
+            "Is it safe with your other medications or conditions?",
+            "Can you access it affordably?",
+            "Does it work for you personally? (Some women respond better than others.)"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Complementary therapies aren't inherently better or worse than conventional medicine. They're different approaches that work better for different people."
+        }
+      ]
+    },
+    {
+      "slug": "talking-to-your-doctor",
+      "category": "clinical",
+      "glyph": "✦",
+      "title": "Talking to Your Doctor About Perimenopause: What You Need to Know",
+      "dek": "Most doctors get little perimenopause training. How to make the appointment work anyway.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-04",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1743385779431-45d26d9775b1?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Kelly Sikkema / Unsplash",
+      "keyTakeaways": [
+        "Bring tracked data and severity ratings; clinicians respond to data more than description.",
+        "Name perimenopause explicitly, then ask about specific interventions rather than describing symptoms alone.",
+        "A gynecologist, or a menopause specialist, is the right room for this conversation."
+      ],
+      "tags": [
+        "doctor",
+        "advocacy",
+        "consultation"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're frustrated because your doctor doesn't seem to understand perimenopause. You're wondering how to have a more productive conversation."
+        },
+        {
+          "type": "paragraph",
+          "text": "Many doctors receive minimal training in perimenopause. Some attribute all symptoms to aging or psychology. Some dismiss symptoms as trivial. This isn't your fault. It's a gap in medical education."
+        },
+        {
+          "type": "heading",
+          "text": "How to communicate effectively with your doctor"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Bring data: symptom tracking, severity ratings, and patterns. Doctors respond to data more than subjective descriptions.",
+            "Name perimenopause specifically: \"I'm experiencing symptoms consistent with perimenopause, and here is what that looks like for me\" frames the conversation medically.",
+            "Ask about specific interventions: don't just complain; ask, \"Would HRT be appropriate for me?\" or \"Can we do thyroid and iron testing?\"",
+            "Bring this conversation to your gynecologist, not your primary care doctor: gynecologists have more expertise in perimenopause.",
+            "Consider a perimenopause specialist: some gynecologists specialize in menopause medicine. If your doctor isn't responsive, seeking a specialist is reasonable.",
+            "Get a second opinion if needed: if your concerns are dismissed, another doctor may be more helpful."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "You're not being difficult or dramatic."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause symptoms are real, measurable, and medically valid. A good doctor will take you seriously."
+        }
+      ]
+    },
+    {
+      "slug": "post-menopause-health",
+      "category": "clinical",
+      "glyph": "✧",
+      "title": "Post-Menopause Health: What Changes and What Stays",
+      "dek": "What resolves after your last period, what persists, and what needs ongoing attention.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-03",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1444044205806-38f3ed106c10?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Jonathan Bean / Unsplash",
+      "keyTakeaways": [
+        "Hot flashes, sleep, mood and brain fog typically settle within one to two years post-menopause.",
+        "Vaginal dryness, bone loss and a lower metabolic rate persist and need continued treatment.",
+        "The habits built during perimenopause are what carry into the decades after it."
+      ],
+      "tags": [
+        "post-menopause",
+        "long term",
+        "prevention"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're wondering what happens after menopause. Will symptoms resolve? Will new ones start? What's your health trajectory post-menopause?"
+        },
+        {
+          "type": "paragraph",
+          "text": "Post-menopause is a new phase, not a return to pre-perimenopause. Some symptoms resolve; others persist or shift."
+        },
+        {
+          "type": "heading",
+          "text": "What typically improves post-menopause"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Hot flashes: resolve for most women within 1–2 years after your last period.",
+            "Sleep disruption: improves significantly as hot flashes resolve.",
+            "Mood instability: stabilizes as hormones stabilize (even though they're lower).",
+            "Fatigue: often improves as sleep improves.",
+            "Brain fog: typically resolves within 1–2 years post-menopause."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "What often persists or worsens"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Vaginal dryness: may persist or worsen without treatment. Vaginal estrogen helps indefinitely.",
+            "Joint pain: may persist or slowly worsen due to lower estrogen and ongoing aging.",
+            "Bone loss: continues post-menopause, requiring ongoing strength training and adequate calcium/vitamin D.",
+            "Metabolic rate: remains lower than pre-perimenopause; continued strength training helps maintain muscle and metabolism.",
+            "Sexual changes: lower libido and arousal may persist post-menopause without treatment."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Your health post-menopause"
+        },
+        {
+          "type": "paragraph",
+          "text": "Post-menopause is a stable, lower-hormone phase. You're not less healthy or less vital. You're operating with a different hormonal baseline. Many women report feeling relieved and empowered post-menopause."
+        },
+        {
+          "type": "paragraph",
+          "text": "The goal during perimenopause is to build habits and supports that serve you for decades post-menopause: strength training, cardiovascular fitness, nutrient-dense eating, stress management, and social connection."
+        }
+      ]
+    },
+    {
+      "slug": "your-perimenopause-support-system",
+      "category": "clinical",
+      "glyph": "✦",
+      "title": "Creating Your Perimenopause Support System: What You Actually Need",
+      "dek": "You do not need to do everything. Here is what is actually load-bearing.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-02",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1471970394675-613138e45da3?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Hope House Press / Unsplash",
+      "keyTakeaways": [
+        "Sleep first. When sleep is broken, every other intervention works less well.",
+        "Then movement, then adequate protein and the few supplements that fill real gaps.",
+        "Expensive supplements, restrictive diets and constant tracking are the parts you can skip."
+      ],
+      "tags": [
+        "support",
+        "planning",
+        "basics"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're overwhelmed by the number of things that \"should\" help. You're wondering what's actually essential and what you can skip."
+        },
+        {
+          "type": "paragraph",
+          "text": "You don't need to do everything. You need a personalized support system tailored to your actual symptoms and life."
+        },
+        {
+          "type": "heading",
+          "text": "Start with the basics"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Sleep: if sleep is broken, everything else is harder. Address this first.",
+            "Movement: daily movement (walking), plus 2–3 strength sessions weekly, is transformative.",
+            "Nutrition: ensure adequate protein, omega-3s, and micronutrients. Supplement targeted gaps (magnesium, vitamin D, iron if deficient).",
+            "Stress management: one practice that genuinely calms you, such as breathwork, yoga, or time in nature. Pick one that fits your life."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Add as needed"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Medical support: if symptoms are severe, HRT or other medications can help.",
+            "Mental health support: therapy if mood shifts are significant or if you're grieving the changes.",
+            "Specialized support: pelvic floor PT if you have sexual pain or incontinence; acupuncture or herbal medicine if you prefer complementary approaches."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "You don't need"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Perfect product choices",
+            "Expensive supplements",
+            "Restrictive diets",
+            "Intensive fitness regimens",
+            "Constant symptom tracking"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Your support system should feel sustainable and integrated into your actual life."
+        }
+      ]
+    },
+    {
+      "slug": "this-phase-is-temporary",
+      "category": "mind",
+      "glyph": "◍",
+      "title": "This Phase Is Temporary: Long-Term Perspective on Perimenopause",
+      "dek": "Perimenopause feels endless from inside it. The timeline says otherwise.",
+      "readMinutes": 2,
+      "publishedAt": "2026-07-01",
+      "author": {
+        "name": "Anuva Care Team",
+        "credential": "Perimenopause education"
+      },
+      "image": "https://images.unsplash.com/photo-1689689753534-30a3182ed023?auto=format&fit=crop&w=1200&q=75",
+      "heroCaption": "Photo: Monika Guzikowska / Unsplash",
+      "keyTakeaways": [
+        "Perimenopause runs 4 to 10 years, with symptoms usually peaking around year four or five.",
+        "Most acute symptoms begin resolving between years six and eight.",
+        "Lowering expectations temporarily is an accurate response to a real biological transition."
+      ],
+      "tags": [
+        "perspective",
+        "timeline",
+        "hope"
+      ],
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You're exhausted. You're wondering when this ends. You're questioning whether you can sustain this for another 5–10 years."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause feels endless when you're in it. But it isn't."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause typically lasts 4–10 years, with the most acute symptoms peaking around year 4–5. Most women spend about 7 years in perimenopause. Your symptoms will improve, even if the timeline feels long."
+        },
+        {
+          "type": "heading",
+          "text": "The timeline perspective"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Year 1–2: You're figuring out what's happening and adjusting.",
+            "Year 3–5: Symptoms often peak, but you've usually built coping systems and found what helps.",
+            "Year 6–8: Most acute symptoms begin resolving, even if some persist.",
+            "Post-menopause: A new baseline, usually with relief and renewed energy."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "What helps sustain you through this"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Permission to lower your expectations temporarily: you're managing a major biological transition. Your capacity is genuinely lower. That's not failure.",
+            "Community: connecting with women in the same phase normalizes your experience and reduces isolation.",
+            "Celebrating small wins: one good night of sleep, a day without hot flashes, regained patience. These matter.",
+            "Perspective: this is temporary. Your body will restabilize. You will feel better."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Many women emerge from perimenopause with a clearer sense of who they are, stronger boundaries, better body awareness, and deeper self-compassion than before."
+        },
+        {
+          "type": "paragraph",
+          "text": "Perimenopause is hard. It's also an opportunity for recalibration and growth."
         }
       ]
     }

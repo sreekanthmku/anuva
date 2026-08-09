@@ -147,17 +147,38 @@ export default function LibraryArticleRoute() {
       {state === 'ready' && data && (
         <>
           <article className="px-3">
-            <div
-              className="relative flex h-[150px] items-end overflow-hidden rounded-[20px] border border-border-default"
-              style={{ background: accent }}
-            >
-              <span
-                className="absolute bottom-2.5 left-3 right-3 text-[9.5px] uppercase tracking-[0.12em] text-on-surface/80"
-                style={{ fontFamily: '"Mulish", sans-serif' }}
+            {/* No artwork, no hero: an empty tinted panel reads as a broken image. */}
+            {data.article.image && (
+              <div
+                className="relative flex h-[180px] items-end overflow-hidden rounded-[20px] border border-border-default"
+                style={{ background: accent }}
               >
-                {data.article.heroCaption}
-              </span>
-            </div>
+                <img
+                  src={data.article.image}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                {data.article.heroCaption && (
+                  <>
+                    {/* Scrim: the credit sits over an unknown photo, so it needs its own contrast. */}
+                    <div
+                      className="absolute inset-x-0 bottom-0 h-16"
+                      style={{
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))',
+                      }}
+                    />
+                    <span
+                      className="absolute bottom-2.5 left-3 right-3 text-[9.5px] uppercase tracking-[0.12em] text-white/85"
+                      style={{ fontFamily: '"Mulish", sans-serif' }}
+                    >
+                      {data.article.heroCaption}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
 
             <div
               className="mt-4 text-[9.5px] uppercase tracking-[0.15em]"

@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => {
     foodRhythmFindUnique: fn(),
     foodRhythmUpsert: fn(),
     hotFlashUpsert: fn(),
+    userFindUnique: fn(),
     transaction: fn(),
   };
 });
@@ -88,6 +89,10 @@ vi.mock('@anuva/database', () => ({
       findUnique: mocks.foodRhythmFindUnique,
       upsert: mocks.foodRhythmUpsert,
     },
+    // Read for the nudge phrasing's name placeholder.
+    user: {
+      findUnique: mocks.userFindUnique,
+    },
   },
 }));
 
@@ -120,6 +125,7 @@ function resetDbToEmpty() {
   mocks.moodLogFindFirst.mockResolvedValue(null);
   mocks.moodLogCreate.mockResolvedValue({ id: 'mood-1' });
   mocks.hotFlashFindUnique.mockResolvedValue(null);
+  mocks.userFindUnique.mockResolvedValue({ name: 'Neha Sharma' });
   mocks.quickSymptomFindFirst.mockResolvedValue(null);
   mocks.energyLogFindUnique.mockResolvedValue(null);
   mocks.energyLogUpsert.mockResolvedValue({});

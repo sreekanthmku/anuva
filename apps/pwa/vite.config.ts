@@ -79,6 +79,17 @@ export default defineConfig({
             handler: 'NetworkFirst',
             options: { cacheName: 'api-cache' },
           },
+          {
+            // Library hero photos are hotlinked from Unsplash's CDN and never change per URL,
+            // so they are worth holding on to rather than refetching on every article open.
+            urlPattern: ({ url }) => url.hostname === 'images.unsplash.com',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'library-images',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
     }),
