@@ -13,6 +13,7 @@ import {
   type NudgeDef,
 } from './registry.js';
 import { runGovernor } from './governor.js';
+import { firstNameOf, nudgeQuestion, type QuestionContext } from './questionVariants.js';
 import { selectL2Nudge } from './selectL2Nudge.js';
 import { OVERWHELMED } from './signals.js';
 
@@ -49,14 +50,26 @@ function mustNudge(id: string): NudgeDef {
   return def;
 }
 
-export function toCard(def: NudgeDef): NudgeCard {
+export function toCard(def: NudgeDef, ctx?: QuestionContext): NudgeCard {
   return {
     nudgeId: def.id,
     layer: def.layer,
     slot: def.slot,
-    question: def.question,
+    question: ctx ? nudgeQuestion(def.id, def.question, ctx) : def.question,
     options: def.options,
     required: def.required,
+  };
+}
+
+/**
+ * Everything the phrasing picker needs for one user on one day. The date is part of the seed, so
+ * the wording moves on each morning while staying put across a day's requests.
+ */
+async function questionContext(userId: string, dayStart: Date): Promise<QuestionContext> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+  return {
+    seed: `${userId}:${dayStart.toISOString().split('T')[0]}`,
+    firstName: firstNameOf(user?.name),
   };
 }
 
@@ -134,12 +147,13 @@ export async function buildDispatch(
   }
 
   // SR-05: drop individual cards whose tracker was already self-logged today.
+  const ctx = await questionContext(userId, dayStart);
   const cards: NudgeCard[] = [];
   for (const id of ids) {
     const def = getNudge(id);
     if (!def) continue;
     const g = await runGovernor(userId, def, slot, now, { ignoreDailyCap: isRender });
-    if (g.allowed) cards.push(toCard(def));
+    if (g.allowed) cards.push(toCard(def, ctx));
   }
 
   return {
@@ -368,6 +382,8 @@ export interface DaySheet {
 
 export async function getDaySheet(userId: string, now: Date): Promise<DaySheet> {
   const dayStart = startOfDay(now);
+  // Same phrasing the day's push and cards used, so the sheet does not re-ask in other words.
+  const ctx = await questionContext(userId, dayStart);
 
   const trackers: DayTrackerView[] = [];
   for (const id of DAY_TRACKER_ORDER) {
@@ -380,7 +396,7 @@ export async function getDaySheet(userId: string, now: Date): Promise<DaySheet> 
       nudgeId: id,
       tier: meta.tier,
       label: meta.label,
-      question: def.question,
+      question: nudgeQuestion(id, def.question, ctx),
       options: def.options,
       required: def.required,
       answered: answer !== null,
