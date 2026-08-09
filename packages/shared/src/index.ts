@@ -136,6 +136,8 @@ export {
   type RescheduleConsultationResponse,
 } from './booking.js';
 
+export { consultationDocumentFileName } from './documentFile.js';
+
 export {
   doctorNotificationTypeSchema,
   doctorNotificationSchema,

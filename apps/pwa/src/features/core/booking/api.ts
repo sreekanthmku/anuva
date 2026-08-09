@@ -1,6 +1,7 @@
 import type {
   CancelConsultationResponse,
   ConsultationBookingResponse,
+  ConsultationDocument,
   ConsultationDocumentsResponse,
   ConsultationSpecialistsResponse,
   ConsultationSlotsResponse,
@@ -11,6 +12,7 @@ import type {
   MyConsultationsResponse,
   RescheduleConsultationResponse,
 } from '@anuva/shared';
+import { consultationDocumentFileName } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
 
 export async function fetchConsultationSpecialists(): Promise<ConsultationSpecialistsResponse> {
@@ -98,13 +100,17 @@ export async function fetchConsultationDocuments(
  * Prescriptions sit behind the same authenticated pattern as the recording, so the file is pulled
  * as a blob rather than handed to an <img src> — a tag would drop the session cookie when the API
  * lives on another origin.
+ *
+ * Returned as a `File`, not a blob URL: a `blob:` URL has no filename and is only valid inside the
+ * document that made it, so sharing one to WhatsApp sends a dead link named "unknown". A `File`
+ * carries the name and can go straight into `navigator.share`.
  */
-export async function fetchConsultationDocumentUrl(
-  consultationId: string,
-  documentId: string
-): Promise<string> {
+export async function fetchConsultationDocumentFile(
+  doc: Pick<ConsultationDocument, 'id' | 'mimeType' | 'originalName'>,
+  consultationId: string
+): Promise<File> {
   const base = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
-  const path = `/consultations/${consultationId}/documents/${documentId}/file`;
+  const path = `/consultations/${consultationId}/documents/${doc.id}/file`;
 
   const response = await fetch(base ? `${base}${path}` : `/api${path}`, {
     credentials: 'include',
@@ -114,7 +120,14 @@ export async function fetchConsultationDocumentUrl(
     throw new Error('This document could not be opened.');
   }
 
-  return URL.createObjectURL(await response.blob());
+  const blob = await response.blob();
+  const name = consultationDocumentFileName({
+    dispositionHeader: response.headers.get('content-disposition'),
+    originalName: doc.originalName,
+    mimeType: doc.mimeType,
+  });
+
+  return new File([blob], name, { type: blob.type || doc.mimeType });
 }
 
 export async function createConsultationSlots(

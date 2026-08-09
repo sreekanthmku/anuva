@@ -6,9 +6,10 @@ import type {
   ConsultationSpecialist,
   MyConsultation,
 } from '@anuva/shared';
+import { shareOrDownloadFile } from '../../shared/lib/shareFile';
 import {
   cancelConsultation,
-  fetchConsultationDocumentUrl,
+  fetchConsultationDocumentFile,
   fetchConsultationDocuments,
   fetchConsultationRecordingUrl,
   fetchConsultationSlots,
@@ -148,8 +149,17 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
   const [documents, setDocuments] = useState<ConsultationDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
-  const [viewing, setViewing] = useState<{ doc: ConsultationDocument; url: string } | null>(null);
+  const [sharingId, setSharingId] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<{
+    doc: ConsultationDocument;
+    url: string;
+    name: string;
+  } | null>(null);
+  // Files already downloaded, kept so a second tap shares without a round trip: iOS Safari refuses
+  // navigator.share once an await has resolved between the tap and the call.
+  const files = useRef(new Map<string, File>());
   // Every blob URL handed to an <img> or a new tab stays alive until the card unmounts.
   const blobUrls = useRef<string[]>([]);
 
@@ -184,16 +194,30 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
     };
   }, []);
 
+  const fileFor = useCallback(
+    async (doc: ConsultationDocument) => {
+      const cached = files.current.get(doc.id);
+      if (cached) return cached;
+
+      const file = await fetchConsultationDocumentFile(doc, consultationId);
+      files.current.set(doc.id, file);
+      return file;
+    },
+    [consultationId],
+  );
+
   const open = useCallback(
     async (doc: ConsultationDocument) => {
       setOpeningId(doc.id);
       setError(null);
+      setNotice(null);
       try {
-        const url = await fetchConsultationDocumentUrl(consultationId, doc.id);
+        const file = await fileFor(doc);
+        const url = URL.createObjectURL(file);
         blobUrls.current.push(url);
 
         if (doc.mimeType.startsWith('image/')) {
-          setViewing({ doc, url });
+          setViewing({ doc, url, name: file.name });
         } else {
           window.open(url, '_blank', 'noopener');
         }
@@ -203,7 +227,35 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
         setOpeningId(null);
       }
     },
-    [consultationId],
+    [fileFor],
+  );
+
+  /**
+   * Sends the file itself to the OS share sheet. The blob URL behind the viewer must never be
+   * shared instead — WhatsApp would receive `blob:https://…` as text, which resolves nowhere and
+   * carries no filename.
+   */
+  const share = useCallback(
+    async (doc: ConsultationDocument) => {
+      setSharingId(doc.id);
+      setError(null);
+      setNotice(null);
+      try {
+        const file = await fileFor(doc);
+        const outcome = await shareOrDownloadFile(
+          file,
+          doc.title?.trim() || DOCUMENT_KIND_LABEL[doc.kind],
+        );
+        if (outcome === 'downloaded') {
+          setNotice(`Saved as ${file.name} — attach it from your downloads.`);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not share this document.');
+      } finally {
+        setSharingId(null);
+      }
+    },
+    [fileFor],
   );
 
   if (loading) {
@@ -222,12 +274,15 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
 
       <ul className="mt-2 flex flex-col gap-2">
         {documents.map((doc) => (
-          <li key={doc.id}>
+          <li
+            key={doc.id}
+            className="flex items-center gap-2 rounded-[14px] border border-border-default bg-surface-raised px-3 py-2"
+          >
             <button
               type="button"
               disabled={openingId === doc.id}
               onClick={() => void open(doc)}
-              className="flex w-full items-center gap-3 rounded-[14px] border border-border-default bg-surface-raised px-3 py-2.5 text-left disabled:opacity-45"
+              className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-45"
             >
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-fixed text-[15px]">
                 {doc.mimeType === 'application/pdf' ? '📄' : '🖼️'}
@@ -245,11 +300,21 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
                 {openingId === doc.id ? 'Opening…' : 'View'}
               </span>
             </button>
+            <button
+              type="button"
+              disabled={sharingId === doc.id}
+              onClick={() => void share(doc)}
+              aria-label={`Share ${doc.title?.trim() || DOCUMENT_KIND_LABEL[doc.kind]}`}
+              className="grid min-h-[44px] shrink-0 place-items-center rounded-full border border-border-default px-3 text-[12px] font-semibold text-primary disabled:opacity-45"
+            >
+              {sharingId === doc.id ? 'Sharing…' : 'Share'}
+            </button>
           </li>
         ))}
       </ul>
 
       {error ? <p className="mt-2 text-[12px] text-error">{error}</p> : null}
+      {notice ? <p className="mt-2 text-[12px] text-on-surface-variant">{notice}</p> : null}
 
       {viewing ? (
         <div
@@ -261,9 +326,20 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
               {viewing.doc.title?.trim() || DOCUMENT_KIND_LABEL[viewing.doc.kind]}
             </span>
             <div className="flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                disabled={sharingId === viewing.doc.id}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void share(viewing.doc);
+                }}
+                className="text-[12px] font-semibold text-white/80 disabled:opacity-45"
+              >
+                {sharingId === viewing.doc.id ? 'Sharing…' : 'Share'}
+              </button>
               <a
                 href={viewing.url}
-                download={viewing.doc.originalName}
+                download={viewing.name}
                 onClick={(event) => event.stopPropagation()}
                 className="text-[12px] font-semibold text-white/80"
               >

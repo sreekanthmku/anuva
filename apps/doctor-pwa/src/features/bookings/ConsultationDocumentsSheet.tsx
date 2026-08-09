@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ConsultationDocument, ConsultationDocumentKind } from '@anuva/shared';
 import {
   deleteConsultationDocument,
-  fetchConsultationDocumentUrl,
+  fetchConsultationDocumentFile,
   fetchConsultationDocuments,
   uploadConsultationDocument,
 } from './api';
+import { shareOrDownloadFile } from '../../lib/shareFile';
 import { compressImageForUpload } from './compressImage';
 
 const KIND_OPTIONS: { value: ConsultationDocumentKind; label: string }[] = [
@@ -60,6 +61,9 @@ export function ConsultationDocumentsSheet({
   const cameraInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const blobUrls = useRef<string[]>([]);
+  // Downloaded files, kept so Share runs inside the tap that triggered it — iOS Safari refuses
+  // navigator.share once an await has resolved in between.
+  const files = useRef(new Map<string, File>());
 
   const load = useCallback(async () => {
     try {
@@ -131,12 +135,25 @@ export function ConsultationDocumentsSheet({
     [consultationId, kind, load, onChanged, title],
   );
 
+  const fileFor = useCallback(
+    async (doc: ConsultationDocument) => {
+      const cached = files.current.get(doc.id);
+      if (cached) return cached;
+
+      const file = await fetchConsultationDocumentFile(doc, consultationId);
+      files.current.set(doc.id, file);
+      return file;
+    },
+    [consultationId],
+  );
+
   const openDocument = useCallback(
     async (doc: ConsultationDocument) => {
       setBusyId(doc.id);
       setError(null);
       try {
-        const url = await fetchConsultationDocumentUrl(consultationId, doc.id);
+        const file = await fileFor(doc);
+        const url = URL.createObjectURL(file);
         blobUrls.current.push(url);
 
         if (doc.mimeType.startsWith('image/')) {
@@ -150,7 +167,30 @@ export function ConsultationDocumentsSheet({
         setBusyId(null);
       }
     },
-    [consultationId],
+    [fileFor],
+  );
+
+  /**
+   * Hands the bytes to the OS share sheet. Sharing the viewer's blob URL instead would send
+   * `blob:https://…` as text — unresolvable for the recipient and with no filename attached.
+   */
+  const shareDocument = useCallback(
+    async (doc: ConsultationDocument) => {
+      setBusyId(doc.id);
+      setError(null);
+      try {
+        const file = await fileFor(doc);
+        const outcome = await shareOrDownloadFile(file, doc.title?.trim() || KIND_LABEL[doc.kind]);
+        if (outcome === 'downloaded') {
+          setStatus(`Saved as ${file.name} — attach it from your downloads.`);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not share this document.');
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [fileFor],
   );
 
   const withdraw = useCallback(
@@ -341,6 +381,14 @@ export function ConsultationDocumentsSheet({
                   <button
                     type="button"
                     disabled={busyId === doc.id}
+                    onClick={() => void shareDocument(doc)}
+                    className="shrink-0 text-[12px] font-semibold text-primary disabled:opacity-45"
+                  >
+                    Share
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyId === doc.id}
                     onClick={() => void withdraw(doc)}
                     className="shrink-0 text-[12px] font-semibold text-error disabled:opacity-45"
                   >
@@ -362,13 +410,26 @@ export function ConsultationDocumentsSheet({
             <span className="truncate text-[13px] font-semibold text-white">
               {viewing.doc.title?.trim() || KIND_LABEL[viewing.doc.kind]}
             </span>
-            <button
-              type="button"
-              onClick={() => setViewing(null)}
-              className="shrink-0 text-[12px] font-semibold text-white"
-            >
-              Close
-            </button>
+            <div className="flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                disabled={busyId === viewing.doc.id}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void shareDocument(viewing.doc);
+                }}
+                className="text-[12px] font-semibold text-white/80 disabled:opacity-45"
+              >
+                Share
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewing(null)}
+                className="text-[12px] font-semibold text-white"
+              >
+                Close
+              </button>
+            </div>
           </div>
           <img
             src={viewing.url}

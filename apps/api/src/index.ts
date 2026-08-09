@@ -2086,6 +2086,9 @@ async function sendConsultationDocumentFile(
     'Content-Disposition',
     `inline; filename="${safeDownloadName(doc.originalName, doc.mimeType)}"`,
   );
+  // The PWAs fetch this as a blob, which strips every header unless CORS exposes it — without
+  // this the filename is lost and a shared file arrives as "unknown".
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
   // A prescription must not sit in a shared cache.
   res.setHeader('Cache-Control', 'private, no-store');
   res.sendFile(absolutePath, (error?: Error) => {

@@ -1,6 +1,7 @@
 import type {
   ConsultationCallEndResponse,
   ConsultationCallJoinResponse,
+  ConsultationDocument,
   ConsultationDocumentKind,
   ConsultationDocumentsResponse,
   DeleteConsultationDocumentResponse,
@@ -8,6 +9,7 @@ import type {
   DoctorDetailedAssessmentResponse,
   UploadConsultationDocumentResponse,
 } from '@anuva/shared';
+import { consultationDocumentFileName } from '@anuva/shared';
 import { ApiError, apiFetch, apiUrl } from '../../lib/api';
 
 export async function fetchDoctorBookings(): Promise<DoctorConsultationBookingsResponse> {
@@ -109,14 +111,18 @@ export function uploadConsultationDocument(args: {
 
 /**
  * An <img src> would not carry the session cookie cross-origin, so the document is fetched as a
- * blob with credentials and shown from an object URL instead.
+ * blob with credentials instead.
+ *
+ * Wrapped in a `File` rather than returned as an object URL: a `blob:` URL carries no filename and
+ * is scoped to the document that created it, so sharing one out sends an unresolvable link with no
+ * name. A `File` can go straight into `navigator.share`.
  */
-export async function fetchConsultationDocumentUrl(
+export async function fetchConsultationDocumentFile(
+  doc: Pick<ConsultationDocument, 'id' | 'mimeType' | 'originalName'>,
   consultationId: string,
-  documentId: string,
-): Promise<string> {
+): Promise<File> {
   const response = await fetch(
-    apiUrl(`/api/doctor/consultations/${consultationId}/documents/${documentId}/file`),
+    apiUrl(`/api/doctor/consultations/${consultationId}/documents/${doc.id}/file`),
     { credentials: 'include' },
   );
 
@@ -124,7 +130,14 @@ export async function fetchConsultationDocumentUrl(
     throw new ApiError(response.status, 'This document could not be opened.');
   }
 
-  return URL.createObjectURL(await response.blob());
+  const blob = await response.blob();
+  const name = consultationDocumentFileName({
+    dispositionHeader: response.headers.get('content-disposition'),
+    originalName: doc.originalName,
+    mimeType: doc.mimeType,
+  });
+
+  return new File([blob], name, { type: blob.type || doc.mimeType });
 }
 
 export async function deleteConsultationDocument(
