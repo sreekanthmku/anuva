@@ -142,7 +142,12 @@ export function CycleTrackerSheet({
   // Only reset the view when the sheet opens — logging a period from the calendar
   // changes cycleData, and that must not throw the user back to the main view.
   const readyRef = useRef(isCycleTrackerReady(cycleData));
-  readyRef.current = isCycleTrackerReady(cycleData);
+
+  // Declared before the open effect so the ref is current when the sheet opens
+  // in the same commit that cycleData arrives.
+  useEffect(() => {
+    readyRef.current = isCycleTrackerReady(cycleData);
+  }, [cycleData]);
 
   useEffect(() => {
     if (!open) return;
@@ -165,6 +170,24 @@ export function CycleTrackerSheet({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  const selectedMark = useMemo(
+    () => buildCycleDayMarks(cycleData, selectedDate, selectedDate)[0] ?? null,
+    [cycleData, selectedDate],
+  );
+  /** The logged period covering the selected day, if any — drives edit vs log actions. */
+  const selectedPeriodLog = useMemo(() => {
+    if (!cycleData) return null;
+    const periodLength = cycleData.effectivePeriodLength;
+    return (
+      cycleData.recentPeriods.find((p) => {
+        const end = p.endDate ?? addDaysISO(p.startDate, periodLength - 1);
+        return selectedDate >= p.startDate && selectedDate <= end;
+      }) ?? null
+    );
+  }, [cycleData, selectedDate]);
+
+  // Every hook must run before this early return, or the hook count changes
+  // when the sheet opens (React error #310).
   if (!open) return null;
 
   const handleSetup = async () => {
@@ -217,22 +240,6 @@ export function CycleTrackerSheet({
   const cycleLength = cycleData?.settings?.cycleLength ?? CYCLE_DEFAULT;
   const ongoingPeriod = cycleData?.recentPeriods.find((p) => !p.endDate);
   const today = todayISO();
-
-  const selectedMark = useMemo(
-    () => buildCycleDayMarks(cycleData, selectedDate, selectedDate)[0] ?? null,
-    [cycleData, selectedDate],
-  );
-  /** The logged period covering the selected day, if any — drives edit vs log actions. */
-  const selectedPeriodLog = useMemo(() => {
-    if (!cycleData) return null;
-    const periodLength = cycleData.effectivePeriodLength;
-    return (
-      cycleData.recentPeriods.find((p) => {
-        const end = p.endDate ?? addDaysISO(p.startDate, periodLength - 1);
-        return selectedDate >= p.startDate && selectedDate <= end;
-      }) ?? null
-    );
-  }, [cycleData, selectedDate]);
 
   const totalSetupSteps = 3;
 
