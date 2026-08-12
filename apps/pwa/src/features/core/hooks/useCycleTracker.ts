@@ -37,27 +37,30 @@ export function useCycleTracker() {
     []
   );
 
-  const logPeriod = useCallback(
-    async (startDate: string) => {
-      await apiFetch('/api/cycle/period', {
-        method: 'POST',
-        body: JSON.stringify({ startDate }),
-      });
-      await load();
-    },
-    [load]
-  );
+  // The write routes return the recomputed cycle state, so the UI updates
+  // without a second round trip.
+  const logPeriod = useCallback(async (startDate: string) => {
+    const data = await apiFetch<CycleStateResponse>('/api/cycle/period', {
+      method: 'POST',
+      body: JSON.stringify({ startDate }),
+    });
+    setState({ data, loading: false, error: null });
+  }, []);
 
-  const endPeriod = useCallback(
-    async (id: string, endDate: string) => {
-      await apiFetch(`/api/cycle/period/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ endDate }),
-      });
-      await load();
-    },
-    [load]
-  );
+  const endPeriod = useCallback(async (id: string, endDate: string) => {
+    const data = await apiFetch<CycleStateResponse>(`/api/cycle/period/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ endDate }),
+    });
+    setState({ data, loading: false, error: null });
+  }, []);
+
+  const deletePeriod = useCallback(async (id: string) => {
+    const data = await apiFetch<CycleStateResponse>(`/api/cycle/period/${id}`, {
+      method: 'DELETE',
+    });
+    setState({ data, loading: false, error: null });
+  }, []);
 
   const updateSettings = useCallback(
     async (cycleLength: number, periodLength: number) => {
@@ -76,6 +79,7 @@ export function useCycleTracker() {
     setup,
     logPeriod,
     endPeriod,
+    deletePeriod,
     updateSettings,
   };
 }

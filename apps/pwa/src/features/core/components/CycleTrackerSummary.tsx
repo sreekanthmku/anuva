@@ -4,8 +4,11 @@ import {
   CYCLE_PHASE_CONFIG,
   CYCLE_RING_CIRCUMFERENCE,
   formatCycleDate,
+  getCycleHeadline,
   getCycleLength,
   getCycleRingDash,
+  getCycleRingLabel,
+  getCycleSubline,
   isCycleTrackerReady,
 } from './cycleTrackerDisplay';
 
@@ -52,10 +55,15 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
   const cycleLength = getCycleLength(cycleData);
   const phase = cycleData?.phase ?? null;
   const phaseConfig = phase ? CYCLE_PHASE_CONFIG[phase] : null;
+  const isLate = cycleData?.status === 'late' || cycleData?.status === 'stale';
   const cycleDash =
     cycleData?.currentCycleDay != null
       ? getCycleRingDash(cycleData.currentCycleDay, cycleLength)
       : 0;
+  const ringLabel = getCycleRingLabel(cycleData);
+  const headline = getCycleHeadline(cycleData);
+  const subline = getCycleSubline(cycleData);
+  const ringColor = isLate ? '#C0405A' : (phaseConfig?.color ?? '#5E3566');
 
   if (loading && !cycleData) {
     return (
@@ -141,7 +149,7 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
             cy="48"
             r="42"
             fill="none"
-            stroke={phaseConfig?.color ?? '#5E3566'}
+            stroke={ringColor}
             strokeWidth="7"
             strokeDasharray={`${cycleDash} ${CYCLE_RING_CIRCUMFERENCE}`}
             strokeLinecap="round"
@@ -150,24 +158,32 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span
-            className={`${DAY_FONT[ringSize]} leading-none text-on-surface`}
-            style={{ fontFamily: '"Mulish", sans-serif' }}
+            className={`${DAY_FONT[ringSize]} leading-none`}
+            style={{ fontFamily: '"Mulish", sans-serif', color: isLate ? '#C0405A' : undefined }}
           >
-            {cycleData?.currentCycleDay}
+            {ringLabel.value}
           </span>
           <span
             className={`mt-1 ${OF_FONT[ringSize]} uppercase tracking-[0.15em] text-outline`}
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
-            of {cycleLength}d
+            {ringLabel.caption}
           </span>
         </div>
       </div>
 
       <div className="min-w-0 flex-1">
-        {cycleData?.nextPeriodDate && (
+        {headline && (
           <p
-            className="text-[12px] text-on-surface-variant"
+            className="text-[14px] leading-[1.3] text-on-surface"
+            style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
+          >
+            {headline}
+          </p>
+        )}
+        {cycleData?.status === 'active' && cycleData.nextPeriodDate && (
+          <p
+            className="mt-1 text-[12px] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
             Next period{' '}
@@ -186,12 +202,12 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
             </span>
           </p>
         )}
-        {cycleData?.avgPeriodLength != null && cycleData.avgPeriodLength > 0 && (
+        {subline && (
           <p
-            className="mt-1 text-[12px] text-on-surface-variant"
+            className="mt-1 text-[11px] text-outline"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            Avg period <span className="text-on-surface">{cycleData.avgPeriodLength} days</span>
+            {subline}
           </p>
         )}
       </div>

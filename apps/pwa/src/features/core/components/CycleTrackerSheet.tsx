@@ -1,7 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CycleStateResponse } from '@anuva/shared';
+import { CycleCalendar } from './CycleCalendar';
 import { CyclePhaseBadge, CycleTrackerSummary } from './CycleTrackerSummary';
-import { CYCLE_LENGTH_DEFAULT, isCycleTrackerReady } from './cycleTrackerDisplay';
+import {
+  addDaysISO,
+  buildCycleDayMarks,
+  CYCLE_LENGTH_DEFAULT,
+  CYCLE_PHASE_CONFIG,
+  formatCycleDate,
+  formatCycleDateLong,
+  isCycleTrackerReady,
+  PREGNANCY_CHANCE_LABEL,
+  todayISO,
+} from './cycleTrackerDisplay';
 
 const CYCLE_MIN = 21;
 const CYCLE_MAX = 45;
@@ -10,19 +21,7 @@ const PERIOD_MIN = 1;
 const PERIOD_MAX = 10;
 const PERIOD_DEFAULT = 5;
 
-function todayISO(): string {
-  return new Date().toISOString().split('T')[0]!;
-}
-
-function pastDates(n: number): string[] {
-  const dates: string[] = [];
-  for (let i = 0; i < n; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().split('T')[0]!);
-  }
-  return dates;
-}
+const BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 
 function RangeSlider({
   value,
@@ -105,10 +104,17 @@ type Props = {
   onSetup: (lastPeriodStart: string, cycleLength: number, periodLength: number) => Promise<unknown>;
   onLogPeriod: (startDate: string) => Promise<void>;
   onEndPeriod: (id: string, endDate: string) => Promise<void>;
+  onDeletePeriod: (id: string) => Promise<void>;
   onUpdateSettings: (cycleLength: number, periodLength: number) => Promise<void>;
 };
 
-type View = 'main' | 'setup-date' | 'setup-cycle-length' | 'setup-period-length' | 'edit-settings';
+type View =
+  | 'main'
+  | 'calendar'
+  | 'setup-date'
+  | 'setup-cycle-length'
+  | 'setup-period-length'
+  | 'edit-settings';
 
 export function CycleTrackerSheet({
   open,
@@ -118,6 +124,7 @@ export function CycleTrackerSheet({
   onSetup,
   onLogPeriod,
   onEndPeriod,
+  onDeletePeriod,
   onUpdateSettings,
 }: Props) {
   const [view, setView] = useState<View>(() =>
@@ -131,16 +138,23 @@ export function CycleTrackerSheet({
     () => cycleData?.settings?.periodLength ?? PERIOD_DEFAULT
   );
   const [saving, setSaving] = useState(false);
-  const dateListRef = useRef<HTMLDivElement>(null);
+
+  // Only reset the view when the sheet opens — logging a period from the calendar
+  // changes cycleData, and that must not throw the user back to the main view.
+  const readyRef = useRef(isCycleTrackerReady(cycleData));
+  readyRef.current = isCycleTrackerReady(cycleData);
 
   useEffect(() => {
     if (!open) return;
-    setView(isCycleTrackerReady(cycleData) ? 'main' : 'setup-date');
-    if (cycleData?.settings) {
-      setSelectedCycleLength(cycleData.settings.cycleLength);
-      setSelectedPeriodLength(cycleData.settings.periodLength);
-    }
-  }, [open, cycleData?.currentCycleDay, cycleData?.settings]);
+    setView(readyRef.current ? 'main' : 'setup-date');
+    setSelectedDate(todayISO());
+  }, [open]);
+
+  useEffect(() => {
+    if (!cycleData?.settings) return;
+    setSelectedCycleLength(cycleData.settings.cycleLength);
+    setSelectedPeriodLength(cycleData.settings.periodLength);
+  }, [cycleData?.settings]);
 
   useEffect(() => {
     if (!open) return;
@@ -163,19 +177,28 @@ export function CycleTrackerSheet({
     }
   };
 
-  const handleLogPeriod = async () => {
+  const handleLogPeriod = async (startDate = todayISO()) => {
     setSaving(true);
     try {
-      await onLogPeriod(todayISO());
+      await onLogPeriod(startDate);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleEndPeriod = async (id: string) => {
+  const handleEndPeriod = async (id: string, endDate = todayISO()) => {
     setSaving(true);
     try {
-      await onEndPeriod(id, todayISO());
+      await onEndPeriod(id, endDate);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePeriod = async (id: string) => {
+    setSaving(true);
+    try {
+      await onDeletePeriod(id);
     } finally {
       setSaving(false);
     }
@@ -193,7 +216,23 @@ export function CycleTrackerSheet({
 
   const cycleLength = cycleData?.settings?.cycleLength ?? CYCLE_DEFAULT;
   const ongoingPeriod = cycleData?.recentPeriods.find((p) => !p.endDate);
-  const pastDaysList = pastDates(60);
+  const today = todayISO();
+
+  const selectedMark = useMemo(
+    () => buildCycleDayMarks(cycleData, selectedDate, selectedDate)[0] ?? null,
+    [cycleData, selectedDate],
+  );
+  /** The logged period covering the selected day, if any — drives edit vs log actions. */
+  const selectedPeriodLog = useMemo(() => {
+    if (!cycleData) return null;
+    const periodLength = cycleData.effectivePeriodLength;
+    return (
+      cycleData.recentPeriods.find((p) => {
+        const end = p.endDate ?? addDaysISO(p.startDate, periodLength - 1);
+        return selectedDate >= p.startDate && selectedDate <= end;
+      }) ?? null
+    );
+  }, [cycleData, selectedDate]);
 
   const totalSetupSteps = 3;
 
@@ -236,47 +275,26 @@ export function CycleTrackerSheet({
               Pick the date your most recent period began.
             </p>
 
-            <div
-              ref={dateListRef}
-              className="mb-5 flex max-h-[240px] flex-col gap-1.5 overflow-y-auto"
-            >
-              {pastDaysList.map((d) => {
-                const date = new Date(d + 'T00:00:00');
-                const isToday = d === todayISO();
-                const isSelected = d === selectedDate;
-                const label = isToday
-                  ? 'Today'
-                  : date.toLocaleDateString('en-IN', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                    });
-                return (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setSelectedDate(d)}
-                    className="flex items-center justify-between rounded-[14px] border px-4 py-3 text-left transition-colors"
-                    style={{
-                      background: isSelected ? 'rgba(192, 64, 90,0.15)' : 'transparent',
-                      borderColor: isSelected ? 'rgba(192, 64, 90,0.4)' : 'rgba(180, 159, 176,0.2)',
-                    }}
-                  >
-                    <span
-                      className="text-[14px] text-on-surface"
-                      style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-                    >
-                      {label}
-                    </span>
-                    {isSelected && (
-                      <span className="text-[12px]" style={{ color: '#C0405A' }}>
-                        ✓
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+            <div className="mb-4">
+              <CycleCalendar
+                cycleData={null}
+                selectedDate={selectedDate}
+                onSelectDate={(d) => {
+                  // A start date in the future has no meaning for a *last* period.
+                  if (d <= today) setSelectedDate(d);
+                }}
+              />
             </div>
+
+            <p
+              className="mb-5 text-center text-[12px] text-on-surface-variant"
+              style={{ fontFamily: BODY }}
+            >
+              Selected{' '}
+              <span className="text-on-surface">
+                {selectedDate === today ? 'Today' : formatCycleDateLong(selectedDate)}
+              </span>
+            </p>
 
             <button
               type="button"
@@ -429,7 +447,92 @@ export function CycleTrackerSheet({
                   <CycleTrackerSummary cycleData={cycleData} loading={loading} ringSize="sheet" />
                 </div>
 
+                {cycleData?.pendingPeriodConfirm && (
+                  <div
+                    className="mb-4 rounded-[18px] border p-4"
+                    style={{
+                      background: 'rgba(192, 64, 90,0.08)',
+                      borderColor: 'rgba(192, 64, 90,0.28)',
+                    }}
+                  >
+                    <p
+                      className="text-[14px] text-on-surface"
+                      style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
+                    >
+                      Did your period start?
+                    </p>
+                    <p className="mt-1 text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
+                      {cycleData.nextPeriodDate
+                        ? `We expected it around ${formatCycleDate(cycleData.nextPeriodDate)}. Confirming keeps your predictions accurate.`
+                        : 'Confirming keeps your predictions accurate.'}
+                    </p>
+                    <div className="mt-3 flex gap-2.5">
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => handleLogPeriod()}
+                        className="flex-1 rounded-full py-[11px] text-[13px] font-semibold text-on-secondary disabled:opacity-50"
+                        style={{ background: '#C0405A', fontFamily: BODY }}
+                      >
+                        {saving ? 'Saving…' : 'Yes, today'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setView('calendar')}
+                        className="flex-1 rounded-full border border-border-default py-[11px] text-[13px] text-on-surface-variant"
+                        style={{ fontFamily: BODY }}
+                      >
+                        Another day
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {cycleData && (cycleData.avgCycleLength != null || cycleData.avgPeriodLength != null) && (
+                  <div className="mb-4 flex flex-wrap gap-x-5 gap-y-1.5">
+                    {cycleData.avgCycleLength != null && (
+                      <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
+                        Avg cycle{' '}
+                        <span className="text-on-surface">{cycleData.avgCycleLength} days</span>
+                        {cycleData.cycleLengthVariation != null && cycleData.cycleLengthVariation > 0 && (
+                          <span className="text-outline"> ±{cycleData.cycleLengthVariation}</span>
+                        )}
+                      </p>
+                    )}
+                    {cycleData.avgPeriodLength != null && (
+                      <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
+                        Avg period{' '}
+                        <span className="text-on-surface">{cycleData.avgPeriodLength} days</span>
+                      </p>
+                    )}
+                    {cycleData.loggedCycleCount > 0 && (
+                      <p className="text-[12px] text-outline" style={{ fontFamily: BODY }}>
+                        {cycleData.loggedCycleCount} logged{' '}
+                        {cycleData.loggedCycleCount === 1 ? 'cycle' : 'cycles'}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {cycleData?.phase && (
+                  <p
+                    className="mb-4 text-[12px] leading-[1.5] text-on-surface-variant"
+                    style={{ fontFamily: BODY }}
+                  >
+                    {CYCLE_PHASE_CONFIG[cycleData.phase].insight}
+                  </p>
+                )}
+
                 <div className="flex flex-col gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setView('calendar')}
+                    className="w-full rounded-full bg-primary py-[13px] text-[14px] font-semibold text-on-secondary"
+                    style={{ fontFamily: BODY }}
+                  >
+                    Open calendar
+                  </button>
+
                   {ongoingPeriod ? (
                     <button
                       type="button"
@@ -449,7 +552,7 @@ export function CycleTrackerSheet({
                     <button
                       type="button"
                       disabled={saving}
-                      onClick={handleLogPeriod}
+                      onClick={() => handleLogPeriod()}
                       className="w-full rounded-full border py-[13px] text-[14px] font-medium disabled:opacity-50"
                       style={{
                         background: 'rgba(192, 64, 90,0.12)',
@@ -477,6 +580,122 @@ export function CycleTrackerSheet({
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* CALENDAR */}
+        {view === 'calendar' && (
+          <div>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <div
+                className="flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
+                style={{ fontFamily: '"Mulish", sans-serif' }}
+              >
+                <span className="h-px w-3 bg-primary/60" />
+                Cycle calendar
+              </div>
+              <button
+                type="button"
+                onClick={() => setView('main')}
+                className="rounded-full border border-border-default px-4 py-2 text-[12px] text-on-surface-variant"
+                style={{ fontFamily: BODY }}
+              >
+                Done
+              </button>
+            </div>
+
+            <CycleCalendar
+              cycleData={cycleData}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+            />
+
+            <div className="mt-5 rounded-[18px] border border-border-default p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p
+                    className="text-[14px] text-on-surface"
+                    style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
+                  >
+                    {selectedDate === today ? 'Today' : formatCycleDateLong(selectedDate)}
+                  </p>
+                  {selectedMark?.cycleDay != null && selectedMark.cycleDay >= 1 && (
+                    <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: BODY }}>
+                      Cycle day {selectedMark.cycleDay}
+                      {selectedMark.isFuture ? ' · predicted' : ''}
+                    </p>
+                  )}
+                </div>
+                {selectedMark?.phase && <CyclePhaseBadge phase={selectedMark.phase} />}
+              </div>
+
+              {selectedMark && (
+                <p className="mt-3 text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
+                  {PREGNANCY_CHANCE_LABEL[selectedMark.pregnancyChance]}
+                </p>
+              )}
+              {selectedMark?.phase && (
+                <p
+                  className="mt-1.5 text-[12px] leading-[1.5] text-on-surface-variant"
+                  style={{ fontFamily: BODY }}
+                >
+                  {CYCLE_PHASE_CONFIG[selectedMark.phase].insight}
+                </p>
+              )}
+
+              <div className="mt-4 flex flex-col gap-2.5">
+                {selectedMark?.isFuture ? (
+                  <p className="text-[11px] text-outline" style={{ fontFamily: BODY }}>
+                    Predicted day — you can log it once it arrives.
+                  </p>
+                ) : selectedPeriodLog ? (
+                  <>
+                    {!selectedPeriodLog.endDate && selectedDate > selectedPeriodLog.startDate && (
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => handleEndPeriod(selectedPeriodLog.id, selectedDate)}
+                        className="w-full rounded-full border py-[12px] text-[13px] font-medium disabled:opacity-50"
+                        style={{
+                          background: 'rgba(192, 64, 90,0.12)',
+                          borderColor: 'rgba(192, 64, 90,0.35)',
+                          color: '#C0405A',
+                          fontFamily: BODY,
+                        }}
+                      >
+                        {saving ? 'Saving…' : 'Period ended this day'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => handleDeletePeriod(selectedPeriodLog.id)}
+                      className="w-full rounded-full border border-border-default py-[12px] text-[13px] text-on-surface-variant disabled:opacity-50"
+                      style={{ fontFamily: BODY }}
+                    >
+                      {saving
+                        ? 'Saving…'
+                        : `Remove period starting ${formatCycleDate(selectedPeriodLog.startDate)}`}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => handleLogPeriod(selectedDate)}
+                    className="w-full rounded-full border py-[12px] text-[13px] font-medium disabled:opacity-50"
+                    style={{
+                      background: 'rgba(192, 64, 90,0.12)',
+                      borderColor: 'rgba(192, 64, 90,0.35)',
+                      color: '#C0405A',
+                      fontFamily: BODY,
+                    }}
+                  >
+                    {saving ? 'Saving…' : 'Period started this day'}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

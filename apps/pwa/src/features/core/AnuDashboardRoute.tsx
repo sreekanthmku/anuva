@@ -645,6 +645,7 @@ export default function AnuDashboardRoute() {
         onSetup={cycle.setup}
         onLogPeriod={cycle.logPeriod}
         onEndPeriod={cycle.endPeriod}
+        onDeletePeriod={cycle.deletePeriod}
         onUpdateSettings={cycle.updateSettings}
       />
 

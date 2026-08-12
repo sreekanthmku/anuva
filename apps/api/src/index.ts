@@ -150,7 +150,7 @@ import {
   notifyDoctorsQuestionAsked,
 } from './doctorNotifications.js';
 import { notifyAskerQuestionAnswered } from './qaNotifications.js';
-import { computeAvgPeriodLength, computeCycleState } from './cycleCalc.js';
+import { buildCycleStateResponse } from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
 import { startSupportRetentionJob } from './supportRetention.js';
 import {
@@ -3953,7 +3953,9 @@ async function getCycleData(userId: string) {
     prisma.periodLog.findMany({
       where: { userId },
       orderBy: { startDate: 'desc' },
-      take: 12,
+      // Two years of logs: enough for the calendar to scroll back and for
+      // cycle-length learning to have real history to average.
+      take: 24,
     }),
   ]);
   return { settings, periods };
@@ -3967,23 +3969,22 @@ function serializePeriodLog(p: { id: string; startDate: Date; endDate: Date | nu
   };
 }
 
+async function cycleStatePayload(userId: string) {
+  const { settings, periods } = await getCycleData(userId);
+  const serializedPeriods = periods.map(serializePeriodLog);
+  return cycleStateResponseSchema.parse({
+    settings: settings
+      ? { cycleLength: settings.cycleLength, periodLength: settings.periodLength }
+      : null,
+    ...buildCycleStateResponse(serializedPeriods, settings),
+    recentPeriods: serializedPeriods,
+  });
+}
+
 app.get('/cycle', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
-    const { settings, periods } = await getCycleData(user.id);
-    const cycleLength = settings?.cycleLength ?? 28;
-    const periodLength = settings?.periodLength ?? 5;
-    const serializedPeriods = periods.map(serializePeriodLog);
-    const avgPeriodLength = computeAvgPeriodLength(serializedPeriods);
-    const computed = computeCycleState(serializedPeriods, cycleLength, avgPeriodLength ?? periodLength);
-    res.json(
-      cycleStateResponseSchema.parse({
-        settings: settings ? { cycleLength: settings.cycleLength, periodLength: settings.periodLength } : null,
-        ...computed,
-        avgPeriodLength,
-        recentPeriods: serializedPeriods,
-      }),
-    );
+    res.json(await cycleStatePayload(user.id));
   } catch (e) {
     next(e);
   }
@@ -4007,18 +4008,7 @@ app.post('/cycle/setup', async (req, res, next) => {
       }),
     ]);
 
-    const { settings, periods } = await getCycleData(user.id);
-    const serializedPeriods = periods.map(serializePeriodLog);
-    const avgPeriodLength = computeAvgPeriodLength(serializedPeriods);
-    const computed = computeCycleState(serializedPeriods, settings!.cycleLength, avgPeriodLength ?? settings!.periodLength);
-    res.status(201).json(
-      cycleStateResponseSchema.parse({
-        settings: { cycleLength: settings!.cycleLength, periodLength: settings!.periodLength },
-        ...computed,
-        avgPeriodLength,
-        recentPeriods: serializedPeriods,
-      }),
-    );
+    res.status(201).json(await cycleStatePayload(user.id));
   } catch (e) {
     next(e);
   }
@@ -4043,12 +4033,18 @@ app.post('/cycle/period', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     const { startDate } = logPeriodBodySchema.parse(req.body);
-    const log = await prisma.periodLog.upsert({
+    // A start date in the future would poison every prediction downstream.
+    // One day of slack absorbs the client being ahead of the server's timezone.
+    const maxStart = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]!;
+    if (startDate > maxStart) {
+      throw new HttpError(400, 'Period start date cannot be in the future.');
+    }
+    await prisma.periodLog.upsert({
       where: { userId_startDate: { userId: user.id, startDate: new Date(startDate) } },
       create: { userId: user.id, startDate: new Date(startDate) },
       update: {},
     });
-    res.status(201).json(serializePeriodLog(log));
+    res.status(201).json(await cycleStatePayload(user.id));
   } catch (e) {
     next(e);
   }
@@ -4063,11 +4059,29 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
     if (!existing || existing.userId !== user.id) {
       throw new HttpError(404, 'Period log not found.');
     }
-    const updated = await prisma.periodLog.update({
+    if (endDate < existing.startDate.toISOString().split('T')[0]!) {
+      throw new HttpError(400, 'Period end date cannot be before its start date.');
+    }
+    await prisma.periodLog.update({
       where: { id },
       data: { endDate: new Date(endDate) },
     });
-    res.json(serializePeriodLog(updated));
+    res.json(await cycleStatePayload(user.id));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.delete('/cycle/period/:id', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { id } = req.params;
+    const existing = await prisma.periodLog.findUnique({ where: { id } });
+    if (!existing || existing.userId !== user.id) {
+      throw new HttpError(404, 'Period log not found.');
+    }
+    await prisma.periodLog.delete({ where: { id } });
+    res.json(await cycleStatePayload(user.id));
   } catch (e) {
     next(e);
   }

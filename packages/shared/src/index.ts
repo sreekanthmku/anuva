@@ -159,6 +159,10 @@ export {
   logPeriodBodySchema,
   endPeriodBodySchema,
   periodLogSchema,
+  cyclePhaseSchema,
+  cycleStatusSchema,
+  cycleLengthSourceSchema,
+  cyclePredictionSchema,
   cycleStateResponseSchema,
   type CycleSetupBody,
   type CycleSettingsBody,
@@ -166,6 +170,10 @@ export {
   type EndPeriodBody,
   type CycleStateResponse,
   type PeriodLogEntry,
+  type CyclePhase,
+  type CycleStatus,
+  type CyclePrediction,
+  type CycleLengthSource,
 } from './cycle.js';
 
 export {
