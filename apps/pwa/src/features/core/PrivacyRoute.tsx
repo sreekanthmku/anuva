@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  DATA_RECIPIENTS,
   ERASURE_SCOPES,
   erasureScopeLabel,
   type DataErasureScope,
@@ -289,6 +288,10 @@ export default function PrivacyRoute() {
             ) : null}
           </ul>
         </SectionCard>
+        <p className="mt-2 px-1 text-[11px] leading-[1.5] text-outline" style={{ fontFamily: MULISH }}>
+          We do not sell your data and there are no advertising trackers in this app. The full list of
+          services that process it is included in your data download.
+        </p>
 
         {/* ── Export ───────────────────────────────── */}
         <div className="mt-7">
@@ -390,37 +393,6 @@ export default function PrivacyRoute() {
           <p className="mt-2 px-1 text-[11px] leading-[1.5] text-outline" style={{ fontFamily: MULISH }}>
             Account deletion waits {summary?.graceDays ?? 7} days so you can change your mind, and
             finishes within {summary?.slaDays ?? 30} days of your request.
-          </p>
-        </div>
-
-        {/* ── Who else sees it ─────────────────────── */}
-        <div className="mt-7">
-          <Eyebrow>Who else sees your data</Eyebrow>
-          <SectionCard>
-            <ul className="divide-y divide-border-default">
-              {DATA_RECIPIENTS.map((recipient) => (
-                <li key={recipient.name} className="px-5 py-3.5">
-                  <p className="text-[14px] text-on-surface" style={{ fontFamily: MULISH }}>
-                    {recipient.name}
-                  </p>
-                  <p
-                    className="mt-0.5 text-[11.5px] leading-[1.5] text-on-surface-variant"
-                    style={{ fontFamily: MULISH }}
-                  >
-                    {recipient.purpose} · {recipient.dataShared}
-                  </p>
-                  {!recipient.reachesDeletion ? (
-                    <p className="mt-1 text-[11px] leading-[1.45] text-outline" style={{ fontFamily: MULISH }}>
-                      Deleting your data here does not reach their copy. They keep it only briefly,
-                      under their own terms.
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
-          <p className="mt-2 px-1 text-[11px] leading-[1.5] text-outline" style={{ fontFamily: MULISH }}>
-            We do not sell your data and there are no advertising trackers in this app.
           </p>
         </div>
 
