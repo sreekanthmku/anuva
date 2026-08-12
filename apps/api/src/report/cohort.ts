@@ -3,6 +3,17 @@ import type { ReportRingKey } from '@anuva/shared';
 /**
  * Reference ("cohort median") values for the weekly report rings.
  *
+ * NOT SERVED. Parked until clinical sign-off.
+ *
+ * These values were shown on the rings as the "typical" dot until the tracker
+ * review of Aug 2026. They are derived from prevalence figures rather than
+ * measured on Anuva's scales, which the ring UI could not honestly convey in
+ * the space available — the dot read as a validated norm. The summary now
+ * compares a user only against her own previous period; see
+ * `reportReferenceSchema` in @anuva/shared. Restore this as a *second*,
+ * separately labelled mark once the numbers are signed off, or replace it
+ * outright with in-app percentiles per the note below.
+ *
  * No published dataset reports the median of Anuva's composite 0-100 scales, so
  * each value is derived from symptom prevalence + severity in the literature:
  *

@@ -1,5 +1,6 @@
 import { prisma } from '@anuva/database';
 import type {
+  ReportDeltaTone,
   ReportInsight,
   ReportRing,
   ReportRingKey,
@@ -7,7 +8,6 @@ import type {
   SummaryPeriod,
   SummaryWeekBreakdown,
 } from '@anuva/shared';
-import { COHORT_LABEL, COHORT_REFERENCES } from './cohort.js';
 import {
   ENERGY_SCORES,
   FOCUS_SCORES,
@@ -18,6 +18,7 @@ import {
   SLEEP_HOURS_MIDPOINT,
   SLEEP_SCORES,
   STRESS_SCORES,
+  bandFor,
   lookupScore,
   mean,
   scoreFromFivePoint,
@@ -43,6 +44,26 @@ const DAILY_BAND_FALLBACK = 10;
 const DAILY_BAND_FLOOR = 5;
 /** Week-over-week / month-over-month move that reads as more than noise. */
 const PERIOD_STEADY_BAND = 3;
+
+/**
+ * A comparison needs enough days on *both* sides before it means anything. One
+ * logged Monday against one logged Tuesday is not a week-over-week trend, and
+ * presenting it as one is the fastest way to lose a user's trust in the number.
+ * Below these counts the UI says "keep tracking" instead of claiming a
+ * direction.
+ */
+const MIN_DAYS_FOR_TREND: Record<SummaryPeriod, number> = {
+  daily: 3, // days of trailing-week history behind "your usual"
+  weekly: 3,
+  monthly: 8,
+};
+
+/**
+ * Below this score a metric is worth calling out on its own merits, with no
+ * comparison involved. Sits just under "Manageable"/"Some waking" on the band
+ * tables, so it fires on the two lowest bands only.
+ */
+const ATTENTION_SCORE_FLOOR = 55;
 
 // ── Calendar helpers ─────────────────────────────────────────
 // All arithmetic is calendar-based rather than millisecond-based so it stays
@@ -106,6 +127,26 @@ function isoDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+const MONTH_ABBR = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/** "12 Aug" — spelled out here rather than via toLocaleDateString, whose output depends on the server's locale. */
+function shortDate(d: Date): string {
+  return `${d.getDate()} ${MONTH_ABBR[d.getMonth()]}`;
+}
+
 function earlier(a: Date, b: Date): Date {
   return a.getTime() <= b.getTime() ? a : b;
 }
@@ -136,7 +177,17 @@ export interface PeriodWindow {
   /** Widest range any calculation needs, so the log fetch happens once. */
   fetchStart: Date;
   fetchEnd: Date;
+  /** Days in the coverage window — clipped by the trial anchor. */
   daysElapsed: number;
+  /** Calendar days in the whole period, anchor ignored: 1 / 7 / 28-31. */
+  periodLength: number;
+  /**
+   * Days of the period that have happened, anchor ignored. Equals
+   * `periodLength` for a past period. Distinct from `daysElapsed`, which a
+   * mid-period signup shrinks — that clipping is right for scoring and wrong
+   * for "how much of this week did you track", where it reports 1 of 1.
+   */
+  daysElapsedInPeriod: number;
   canGoBack: boolean;
   canGoForward: boolean;
 }
@@ -193,6 +244,12 @@ export function resolvePeriodWindow(
   const coverageEnd = earlier(end, today);
   const daysElapsed = Math.max(0, dayOffset(coverageStart, coverageEnd) + 1);
 
+  const periodLength = dayOffset(start, end) + 1;
+  const daysElapsedInPeriod = Math.min(
+    periodLength,
+    Math.max(0, dayOffset(start, earlier(end, today)) + 1)
+  );
+
   // Daily needs a longer tail than its comparison window: the sparkline shows
   // the trailing week and the band is sized from the trailing fortnight.
   const fetchStart =
@@ -210,6 +267,8 @@ export function resolvePeriodWindow(
     fetchStart,
     fetchEnd: end,
     daysElapsed,
+    periodLength,
+    daysElapsedInPeriod,
     canGoBack: offset < maxOffset,
     canGoForward: offset > 0,
   };
@@ -309,12 +368,33 @@ function roundOrNull(v: number | null): number | null {
   return v == null ? null : Math.round(v);
 }
 
-function formatPointDelta(current: number | null, previous: number | null): string {
-  if (current == null) return '—';
-  if (previous == null) return 'New';
+/**
+ * A signed point move plus the word that says what the sign means.
+ *
+ * "+30 pts" on its own is unreadable: the reader has to already know that every
+ * scale here runs higher-is-better before they can tell whether their stress
+ * week got better or worse. The direction word removes that step.
+ *
+ * `comparable` is false when either side of the comparison is too thin to
+ * support a claim — then it says so rather than quoting a number.
+ */
+function formatPointDelta(
+  current: number | null,
+  previous: number | null,
+  comparable: boolean,
+  period: SummaryPeriod
+): { text: string; tone: ReportDeltaTone } {
+  if (current == null) return { text: '—', tone: 'none' };
+  if (previous == null) return { text: `First ${PERIOD_WORDS[period].noun} of data`, tone: 'none' };
+  if (!comparable) return { text: 'Not enough to compare yet', tone: 'none' };
+
   const diff = Math.round(current - previous);
-  if (Math.abs(diff) < PERIOD_STEADY_BAND) return 'Steady';
-  return `${diff > 0 ? '+' : '−'}${Math.abs(diff)} pts`;
+  if (Math.abs(diff) < PERIOD_STEADY_BAND) {
+    return { text: `Steady vs ${PERIOD_WORDS[period].last}`, tone: 'neutral' };
+  }
+  return diff > 0
+    ? { text: `+${diff} pts · improving`, tone: 'positive' }
+    : { text: `−${Math.abs(diff)} pts · worsened`, tone: 'attention' };
 }
 
 /**
@@ -359,6 +439,10 @@ function windowSeries(map: DayScores, w: PeriodWindow): (number | null)[] {
 function buildDailyRing(src: RingSource, w: PeriodWindow): RingDraft {
   const pct = rangeMean(src.scores, w.start, w.end);
   const baseline = rangeMean(src.scores, w.prevStart, w.prevEnd);
+  const baselineDays = rangeDaysLogged(src.scores, w.prevStart, w.prevEnd);
+  // One remembered day is not a baseline. Below the floor the day still gets a
+  // score and a band word, it just does not get compared to anything.
+  const hasBaseline = baseline != null && baselineDays >= MIN_DAYS_FOR_TREND.daily;
 
   const spread = stdev(
     logged(dailySeries(src.scores, addDays(w.start, -DAILY_VOLATILITY_DAYS), addDays(w.start, -1)))
@@ -370,56 +454,75 @@ function buildDailyRing(src: RingSource, w: PeriodWindow): RingDraft {
 
   let status: RingDraft['status'] = null;
   let delta: string;
+  let deltaTone: ReportDeltaTone = 'none';
   if (pct == null) {
     delta = '—';
-  } else if (baseline == null) {
+  } else if (!hasBaseline) {
     delta = 'No baseline yet';
-  } else if (pct - baseline > band) {
+  } else if (pct - baseline! > band) {
     status = 'above';
     delta = 'Better than usual';
-  } else if (baseline - pct > band) {
+    deltaTone = 'positive';
+  } else if (baseline! - pct > band) {
     status = 'below';
     delta = 'Below your usual';
+    deltaTone = 'attention';
   } else {
     status = 'typical';
     delta = 'Typical for you';
+    deltaTone = 'neutral';
   }
-
-  // The dot has to mean the same thing the label does, so it tracks the user's
-  // own baseline here and only falls back to the population line without one.
-  const reference =
-    baseline != null
-      ? { value: Math.round(baseline), label: 'your usual' }
-      : { value: COHORT_REFERENCES[src.key].value, label: 'typical' };
 
   return {
     key: src.key,
     label: src.label,
     pct: roundOrNull(pct),
+    band: bandFor(src.key, pct),
+    detail: null,
     delta,
-    reference,
+    deltaTone,
+    // The dot means the user's own previous level on every period. Without a
+    // baseline there is no dot — better than borrowing a population line the
+    // user never asked to be measured against.
+    reference: hasBaseline ? { value: Math.round(baseline!), label: 'your usual' } : null,
     daysLogged: pct == null ? 0 : 1,
     series: windowSeries(src.scores, w),
     pctRaw: pct,
-    deltaValue: pct != null && baseline != null ? pct - baseline : null,
+    deltaValue: pct != null && hasBaseline ? pct - baseline! : null,
     status,
   };
 }
 
 function buildPeriodRing(src: RingSource, w: PeriodWindow): RingDraft {
   const pct = rangeMean(src.scores, w.coverageStart, w.coverageEnd);
+  const daysLogged = rangeDaysLogged(src.scores, w.coverageStart, w.coverageEnd);
+
   const previous = rangeMean(src.scores, w.prevStart, w.prevEnd);
+  const previousDays = rangeDaysLogged(src.scores, w.prevStart, w.prevEnd);
+
+  const floor = MIN_DAYS_FOR_TREND[w.period];
+  const comparable = daysLogged >= floor && previousDays >= floor;
+
+  const { text, tone } = formatPointDelta(pct, previous, comparable, w.period);
 
   return {
     key: src.key,
     label: src.label,
     pct: roundOrNull(pct),
-    delta: formatPointDelta(pct, previous),
-    reference: { value: COHORT_REFERENCES[src.key].value, label: 'typical' },
-    daysLogged: rangeDaysLogged(src.scores, w.coverageStart, w.coverageEnd),
+    band: bandFor(src.key, pct),
+    detail: null,
+    delta: text,
+    deltaTone: tone,
+    // Same meaning as on daily: the user's own previous level, or nothing.
+    reference:
+      previous != null && comparable
+        ? { value: Math.round(previous), label: PERIOD_WORDS[w.period].last }
+        : null,
+    daysLogged,
     series: windowSeries(src.scores, w),
     pctRaw: pct,
-    deltaValue: pct != null && previous != null ? pct - previous : null,
+    // Only a comparable pair may drive an insight or a direction word.
+    deltaValue: pct != null && previous != null && comparable ? pct - previous : null,
     status: null,
   };
 }
@@ -618,14 +721,15 @@ function buildPeriodInsights(
       body: fill(TREND_COPY[worsened.key].down, period),
     });
   } else {
-    // No drop against the previous period (or no previous period yet) — fall
-    // back to the ring sitting furthest below its reference line.
+    // No comparable drop against the previous period — fall back to the lowest
+    // absolute score, but only when it is low enough to be worth naming. This
+    // used to compare against the population line; that line is gone, and an
+    // absolute floor makes a claim about the user's own week rather than about
+    // how she stacks up against a cohort we have not measured.
     const lowest = rings
       .filter((r) => r.pctRaw != null)
-      .sort(
-        (a, b) => a.pctRaw! - a.reference.value - (b.pctRaw! - b.reference.value)
-      )[0];
-    if (lowest && lowest.pctRaw! < lowest.reference.value) {
+      .sort((a, b) => a.pctRaw! - b.pctRaw!)[0];
+    if (lowest && lowest.pctRaw! < ATTENTION_SCORE_FLOOR) {
       insights.push({
         tone: 'attention',
         title: '↓ Needs attention',
@@ -648,25 +752,32 @@ function buildReflection(
   period: SummaryPeriod,
   rings: RingDraft[],
   daysLogged: number,
+  dataState: 'empty' | 'insufficient' | 'ready',
   calibrating: boolean,
   daysOnApp: number
 ): string {
-  if (daysLogged === 0) {
+  if (dataState === 'empty') {
     return period === 'daily'
       ? "Nothing logged for this day yet. A couple of check-ins and I can tell you how it actually went."
       : `I don't have enough from ${PERIOD_WORDS[period].this} yet. Answer a few daily check-ins and I'll show you what's actually shifting.`;
+  }
+
+  if (dataState === 'insufficient') {
+    const need = MIN_DAYS_FOR_TREND[period];
+    return `${daysLogged} ${daysLogged === 1 ? 'day' : 'days'} logged so far. Keep tracking — at ${need} days I can tell you what's actually moving, and I'd rather say nothing than guess.`;
   }
 
   if (calibrating) {
     return `You're ${daysOnApp} ${daysOnApp === 1 ? 'day' : 'days'} in. I'm still learning your baseline — these numbers will settle once we have a full week.`;
   }
 
+  // Ranked on the scores themselves. Ranking by distance from a reference line
+  // only worked while every ring shared one; references are per-user now and
+  // some rings have none, so a gap ranking would compare unlike things.
   const scored = rings.filter((r) => r.pctRaw != null);
-  const byGap = [...scored].sort(
-    (a, b) => b.pctRaw! - b.reference.value - (a.pctRaw! - a.reference.value)
-  );
-  const strongest = byGap[0];
-  const weakest = byGap[byGap.length - 1];
+  const byScore = [...scored].sort((a, b) => b.pctRaw! - a.pctRaw!);
+  const strongest = byScore[0];
+  const weakest = byScore[byScore.length - 1];
 
   if (!strongest || !weakest) {
     return `A quiet ${PERIOD_WORDS[period].noun} in the data. Keep logging and the pattern will show itself.`;
@@ -776,7 +887,9 @@ export async function buildSummary(
     },
     {
       key: 'stress',
-      label: 'Stress level',
+      // "Stress level" reads as the load; the score is the inverse of the load.
+      // The band word underneath ("Manageable") carries the direction.
+      label: 'Stress',
       scores: collect(
         stressRows,
         (r) => fromDateOnly(r.date),
@@ -806,7 +919,9 @@ export async function buildSummary(
     },
     {
       key: 'hotFlashes',
-      label: 'Hot flash load',
+      // Not "Hot flash load": the ring's number goes *up* as episodes go down,
+      // so a label naming the burden fights its own reading. See RING_BANDS.
+      label: 'Heat episodes',
       scores: collect(
         hotFlashRows,
         (r) => fromDateOnly(r.date),
@@ -870,17 +985,50 @@ export async function buildSummary(
     },
   ];
 
+  // The one metric people count rather than score. Showing "3 episodes today"
+  // next to the ring keeps the score from being read as a symptom quantity.
+  const hotFlashRing = rings.find((r) => r.key === 'hotFlashes');
+  if (hotFlashRing && hotFlashDays.length > 0) {
+    hotFlashRing.detail = `${hotFlashTotal} ${hotFlashTotal === 1 ? 'episode' : 'episodes'} ${PERIOD_WORDS[w.period].this}`;
+  }
+
   const weekBreakdown = buildWeekBreakdown(wellnessDaily, w);
 
   const daysOnApp = dayOffset(startOfLocalDay(anchor), startOfLocalDay(now)) + 1;
   const calibrating = daysOnApp < WEEK_DAYS;
 
-  const hasPersonalBaseline = isDaily && rings.some((r) => r.reference.label === 'your usual');
-  const referenceNote = hasPersonalBaseline
-    ? 'Small dots mark your usual level from the past week.'
-    : isDaily
-      ? `Small dots mark the typical level for ${COHORT_LABEL} — once you have a week of check-ins they switch to your own baseline.`
-      : `Small dots mark the typical level for ${COHORT_LABEL}.`;
+  // Daily always has enough to describe the day itself — it never claims a
+  // trend, so there is nothing to withhold. Weekly and monthly do claim one.
+  const trendFloor = MIN_DAYS_FOR_TREND[w.period];
+  const dataState: 'empty' | 'insufficient' | 'ready' =
+    daysLogged === 0 ? 'empty' : !isDaily && daysLogged < trendFloor ? 'insufficient' : 'ready';
+
+  // ── Tracking completeness ────────────────────────────────
+  // Denominator is the period, not the coverage window: "1 of 1 days logged"
+  // is technically true for someone who joined today and reads as a full score.
+
+  const isCurrentPeriod = w.offset === 0;
+  const trackingLabel = isDaily
+    ? `${rings.filter((r) => r.pct != null).length} of ${rings.length} check-ins logged`
+    : isCurrentPeriod
+      ? `${daysLogged} of ${w.daysElapsedInPeriod} days tracked so far`
+      : `${daysLogged} of ${w.periodLength} days tracked`;
+
+  const joinedMidPeriod = w.coverageStart.getTime() > w.start.getTime();
+  const trackingNote =
+    joinedMidPeriod && !isDaily
+      ? `You joined on ${shortDate(w.coverageStart)}, so the days before that are not counted against you.`
+      : null;
+
+  // ── Reference dots ───────────────────────────────────────
+  // One meaning on every tab: the user's own previous level. No dot when there
+  // is no comparable history — never a borrowed population line.
+
+  const withReference = rings.filter((r) => r.reference != null);
+  const referenceNote =
+    withReference.length > 0
+      ? `Dots mark ${withReference[0]!.reference!.label} — the same comparison on every tab, and only ever with yourself.`
+      : `No comparison dots yet. They appear once you have ${trendFloor} days of history to compare against.`;
 
   return {
     period: w.period,
@@ -895,25 +1043,40 @@ export async function buildSummary(
     calibrating,
     daysLogged,
     daysElapsed: w.daysElapsed,
-    cohortLabel: COHORT_LABEL,
+    periodLength: w.periodLength,
+    daysElapsedInPeriod: w.daysElapsedInPeriod,
+    trackingLabel,
+    trackingNote,
+    dataState,
     referenceNote,
     rings: rings.map((ring) => ({
       key: ring.key,
       label: ring.label,
       pct: ring.pct,
+      band: ring.band,
+      detail: ring.detail,
       delta: ring.delta,
+      deltaTone: ring.deltaTone,
       reference: ring.reference,
       daysLogged: ring.daysLogged,
       series: ring.series,
     })),
     stats,
     insights:
-      daysLogged === 0
+      dataState === 'empty'
         ? []
-        : isDaily
-          ? buildDailyInsights(rings)
-          : buildPeriodInsights(rings, w.period, weekBreakdown),
+        : dataState === 'insufficient'
+          ? [
+              {
+                tone: 'neutral' as const,
+                title: 'Keep tracking',
+                body: `${daysLogged} ${daysLogged === 1 ? 'day' : 'days'} of ${PERIOD_WORDS[w.period].this} logged. I need at least ${trendFloor} before I can tell you a trend rather than guess at one.`,
+              },
+            ]
+          : isDaily
+            ? buildDailyInsights(rings)
+            : buildPeriodInsights(rings, w.period, weekBreakdown),
     weekBreakdown,
-    anuReflection: buildReflection(w.period, rings, daysLogged, calibrating, daysOnApp),
+    anuReflection: buildReflection(w.period, rings, daysLogged, dataState, calibrating, daysOnApp),
   };
 }

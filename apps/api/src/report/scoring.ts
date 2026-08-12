@@ -74,6 +74,64 @@ export const HOT_FLASH_COUNTS: Record<string, number> = {
   'More than 5': 6,
 };
 
+/**
+ * Score -> plain-language state, per metric.
+ *
+ * Every scale here runs higher-is-better, which is unreadable on the two
+ * metrics whose *name* is the symptom: 75 on stress means low stress, and 70 on
+ * heat episodes means few episodes. A bare number invites the opposite reading,
+ * so the number is never shown without one of these words beside it.
+ *
+ * Thresholds sit on the option scores above, so each band names a real answer
+ * rather than an arbitrary slice: stress 75 is literally "Manageable".
+ * Ordered high to low; the first band whose `min` the score clears wins.
+ */
+export const RING_BANDS: Record<string, { min: number; label: string }[]> = {
+  sleep: [
+    { min: 85, label: 'Restful' },
+    { min: 60, label: 'Some waking' },
+    { min: 33, label: 'Disturbed' },
+    { min: 0, label: 'Barely slept' },
+  ],
+  energy: [
+    { min: 80, label: 'Strong' },
+    { min: 50, label: 'Slightly low' },
+    { min: 30, label: 'Tired' },
+    { min: 0, label: 'Very tired' },
+  ],
+  // Names the stress *load*, so a high score can never read as high stress.
+  stress: [
+    { min: 88, label: 'Low stress' },
+    { min: 60, label: 'Manageable' },
+    { min: 33, label: 'Stressful' },
+    { min: 0, label: 'Very stressful' },
+  ],
+  mood: [
+    { min: 85, label: 'Stable' },
+    { min: 60, label: 'Mild shifts' },
+    { min: 33, label: 'Unsettled' },
+    { min: 0, label: 'Very unsettled' },
+  ],
+  focus: [
+    { min: 85, label: 'Clear' },
+    { min: 60, label: 'Slightly foggy' },
+    { min: 33, label: 'Foggy' },
+    { min: 0, label: 'Very foggy' },
+  ],
+  // Names the heat *burden*, matching the answer buckets None / 1-2 / 3-5 / 5+.
+  hotFlashes: [
+    { min: 90, label: 'None' },
+    { min: 55, label: 'Mild' },
+    { min: 20, label: 'Moderate' },
+    { min: 0, label: 'High' },
+  ],
+};
+
+export function bandFor(key: string, score: number | null): string | null {
+  if (score == null) return null;
+  return RING_BANDS[key]?.find((b) => score >= b.min)?.label ?? null;
+}
+
 /** Manual sleep/mood sheets store a 1-5 rating instead of an option string. */
 export function scoreFromFivePoint(rating: number | null | undefined): number | null {
   if (rating == null || rating < 1 || rating > 5) return null;

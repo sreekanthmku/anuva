@@ -52,8 +52,11 @@ describe('reportRingSchema', () => {
     key: 'sleep',
     label: 'Sleep',
     pct: 72,
-    delta: '+4 pts',
-    reference: { value: 60, label: 'typical' },
+    band: 'Some waking',
+    detail: null,
+    delta: '+4 pts · improving',
+    deltaTone: 'positive',
+    reference: { value: 60, label: 'last week' },
     daysLogged: 5,
     series: [50, null, 70],
   };
@@ -61,6 +64,16 @@ describe('reportRingSchema', () => {
   it('accepts valid ring with nullable pct and series', () => {
     expect(reportRingSchema.parse(valid)).toEqual(valid);
     expect(reportRingSchema.parse({ ...valid, pct: null })).toMatchObject({ pct: null });
+  });
+
+  it('accepts a ring with no comparable history — no reference dot is drawn', () => {
+    expect(
+      reportRingSchema.parse({ ...valid, reference: null, delta: 'First week of data', deltaTone: 'none' }),
+    ).toMatchObject({ reference: null });
+  });
+
+  it('rejects an unknown delta tone', () => {
+    expect(reportRingSchema.safeParse({ ...valid, deltaTone: 'good' }).success).toBe(false);
   });
 
   it('rejects non-int daysLogged', () => {
@@ -165,15 +178,22 @@ describe('weeklyReportResponseSchema', () => {
     calibrating: false,
     daysLogged: 4,
     daysElapsed: 4,
-    cohortLabel: 'women 40–50',
-    referenceNote: 'Dots show typical.',
+    periodLength: 7,
+    daysElapsedInPeriod: 4,
+    trackingLabel: '4 of 4 days tracked so far',
+    trackingNote: null,
+    dataState: 'ready',
+    referenceNote: 'Dots mark last week.',
     rings: [
       {
         key: 'energy',
         label: 'Energy',
         pct: 55,
-        delta: 'Steady',
-        reference: { value: 58, label: 'typical' },
+        band: 'Slightly low',
+        detail: null,
+        delta: 'Steady vs last week',
+        deltaTone: 'neutral',
+        reference: { value: 58, label: 'last week' },
         daysLogged: 4,
         series: [50, 55, null, 60],
       },
@@ -220,6 +240,12 @@ describe('weeklyReportResponseSchema', () => {
   it('rejects non-boolean calibrating', () => {
     expect(
       weeklyReportResponseSchema.safeParse({ ...valid, calibrating: 'yes' }).success,
+    ).toBe(false);
+  });
+
+  it('rejects an unknown dataState', () => {
+    expect(
+      weeklyReportResponseSchema.safeParse({ ...valid, dataState: 'partial' }).success,
     ).toBe(false);
   });
 });

@@ -40,8 +40,9 @@ export function DayBarChart({
   /** Last day that has happened — later days are still to come. */
   coverageEnd: string;
   ringKey: ReportRingKey;
-  referenceValue: number;
-  referenceLabel: string;
+  /** The user's own previous level, or null when there is no comparable history. */
+  referenceValue: number | null;
+  referenceLabel: string | null;
   period: SummaryPeriod;
 }) {
   const { color, track } = RING_COLORS[ringKey];
@@ -86,10 +87,12 @@ export function DayBarChart({
       </div>
 
       <div className="relative w-full" style={{ height: PLOT_HEIGHT }}>
-        <div
-          className="pointer-events-none absolute inset-x-0 border-t border-dashed"
-          style={{ top: `${100 - referenceValue}%`, borderColor: color, opacity: 0.5 }}
-        />
+        {referenceValue != null && (
+          <div
+            className="pointer-events-none absolute inset-x-0 border-t border-dashed"
+            style={{ top: `${100 - referenceValue}%`, borderColor: color, opacity: 0.5 }}
+          />
+        )}
 
         <div className="flex h-full items-end" style={{ gap: dense ? 2 : 4 }}>
           {values.map((v, i) => {
@@ -150,7 +153,9 @@ export function DayBarChart({
         className="mt-2.5 text-center text-[10.5px] leading-none text-outline"
         style={{ fontFamily: MULISH }}
       >
-        Dashed line = {referenceLabel} ({referenceValue}). Scored 0–100, higher is better.
+        {referenceValue != null && referenceLabel
+          ? `Dashed line = ${referenceLabel} (${referenceValue}). Scored 0–100, higher is always better.`
+          : 'Scored 0–100, higher is always better.'}
       </p>
 
       {selected < 0 && (

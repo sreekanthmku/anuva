@@ -134,13 +134,20 @@ function assertResponseShape(report: Awaited<ReturnType<typeof buildSummary>>) {
         delta: expect.any(String),
         daysLogged: expect.any(Number),
         series: expect.any(Array),
-        reference: expect.objectContaining({
-          value: expect.any(Number),
-          label: expect.any(String),
-        }),
       })
     );
     expect(ring.pct === null || typeof ring.pct === 'number').toBe(true);
+    // A score never travels without the word that says which way it points.
+    expect(ring.band === null || typeof ring.band === 'string').toBe(true);
+    expect((ring.pct == null) === (ring.band == null)).toBe(true);
+    expect(ring.detail === null || typeof ring.detail === 'string').toBe(true);
+    expect(['positive', 'attention', 'neutral', 'none']).toContain(ring.deltaTone);
+    // Null reference = no comparable history = no dot drawn.
+    if (ring.reference !== null) {
+      expect(ring.reference).toEqual(
+        expect.objectContaining({ value: expect.any(Number), label: expect.any(String) })
+      );
+    }
   }
 
   expect(report.stats.map((s) => s.key)).toEqual([...STAT_KEYS]);
@@ -165,8 +172,19 @@ function assertResponseShape(report: Awaited<ReturnType<typeof buildSummary>>) {
   expect(typeof report.calibrating).toBe('boolean');
   expect(typeof report.daysLogged).toBe('number');
   expect(typeof report.daysElapsed).toBe('number');
-  expect(typeof report.cohortLabel).toBe('string');
+  expect(typeof report.periodLength).toBe('number');
+  expect(typeof report.daysElapsedInPeriod).toBe('number');
+  expect(report.daysElapsedInPeriod).toBeLessThanOrEqual(report.periodLength);
+  // The completeness denominator must never collapse to the coverage window,
+  // which is what produced "1 of 1 days logged" for a user who joined today.
+  expect(report.daysElapsedInPeriod).toBeGreaterThanOrEqual(report.daysElapsed);
+  expect(typeof report.trackingLabel).toBe('string');
+  expect(report.trackingNote === null || typeof report.trackingNote === 'string').toBe(true);
+  expect(['empty', 'insufficient', 'ready']).toContain(report.dataState);
   expect(typeof report.referenceNote).toBe('string');
+  // No population claim may reach the client.
+  expect(report.referenceNote).not.toMatch(/typical|population|Indian women/i);
+  expect(report.rings.every((r) => r.reference?.label !== 'typical')).toBe(true);
   expect(Array.isArray(report.insights)).toBe(true);
   expect(Array.isArray(report.weekBreakdown)).toBe(true);
   expect(typeof report.anuReflection).toBe('string');
@@ -189,14 +207,16 @@ describe('buildSummary — empty / sparse', () => {
     expect(report.period).toBe('weekly');
     expect(report.offset).toBe(0);
     expect(report.daysLogged).toBe(0);
+    expect(report.dataState).toBe('empty');
     expect(report.calibrating).toBe(false);
     expect(report.insights).toEqual([]);
     expect(report.weekBreakdown).toEqual([]);
     expect(report.rings.every((r) => r.pct === null)).toBe(true);
+    expect(report.rings.every((r) => r.reference === null)).toBe(true);
     expect(report.stats.every((s) => s.value === null)).toBe(true);
     expect(report.anuReflection).toMatch(/don't have enough|check-ins/i);
-    expect(report.referenceNote).toMatch(/typical level/i);
-    expect(report.referenceNote).not.toMatch(/your usual/);
+    expect(report.referenceNote).toMatch(/No comparison dots yet/i);
+    expect(report.trackingLabel).toBe('0 of 4 days tracked so far'); // Mon 17 – Thu 20
   });
 
   it('marks brand-new users (anchor = today) as calibrating with no back navigation', async () => {
@@ -210,6 +230,8 @@ describe('buildSummary — empty / sparse', () => {
     expect(report.canGoForward).toBe(false);
     expect(report.calibrating).toBe(true);
     expect(report.daysElapsed).toBe(1);
+    expect(report.periodLength).toBe(1);
+    expect(report.trackingLabel).toBe('6 of 6 check-ins logged');
     expect(report.periodStart).toBe('2024-06-20');
     // daysLogged > 0 so reflection uses the calibrating branch (not the empty-day copy).
     expect(report.anuReflection).toMatch(/1 day in|still learning/i);
@@ -320,10 +342,20 @@ describe('buildSummary — rich daily week', () => {
     expect(report.canGoBack).toBe(true);
 
     const sleep = report.rings.find((r) => r.key === 'sleep')!;
-    expect(sleep.reference.label).toBe('your usual');
+    expect(sleep.reference?.label).toBe('your usual');
     expect(sleep.pct).not.toBeNull();
+    expect(sleep.band).toBe('Barely slept'); // score 10 — direction is spelled out
     expect(sleep.delta).toMatch(/usual|Better|Below|Typical/i);
     expect(sleep.series).toHaveLength(7);
+
+    const stress = report.rings.find((r) => r.key === 'stress')!;
+    expect(stress.label).toBe('Stress');
+    expect(stress.band).toBe('Manageable'); // 75 must never read as "75% stressed"
+
+    const heat = report.rings.find((r) => r.key === 'hotFlashes')!;
+    expect(heat.label).toBe('Heat episodes');
+    expect(heat.band).toBe('High'); // score 0 — "More than 5"
+    expect(heat.detail).toMatch(/episodes? today$/);
 
     expect(report.referenceNote).toMatch(/your usual/i);
 
@@ -354,7 +386,7 @@ describe('buildSummary — rich daily week', () => {
     expect(report.weekBreakdown).toEqual([]);
   });
 
-  it('uses cohort reference note when the selected day has no personal baseline yet', async () => {
+  it('draws no reference dot at all when the selected day has no personal baseline yet', async () => {
     // Only logs on the selected day — no trailing week history.
     installFixture([
       dayBundle(2024, 5, 20, {
@@ -366,10 +398,26 @@ describe('buildSummary — rich daily week', () => {
     const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
     const withPct = report.rings.filter((r) => r.pct != null);
     expect(withPct.length).toBeGreaterThan(0);
-    expect(withPct.every((r) => r.reference.label === 'typical')).toBe(true);
+    // Previously fell back to the population line; that borrowed comparison is gone.
+    expect(withPct.every((r) => r.reference === null)).toBe(true);
     expect(withPct.every((r) => r.delta === 'No baseline yet')).toBe(true);
-    expect(report.referenceNote).toMatch(/typical level for/);
-    expect(report.referenceNote).toMatch(/own baseline/);
+    expect(withPct.every((r) => r.deltaTone === 'none')).toBe(true);
+    expect(report.referenceNote).toMatch(/No comparison dots yet/i);
+  });
+
+  it('withholds a baseline until the trailing window has enough days behind it', async () => {
+    // Two prior days only — under the 3-day floor, so no "your usual" claim.
+    installFixture([
+      dayBundle(2024, 5, 18),
+      dayBundle(2024, 5, 19),
+      dayBundle(2024, 5, 20, { sleepCategory: 'I barely slept' }),
+    ]);
+
+    const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+    expect(report.rings.every((r) => r.reference === null)).toBe(true);
+    expect(report.rings.filter((r) => r.pct != null).every((r) => r.delta === 'No baseline yet')).toBe(
+      true
+    );
   });
 
   it('offset 1 looks at yesterday and allows forward navigation', async () => {
@@ -436,11 +484,16 @@ describe('buildSummary — weekly', () => {
     expect(report.coverageEnd).toBe('2024-06-20');
     expect(report.seriesStart).toBe('2024-06-17');
     expect(report.daysElapsed).toBe(4);
+    expect(report.periodLength).toBe(7);
+    expect(report.daysElapsedInPeriod).toBe(4);
+    expect(report.trackingLabel).toBe('4 of 4 days tracked so far');
+    expect(report.dataState).toBe('ready');
     expect(report.calibrating).toBe(false);
     expect(report.weekBreakdown).toEqual([]);
 
     for (const ring of report.rings) {
-      expect(ring.reference.label).toBe('typical');
+      // The dot is the user's own last week now — never a population line.
+      expect(ring.reference?.label).toBe('last week');
       expect(ring.pct).not.toBeNull();
       expect(ring.daysLogged).toBeGreaterThan(0);
       expect(ring.series).toHaveLength(7); // full Mon–Sun width
@@ -452,8 +505,15 @@ describe('buildSummary — weekly', () => {
     expect(report.insights.some((i) => i.tone === 'positive')).toBe(true);
     expect(report.stats.find((s) => s.key === 'avgSleep')!.label).toBe('Avg sleep');
     expect(report.anuReflection).toMatch(/this week|care path|holding up/i);
-    expect(report.referenceNote).toMatch(/typical level for/);
-    expect(report.referenceNote).not.toMatch(/own baseline/);
+    expect(report.referenceNote).toMatch(/last week/);
+
+    // Every point delta names its own direction — "+30 pts" alone is unreadable.
+    const moved = report.rings.filter((r) => r.delta.includes('pts'));
+    expect(moved.length).toBeGreaterThan(0);
+    for (const ring of moved) {
+      expect(ring.delta).toMatch(/· (improving|worsened)$/);
+      expect(ring.deltaTone).toBe(ring.delta.includes('improving') ? 'positive' : 'attention');
+    }
   });
 
   it('offset 1 returns the previous full week with forward navigation', async () => {
@@ -467,6 +527,8 @@ describe('buildSummary — weekly', () => {
     expect(report.daysElapsed).toBe(7);
     expect(report.canGoForward).toBe(true);
     expect(report.daysLogged).toBe(7);
+    // A past period is complete, so the denominator is the whole period.
+    expect(report.trackingLabel).toBe('7 of 7 days tracked');
   });
 
   it('surfaces worsening deltas when the prior week was stronger', async () => {
@@ -491,7 +553,84 @@ describe('buildSummary — weekly', () => {
 
     const report = await buildSummary(USER_ID, anchor, 'weekly', 0, now);
     expect(report.insights.some((i) => i.tone === 'attention')).toBe(true);
-    expect(report.rings.some((r) => r.delta.includes('pts') || r.delta === 'Steady')).toBe(true);
+    expect(report.rings.some((r) => r.delta.includes('pts · worsened'))).toBe(true);
+    expect(report.rings.some((r) => r.deltaTone === 'attention')).toBe(true);
+  });
+});
+
+describe('buildSummary — minimum data before a trend claim', () => {
+  const now = localDay(2024, 5, 20, 12); // Thu
+  const anchor = localDay(2024, 4, 1);
+
+  it('refuses to claim a weekly trend from a single logged day', async () => {
+    installFixture([dayBundle(2024, 5, 20)]);
+    const report = await buildSummary(USER_ID, anchor, 'weekly', 0, now);
+
+    expect(report.dataState).toBe('insufficient');
+    expect(report.insights).toHaveLength(1);
+    expect(report.insights[0]!.title).toBe('Keep tracking');
+    expect(report.insights[0]!.tone).toBe('neutral');
+    // No trend copy, no direction word, no borrowed comparison.
+    expect(report.insights.some((i) => /Improving|Needs attention/.test(i.title))).toBe(false);
+    expect(report.rings.every((r) => !r.delta.includes('pts'))).toBe(true);
+    expect(report.rings.every((r) => r.reference === null)).toBe(true);
+    expect(report.anuReflection).toMatch(/Keep tracking/i);
+    // The numbers themselves still show — only the interpretation is withheld.
+    expect(report.rings.some((r) => r.pct != null)).toBe(true);
+    expect(report.trackingLabel).toBe('1 of 4 days tracked so far');
+  });
+
+  it('withholds the delta when the previous week is too thin, even with a full current week', async () => {
+    const parts: ReturnType<typeof dayBundle>[] = [];
+    parts.push(dayBundle(2024, 5, 16)); // one day of the prior week only
+    eachDay(localDay(2024, 5, 17), localDay(2024, 5, 20), (y, m0, d) => {
+      parts.push(dayBundle(y, m0, d, { sleepCategory: 'I barely slept' }));
+    });
+    installFixture(parts);
+
+    const report = await buildSummary(USER_ID, anchor, 'weekly', 0, now);
+    expect(report.dataState).toBe('ready');
+    expect(report.rings.every((r) => r.delta === 'Not enough to compare yet')).toBe(true);
+    expect(report.rings.every((r) => r.reference === null)).toBe(true);
+  });
+
+  it('needs 8 logged days before claiming a monthly trend', async () => {
+    const parts: ReturnType<typeof dayBundle>[] = [];
+    eachDay(localDay(2024, 5, 1), localDay(2024, 5, 5), (y, m0, d) => {
+      parts.push(dayBundle(y, m0, d));
+    });
+    installFixture(parts);
+
+    const report = await buildSummary(USER_ID, anchor, 'monthly', 0, now);
+    expect(report.dataState).toBe('insufficient');
+    expect(report.insights[0]!.title).toBe('Keep tracking');
+    expect(report.insights[0]!.body).toMatch(/at least 8/);
+  });
+});
+
+describe('buildSummary — tracking completeness', () => {
+  const now = localDay(2024, 5, 20, 12); // Thu 20 Jun
+
+  it('counts against the period, not the coverage window, for a mid-week signup', async () => {
+    const anchor = localDay(2024, 5, 19); // joined yesterday, mid-week
+    installFixture([dayBundle(2024, 5, 19), dayBundle(2024, 5, 20)]);
+
+    const report = await buildSummary(USER_ID, anchor, 'weekly', 0, now);
+
+    // Coverage is 2 days (Wed–Thu); the week has run 4 (Mon–Thu).
+    expect(report.coverageStart).toBe(ymd(anchor));
+    expect(report.daysElapsed).toBe(2);
+    expect(report.daysElapsedInPeriod).toBe(4);
+    expect(report.trackingLabel).toBe('2 of 4 days tracked so far');
+    expect(report.trackingNote).toMatch(/joined on 19 Jun/);
+  });
+
+  it('leaves the note off when the user was there for the whole period', async () => {
+    const anchor = localDay(2024, 4, 1);
+    installFixture([dayBundle(2024, 5, 20)]);
+
+    const report = await buildSummary(USER_ID, anchor, 'weekly', 0, now);
+    expect(report.trackingNote).toBeNull();
   });
 });
 
@@ -561,6 +700,8 @@ describe('buildSummary — monthly', () => {
     expect(report.coverageStart).toBe('2024-06-01');
     expect(report.coverageEnd).toBe('2024-06-20');
     expect(report.daysElapsed).toBe(20);
+    expect(report.periodLength).toBe(30);
+    expect(report.trackingLabel).toBe('20 of 20 days tracked so far');
     expect(report.weekBreakdown.length).toBeGreaterThanOrEqual(3);
 
     for (const week of report.weekBreakdown) {
@@ -594,6 +735,8 @@ describe('buildSummary — monthly', () => {
     expect(report.periodStart).toBe('2024-05-01');
     expect(report.periodEnd).toBe('2024-05-31');
     expect(report.daysElapsed).toBe(31);
+    expect(report.periodLength).toBe(31);
+    expect(report.trackingLabel).toBe('31 of 31 days tracked');
     expect(report.canGoForward).toBe(true);
     expect(report.weekBreakdown.length).toBeGreaterThan(0);
   });
@@ -649,11 +792,13 @@ describe('buildSummary — steady / New delta paths', () => {
     installFixture(parts);
 
     const report = await buildSummary(USER_ID, anchor, 'weekly', 0, now);
-    expect(report.rings.some((r) => r.delta === 'Steady')).toBe(true);
+    // "Steady" alone leaves the reader guessing what it is steady against.
+    expect(report.rings.some((r) => r.delta === 'Steady vs last week')).toBe(true);
+    expect(report.rings.some((r) => r.deltaTone === 'neutral')).toBe(true);
   });
 
-  it('labels weekly rings New when there is no prior-period data', async () => {
-    // Only current week has logs; prev week empty → "New".
+  it('says this is the first week of data rather than the bare word New', async () => {
+    // Only current week has logs; prev week empty.
     const parts: ReturnType<typeof dayBundle>[] = [];
     eachDay(localDay(2024, 5, 17), localDay(2024, 5, 20), (y, m0, d) => {
       parts.push(dayBundle(y, m0, d));
@@ -661,9 +806,23 @@ describe('buildSummary — steady / New delta paths', () => {
     installFixture(parts);
 
     const report = await buildSummary(USER_ID, anchor, 'weekly', 0, now);
-    expect(report.rings.filter((r) => r.pct != null).every((r) => r.delta === 'New')).toBe(true);
-    // No prior delta → attention insight may still fire via below-cohort fallback.
-    expect(Array.isArray(report.insights)).toBe(true);
+    expect(
+      report.rings.filter((r) => r.pct != null).every((r) => r.delta === 'First week of data')
+    ).toBe(true);
+    // The below-cohort fallback is gone: high scores must not draw an attention
+    // insight just because they sit under a population line we no longer serve.
+    expect(report.insights.every((i) => i.title !== '↓ Needs attention')).toBe(true);
+  });
+
+  it('still flags a genuinely low score with no prior period to compare against', async () => {
+    const parts: ReturnType<typeof dayBundle>[] = [];
+    eachDay(localDay(2024, 5, 17), localDay(2024, 5, 20), (y, m0, d) => {
+      parts.push(dayBundle(y, m0, d, { sleepCategory: 'I barely slept' })); // 10
+    });
+    installFixture(parts);
+
+    const report = await buildSummary(USER_ID, anchor, 'weekly', 0, now);
+    expect(report.insights.some((i) => i.title === '↓ Needs attention')).toBe(true);
   });
 });
 
@@ -732,20 +891,16 @@ describe('buildSummary — remaining copy branches', () => {
   });
 
   it('reflects a single logged metric on daily and weekly', async () => {
-    sleepFindMany.mockResolvedValue([
-      {
-        loggedAt: localDay(2024, 5, 20, 8),
-        quality: null,
-        category: 'I slept well',
-        hours: '7to8',
-      },
-      {
-        loggedAt: localDay(2024, 5, 18, 8),
-        quality: null,
-        category: 'I woke up 1–2 times',
-        hours: '6to7',
-      },
-    ]);
+    // Four days of sleep only — enough to clear the weekly floor, so the
+    // reflection reaches its single-metric branch rather than "keep tracking".
+    sleepFindMany.mockResolvedValue(
+      [
+        [localDay(2024, 5, 20, 8), 'I slept well', '7to8'],
+        [localDay(2024, 5, 19, 8), 'I woke up 1–2 times', '6to7'],
+        [localDay(2024, 5, 18, 8), 'I woke up 1–2 times', '6to7'],
+        [localDay(2024, 5, 17, 8), 'I slept well', '7to8'],
+      ].map(([loggedAt, category, hours]) => ({ loggedAt, quality: null, category, hours }))
+    );
     energyFindMany.mockResolvedValue([]);
     stressFindMany.mockResolvedValue([]);
     moodFindMany.mockResolvedValue([]);

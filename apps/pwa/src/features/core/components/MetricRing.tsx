@@ -3,8 +3,13 @@ import type { ReportRingKey } from '@anuva/shared';
 import { RING_COLORS, RING_EMPTY_COLOR } from '../ringColors';
 
 /**
- * Progress ring with a reference marker. Every dimension derives from `size` so
- * the 88px card ring and the 150px detail ring stay visually identical.
+ * Score ring with an optional reference marker. Every dimension derives from
+ * `size` so the 88px card ring and the 150px detail ring stay visually
+ * identical.
+ *
+ * `pct` is a 0-100 score, not a percentage — it is never rendered with a `%`.
+ * On stress and heat episodes a high score means *less* symptom, so the caller
+ * must always pair the number with the band word from the API.
  */
 export function MetricRing({
   pct,
@@ -16,7 +21,8 @@ export function MetricRing({
   center,
 }: {
   pct: number | null;
-  referenceValue: number;
+  /** The user's own previous level. Null when there is no comparable history — then no dot is drawn. */
+  referenceValue: number | null;
   ringKey: ReportRingKey;
   size?: number;
   /** Stroke as a fraction of `size`. The detail hero runs thicker than the grid cards. */
@@ -34,7 +40,7 @@ export function MetricRing({
   const hasData = pct != null;
   const progress = Math.min(Math.max((pct ?? 0) / 100, 0), 1);
 
-  const referenceAngle = (referenceValue / 100) * 360 - 90;
+  const referenceAngle = ((referenceValue ?? 0) / 100) * 360 - 90;
   const referenceX = mid + radius * Math.cos((referenceAngle * Math.PI) / 180);
   const referenceY = mid + radius * Math.sin((referenceAngle * Math.PI) / 180);
 
@@ -62,14 +68,16 @@ export function MetricRing({
             transform={`rotate(-90 ${mid} ${mid})`}
           />
         )}
-        <circle
-          cx={referenceX}
-          cy={referenceY}
-          r={Math.max(2.2, size * 0.025)}
-          fill="#FBF6F0"
-          stroke={color}
-          strokeWidth={Math.max(1.4, size * 0.016)}
-        />
+        {referenceValue != null && (
+          <circle
+            cx={referenceX}
+            cy={referenceY}
+            r={Math.max(2.2, size * 0.025)}
+            fill="#FBF6F0"
+            stroke={color}
+            strokeWidth={Math.max(1.4, size * 0.016)}
+          />
+        )}
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
         {center ?? (
@@ -81,7 +89,7 @@ export function MetricRing({
               fontFamily: '"Mulish", sans-serif',
             }}
           >
-            {hasData ? `${pct}%` : '—'}
+            {hasData ? pct : '—'}
           </span>
         )}
       </div>

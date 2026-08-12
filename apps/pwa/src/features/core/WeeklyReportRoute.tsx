@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
+  ReportInsight,
   ReportRing,
   ReportRingKey,
   ReportStat,
@@ -15,6 +16,7 @@ import { PeriodToggle } from './components/PeriodToggle';
 import { Sparkline } from './components/Sparkline';
 import { useSummary } from './hooks/useWeeklyReport';
 import { RING_COLORS, RING_EMPTY_COLOR } from './ringColors';
+import { DELTA_TONE_COLOR, ringAriaLabel } from './ringDisplay';
 import {
   PERIOD_NOUN,
   daysBetweenIso,
@@ -58,16 +60,13 @@ function ReportRingCard({
 }) {
   const { color } = RING_COLORS[ring.key];
   const hasData = ring.pct != null;
-
-  const label = hasData
-    ? `${ring.label} ${ring.pct}%, ${ring.reference.label} is ${ring.reference.value}%. ${ring.delta}`
-    : `${ring.label} — not logged`;
+  const label = ringAriaLabel(ring);
 
   const inner = (
     <>
       <MetricRing
         pct={ring.pct}
-        referenceValue={ring.reference.value}
+        referenceValue={ring.reference?.value ?? null}
         ringKey={ring.key}
         size={88}
         ariaLabel={onSelect ? undefined : label}
@@ -76,12 +75,22 @@ function ReportRingCard({
         <p className="truncate text-[11.5px] leading-[1.2] text-on-surface" style={{ fontFamily: MULISH }}>
           {ring.label}
         </p>
+        {/* The band word carries the direction the bare score cannot: 75 on
+            stress is "Manageable", not three-quarters of anything. */}
         <span
-          className="mt-0.5 block min-h-[22px] text-[9.5px] font-medium leading-[1.15] tracking-[0.04em]"
-          style={{ color: hasData ? color : RING_EMPTY_COLOR, fontFamily: '"Mulish", sans-serif' }}
+          className="mt-0.5 block min-h-[13px] text-[10.5px] font-semibold leading-[1.15]"
+          style={{ color: hasData ? color : RING_EMPTY_COLOR, fontFamily: MULISH }}
         >
-          {hasData ? ring.delta : 'Not logged'}
+          {hasData ? (ring.band ?? `${ring.pct}`) : 'Not logged'}
         </span>
+        {hasData && (
+          <span
+            className="mt-0.5 block min-h-[22px] text-[9px] font-medium leading-[1.15] tracking-[0.03em]"
+            style={{ color: DELTA_TONE_COLOR[ring.deltaTone], fontFamily: MULISH }}
+          >
+            {ring.delta}
+          </span>
+        )}
       </div>
     </>
   );
@@ -319,6 +328,18 @@ const INSIGHT_STYLES: Record<string, { card: string; tone: 'plum' | 'ember' | 'm
   neutral: { card: 'border-border-default bg-surface-raised', tone: 'muted' },
 };
 
+function InsightCard({ insight, lead }: { insight: ReportInsight; lead?: boolean }) {
+  const style = INSIGHT_STYLES[insight.tone] ?? INSIGHT_STYLES.attention!;
+  return (
+    <article className={`rounded-[20px] border p-4 ${style.card}`}>
+      <Eyebrow tone={style.tone}>{lead ? `Anuva insight · ${insight.title}` : insight.title}</Eyebrow>
+      <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
+        {insight.body}
+      </p>
+    </article>
+  );
+}
+
 function ReportBody({
   report,
   onSelectRing,
@@ -332,26 +353,35 @@ function ReportBody({
 
   const wellness = report.stats.find((s) => s.key === 'wellness');
   const others = report.stats.filter((s) => s.key !== 'wellness');
-  const hasAnyData = report.daysLogged > 0;
-  const metricsLogged = report.rings.filter((r) => r.pct != null).length;
+  const hasAnyData = report.dataState !== 'empty';
   const elapsed = daysBetweenIso(report.seriesStart, report.coverageEnd);
+
+  // Six numbers do not tell anyone what changed. The first insight is the
+  // translation, so it sits with the rings rather than below the stat cards.
+  const [leadInsight, ...restInsights] = report.insights;
 
   return (
     <>
-      <section className="px-3 pb-4 pt-2">
+      <section className="flex flex-col gap-3 px-3 pb-4 pt-2">
         <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
-          <div className="mb-2.5 flex items-center justify-between">
+          <div className="mb-2.5 flex items-center justify-between gap-2">
             <Eyebrow className="mb-0">{TRACKER_EYEBROW[report.period]}</Eyebrow>
             <span
-              className="rounded-full bg-surface-bright px-3 py-1 text-[10px] uppercase tracking-[0.08em] text-on-surface-variant"
+              className="shrink-0 rounded-full bg-surface-bright px-3 py-1 text-[10px] uppercase tracking-[0.08em] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              {isDaily
-                ? `${metricsLogged} of ${report.rings.length} logged`
-                : `${report.daysLogged}/${report.daysElapsed} days logged`}
+              {report.trackingLabel}
             </span>
           </div>
           <ReportProgressRings rings={report.rings} onSelect={isDaily ? undefined : onSelectRing} />
+          {report.trackingNote && (
+            <p
+              className="mt-2 text-center text-[10.5px] leading-[1.35] text-outline"
+              style={{ fontFamily: MULISH }}
+            >
+              {report.trackingNote}
+            </p>
+          )}
           {!isDaily && (
             <p
               className="mt-2 text-center text-[10.5px] leading-none text-outline"
@@ -364,9 +394,11 @@ function ReportBody({
             className="mt-2 rounded-starchart-lg bg-surface-bright px-3 py-1.5 text-center text-[11px] leading-[1.35] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
-            {report.referenceNote}
+            Scored 0–100, higher is always better. {report.referenceNote}
           </p>
         </article>
+
+        {leadInsight && <InsightCard insight={leadInsight} lead />}
       </section>
 
       <section className="flex flex-col gap-3 px-3 pb-[22px]">
@@ -420,17 +452,9 @@ function ReportBody({
           </article>
         )}
 
-        {report.insights.map((insight) => {
-          const style = INSIGHT_STYLES[insight.tone] ?? INSIGHT_STYLES.attention!;
-          return (
-            <article key={insight.title} className={`rounded-[20px] border p-4 ${style.card}`}>
-              <Eyebrow tone={style.tone}>{insight.title}</Eyebrow>
-              <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
-                {insight.body}
-              </p>
-            </article>
-          );
-        })}
+        {restInsights.map((insight) => (
+          <InsightCard key={insight.title} insight={insight} />
+        ))}
 
         <article className="rounded-[20px] border border-border-default bg-primary-container p-[18px]">
           <div className="mb-2.5 flex items-center gap-3">
@@ -494,10 +518,12 @@ export default function WeeklyReportRoute() {
       <header className="sticky top-0 z-30 shrink-0 bg-surface">
         <div className="px-3 pb-4 pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Eyebrow tone="plum">Your summary</Eyebrow>
+          {/* Not "benchmark": nothing on this page compares the user to anyone
+              but herself, and the word promised a reference we do not have. */}
           <h1 className="font-display mb-3 text-[30px] leading-[1.1] text-on-surface">
             Your{' '}
             <em className="not-italic text-primary" style={{ fontFamily: FRAUNCES }}>
-              benchmark
+              progress
             </em>
           </h1>
 

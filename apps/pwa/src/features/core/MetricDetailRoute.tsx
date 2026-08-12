@@ -9,6 +9,7 @@ import { MetricRing } from './components/MetricRing';
 import { PeriodToggle } from './components/PeriodToggle';
 import { useSummary } from './hooks/useWeeklyReport';
 import { RING_COLORS } from './ringColors';
+import { DELTA_TONE_COLOR, ringAriaLabel } from './ringDisplay';
 import { PERIOD_NOUN, periodDetail, periodHeadline } from './summaryDates';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -26,6 +27,15 @@ function isRingKey(value: string | undefined): value is ReportRingKey {
 
 function parsePeriod(value: string | null): SummaryPeriod {
   return value === 'weekly' || value === 'monthly' || value === 'daily' ? value : 'weekly';
+}
+
+/**
+ * Days this metric could have been tracked. Deliberately the period, not
+ * `daysElapsed` — the coverage window shrinks to the days since signup, which
+ * turns a single logged day into "1 of 1" and reads as perfect completeness.
+ */
+function trackingDenominator(report: WeeklyReportResponse): number {
+  return report.offset === 0 ? report.daysElapsedInPeriod : report.periodLength;
 }
 
 // ── Page ─────────────────────────────────────────────────────
@@ -125,43 +135,65 @@ function DetailBody({
       <div className="flex justify-center py-1">
         <MetricRing
           pct={ring.pct}
-          referenceValue={ring.reference.value}
+          referenceValue={ring.reference?.value ?? null}
           ringKey={ring.key}
           // Wider than the grid rings, with the same absolute stroke, so the
           // readout has room inside without the band looking heavy.
           size={244}
           strokeRatio={0.09}
-          ariaLabel={`${ring.label} ${ring.pct ?? 'not logged'}, ${ring.reference.label} is ${ring.reference.value}. ${ring.delta}`}
+          ariaLabel={ringAriaLabel(ring)}
           center={
             <div className="flex max-w-[152px] flex-col items-center text-center">
+              {/* Band word first: it says which way the number points before
+                  the number is read. "/100" kills the percentage reading. */}
               <span
-                className="text-[40px] font-semibold leading-none"
+                className="text-[13px] font-semibold leading-[1.2]"
                 style={{ fontFamily: MULISH, color: ring.pct != null ? color : '#B9A79A' }}
               >
-                {ring.pct != null ? `${ring.pct}%` : '—'}
+                {ring.pct != null ? (ring.band ?? ring.label) : 'Not logged'}
               </span>
               <span
-                className="mt-2 text-[12.5px] font-semibold leading-[1.2]"
+                className="mt-1 text-[38px] font-semibold leading-none"
                 style={{ fontFamily: MULISH, color: ring.pct != null ? color : '#B9A79A' }}
               >
-                {ring.pct != null ? ring.delta : 'Not logged'}
+                {ring.pct ?? '—'}
+                {ring.pct != null && (
+                  <span className="text-[13px] font-normal text-on-surface-variant">/100</span>
+                )}
               </span>
-              <span
-                className="mt-2.5 text-[10px] leading-[1.35] text-on-surface-variant"
-                style={{ fontFamily: MULISH }}
-              >
-                The dot marks {ring.reference.label} — {ring.reference.value} out of 100.
-              </span>
-              <span
-                className="mt-1 text-[10px] leading-[1.35] text-on-surface-variant"
-                style={{ fontFamily: MULISH }}
-              >
-                {ring.daysLogged} of {report.daysElapsed} days logged.
-              </span>
+              {ring.detail && (
+                <span
+                  className="mt-1 text-[10.5px] leading-[1.3] text-on-surface-variant"
+                  style={{ fontFamily: MULISH }}
+                >
+                  {ring.detail}
+                </span>
+              )}
+              {ring.pct != null && (
+                <span
+                  className="mt-1.5 text-[11.5px] font-semibold leading-[1.2]"
+                  style={{ fontFamily: MULISH, color: DELTA_TONE_COLOR[ring.deltaTone] }}
+                >
+                  {ring.delta}
+                </span>
+              )}
             </div>
           }
         />
       </div>
+
+      {/* Footnotes sit under the ring, not inside it — the inner circle only has
+          room for the readout itself. */}
+      <p
+        className="-mt-1 text-center text-[10.5px] leading-[1.4] text-on-surface-variant"
+        style={{ fontFamily: MULISH }}
+      >
+        {ring.reference
+          ? `Dot marks ${ring.reference.label} — ${ring.reference.value} out of 100.`
+          : 'No comparison dot yet — not enough history to compare against.'}
+        {' · '}
+        {ring.daysLogged} of {trackingDenominator(report)} days tracked
+      </p>
 
       {/* Highlights */}
       <div className="grid grid-cols-3 gap-2.5">
@@ -196,8 +228,8 @@ function DetailBody({
           coverageStart={report.coverageStart}
           coverageEnd={report.coverageEnd}
           ringKey={ring.key}
-          referenceValue={ring.reference.value}
-          referenceLabel={ring.reference.label}
+          referenceValue={ring.reference?.value ?? null}
+          referenceLabel={ring.reference?.label ?? null}
           period={report.period}
         />
       </article>
