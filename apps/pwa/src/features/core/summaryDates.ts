@@ -36,6 +36,18 @@ export function formatShortDay(iso: string): string {
   return parseIso(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+/**
+ * `formatShortDay` for the day `offset` days after `startIso` — the form charts
+ * need for axis ticks. Formats the local Date directly rather than round-tripping
+ * through `toISOString()`, which shifts the day for any timezone ahead of UTC.
+ */
+export function formatShortDayFrom(startIso: string, offset: number): string {
+  return addDaysIso(startIso, offset).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 export function formatRange(startIso: string, endIso: string): string {
   if (startIso === endIso) return formatShortDay(startIso);
   const start = parseIso(startIso);

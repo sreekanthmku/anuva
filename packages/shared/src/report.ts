@@ -92,10 +92,23 @@ export const reportStatSchema = z.object({
   value: z.string().nullable(),
   unit: z.string(),
   /**
-   * One entry per day of the window, oldest first. Null where nothing was
-   * logged — distinct from a logged zero, which the chart must render.
+   * One entry per day of the window, oldest first, starting at `seriesStart`.
+   * Null where nothing was logged — distinct from a logged zero, which the chart
+   * must render.
+   *
+   * Always spans the whole window, including days that have not happened yet, so
+   * a week is always seven columns and stepping back a period does not change the
+   * chart's width.
    */
   trend: z.array(z.number().nullable()),
+  /**
+   * How `value` relates to `trend` — they are not the same thing, and which
+   * relationship applies changes per period. `value` is a single day on daily, a
+   * mean on weekly and monthly for the averaged stats, and a *sum* for hot
+   * flashes on every period. Without this line, "12 episodes" above a chart
+   * peaking at 4 reads as a broken chart.
+   */
+  seriesNote: z.string(),
 });
 
 export const reportInsightSchema = z.object({
@@ -140,6 +153,16 @@ export const weeklyReportResponseSchema = z.object({
    * ending on the selected day, so it starts earlier.
    */
   seriesStart: z.string(),
+  /**
+   * First day of the *series* the user could have logged — `seriesStart` clipped
+   * to their trial anchor.
+   *
+   * Distinct from `coverageStart`, which covers the *period*. The two are equal
+   * on weekly and monthly, but on daily the period is one day while the series is
+   * the trailing week, so a chart using `coverageStart` marks six of its seven
+   * columns as outside the window. Charts want this one.
+   */
+  seriesCoverageStart: z.string(),
   canGoBack: z.boolean(),
   canGoForward: z.boolean(),
   /** True while the user has fewer than 7 days on the app — numbers are not stable yet. */

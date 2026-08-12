@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { DPDP_ACT_URL } from '../../shared/lib/dpdp';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
@@ -11,7 +10,12 @@ const menuRows: { label: string; hint: string; id?: string; to?: string }[] = [
     hint: 'Upcoming, past & recordings',
     to: '/my-bookings',
   },
-  { label: 'Privacy & data', hint: 'DPDP · export or delete' },
+  {
+    id: 'privacy',
+    label: 'Privacy & data',
+    hint: 'DPDP · export or delete',
+    to: '/privacy',
+  },
   { label: 'Subscription', hint: 'Plan & billing' },
   { id: 'help', label: 'Help & support', hint: 'Ask us anything · we reply in the app', to: '/help' },
 ];
@@ -95,22 +99,7 @@ export default function ProfileRoute() {
                     className="text-[12px] text-on-surface-variant"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
-                    {row.label === 'Privacy & data' ? (
-                      <>
-                        <a
-                          href={DPDP_ACT_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-inherit no-underline"
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          DPDP
-                        </a>
-                        {' · export or delete'}
-                      </>
-                    ) : (
-                      row.hint
-                    )}
+                    {row.hint}
                   </span>
                 </button>
               </li>

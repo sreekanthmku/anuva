@@ -225,7 +225,7 @@ function DetailBody({
           key={`${report.period}-${report.offset}-${ring.key}`}
           values={ring.series}
           seriesStart={report.seriesStart}
-          coverageStart={report.coverageStart}
+          coverageStart={report.seriesCoverageStart}
           coverageEnd={report.coverageEnd}
           ringKey={ring.key}
           referenceValue={ring.reference?.value ?? null}

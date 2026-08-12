@@ -14,20 +14,20 @@ import { BottomNav } from './components/BottomNav';
 import { MetricRing } from './components/MetricRing';
 import { PeriodToggle } from './components/PeriodToggle';
 import { Sparkline } from './components/Sparkline';
+import { scaleFor } from './chartScale';
 import { useSummary } from './hooks/useWeeklyReport';
 import { RING_COLORS, RING_EMPTY_COLOR } from './ringColors';
 import { DELTA_TONE_COLOR, ringAriaLabel } from './ringDisplay';
-import {
-  PERIOD_NOUN,
-  daysBetweenIso,
-  formatRange,
-  periodDetail,
-  periodHeadline,
-} from './summaryDates';
+import { PERIOD_NOUN, formatRange, periodDetail, periodHeadline } from './summaryDates';
 
+/**
+ * A stat card's line colour matches the ring the metric taps through to, so the
+ * card and the detail chart read as the same series. Wellness has no ring — it is
+ * the composite of all six — so it takes the primary plum.
+ */
 const STAT_COLORS: Record<string, string> = {
-  avgSleep: '#5E3566',
-  hotFlashes: '#C0405A',
+  avgSleep: RING_COLORS.sleep.color,
+  hotFlashes: RING_COLORS.hotFlashes.color,
   wellness: '#5E3566',
 };
 
@@ -143,13 +143,15 @@ function ReportProgressRings({
 
 function StatCard({
   stat,
-  elapsed,
+  report,
   wide,
+  first,
 }: {
   stat: ReportStat;
-  /** Series entries that have actually happened — the rest are future days. */
-  elapsed: number;
+  report: WeeklyReportResponse;
   wide?: boolean;
+  /** The first card on screen carries the shared chart legend for all of them. */
+  first?: boolean;
 }) {
   const color = STAT_COLORS[stat.key] ?? '#5E3566';
 
@@ -172,49 +174,121 @@ function StatCard({
         {stat.label}
       </div>
       <div className="mt-2.5">
-        {/* The detail chart shows the whole period; these compact cards stop at
-            today so they are not mostly empty space early in a month. */}
-        <Sparkline values={stat.trend.slice(0, elapsed)} color={color} />
+        {/* The full window, never truncated to today. Trimming to the elapsed
+            days meant this week showed three columns and last week seven, so no
+            two windows were comparable by eye. Days still to come are shaded
+            inside the chart instead. */}
+        <Sparkline
+          values={stat.trend}
+          color={color}
+          seriesStart={report.seriesStart}
+          coverageStart={report.seriesCoverageStart}
+          coverageEnd={report.coverageEnd}
+          scale={scaleFor(stat.key)}
+          label={stat.label}
+          unit={stat.unit}
+          showMissingLegend={first}
+        />
       </div>
+      {/* The figure above and the chart below are different numbers. Which
+          relationship applies changes per period, so the API says it. */}
+      <p
+        className="mt-2 text-[9.5px] leading-[1.35] text-outline"
+        style={{ fontFamily: MULISH }}
+      >
+        {stat.seriesNote}
+      </p>
     </article>
   );
 }
 
 // ── Week-by-week strip (monthly) ─────────────────────────────
 
+/** Days in a Mon-Sun week, used to size the confidence of its average. */
+const WEEK_DAYS = 7;
+
+/**
+ * Wellness per week, as a meter on a fixed 0-100 axis.
+ *
+ * The axis is deliberately fixed and labelled: the wellness sparkline two cards
+ * down uses a zoomed axis, and two charts of the same metric with unlabelled
+ * axes of different scales is the fastest way to make a reader distrust both.
+ *
+ * Weeks are weighted by how many days they were actually built from. A week
+ * averaged out of one check-in used to render as solidly as a fully tracked one,
+ * which quietly turned the noisiest number on the page into the loudest bar.
+ */
 function WeekStrip({ weeks }: { weeks: SummaryWeekBreakdown[] }) {
+  const thin = weeks.some((w) => w.wellness != null && w.daysLogged < 3);
+
   return (
     <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
       <Eyebrow tone="gold">Week by week</Eyebrow>
       <div className="flex flex-col gap-2.5">
-        {weeks.map((week) => (
-          <div key={week.startDate} className="flex items-center gap-3">
-            <span
-              className="w-[76px] shrink-0 text-[11px] leading-none text-on-surface-variant"
-              style={{ fontFamily: MULISH }}
-            >
-              {formatRange(week.startDate, week.endDate)}
-            </span>
-            <div className="h-[8px] flex-1 overflow-hidden rounded-full bg-surface-bright">
+        {weeks.map((week) => {
+          const sparse = week.wellness != null && week.daysLogged < 3;
+          return (
+            <div key={week.startDate} className="flex items-center gap-3">
+              <span
+                className="w-[76px] shrink-0 text-[11px] leading-none text-on-surface-variant"
+                style={{ fontFamily: MULISH }}
+              >
+                {formatRange(week.startDate, week.endDate)}
+              </span>
               <div
-                className="h-full rounded-full"
-                style={{ width: `${week.wellness ?? 0}%`, backgroundColor: '#5E3566' }}
-              />
+                className="relative h-[8px] flex-1 overflow-hidden rounded-full"
+                // The old track was `surface-bright`, which is #FFFFFF — the same
+                // value as the card behind it, so the 0-100 axis was invisible.
+                style={{ backgroundColor: RING_COLORS.sleep.track }}
+                role="img"
+                aria-label={`${formatRange(week.startDate, week.endDate)}: ${
+                  week.wellness == null
+                    ? 'nothing logged'
+                    : `wellness ${week.wellness} out of 100, from ${week.daysLogged} of ${WEEK_DAYS} days`
+                }`}
+              >
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${week.wellness ?? 0}%`,
+                    backgroundColor: '#5E3566',
+                    // Thinly-evidenced weeks read fainter rather than being
+                    // hidden — the average is still theirs, it is just softer.
+                    opacity: sparse ? 0.45 : 1,
+                  }}
+                />
+              </div>
+              <span
+                className="w-[42px] shrink-0 text-right text-[12px] leading-none text-on-surface"
+                style={{ fontFamily: '"Mulish", sans-serif' }}
+              >
+                {week.wellness ?? '—'}
+                {sparse && <span className="text-outline">*</span>}
+              </span>
             </div>
-            <span
-              className="w-[30px] shrink-0 text-right text-[12px] leading-none text-on-surface"
-              style={{ fontFamily: '"Mulish", sans-serif' }}
-            >
-              {week.wellness ?? '—'}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {/* The axis both bars are measured against, stated once. */}
+      <div className="mt-2 flex items-center gap-3">
+        <span className="w-[76px] shrink-0" />
+        <div
+          className="flex flex-1 justify-between text-[8.5px] leading-none text-outline"
+          style={{ fontFamily: MULISH }}
+        >
+          <span>0</span>
+          <span>100</span>
+        </div>
+        <span className="w-[42px] shrink-0" />
+      </div>
+
       <p
         className="mt-3 text-[11px] leading-[1.35] text-on-surface-variant"
         style={{ fontFamily: MULISH }}
       >
         Wellness per week, so a hard stretch does not disappear into the month&apos;s average.
+        {thin && ' * averaged from fewer than three logged days.'}
       </p>
     </article>
   );
@@ -354,7 +428,6 @@ function ReportBody({
   const wellness = report.stats.find((s) => s.key === 'wellness');
   const others = report.stats.filter((s) => s.key !== 'wellness');
   const hasAnyData = report.dataState !== 'empty';
-  const elapsed = daysBetweenIso(report.seriesStart, report.coverageEnd);
 
   // Six numbers do not tell anyone what changed. The first insight is the
   // translation, so it sits with the rings rather than below the stat cards.
@@ -430,16 +503,16 @@ function ReportBody({
             // A month's chart needs the full width; the 2-up grid would squeeze
             // 31 days into a card half this wide.
             <div className="flex flex-col gap-2.5">
-              {report.stats.map((stat) => (
-                <StatCard key={stat.key} stat={stat} elapsed={elapsed} />
+              {report.stats.map((stat, i) => (
+                <StatCard key={stat.key} stat={stat} report={report} first={i === 0} />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2.5">
-              {others.map((stat) => (
-                <StatCard key={stat.key} stat={stat} elapsed={elapsed} />
+              {others.map((stat, i) => (
+                <StatCard key={stat.key} stat={stat} report={report} first={i === 0} />
               ))}
-              {wellness && <StatCard stat={wellness} elapsed={elapsed} wide />}
+              {wellness && <StatCard stat={wellness} report={report} wide />}
             </div>
           ))}
 

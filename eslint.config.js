@@ -28,5 +28,12 @@ export default tseslint.config(
     languageOptions: {
       globals: globals.node,
     },
+  },
+  {
+    // Repo tooling run directly by node — plain scripts, not part of any package's build.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: globals.node,
+    },
   }
 );

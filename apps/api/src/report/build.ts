@@ -600,6 +600,37 @@ const DAILY_COPY: Record<ReportRingKey, { strong: string; weak: string }> = {
 };
 
 /**
+ * What the stat card's figure is, relative to the chart under it.
+ *
+ * The two are not the same number and the relationship changes per period: on
+ * daily the figure is the selected day while the chart carries the trailing week
+ * for context, and hot flashes is a period *total* over a chart of per-day counts
+ * on every period. Left unsaid, a total above a chart of daily peaks reads as a
+ * bug.
+ */
+const SERIES_NOTES: Record<string, Record<SummaryPeriod, string>> = {
+  avgSleep: {
+    daily: 'Hours slept, with the six nights before it for context.',
+    weekly: 'Hours slept each night. The figure is the average of the week.',
+    monthly: 'Hours slept each night. The figure is the average of the month.',
+  },
+  hotFlashes: {
+    daily: 'Episodes per day, with the six days before it for context.',
+    weekly: 'Episodes each day. The figure is the total for the week, not a daily peak.',
+    monthly: 'Episodes each day. The figure is the total for the month, not a daily peak.',
+  },
+  wellness: {
+    daily: 'Wellness each day, with the six days before it for context.',
+    weekly: 'Wellness each day. The figure is the average of the week.',
+    monthly: 'Wellness each day. The figure is the average of the month.',
+  },
+};
+
+function seriesNote(key: string, period: SummaryPeriod): string {
+  return SERIES_NOTES[key]?.[period] ?? 'One point per day across the window.';
+}
+
+/**
  * Metrics that reliably move together. When both sides land below the user's
  * own line on the same day, saying so is more useful than flagging either alone.
  */
@@ -968,6 +999,7 @@ export async function buildSummary(
       value: avgSleepHours == null ? null : avgSleepHours.toFixed(1),
       unit: 'hrs',
       trend: windowSeries(sleepHours, w),
+      seriesNote: seriesNote('avgSleep', w.period),
     },
     {
       key: 'hotFlashes',
@@ -975,6 +1007,7 @@ export async function buildSummary(
       value: hotFlashDays.length === 0 ? null : String(hotFlashTotal),
       unit: hotFlashTotal === 1 ? 'episode' : 'episodes',
       trend: windowSeries(hotFlashCounts, w),
+      seriesNote: seriesNote('hotFlashes', w.period),
     },
     {
       key: 'wellness',
@@ -982,6 +1015,7 @@ export async function buildSummary(
       value: wellnessScore == null ? null : String(Math.round(wellnessScore)),
       unit: '/100',
       trend: windowSeries(wellnessDaily, w),
+      seriesNote: seriesNote('wellness', w.period),
     },
   ];
 
@@ -1038,6 +1072,10 @@ export async function buildSummary(
     coverageStart: isoDate(w.coverageStart),
     coverageEnd: isoDate(w.coverageEnd),
     seriesStart: isoDate(seriesRange(w).start),
+    // The series' own coverage, not the period's. Equal to `coverageStart` on
+    // weekly and monthly; on daily the series reaches a week further back than
+    // the period does, and only the trial anchor limits how far.
+    seriesCoverageStart: isoDate(later(seriesRange(w).start, startOfLocalDay(anchor))),
     canGoBack: w.canGoBack,
     canGoForward: w.canGoForward,
     calibrating,

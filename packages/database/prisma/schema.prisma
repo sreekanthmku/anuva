@@ -20,6 +20,11 @@ model User {
   onboardingCompleted Boolean   @default(false)
   dieticianPlanAssigned Boolean @default(false)
   familyFeatureOptOut Boolean   @default(false)
+  /// Set when a DPDP erasure completes. The row survives so the consultation records the NMC
+  /// requires us to keep for three years still resolve to a patient, but it carries no personal
+  /// data any more: `phone` is rewritten to `erased:<id>`, `email` and `name` are nulled. Every
+  /// auth path must refuse a user with this set — the account is a tombstone, not an account.
+  erasedAt            DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -64,6 +69,85 @@ model User {
   l3TriggerLogs      L3TriggerLog[]
   anuChatTurns       AnuChatTurn[]
   supportTickets     SupportTicket[]
+  deletionRequests   DataDeletionRequest[]
+  dataExports        DataExportRequest[]
+}
+
+// ─────────────────────────────────────────────
+// DPDP data rights — erasure (§12) & access (§11)
+// ─────────────────────────────────────────────
+
+/// What a single erasure request covers. Anything narrower than `account` runs immediately;
+/// `account` waits out a grace period first.
+enum DataErasureScope {
+  recordings
+  chat
+  tracker
+  account
+}
+
+enum DataDeletionStatus {
+  pending
+  processing
+  completed
+  cancelled
+  failed
+}
+
+enum DataExportStatus {
+  pending
+  ready
+  downloaded
+  failed
+  expired
+}
+
+/// The record that an erasure was asked for and honoured. `userId` is SetNull rather than Cascade
+/// on purpose: for a narrower scope the account lives on, and for an account erasure the tombstone
+/// user survives — but either way this row has to outlive the data it destroyed, because it is the
+/// only proof the request was acted on. It stores counts, never contents.
+model DataDeletionRequest {
+  id            String             @id @default(cuid())
+  userId        String?
+  user          User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Hashed, not stored plain: enough to answer "did this number ask to be erased?" without
+  /// keeping the number that was just erased.
+  phoneHash     String
+  scope         DataErasureScope
+  status        DataDeletionStatus @default(pending)
+  requestedAt   DateTime           @default(now())
+  /// When the worker may execute it. Equal to `requestedAt` for immediate scopes.
+  scheduledFor  DateTime
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  /// Per-category row counts destroyed, for the confirmation screen and for an audit.
+  itemCounts    Json?
+  failureReason String?
+
+  @@index([status, scheduledFor])
+  @@index([userId])
+}
+
+/// A staged copy of everything we hold about her, waiting to be downloaded once. The file itself
+/// lives outside the database under DATA_EXPORT_DIR; `storagePath` is server-generated and never
+/// sent to a client. `tokenHash` is the download secret — the token is shown to her exactly once,
+/// in the response that creates this row, and only its hash is kept.
+model DataExportRequest {
+  id            String           @id @default(cuid())
+  userId        String?
+  user          User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status        DataExportStatus @default(pending)
+  tokenHash     String           @unique
+  storagePath   String?
+  sizeBytes     Int?
+  /// After this the file is deleted by the retention job, downloaded or not.
+  expiresAt     DateTime
+  downloadedAt  DateTime?
+  failureReason String?
+  createdAt     DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([status, expiresAt])
 }
 
 enum FcmPlatform {
@@ -106,6 +190,11 @@ model Session {
 enum OtpChallengePurpose {
   login
   signup
+  /// Re-verification before an irreversible erasure, so a stolen session cannot delete an account.
+  account_deletion
+  /// Re-verification before an export, which is the inverse risk: it creates a portable copy of
+  /// her entire health history, so a stolen session must not be able to ask for one.
+  data_export
 }
 
 enum OtpChallengeStatus {
@@ -558,6 +647,10 @@ model Consultation {
   scheduledAt  DateTime
   status       ConsultationStatus @default(pending)
   isFree       Boolean            @default(true)
+  /// The end of the NMC 2020 three-year record floor, stamped when the patient asks to be erased.
+  /// Until then this row is the reason her tombstone user still exists; after it, the retention job
+  /// deletes the consultation outright. Null means "no erasure asked for, no clock running".
+  purgeAfter   DateTime?
   createdAt    DateTime           @default(now())
   slot         ConsultationSlot?
   call         ConsultationCall?
@@ -565,6 +658,7 @@ model Consultation {
 
   @@index([userId])
   @@index([specialistId])
+  @@index([purgeAfter])
 }
 
 /// A prescription or diet plan the doctor uploaded after the consultation. Files live outside the

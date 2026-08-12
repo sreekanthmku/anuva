@@ -127,6 +127,18 @@ import {
   createSupportTicketBodySchema,
   createSupportTicketResponseSchema,
   mySupportTicketsResponseSchema,
+  ACCOUNT_DELETION_GRACE_DAYS,
+  DATA_EXPORT_COOLDOWN_HOURS,
+  DATA_EXPORT_TTL_HOURS,
+  ERASURE_SLA_DAYS,
+  cancelDeletionRequestResponseSchema,
+  createDataExportBodySchema,
+  createDataExportResponseSchema,
+  createDeletionRequestBodySchema,
+  createDeletionRequestResponseSchema,
+  privacyOtpBodySchema,
+  privacyOtpResponseSchema,
+  privacySummaryResponseSchema,
   type AnonymousQuestionTopic,
   type AuthUser,
   type ConsultationCallState,
@@ -153,6 +165,10 @@ import { notifyAskerQuestionAnswered } from './qaNotifications.js';
 import { buildCycleStateResponse } from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
 import { startSupportRetentionJob } from './supportRetention.js';
+import { eraseScope } from './privacy/erasure.js';
+import { createDataExport, resolveExportPath, unlinkExportFile } from './privacy/export.js';
+import { startPrivacyRetentionJobs } from './privacy/retention.js';
+import { buildPrivacyCategories } from './privacy/summary.js';
 import {
   buildDispatch,
   storeResponse,
@@ -545,6 +561,13 @@ async function loadUserWithSubscription(userId: string): Promise<UserWithSubscri
 
   if (!user) {
     throw new HttpError(404, 'User not found.');
+  }
+
+  // A tombstone from a completed erasure. Its sessions are deleted with everything else, so nothing
+  // should reach here — this is the guard that holds if a session ever survives, and it covers every
+  // authenticated route at once rather than one at a time.
+  if (user.erasedAt) {
+    throw new HttpError(401, 'This account has been deleted.');
   }
 
   return user;
@@ -4952,6 +4975,454 @@ app.get('/library/articles/:slug', (req, res, next) => {
   }
 });
 
+// ─────────────────────────────────────────────
+// Privacy & data rights (DPDP §11 access, §12 erasure)
+// ─────────────────────────────────────────────
+
+function serializeDeletionRequest(row: {
+  id: string;
+  scope: string;
+  status: string;
+  requestedAt: Date;
+  scheduledFor: Date;
+  completedAt: Date | null;
+  itemCounts: unknown;
+}) {
+  return {
+    id: row.id,
+    scope: row.scope,
+    status: row.status,
+    requestedAt: row.requestedAt.toISOString(),
+    scheduledFor: row.scheduledFor.toISOString(),
+    completedAt: row.completedAt?.toISOString() ?? null,
+    itemCounts: (row.itemCounts as Record<string, number> | null) ?? null,
+  };
+}
+
+function serializeDataExport(row: {
+  id: string;
+  status: string;
+  createdAt: Date;
+  expiresAt: Date;
+  downloadedAt: Date | null;
+  sizeBytes: number | null;
+}) {
+  return {
+    id: row.id,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    expiresAt: row.expiresAt.toISOString(),
+    downloadedAt: row.downloadedAt?.toISOString() ?? null,
+    sizeBytes: row.sizeBytes,
+  };
+}
+
+/**
+ * Re-verifies possession of her phone before an irreversible erasure or before minting a copy of her
+ * whole history. A valid session is not enough for either: one is destructive and the other is an
+ * exfiltration primitive, and both should cost an attacker with a stolen cookie something.
+ *
+ * Same checks as /auth/verify-otp, with the purpose pinned and the challenge required to belong to
+ * this account — otherwise a code issued for a different flow, or a different user, would pass.
+ */
+async function consumePrivacyOtp(
+  userId: string,
+  phone: string,
+  challengeId: string,
+  otp: string,
+  purpose: 'account_deletion' | 'data_export',
+): Promise<void> {
+  const challenge = await prisma.otpChallenge.findUnique({ where: { id: challengeId } });
+
+  if (!challenge || challenge.userId !== userId || challenge.phone !== phone || challenge.purpose !== purpose) {
+    throw new HttpError(404, 'OTP challenge not found.');
+  }
+
+  if (challenge.status !== 'pending') {
+    throw new HttpError(400, 'This OTP has already been used. Please request a new one.');
+  }
+
+  if (challenge.expiresAt <= new Date()) {
+    await prisma.otpChallenge.update({ where: { id: challenge.id }, data: { status: 'expired' } });
+    throw new HttpError(400, 'This OTP has expired. Please request a new one.');
+  }
+
+  if (challenge.attemptCount >= OTP_MAX_VERIFY_ATTEMPTS) {
+    await prisma.otpChallenge.update({ where: { id: challenge.id }, data: { status: 'failed' } });
+    throw new HttpError(429, 'Too many incorrect OTP attempts. Please request a new OTP.');
+  }
+
+  try {
+    await verifyOtpWithTwoFactor(challenge.providerSessionId, otp);
+  } catch (error) {
+    await prisma.otpChallenge.update({
+      where: { id: challenge.id },
+      data: {
+        attemptCount: { increment: 1 },
+        status: challenge.attemptCount + 1 >= OTP_MAX_VERIFY_ATTEMPTS ? 'failed' : 'pending',
+      },
+    });
+    throw error;
+  }
+
+  await prisma.otpChallenge.update({
+    where: { id: challenge.id },
+    data: { status: 'verified', verifiedAt: new Date() },
+  });
+}
+
+/**
+ * What we hold, why, and what has already been asked for. The counts are what make the delete
+ * buttons on this screen honest, so they are computed live rather than cached.
+ */
+app.get('/privacy/summary', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    setNoStoreHeaders(res);
+
+    const [categories, pendingDeletion, history, latestExport, recentExport] = await Promise.all([
+      buildPrivacyCategories(user.id),
+      prisma.dataDeletionRequest.findFirst({
+        where: { userId: user.id, status: { in: ['pending', 'processing'] } },
+        orderBy: { requestedAt: 'desc' },
+      }),
+      prisma.dataDeletionRequest.findMany({
+        where: { userId: user.id, status: { in: ['completed', 'cancelled', 'failed'] } },
+        orderBy: { requestedAt: 'desc' },
+        take: 20,
+      }),
+      prisma.dataExportRequest.findFirst({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.dataExportRequest.findFirst({
+        where: {
+          userId: user.id,
+          createdAt: { gte: addSeconds(new Date(), -(DATA_EXPORT_COOLDOWN_HOURS * 60 * 60)) },
+          // A failed generation should not cost her the day's allowance.
+          status: { not: 'failed' },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    res.json(
+      privacySummaryResponseSchema.parse({
+        categories,
+        pendingDeletion: pendingDeletion ? serializeDeletionRequest(pendingDeletion) : null,
+        history: history.map(serializeDeletionRequest),
+        latestExport: latestExport ? serializeDataExport(latestExport) : null,
+        exportAvailableAt: recentExport
+          ? addSeconds(recentExport.createdAt, DATA_EXPORT_COOLDOWN_HOURS * 60 * 60).toISOString()
+          : null,
+        graceDays: ACCOUNT_DELETION_GRACE_DAYS,
+        slaDays: ERASURE_SLA_DAYS,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** Sends the confirmation code for a deletion or an export, to the phone already on the account. */
+app.post('/privacy/otp', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    setNoStoreHeaders(res);
+    const body = privacyOtpBodySchema.parse(req.body);
+    const now = new Date();
+
+    // Shares the sign-in rate limits deliberately: this is the same SMS budget and the same abuse
+    // surface, counted per phone rather than per purpose.
+    const recentSendCount = await prisma.otpChallenge.count({
+      where: { phone: user.phone, createdAt: { gte: addSeconds(now, -(15 * 60)) } },
+    });
+
+    if (recentSendCount >= OTP_MAX_SENDS_PER_15_MINUTES) {
+      throw new HttpError(429, 'Too many OTP requests. Please wait a few minutes and try again.');
+    }
+
+    const recentChallenge = await prisma.otpChallenge.findFirst({
+      where: {
+        phone: user.phone,
+        purpose: body.intent,
+        createdAt: { gte: addSeconds(now, -OTP_RESEND_COOLDOWN_SECONDS) },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (recentChallenge) {
+      const retryInSeconds = Math.max(
+        0,
+        Math.ceil(
+          (addSeconds(recentChallenge.createdAt, OTP_RESEND_COOLDOWN_SECONDS).getTime() -
+            now.getTime()) /
+            1000,
+        ),
+      );
+      if (retryInSeconds > 0) {
+        throw new HttpError(
+          429,
+          `Please wait ${retryInSeconds} seconds before requesting another OTP.`,
+        );
+      }
+    }
+
+    const providerSessionId = await sendOtpWithTwoFactor(user.phone);
+    const challenge = await prisma.otpChallenge.create({
+      data: {
+        phone: user.phone,
+        userId: user.id,
+        purpose: body.intent,
+        provider: '2factor',
+        providerSessionId,
+        expiresAt: addSeconds(now, OTP_EXPIRY_MINUTES * 60),
+      },
+    });
+
+    req.log.info({ intent: body.intent, challengeId: challenge.id }, 'Privacy OTP sent');
+
+    res.json(
+      privacyOtpResponseSchema.parse({
+        challengeId: challenge.id,
+        maskedPhone: maskPhone(user.phone),
+        resendAfterSeconds: OTP_RESEND_COOLDOWN_SECONDS,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Asks for an erasure.
+ *
+ * The narrow scopes run inline and return their counts — a pending state on "delete my recordings"
+ * would be confusing, and there is nothing to reconsider. Account deletion is the opposite: it is
+ * scheduled, not executed, so the seven days are hers to change her mind in. She stays signed in
+ * throughout, because the cancel button is on this screen and locking her out to protect her from a
+ * decision she just confirmed would only make it harder to undo.
+ */
+app.post('/privacy/deletion-requests', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    setNoStoreHeaders(res);
+    const body = createDeletionRequestBodySchema.parse(req.body);
+    const now = new Date();
+
+    const existing = await prisma.dataDeletionRequest.findFirst({
+      where: { userId: user.id, status: { in: ['pending', 'processing'] } },
+    });
+
+    if (existing) {
+      throw new HttpError(
+        409,
+        'A deletion is already scheduled on this account. Cancel it first if you want to change it.',
+      );
+    }
+
+    if (body.scope === 'account') {
+      // superRefine has already established both are present for this scope.
+      await consumePrivacyOtp(
+        user.id,
+        user.phone,
+        body.challengeId as string,
+        body.otp as string,
+        'account_deletion',
+      );
+
+      // A future consultation would otherwise be erased out from under the doctor's calendar, and
+      // she may be owed a refund on it. Hers to resolve, not ours to guess at.
+      const upcoming = await prisma.consultation.count({
+        where: { userId: user.id, scheduledAt: { gt: now }, status: { in: ['pending', 'confirmed'] } },
+      });
+
+      if (upcoming > 0) {
+        throw new HttpError(
+          409,
+          'You have an upcoming consultation. Please cancel it first, then delete your account.',
+        );
+      }
+
+      const request = await prisma.dataDeletionRequest.create({
+        data: {
+          userId: user.id,
+          phoneHash: sha256(user.phone),
+          scope: 'account',
+          scheduledFor: addDays(now, ACCOUNT_DELETION_GRACE_DAYS),
+        },
+      });
+
+      req.log.info({ requestId: request.id }, 'Account deletion scheduled');
+
+      res.status(201).json(
+        createDeletionRequestResponseSchema.parse({
+          request: serializeDeletionRequest(request),
+          accountScheduled: true,
+        }),
+      );
+      return;
+    }
+
+    const counts = await eraseScope(user.id, body.scope);
+    const request = await prisma.dataDeletionRequest.create({
+      data: {
+        userId: user.id,
+        phoneHash: sha256(user.phone),
+        scope: body.scope,
+        status: 'completed',
+        scheduledFor: now,
+        completedAt: new Date(),
+        itemCounts: counts,
+      },
+    });
+
+    req.log.info({ requestId: request.id, scope: body.scope }, 'Scoped erasure completed');
+
+    res.status(201).json(
+      createDeletionRequestResponseSchema.parse({
+        request: serializeDeletionRequest(request),
+        accountScheduled: false,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** Cancels a scheduled account deletion. Only while it is still pending — once it runs, it is gone. */
+app.delete('/privacy/deletion-requests/:id', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    setNoStoreHeaders(res);
+
+    const request = await prisma.dataDeletionRequest.findUnique({ where: { id: req.params.id } });
+
+    if (!request || request.userId !== user.id) {
+      throw new HttpError(404, 'That request could not be found.');
+    }
+
+    if (request.status !== 'pending') {
+      throw new HttpError(409, 'That deletion is already being processed and cannot be cancelled.');
+    }
+
+    const cancelled = await prisma.dataDeletionRequest.update({
+      where: { id: request.id },
+      data: { status: 'cancelled', cancelledAt: new Date() },
+    });
+
+    req.log.info({ requestId: request.id }, 'Account deletion cancelled');
+
+    res.json(
+      cancelDeletionRequestResponseSchema.parse({
+        request: serializeDeletionRequest(cancelled),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Stages a copy of everything we hold about her and returns a single-use link.
+ *
+ * OTP-gated and rate-limited to one a day: this is the one endpoint that turns a session into a
+ * portable copy of a complete health history. The link is returned here and nowhere else — it is
+ * never emailed, because that would put her health data in a third-party mailbox outside anything
+ * this screen can promise about retention.
+ */
+app.post('/privacy/exports', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    setNoStoreHeaders(res);
+    const body = createDataExportBodySchema.parse(req.body);
+
+    const recent = await prisma.dataExportRequest.findFirst({
+      where: {
+        userId: user.id,
+        createdAt: { gte: addSeconds(new Date(), -(DATA_EXPORT_COOLDOWN_HOURS * 60 * 60)) },
+        status: { not: 'failed' },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (recent) {
+      throw new HttpError(
+        429,
+        `You can download your data once every ${DATA_EXPORT_COOLDOWN_HOURS} hours. Please try again later.`,
+      );
+    }
+
+    await consumePrivacyOtp(user.id, user.phone, body.challengeId, body.otp, 'data_export');
+
+    const created = await createDataExport(user.id, DATA_EXPORT_TTL_HOURS);
+    const row = await prisma.dataExportRequest.findUniqueOrThrow({ where: { id: created.id } });
+
+    req.log.info({ exportId: created.id, sizeBytes: created.sizeBytes }, 'Data export requested');
+
+    res.status(201).json(
+      createDataExportResponseSchema.parse({
+        export: serializeDataExport(row),
+        downloadUrl: `/privacy/exports/${created.id}/download?token=${created.token}`,
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Hands over the staged file, once. The token is compared by hash and the file is unlinked as soon
+ * as it has been sent — a health-history archive should not sit on disk waiting for a second
+ * request. Session-authenticated as well as tokenised, so a leaked link is useless on its own.
+ */
+app.get('/privacy/exports/:id/download', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    setNoStoreHeaders(res);
+
+    const token = typeof req.query.token === 'string' ? req.query.token : '';
+    if (!token) {
+      throw new HttpError(400, 'That download link is incomplete.');
+    }
+
+    const row = await prisma.dataExportRequest.findUnique({ where: { id: req.params.id } });
+
+    if (!row || row.userId !== user.id || row.tokenHash !== sha256(token)) {
+      throw new HttpError(404, 'That download could not be found.');
+    }
+
+    if (row.status !== 'ready' || !row.storagePath) {
+      throw new HttpError(410, 'That download has already been used or has expired.');
+    }
+
+    if (row.expiresAt <= new Date()) {
+      throw new HttpError(410, 'That download has expired. Please ask for your data again.');
+    }
+
+    const absolute = resolveExportPath(row.storagePath);
+    if (!absolute) {
+      throw new HttpError(410, 'That download is no longer available.');
+    }
+
+    // Marked before the send, not after: if the transfer dies halfway the copy is still considered
+    // handed over. Re-issuing it would mean keeping the file alive on a promise of one download.
+    await prisma.dataExportRequest.update({
+      where: { id: row.id },
+      data: { status: 'downloaded', downloadedAt: new Date(), storagePath: null },
+    });
+
+    res.download(absolute, `anuva-data-export-${row.createdAt.toISOString().slice(0, 10)}.json`, (error) => {
+      void unlinkExportFile(row.storagePath);
+      if (error) {
+        req.log.error({ err: error, exportId: row.id }, 'Data export download failed');
+      }
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 /** body-parser tags its size rejection with this type; it carries no dedicated error class. */
 function isPayloadTooLarge(err: unknown): boolean {
   return (
@@ -5024,6 +5495,7 @@ async function startServer() {
 
   startNudgeScheduler();
   startSupportRetentionJob();
+  startPrivacyRetentionJobs();
 
   // Warm the ANU semantic cache so a restart does not send every question
   // straight to the model until the index refills.

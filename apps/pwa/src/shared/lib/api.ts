@@ -19,6 +19,15 @@ function toAbsoluteUrl(input: RequestInfo | URL): RequestInfo | URL {
   return `${API_BASE_URL}${path}`;
 }
 
+/**
+ * The same URL resolution as `apiFetch`, for the rare response that is not JSON — a file download
+ * has to be fetched as a blob, so it cannot go through `apiFetch` but must still land on the same
+ * origin with the same `/api` handling.
+ */
+export function apiUrl(path: string): string {
+  return toAbsoluteUrl(path) as string;
+}
+
 export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(toAbsoluteUrl(input), {
     credentials: 'include',
