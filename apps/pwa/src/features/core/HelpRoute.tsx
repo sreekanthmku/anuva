@@ -340,11 +340,7 @@ export default function HelpRoute() {
               className="text-[9.5px] uppercase tracking-[0.1em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              {outOfQuota
-                ? 'Daily limit reached'
-                : remainingToday !== null
-                  ? `Replies in ~2 working days · ${remainingToday} left today`
-                  : 'Replies in ~2 working days'}
+              {outOfQuota ? 'Daily limit reached' : 'Replies in ~2 working days'}
             </span>
             <button
               type="button"

@@ -73,6 +73,7 @@ export type DetailedAssessmentSection = {
 export const SEVERITY_OPTIONS = ['None', 'Mild', 'Moderate', 'Severe'] as const;
 export const QOL_OPTIONS = ['Not at all', 'Somewhat', 'Significantly', 'Severely'] as const;
 export const YESNO_OPTIONS = ['Yes', 'No'] as const;
+export const FLOW_CHANGE_OPTIONS = ['Lighter', 'Heavier'] as const;
 
 /** Separator used to join `multiselect` values into the stored string. */
 export const MULTISELECT_SEPARATOR = ', ';
@@ -101,10 +102,15 @@ export const detailedAssessmentSections: DetailedAssessmentSection[] = [
         optional: true,
       },
       { key: 'periods-regular', prompt: 'Are your periods still regular?', inputType: 'yesno' },
-      { key: 'periods-lighter-heavier', prompt: 'Have your periods become lighter or heavier?', inputType: 'yesno' },
+      {
+        key: 'periods-lighter-heavier',
+        prompt: 'Have your periods become lighter or heavier?',
+        inputType: 'select',
+        options: [...FLOW_CHANGE_OPTIONS],
+      },
       { key: 'cycles-shorter', prompt: 'Have your cycles become shorter (less than 21 days)?', inputType: 'yesno' },
       { key: 'cycles-longer', prompt: 'Have your cycles become longer (more than 35 days)?', inputType: 'yesno' },
-      { key: 'skip-periods', prompt: 'Have your periods been skipped?', inputType: 'yesno' },
+      { key: 'skip-periods', prompt: 'Do you skip periods?', inputType: 'yesno' },
       { key: 'spotting-between', prompt: 'Do you experience spotting between periods?', inputType: 'yesno' },
       {
         key: 'irregular-pattern',
@@ -150,7 +156,7 @@ export const detailedAssessmentSections: DetailedAssessmentSection[] = [
     secondary: 'psychologist',
     questions: [
       { key: 'difficulty-falling-asleep', prompt: 'Difficulty falling asleep', inputType: 'yesno' },
-      { key: 'waking-frequently', prompt: 'Waking frequently during the night', inputType: 'yesno' },
+      { key: 'waking-frequently', prompt: 'Waking up frequently during the night', inputType: 'yesno' },
       {
         key: 'early-morning-awakening',
         prompt: 'Early morning awakening (and unable to return to sleep)',
@@ -477,7 +483,7 @@ export const detailedAssessmentSections: DetailedAssessmentSection[] = [
       },
       {
         key: 'herbal-ayurvedic-remedies',
-        prompt: 'Have you used any herbal or Ayurvedic remedies for menopause symptoms?',
+        prompt: 'Have you used any herbal or ayurvedic remedies for perimenopause or menopause?',
         inputType: 'yesno',
       },
       {
