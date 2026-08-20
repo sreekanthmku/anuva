@@ -83,6 +83,8 @@ import {
   sleepStateResponseSchema,
   logQuickSymptomBodySchema,
   quickLogStateResponseSchema,
+  summaryCalendarQuerySchema,
+  summaryCalendarResponseSchema,
   logQuickSymptomResponseSchema,
   type QuickSymptom,
   submitNudgeResponseBodySchema,
@@ -179,6 +181,7 @@ import {
 } from './nudge/engine.js';
 import { runNudgeSelfTest } from './nudge/selfTest.js';
 import { buildSummary } from './report/build.js';
+import { buildSummaryCalendar, summaryAnchor } from './report/calendar.js';
 import { randomQuickLogMessage } from './quickLogMessages.js';
 import { recordQuickSymptom } from './logging/writeThrough.js';
 import { dayKey } from './dayKey.js';
@@ -4285,9 +4288,25 @@ app.get('/report', async (req, res, next) => {
     // Windows are calendar-aligned (Mon-Sun weeks, 1st-EOM months); the trial
     // start only clamps how far back the user can travel and how much of a
     // period counts as coverage.
-    const anchor = user.subscription?.startedAt ?? user.createdAt;
+    const anchor = summaryAnchor(user);
     const report = await buildSummary(user.id, anchor, period, offset);
     res.json(weeklyReportResponseSchema.parse(report));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Month grid for the summary's date picker (daily view only). Same anchor rule
+ * as `/report`, so a day the picker offers is a day the report can render.
+ */
+app.get('/summary/calendar', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { month } = summaryCalendarQuerySchema.parse(req.query);
+    const anchor = summaryAnchor(user);
+    const calendar = await buildSummaryCalendar(user.id, month, anchor);
+    res.json(summaryCalendarResponseSchema.parse(calendar));
   } catch (e) {
     next(e);
   }

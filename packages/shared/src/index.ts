@@ -346,6 +346,9 @@ export {
   summaryWeekBreakdownSchema,
   weeklyReportQuerySchema,
   weeklyReportResponseSchema,
+  summaryCalendarQuerySchema,
+  summaryCalendarDaySchema,
+  summaryCalendarResponseSchema,
   type SummaryPeriod,
   type ReportRingKey,
   type ReportReference,
@@ -356,6 +359,9 @@ export {
   type SummaryWeekBreakdown,
   type WeeklyReportQuery,
   type WeeklyReportResponse,
+  type SummaryCalendarQuery,
+  type SummaryCalendarDay,
+  type SummaryCalendarResponse,
 } from './report.js';
 
 export {

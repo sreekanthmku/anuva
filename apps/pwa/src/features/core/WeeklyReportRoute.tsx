@@ -13,12 +13,13 @@ import { Eyebrow } from '../../shared/components/Eyebrow';
 import { BottomNav } from './components/BottomNav';
 import { MetricRing } from './components/MetricRing';
 import { PeriodToggle } from './components/PeriodToggle';
+import { SummaryDatePickerSheet } from './components/SummaryDatePickerSheet';
 import { Sparkline } from './components/Sparkline';
 import { scaleFor } from './chartScale';
 import { useSummary } from './hooks/useWeeklyReport';
 import { RING_COLORS, RING_EMPTY_COLOR, gaugeBandColor } from './ringColors';
 import { DELTA_TONE_COLOR, ringAriaLabel } from './ringDisplay';
-import { PERIOD_NOUN, formatRange, periodDetail, periodHeadline } from './summaryDates';
+import { PERIOD_NOUN, daysBetweenIso, formatRange, periodDetail, periodHeadline } from './summaryDates';
 
 /**
  * A stat card's line colour matches the ring the metric taps through to, so the
@@ -328,16 +329,51 @@ function ArrowButton({
   );
 }
 
+/**
+ * Jump-to-a-day control. Daily only: the arrows step weeks and months, and a day
+ * grid cannot say "which week" without a second selection model.
+ */
+function CalendarButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Pick a day"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface transition-opacity active:opacity-60"
+    >
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect
+          x="3.5"
+          y="5"
+          width="17"
+          height="15.5"
+          rx="3"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
+        <path d="M3.5 9.5h17" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M8 3.5v3M16 3.5v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <circle cx="8.5" cy="13.5" r="1.15" fill="currentColor" />
+        <circle cx="12" cy="13.5" r="1.15" fill="currentColor" />
+        <circle cx="15.5" cy="17" r="1.15" fill="currentColor" />
+      </svg>
+    </button>
+  );
+}
+
 function PeriodNav({
   data,
   period,
   onStep,
   onReset,
+  onOpenCalendar,
 }: {
   data: WeeklyReportResponse | null;
   period: SummaryPeriod;
   onStep: (delta: number) => void;
   onReset: () => void;
+  /** Absent on weekly and monthly, where the picker does not apply. */
+  onOpenCalendar?: () => void;
 }) {
   return (
     <div className="mt-3 flex flex-col items-center">
@@ -350,7 +386,7 @@ function PeriodNav({
         />
         <span
           aria-live="polite"
-          className="min-w-[150px] text-center text-[15px] font-semibold leading-none text-on-surface"
+          className="min-w-[128px] text-center text-[15px] font-semibold leading-none text-on-surface"
           style={{ fontFamily: '"Mulish", sans-serif' }}
         >
           {data ? periodHeadline(data) : '—'}
@@ -361,6 +397,7 @@ function PeriodNav({
           onClick={() => onStep(-1)}
           label={`Next ${PERIOD_NOUN[period]}`}
         />
+        {onOpenCalendar && <CalendarButton onClick={onOpenCalendar} />}
       </div>
 
       <p className="mt-0.5 text-[11px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
@@ -586,6 +623,22 @@ export default function WeeklyReportRoute() {
     setOffset((o) => Math.max(0, o + delta));
   }, []);
 
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  /**
+   * The API takes an offset in periods, not a date, so a picked day becomes the
+   * number of days back from today. Clamped at 0 — the picker never offers a
+   * future day, but a stale "today" from an app left open overnight could.
+   */
+  const selectDate = useCallback((dateISO: string) => {
+    const today = new Date();
+    const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
+      today.getDate()
+    ).padStart(2, '0')}`;
+    setOffset(Math.max(0, daysBetweenIso(dateISO, todayIso) - 1));
+    setPickerOpen(false);
+  }, []);
+
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface">
@@ -601,7 +654,13 @@ export default function WeeklyReportRoute() {
           </h1>
 
           <PeriodToggle value={period} onChange={changePeriod} />
-          <PeriodNav data={data} period={period} onStep={step} onReset={() => setOffset(0)} />
+          <PeriodNav
+            data={data}
+            period={period}
+            onStep={step}
+            onReset={() => setOffset(0)}
+            onOpenCalendar={period === 'daily' ? () => setPickerOpen(true) : undefined}
+          />
         </div>
       </header>
 
@@ -626,6 +685,15 @@ export default function WeeklyReportRoute() {
       )}
 
       {!loading && !error && data && <ReportBody report={data} onSelectRing={openMetric} />}
+
+      {pickerOpen && (
+        <SummaryDatePickerSheet
+          // `periodStart` is the selected day itself on the daily view.
+          selectedDate={data?.periodStart ?? ''}
+          onSelectDate={selectDate}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
 
       <BottomNav />
     </main>

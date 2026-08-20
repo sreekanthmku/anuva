@@ -201,6 +201,40 @@ export const weeklyReportResponseSchema = z.object({
   anuReflection: z.string(),
 });
 
+/**
+ * Calendar month behind the summary's date picker.
+ *
+ * Daily only: weekly and monthly windows are stepped with the arrows. The dots
+ * are the point — a picker that only jumps somewhere makes the user guess which
+ * days hold anything, so each day carries how many of the six metrics it has.
+ */
+export const summaryCalendarQuerySchema = z.object({
+  /** `YYYY-MM`, the month to render. */
+  month: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'month must be YYYY-MM'),
+});
+
+export const summaryCalendarDaySchema = z.object({
+  date: z.string(),
+  /** How many of the six metrics that day holds, 0-6. Drives the dot. */
+  metrics: z.number().int().min(0),
+  /** Composite score for the day, or null when nothing was logged. */
+  wellness: z.number().int().nullable(),
+});
+
+export const summaryCalendarResponseSchema = z.object({
+  month: z.string(),
+  /** Metrics a full day would carry — the denominator for `metrics`. */
+  metricCount: z.number().int(),
+  /** First day the user could have logged; earlier days are not selectable. */
+  earliestDate: z.string(),
+  /** Today. Later days are not selectable. */
+  latestDate: z.string(),
+  /** Every calendar day of the month, in order. */
+  days: z.array(summaryCalendarDaySchema),
+});
+
 export type SummaryPeriod = z.infer<typeof summaryPeriodSchema>;
 export type ReportRingKey = z.infer<typeof reportRingKeySchema>;
 export type ReportReference = z.infer<typeof reportReferenceSchema>;
@@ -209,5 +243,8 @@ export type ReportRing = z.infer<typeof reportRingSchema>;
 export type ReportStat = z.infer<typeof reportStatSchema>;
 export type ReportInsight = z.infer<typeof reportInsightSchema>;
 export type SummaryWeekBreakdown = z.infer<typeof summaryWeekBreakdownSchema>;
+export type SummaryCalendarQuery = z.infer<typeof summaryCalendarQuerySchema>;
+export type SummaryCalendarDay = z.infer<typeof summaryCalendarDaySchema>;
+export type SummaryCalendarResponse = z.infer<typeof summaryCalendarResponseSchema>;
 export type WeeklyReportQuery = z.infer<typeof weeklyReportQuerySchema>;
 export type WeeklyReportResponse = z.infer<typeof weeklyReportResponseSchema>;
