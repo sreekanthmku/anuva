@@ -141,6 +141,18 @@ export default function AnuDashboardRoute() {
   const todaySleep = sleep.data?.today ?? null;
   const quickCounts = quick.data?.counts ?? null;
 
+  // Trackers the Quick log grid cannot reach — energy, stress, focus and the
+  // rest live on /track, and three of the six summary gauges depend on them.
+  const unanswered = (nudgeDay.data?.trackers ?? []).filter((t) => !t.answered);
+  const remainingTrackers = unanswered.length;
+  const remainingLabels =
+    unanswered.length <= 3
+      ? unanswered.map((t) => t.label).join(', ')
+      : `${unanswered
+          .slice(0, 3)
+          .map((t) => t.label)
+          .join(', ')} and ${unanswered.length - 3} more`;
+
   const handleLogMood = async (feeling: number, emotions: MoodEmotion[]) => {
     setMoodSaving(true);
     try {
@@ -185,6 +197,9 @@ export default function AnuDashboardRoute() {
   const handleLogSymptom = async (symptom: QuickSymptom, _label: string) => {
     try {
       const result = await quick.logSymptom(symptom);
+      // A hot-flash tap now fills that day's heat tracker, so the day sheet
+      // behind the "more to log" line is stale until reloaded.
+      await nudgeDay.reload();
       const response = QUICK_SYMPTOM_RESPONSE[symptom];
       setQuickMessage({
         message: result.message,
@@ -564,6 +579,34 @@ export default function AnuDashboardRoute() {
             );
           })}
         </div>
+
+        {/* The grid covers six taps; the day carries eleven trackers. Without
+            this line the grid reads as the whole of today's logging, and the
+            summary gauges for energy, stress and focus stay empty with no
+            visible reason why. */}
+        {remainingTrackers > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate('/track')}
+            className="mt-2 flex w-full items-center justify-between gap-2 rounded-[18px] border border-border-default bg-surface-container-low px-[18px] py-3 text-left transition-opacity active:opacity-80"
+          >
+            <span>
+              <span
+                className="block text-[13.5px] font-semibold leading-tight text-on-surface"
+                style={{ fontFamily: '"Mulish", sans-serif' }}
+              >
+                {remainingTrackers} more to log today
+              </span>
+              <span
+                className="mt-0.5 block text-[11.5px] leading-snug text-on-surface-variant"
+                style={{ fontFamily: '"Mulish", sans-serif' }}
+              >
+                {remainingLabels}
+              </span>
+            </span>
+            <span className="text-[15px] text-primary">→</span>
+          </button>
+        )}
       </section>
 
       <section className="px-3 pt-3">

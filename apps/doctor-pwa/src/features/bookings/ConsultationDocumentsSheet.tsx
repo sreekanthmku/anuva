@@ -12,13 +12,15 @@ import { compressImageForUpload } from './compressImage';
 const KIND_OPTIONS: { value: ConsultationDocumentKind; label: string }[] = [
   { value: 'prescription', label: 'Prescription' },
   { value: 'diet_plan', label: 'Diet plan' },
-  { value: 'other', label: 'Other' },
+  { value: 'care_plan', label: 'Care plan' },
+  { value: 'suggestion', label: 'Suggestion' },
 ];
 
 const KIND_LABEL: Record<ConsultationDocumentKind, string> = {
   prescription: 'Prescription',
   diet_plan: 'Diet plan',
-  other: 'Document',
+  care_plan: 'Care plan',
+  suggestion: 'Suggestion',
 };
 
 const ACCEPTED = 'image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf';

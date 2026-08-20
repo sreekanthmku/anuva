@@ -12,18 +12,20 @@ import {
   ENERGY_SCORES,
   FOCUS_SCORES,
   HOT_FLASH_COUNTS,
-  HOT_FLASH_SCORES,
   MOOD_MORNING_SCORES,
   MOOD_SHIFT_SCORES,
   SLEEP_HOURS_MIDPOINT,
   SLEEP_SCORES,
   STRESS_SCORES,
+  applyEventPenalty,
   bandFor,
+  hotFlashDayScore,
   lookupScore,
   mean,
   scoreFromFivePoint,
   stdev,
 } from './scoring.js';
+import { dayKey, fromDayKey, isoDay } from '../dayKey.js';
 
 export const WEEK_DAYS = 7;
 
@@ -111,21 +113,11 @@ function addMonths(d: Date, months: number): Date {
 }
 
 /** `@db.Date` columns are stored at UTC midnight; read them back as a local calendar day. */
-function fromDateOnly(d: Date): Date {
-  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-}
-
-/** Matching bound for a `@db.Date` column from a local calendar day. */
-function toDateOnly(d: Date): Date {
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-}
-
-function isoDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+// Date-column keys come from one place — see ../dayKey.ts for the trap they
+// exist to close.
+const fromDateOnly = fromDayKey;
+const toDateOnly = dayKey;
+const isoDate = isoDay;
 
 const MONTH_ABBR = [
   'Jan',
@@ -320,6 +312,44 @@ function rangeMean(map: DayScores, start: Date, end: Date): number | null {
 
 function rangeDaysLogged(map: DayScores, start: Date, end: Date): number {
   return logged(dailySeries(map, start, end)).length;
+}
+
+/**
+ * Quick-log taps per day, for the symptoms given.
+ *
+ * Counted rather than scored: a tap says "this happened", it does not rate the
+ * day. `withEventPenalty` turns the count into a score adjustment.
+ */
+function countEvents(
+  rows: { loggedAt: Date; symptom: string }[],
+  symptoms: string[]
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const row of rows) {
+    if (!symptoms.includes(row.symptom)) continue;
+    const key = isoDate(startOfLocalDay(row.loggedAt));
+    out.set(key, (out.get(key) ?? 0) + 1);
+  }
+  return out;
+}
+
+/**
+ * Fold tap counts into a metric's day scores.
+ *
+ * The result carries one value per day — the day's answered mean knocked down
+ * by that day's taps — which is what every reader downstream takes anyway. Days
+ * with taps and no answer gain a score they did not have before; that is the
+ * point. See `applyEventPenalty` for the precedence rule.
+ */
+function withEventPenalty(scores: DayScores, events: Map<string, number>): DayScores {
+  if (events.size === 0) return scores;
+
+  const out: DayScores = new Map(scores);
+  for (const day of new Set([...scores.keys(), ...events.keys()])) {
+    const adjusted = applyEventPenalty(mean(scores.get(day) ?? []), events.get(day) ?? 0);
+    if (adjusted != null) out.set(day, [adjusted]);
+  }
+  return out;
 }
 
 /** Days in the range where at least one of the given metrics was logged. */
@@ -870,7 +900,8 @@ export async function buildSummary(
   const timestampRange = { gte: w.fetchStart, lt: addDays(w.fetchEnd, 1) };
   const dateRange = { gte: toDateOnly(w.fetchStart), lt: toDateOnly(addDays(w.fetchEnd, 1)) };
 
-  const [sleepRows, energyRows, stressRows, moodRows, focusRows, hotFlashRows] = await Promise.all([
+  const [sleepRows, energyRows, stressRows, moodRows, focusRows, hotFlashRows, quickRows] =
+    await Promise.all([
     prisma.sleepLog.findMany({
       where: { userId, loggedAt: timestampRange },
       select: { loggedAt: true, quality: true, category: true, hours: true },
@@ -895,7 +926,21 @@ export async function buildSummary(
       where: { userId, date: dateRange },
       select: { date: true, category: true, count: true },
     }),
+    // Dashboard taps. Hot-flash taps already reached `HotFlashDailyLog` on
+    // write; the distress taps have no daily row of their own and are folded
+    // into the rings here.
+    prisma.quickSymptomLog.findMany({
+      where: { userId, loggedAt: timestampRange },
+      select: { loggedAt: true, symptom: true },
+    }),
   ]);
+
+  // Anxiety and irritability speak to mood; chills sit on the same vasomotor
+  // axis as heat episodes. Hot-flash taps are deliberately absent — they are
+  // already counted in the daily row, and penalising them again would charge
+  // the same log twice.
+  const moodEvents = countEvents(quickRows, ['anxiety', 'irritability']);
+  const heatEvents = countEvents(quickRows, ['chills']);
 
   const sources: RingSource[] = [
     {
@@ -930,13 +975,16 @@ export async function buildSummary(
     {
       key: 'mood',
       label: 'Mood stability',
-      scores: collect(
-        moodRows,
-        (r) => r.loggedAt,
-        (r) =>
-          scoreFromFivePoint(r.feeling) ??
-          lookupScore(MOOD_MORNING_SCORES, r.category) ??
-          lookupScore(MOOD_SHIFT_SCORES, r.moodShift)
+      scores: withEventPenalty(
+        collect(
+          moodRows,
+          (r) => r.loggedAt,
+          (r) =>
+            scoreFromFivePoint(r.feeling) ??
+            lookupScore(MOOD_MORNING_SCORES, r.category) ??
+            lookupScore(MOOD_SHIFT_SCORES, r.moodShift)
+        ),
+        moodEvents
       ),
     },
     {
@@ -953,10 +1001,15 @@ export async function buildSummary(
       // Not "Hot flash load": the ring's number goes *up* as episodes go down,
       // so a label naming the burden fights its own reading. See RING_BANDS.
       label: 'Heat episodes',
-      scores: collect(
-        hotFlashRows,
-        (r) => fromDateOnly(r.date),
-        (r) => lookupScore(HOT_FLASH_SCORES, r.category)
+      scores: withEventPenalty(
+        collect(
+          hotFlashRows,
+          (r) => fromDateOnly(r.date),
+          // Dashboard taps set the row's count; the category may be the user's
+          // own L1-005 answer. Whichever describes the worse day wins.
+          (r) => hotFlashDayScore(r.category, r.count)
+        ),
+        heatEvents
       ),
     },
   ];

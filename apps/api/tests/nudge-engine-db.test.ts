@@ -111,11 +111,17 @@ const MORNING = new Date(2026, 5, 24, 8, 0, 0);
 const AFTERNOON = new Date(2026, 5, 24, 14, 0, 0);
 const EVENING = new Date(2026, 5, 24, 20, 0, 0);
 const DAY_START = new Date(2026, 5, 24, 0, 0, 0, 0);
+/**
+ * What a `@db.Date` column must receive for that calendar day — UTC midnight,
+ * not local. Local midnight is written as the previous day east of UTC, which
+ * is the bug src/dayKey.ts exists to close.
+ */
+const DAY_KEY = new Date(Date.UTC(2026, 5, 24));
 
 function resetDbToEmpty() {
   vi.clearAllMocks();
   mocks.transaction.mockImplementation(async (ops: unknown[]) => Promise.all(ops as Promise<unknown>[]));
-  mocks.nudgeDailyStateUpsert.mockResolvedValue({ userId: USER, date: DAY_START, nudgeCount: 0 });
+  mocks.nudgeDailyStateUpsert.mockResolvedValue({ userId: USER, date: DAY_KEY, nudgeCount: 0 });
   mocks.nudgeDailyStateFindUnique.mockResolvedValue(null);
   mocks.nudgeSendLogCreate.mockResolvedValue({ id: 'send-1' });
   mocks.nudgeSendLogFindFirst.mockResolvedValue(null);
@@ -153,8 +159,8 @@ describe('markTrackerEngagement', () => {
     await markTrackerEngagement(USER, MORNING);
 
     expect(mocks.nudgeDailyStateUpsert).toHaveBeenCalledWith({
-      where: { userId_date: { userId: USER, date: DAY_START } },
-      create: { userId: USER, date: DAY_START, lastEngagedAt: MORNING, morningAnchorResponded: true },
+      where: { userId_date: { userId: USER, date: DAY_KEY } },
+      create: { userId: USER, date: DAY_KEY, lastEngagedAt: MORNING, morningAnchorResponded: true },
       update: { lastEngagedAt: MORNING, morningAnchorResponded: true },
     });
   });
@@ -268,8 +274,8 @@ describe('recordSend', () => {
       data: { userId: USER, nudgeId: 'L1-002', layer: 1, slot: 'morning', sentAt: MORNING },
     });
     expect(mocks.nudgeDailyStateUpsert).toHaveBeenCalledWith({
-      where: { userId_date: { userId: USER, date: DAY_START } },
-      create: { userId: USER, date: DAY_START, nudgeCount: 1, distressFlag: false },
+      where: { userId_date: { userId: USER, date: DAY_KEY } },
+      create: { userId: USER, date: DAY_KEY, nudgeCount: 1, distressFlag: false },
       update: { nudgeCount: { increment: 1 } },
     });
   });
@@ -342,10 +348,10 @@ describe('storeResponse', () => {
     });
     expect(mocks.transaction).toHaveBeenCalled();
     expect(mocks.nudgeDailyStateUpsert).toHaveBeenCalledWith({
-      where: { userId_date: { userId: USER, date: DAY_START } },
+      where: { userId_date: { userId: USER, date: DAY_KEY } },
       create: {
         userId: USER,
-        date: DAY_START,
+        date: DAY_KEY,
         lastEngagedAt: MORNING,
         morningAnchorResponded: true,
       },
@@ -399,8 +405,8 @@ describe('storeResponse', () => {
     await storeResponse(USER, 'L1-004', OVERWHELMED, AFTERNOON, AFTERNOON);
 
     expect(mocks.stressLogUpsert).toHaveBeenCalledWith({
-      where: { userId_date: { userId: USER, date: DAY_START } },
-      create: { userId: USER, date: DAY_START, category: OVERWHELMED, overwhelmed: true },
+      where: { userId_date: { userId: USER, date: DAY_KEY } },
+      create: { userId: USER, date: DAY_KEY, category: OVERWHELMED, overwhelmed: true },
       update: { category: OVERWHELMED, overwhelmed: true },
     });
     expect(mocks.nudgeDailyStateUpsert).toHaveBeenCalledWith(

@@ -11,6 +11,9 @@ import {
   SLEEP_HOURS_MIDPOINT,
   scoreFromFivePoint,
   lookupScore,
+  hotFlashCategoryForCount,
+  hotFlashDayScore,
+  applyEventPenalty,
   mean,
   stdev,
 } from '../src/report/scoring.js';
@@ -139,5 +142,63 @@ describe('stdev', () => {
     const tight = stdev([50, 51, 49])!;
     const wide = stdev([10, 50, 90])!;
     expect(wide).toBeGreaterThan(tight);
+  });
+});
+
+describe('hotFlashCategoryForCount', () => {
+  it('maps a tap count onto the option string the ring scores', () => {
+    expect(hotFlashCategoryForCount(0)).toBe('None');
+    expect(hotFlashCategoryForCount(1)).toBe('1–2');
+    expect(hotFlashCategoryForCount(2)).toBe('1–2');
+    expect(hotFlashCategoryForCount(3)).toBe('3–5');
+    expect(hotFlashCategoryForCount(5)).toBe('3–5');
+    expect(hotFlashCategoryForCount(6)).toBe('More than 5');
+  });
+
+  it('produces categories the score map recognises', () => {
+    for (const count of [0, 1, 3, 9]) {
+      expect(lookupScore(HOT_FLASH_SCORES, hotFlashCategoryForCount(count))).not.toBeNull();
+    }
+  });
+});
+
+describe('hotFlashDayScore', () => {
+  it('takes the worse of the answer and the tap count', () => {
+    // Answered "None" (100) but tapped 3 times ('3–5' = 35).
+    expect(hotFlashDayScore('None', 3)).toBe(35);
+    // Answered "More than 5" (0) with a single tap logged.
+    expect(hotFlashDayScore('More than 5', 1)).toBe(0);
+  });
+
+  it('falls back to whichever side it has', () => {
+    expect(hotFlashDayScore('1–2', null)).toBe(HOT_FLASH_SCORES['1–2']);
+    expect(hotFlashDayScore(null, 0)).toBe(HOT_FLASH_SCORES['None']);
+    expect(hotFlashDayScore('Not sure', 2)).toBe(HOT_FLASH_SCORES['1–2']);
+    expect(hotFlashDayScore('Not sure', null)).toBeNull();
+  });
+});
+
+describe('applyEventPenalty', () => {
+  it('leaves an answered day alone when nothing was tapped', () => {
+    expect(applyEventPenalty(100, 0)).toBe(100);
+    expect(applyEventPenalty(null, 0)).toBeNull();
+  });
+
+  it('only ever pulls an answered day down', () => {
+    expect(applyEventPenalty(100, 1)).toBe(92);
+    expect(applyEventPenalty(100, 3)).toBe(76);
+  });
+
+  it('caps the knock-down', () => {
+    expect(applyEventPenalty(100, 20)).toBe(70);
+  });
+
+  it('scores a tapped day that carries no answer', () => {
+    expect(applyEventPenalty(null, 1)).toBe(62);
+    expect(applyEventPenalty(null, 2)).toBe(54);
+  });
+
+  it('floors at zero rather than going negative', () => {
+    expect(applyEventPenalty(5, 4)).toBe(0);
   });
 });

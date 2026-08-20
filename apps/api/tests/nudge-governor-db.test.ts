@@ -36,6 +36,12 @@ import { getNudge, type NudgeDef } from '../src/nudge/registry.js';
 const USER = 'user-gov-1';
 const NOW = new Date(2026, 5, 24, 9, 30, 0); // local June 24 2026 09:30
 const DAY_START = new Date(2026, 5, 24, 0, 0, 0, 0);
+/**
+ * What a `@db.Date` column must receive for that calendar day — UTC midnight,
+ * not local. Local midnight is written as the previous day east of UTC, which
+ * is the bug src/dayKey.ts exists to close.
+ */
+const DAY_KEY = new Date(Date.UTC(2026, 5, 24));
 
 const L1_001 = getNudge('L1-001') as NudgeDef; // sleepLog
 const L1_002 = getNudge('L1-002') as NudgeDef; // energyLog (default)
@@ -61,7 +67,7 @@ describe('loadGovernorState', () => {
 
     expect(state).toEqual({ nudgeCountToday: 0, selfLoggedTrackerToday: false });
     expect(nudgeDailyStateFindUnique).toHaveBeenCalledWith({
-      where: { userId_date: { userId: USER, date: DAY_START } },
+      where: { userId_date: { userId: USER, date: DAY_KEY } },
     });
     expect(sleepLogFindFirst).toHaveBeenCalledWith({
       where: { userId: USER, loggedAt: { gte: DAY_START }, quality: { not: null } },
@@ -119,7 +125,7 @@ describe('loadGovernorState', () => {
 
     expect(state.selfLoggedTrackerToday).toBe(true);
     expect(hotFlashFindUnique).toHaveBeenCalledWith({
-      where: { userId_date: { userId: USER, date: DAY_START } },
+      where: { userId_date: { userId: USER, date: DAY_KEY } },
     });
     expect(quickSymptomFindFirst).toHaveBeenCalled();
   });
@@ -145,7 +151,7 @@ describe('loadGovernorState', () => {
 
     expect(state.selfLoggedTrackerToday).toBe(true);
     expect(energyLogFindUnique).toHaveBeenCalledWith({
-      where: { userId_date: { userId: USER, date: DAY_START } },
+      where: { userId_date: { userId: USER, date: DAY_KEY } },
     });
   });
 
@@ -153,7 +159,7 @@ describe('loadGovernorState', () => {
     const state = await loadGovernorState(USER, L1_004, NOW);
     expect(state.selfLoggedTrackerToday).toBe(false);
     expect(stressLogFindUnique).toHaveBeenCalledWith({
-      where: { userId_date: { userId: USER, date: DAY_START } },
+      where: { userId_date: { userId: USER, date: DAY_KEY } },
     });
   });
 });

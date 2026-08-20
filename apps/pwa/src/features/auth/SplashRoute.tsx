@@ -32,7 +32,11 @@ export default function SplashRoute() {
       />
 
       <div className="relative z-10 flex flex-col items-center">
-        <img src="/anu.png" alt="Anuva" className="mb-6 h-24 w-24 object-contain sm:h-28 sm:w-28" />
+        <img
+          src="/anuva-logo-icon.png"
+          alt="Anuva Wellness logo"
+          className="mb-6 h-24 w-24 object-contain sm:h-28 sm:w-28"
+        />
         <p
           className="text-[26px] tracking-[0.2em] text-on-surface"
           style={{

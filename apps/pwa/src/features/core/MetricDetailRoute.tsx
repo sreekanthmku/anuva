@@ -8,7 +8,7 @@ import { DayBarChart } from './components/DayBarChart';
 import { MetricRing } from './components/MetricRing';
 import { PeriodToggle } from './components/PeriodToggle';
 import { useSummary } from './hooks/useWeeklyReport';
-import { RING_COLORS } from './ringColors';
+import { gaugeBandColor } from './ringColors';
 import { DELTA_TONE_COLOR, ringAriaLabel } from './ringDisplay';
 import { PERIOD_NOUN, periodDetail, periodHeadline } from './summaryDates';
 
@@ -60,7 +60,8 @@ function DetailBody({
   onStep: (delta: number) => void;
   onReset: () => void;
 }) {
-  const { color } = RING_COLORS[ring.key];
+  // Readout takes the colour of the band the needle lands in, matching the dial.
+  const color = gaugeBandColor(ring.pct);
   const noun = PERIOD_NOUN[report.period];
 
   const logged = ring.series.filter((v): v is number => v != null);
@@ -140,26 +141,17 @@ function DetailBody({
           // Wider than the grid rings, with the same absolute stroke, so the
           // readout has room inside without the band looking heavy.
           size={244}
-          strokeRatio={0.09}
+          strokeRatio={0.13}
           ariaLabel={ringAriaLabel(ring)}
           center={
-            <div className="flex max-w-[152px] flex-col items-center text-center">
-              {/* Band word first: it says which way the number points before
-                  the number is read. "/100" kills the percentage reading. */}
+            <div className="mt-1 flex max-w-[220px] flex-col items-center text-center">
+              {/* The band word is the readout — the raw score is never shown,
+                  since a bare number invites the percentage reading. */}
               <span
-                className="text-[13px] font-semibold leading-[1.2]"
+                className="text-[22px] font-semibold leading-[1.15]"
                 style={{ fontFamily: MULISH, color: ring.pct != null ? color : '#B9A79A' }}
               >
                 {ring.pct != null ? (ring.band ?? ring.label) : 'Not logged'}
-              </span>
-              <span
-                className="mt-1 text-[38px] font-semibold leading-none"
-                style={{ fontFamily: MULISH, color: ring.pct != null ? color : '#B9A79A' }}
-              >
-                {ring.pct ?? '—'}
-                {ring.pct != null && (
-                  <span className="text-[13px] font-normal text-on-surface-variant">/100</span>
-                )}
               </span>
               {ring.detail && (
                 <span

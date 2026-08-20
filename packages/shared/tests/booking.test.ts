@@ -432,12 +432,13 @@ describe('consultation documents', () => {
   });
 
   it('accepts upload body with optional title', () => {
-    expect(uploadConsultationDocumentBodySchema.parse({ kind: 'other' })).toEqual({
-      kind: 'other',
+    expect(uploadConsultationDocumentBodySchema.parse({ kind: 'care_plan' })).toEqual({
+      kind: 'care_plan',
     });
     expect(
       uploadConsultationDocumentBodySchema.parse({ kind: 'prescription', title: 'Rx' }),
     ).toMatchObject({ title: 'Rx' });
+    expect(consultationDocumentKindSchema.parse('suggestion')).toBe('suggestion');
   });
 
   it('rejects invalid kind and overlong title', () => {

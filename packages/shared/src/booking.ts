@@ -317,10 +317,15 @@ export const rescheduleConsultationResponseSchema = z.object({
 export type RescheduleConsultationResponse = z.infer<typeof rescheduleConsultationResponseSchema>;
 
 // ─────────────────────────────────────────────
-// Consultation documents (prescriptions, diet plans)
+// Consultation documents (prescriptions, diet plans, care plans, suggestions)
 // ─────────────────────────────────────────────
 
-export const consultationDocumentKindSchema = z.enum(['prescription', 'diet_plan', 'other']);
+export const consultationDocumentKindSchema = z.enum([
+  'prescription',
+  'diet_plan',
+  'care_plan',
+  'suggestion',
+]);
 
 export type ConsultationDocumentKind = z.infer<typeof consultationDocumentKindSchema>;
 

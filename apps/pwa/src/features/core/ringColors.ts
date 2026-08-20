@@ -12,3 +12,19 @@ export const RING_COLORS: Record<ReportRingKey, { color: string; track: string }
 
 /** Muted tone for a metric with nothing logged. */
 export const RING_EMPTY_COLOR = '#B9A79A';
+
+/**
+ * The gauge dial is the same on every metric: a five-band scale running poor to
+ * good, left to right. Scores are normalised higher-is-better on all six metrics
+ * — including stress and heat episodes — so red-low / green-high holds
+ * everywhere, and only the needle position differs between gauges.
+ */
+export const GAUGE_BANDS = ['#E23B2E', '#F5871F', '#F2C023', '#8CC63F', '#3E9B33'] as const;
+
+/** Band colour the needle lands in, for a readout that matches the dial. */
+export function gaugeBandColor(pct: number | null): string {
+  if (pct == null) return RING_EMPTY_COLOR;
+  const clamped = Math.min(Math.max(pct, 0), 100);
+  const index = Math.min(GAUGE_BANDS.length - 1, Math.floor((clamped / 100) * GAUGE_BANDS.length));
+  return GAUGE_BANDS[index] ?? RING_EMPTY_COLOR;
+}

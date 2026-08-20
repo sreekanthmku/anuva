@@ -180,6 +180,8 @@ import {
 import { runNudgeSelfTest } from './nudge/selfTest.js';
 import { buildSummary } from './report/build.js';
 import { randomQuickLogMessage } from './quickLogMessages.js';
+import { recordQuickSymptom } from './logging/writeThrough.js';
+import { dayKey } from './dayKey.js';
 import { answer as anuAnswer } from './anu/engine.js';
 import { getLibraryArticle, getLibraryFeed } from './library.js';
 import { isAnuChatConfigured } from './anu/openai.js';
@@ -2057,7 +2059,7 @@ const CONSULTATION_DOCUMENT_SELECT = {
 type ConsultationDocumentRow = {
   id: string;
   consultationId: string;
-  kind: 'prescription' | 'diet_plan' | 'other';
+  kind: 'prescription' | 'diet_plan' | 'care_plan' | 'suggestion';
   title: string | null;
   originalName: string;
   mimeType: string;
@@ -2136,7 +2138,7 @@ async function notifyPatientDocumentShared(args: {
   consultationId: string;
   patientId: string;
   doctorName: string;
-  kind: 'prescription' | 'diet_plan' | 'other';
+  kind: 'prescription' | 'diet_plan' | 'care_plan' | 'suggestion';
 }) {
   const rows: Array<{ token: string }> = await prisma.fcmToken.findMany({
     where: { userId: args.patientId, status: 'ACTIVE' },
@@ -2150,21 +2152,28 @@ async function notifyPatientDocumentShared(args: {
 
   // Warm, plain-language copy: this lands on a phone right after a consultation, so it says what
   // arrived and who sent it without sounding like a system alert.
-  const copy =
-    args.kind === 'prescription'
-      ? {
-          title: 'Your prescription is ready 💜',
-          body: `${args.doctorName} has shared your prescription. Tap to view it whenever you're ready.`,
-        }
-      : args.kind === 'diet_plan'
-        ? {
-            title: 'Your diet plan is here 🌿',
-            body: `${args.doctorName} has shared your diet plan. Have a look when you have a moment.`,
-          }
-        : {
-            title: 'Something new from your consultation',
-            body: `${args.doctorName} has shared a document with you. Tap to take a look.`,
-          };
+  const copyByKind: Record<
+    typeof args.kind,
+    { title: string; body: string }
+  > = {
+    prescription: {
+      title: 'Your prescription is ready 💜',
+      body: `${args.doctorName} has shared your prescription. Tap to view it whenever you're ready.`,
+    },
+    diet_plan: {
+      title: 'Your diet plan is here 🌿',
+      body: `${args.doctorName} has shared your diet plan. Have a look when you have a moment.`,
+    },
+    care_plan: {
+      title: 'Your care plan is ready 💜',
+      body: `${args.doctorName} has shared your care plan. Tap to view it whenever you're ready.`,
+    },
+    suggestion: {
+      title: 'A suggestion from your consultation',
+      body: `${args.doctorName} has shared a suggestion with you. Have a look when you have a moment.`,
+    },
+  };
+  const copy = copyByKind[args.kind];
 
   try {
     await sendPushToAllTokens(
@@ -3810,9 +3819,8 @@ app.get('/nudge/today', async (req, res, next) => {
     const slot = requestedSlot ?? currentSlot(now);
     const dispatch = await buildDispatch(user.id, slot, now, { purpose: 'render' });
 
-    const startOfToday = startOfDay(now);
     const todayState = await prisma.nudgeDailyState.findUnique({
-      where: { userId_date: { userId: user.id, date: startOfToday } },
+      where: { userId_date: { userId: user.id, date: dayKey(now) } },
     });
     const budgetRemaining = Math.max(0, 3 - (todayState?.nudgeCount ?? 0));
 
@@ -3874,7 +3882,7 @@ app.get('/nudge/state', async (req, res, next) => {
     const user = await requireCurrentUser(req);
     const startOfToday = startOfDay(new Date());
     const state = await prisma.nudgeDailyState.findUnique({
-      where: { userId_date: { userId: user.id, date: startOfToday } },
+      where: { userId_date: { userId: user.id, date: dayKey(startOfToday) } },
     });
     res.json(
       nudgeStateResponseSchema.parse({
@@ -4299,13 +4307,9 @@ app.post('/quick-log', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     const { symptom, loggedAt } = logQuickSymptomBodySchema.parse(req.body);
-    await prisma.quickSymptomLog.create({
-      data: {
-        userId: user.id,
-        symptom,
-        ...(loggedAt ? { loggedAt: new Date(loggedAt) } : {}),
-      },
-    });
+    // Routed through the write-through module so the tap reaches the daily logs
+    // the summary reads, not just the event table.
+    await recordQuickSymptom(user.id, symptom, loggedAt ? new Date(loggedAt) : undefined);
     const counts = await getTodayQuickLogCounts(user.id);
     res.status(201).json(
       logQuickSymptomResponseSchema.parse({

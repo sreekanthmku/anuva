@@ -826,7 +826,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     ],
     createSchema: objectSchema({
       consultationId: z.string().min(1),
-      kind: z.enum(['prescription', 'diet_plan', 'other']),
+      kind: z.enum(['prescription', 'diet_plan', 'care_plan', 'suggestion']),
       title: z.string().nullable().optional(),
       originalName: z.string().min(1),
       mimeType: z.string().min(1),
@@ -837,7 +837,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     }),
     updateSchema: objectSchema(
       {
-        kind: z.enum(['prescription', 'diet_plan', 'other']),
+        kind: z.enum(['prescription', 'diet_plan', 'care_plan', 'suggestion']),
         title: z.string().nullable(),
         originalName: z.string().min(1),
         mimeType: z.string().min(1),

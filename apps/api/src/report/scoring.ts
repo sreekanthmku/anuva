@@ -168,3 +168,72 @@ export function stdev(values: number[]): number | null {
   const variance = values.reduce((sum, v) => sum + (v - avg) ** 2, 0) / (values.length - 1);
   return Math.sqrt(variance);
 }
+
+// ─────────────────────────────────────────────
+// Quick-log events -> ring scores
+// ─────────────────────────────────────────────
+
+/**
+ * Tapping "Hot flash" on the dashboard is a log, so it has to reach the heat
+ * ring the same way answering L1-005 does. The taps give a count; the ring
+ * scores buckets — so the day's tap count is bucketed into the same option
+ * string the nudge would have stored.
+ *
+ * Bucket edges follow the option labels literally: 0 -> None, 1-2, 3-5, 6+.
+ */
+export function hotFlashCategoryForCount(count: number): string {
+  if (count <= 0) return 'None';
+  if (count <= 2) return '1–2';
+  if (count <= 5) return '3–5';
+  return 'More than 5';
+}
+
+/**
+ * Score one heat-episode day from both of the things that can describe it: the
+ * categorical answer to L1-005, and the count of dashboard taps.
+ *
+ * The worse of the two wins. Someone who answered "None" in the morning and
+ * then tapped three times had three episodes, and the morning answer should not
+ * be allowed to overrule what they logged after it. The answer itself is never
+ * rewritten — reconciling here keeps the user's literal words in the row and
+ * still lets the taps reach the ring.
+ *
+ * `count` is null on rows written before the tile fed this table.
+ */
+export function hotFlashDayScore(category: string | null, count: number | null): number | null {
+  const answered = lookupScore(HOT_FLASH_SCORES, category);
+  const tapped = count == null ? null : lookupScore(HOT_FLASH_SCORES, hotFlashCategoryForCount(count));
+  if (answered == null) return tapped;
+  if (tapped == null) return answered;
+  return Math.min(answered, tapped);
+}
+
+/** Points knocked off a day's score per distress tap. */
+const DISTRESS_EVENT_PENALTY = 8;
+/** Ceiling on the knock-down, so one bad afternoon cannot bottom out a day. */
+const DISTRESS_EVENT_PENALTY_CAP = 30;
+/**
+ * Score a day starts from when the only thing logged is taps. Sits inside the
+ * "mild" band: taps say something happened, not that the whole day was bad.
+ */
+const EVENT_ONLY_BASELINE = 70;
+
+/**
+ * Fold a day's quick-log taps into that day's answered score.
+ *
+ * The rule, in one place because it is the kind of thing that otherwise gets
+ * re-invented per writer: **a categorical answer sets the score, taps can only
+ * pull it down, never up.** Someone who answered "Calm" at 8am and then tapped
+ * irritability four times did not have a calm day, and the answer they gave
+ * first should not be allowed to overrule what they logged after it.
+ *
+ * With no answer at all, taps still produce a score — otherwise a day the user
+ * did log reads as "Not logged", which is the bug this whole path exists to
+ * fix.
+ */
+export function applyEventPenalty(answered: number | null, events: number): number | null {
+  if (events <= 0) return answered;
+  const penalty = Math.min(DISTRESS_EVENT_PENALTY_CAP, events * DISTRESS_EVENT_PENALTY);
+  const base = answered ?? EVENT_ONLY_BASELINE;
+  return Math.max(0, base - penalty);
+}

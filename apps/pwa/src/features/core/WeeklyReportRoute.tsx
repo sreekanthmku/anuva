@@ -16,7 +16,7 @@ import { PeriodToggle } from './components/PeriodToggle';
 import { Sparkline } from './components/Sparkline';
 import { scaleFor } from './chartScale';
 import { useSummary } from './hooks/useWeeklyReport';
-import { RING_COLORS, RING_EMPTY_COLOR } from './ringColors';
+import { RING_COLORS, RING_EMPTY_COLOR, gaugeBandColor } from './ringColors';
 import { DELTA_TONE_COLOR, ringAriaLabel } from './ringDisplay';
 import { PERIOD_NOUN, formatRange, periodDetail, periodHeadline } from './summaryDates';
 
@@ -58,7 +58,7 @@ function ReportRingCard({
   ring: ReportRing;
   onSelect?: (key: ReportRingKey) => void;
 }) {
-  const { color } = RING_COLORS[ring.key];
+  const color = gaugeBandColor(ring.pct);
   const hasData = ring.pct != null;
   const label = ringAriaLabel(ring);
 
@@ -75,13 +75,13 @@ function ReportRingCard({
         <p className="truncate text-[11.5px] leading-[1.2] text-on-surface" style={{ fontFamily: MULISH }}>
           {ring.label}
         </p>
-        {/* The band word carries the direction the bare score cannot: 75 on
-            stress is "Manageable", not three-quarters of anything. */}
+        {/* The band word is the whole readout: "Manageable" says what a bare
+            75 on stress cannot, so no number is shown alongside the dial. */}
         <span
           className="mt-0.5 block min-h-[13px] text-[10.5px] font-semibold leading-[1.15]"
           style={{ color: hasData ? color : RING_EMPTY_COLOR, fontFamily: MULISH }}
         >
-          {hasData ? (ring.band ?? `${ring.pct}`) : 'Not logged'}
+          {hasData ? (ring.band ?? '—') : 'Not logged'}
         </span>
         {hasData && (
           <span

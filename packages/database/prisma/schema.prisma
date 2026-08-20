@@ -612,7 +612,8 @@ enum ConsultationCallProvider {
 enum ConsultationDocumentKind {
   prescription
   diet_plan
-  other
+  care_plan
+  suggestion
 }
 
 enum ConsultationCallStatus {
@@ -661,9 +662,9 @@ model Consultation {
   @@index([purgeAfter])
 }
 
-/// A prescription or diet plan the doctor uploaded after the consultation. Files live outside the
-/// database (CONSULTATION_DOC_DIR); `storagePath` is server-generated and never sent to a client —
-/// every read goes through an ownership-checked route.
+/// A prescription, diet plan, care plan, or suggestion the doctor uploaded after the consultation.
+/// Files live outside the database (CONSULTATION_DOC_DIR); `storagePath` is server-generated and
+/// never sent to a client — every read goes through an ownership-checked route.
 model ConsultationDocument {
   id             String                   @id @default(cuid())
   consultationId String

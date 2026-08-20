@@ -4,6 +4,7 @@
 
 import { prisma } from '@anuva/database';
 import type { NudgeSlot } from '@anuva/shared';
+import { dayKey } from '../dayKey.js';
 import type { NudgeDef } from './registry.js';
 
 const DAILY_CAP = 3;
@@ -43,6 +44,7 @@ export function evaluateGovernor(
   return { allowed: true };
 }
 
+/** Local midnight — timestamp comparisons only. `@db.Date` keys use `dayKey`. */
 function startOfDay(d: Date): Date {
   const s = new Date(d);
   s.setHours(0, 0, 0, 0);
@@ -73,7 +75,9 @@ async function selfLoggedToday(userId: string, nudge: NudgeDef, dayStart: Date):
     case 'hotFlashDailyLog': {
       // A daily answer OR a quick-log grid hot_flash entry today both count.
       const [daily, grid] = await Promise.all([
-        prisma.hotFlashDailyLog.findUnique({ where: { userId_date: { userId, date: dayStart } } }),
+        prisma.hotFlashDailyLog.findUnique({
+          where: { userId_date: { userId, date: dayKey(dayStart) } },
+        }),
         prisma.quickSymptomLog.findFirst({
           where: { userId, symptom: 'hot_flash', loggedAt: { gte: dayStart } },
         }),
@@ -83,7 +87,7 @@ async function selfLoggedToday(userId: string, nudge: NudgeDef, dayStart: Date):
     default: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const row = await (prisma as any)[s.model].findUnique({
-        where: { userId_date: { userId, date: dayStart } },
+        where: { userId_date: { userId, date: dayKey(dayStart) } },
       });
       return Boolean(row);
     }
@@ -99,7 +103,9 @@ export async function loadGovernorState(
   const dayStart = startOfDay(now);
 
   const [todayState, selfLogged] = await Promise.all([
-    prisma.nudgeDailyState.findUnique({ where: { userId_date: { userId, date: dayStart } } }),
+    prisma.nudgeDailyState.findUnique({
+      where: { userId_date: { userId, date: dayKey(dayStart) } },
+    }),
     selfLoggedToday(userId, nudge, dayStart),
   ]);
 

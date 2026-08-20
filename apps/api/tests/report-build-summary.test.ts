@@ -11,6 +11,7 @@ const stressFindMany = vi.fn();
 const moodFindMany = vi.fn();
 const brainFogFindMany = vi.fn();
 const hotFlashFindMany = vi.fn();
+const quickSymptomFindMany = vi.fn();
 
 vi.mock('@anuva/database', () => ({
   prisma: {
@@ -20,6 +21,7 @@ vi.mock('@anuva/database', () => ({
     moodLog: { findMany: (...args: unknown[]) => moodFindMany(...args) },
     brainFogLog: { findMany: (...args: unknown[]) => brainFogFindMany(...args) },
     hotFlashDailyLog: { findMany: (...args: unknown[]) => hotFlashFindMany(...args) },
+    quickSymptomLog: { findMany: (...args: unknown[]) => quickSymptomFindMany(...args) },
   },
 }));
 
@@ -53,6 +55,7 @@ function emptyStores() {
   moodFindMany.mockResolvedValue([]);
   brainFogFindMany.mockResolvedValue([]);
   hotFlashFindMany.mockResolvedValue([]);
+  quickSymptomFindMany.mockResolvedValue([]);
 }
 
 type FixtureOpts = {
@@ -111,6 +114,7 @@ function installFixture(parts: ReturnType<typeof dayBundle>[]) {
   moodFindMany.mockResolvedValue(parts.map((p) => p.mood));
   brainFogFindMany.mockResolvedValue(parts.map((p) => p.focus));
   hotFlashFindMany.mockResolvedValue(parts.map((p) => p.hot));
+  quickSymptomFindMany.mockResolvedValue([]);
 }
 
 /** Inclusive local calendar walk. */
@@ -931,5 +935,112 @@ describe('buildSummary — remaining copy branches', () => {
 
     const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
     expect(report.insights.some((i) => i.title === 'Above your usual')).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────
+// Quick-log taps reaching the rings
+// ─────────────────────────────────────────────
+
+describe('buildSummary — quick-log taps', () => {
+  const now = localDay(2024, 5, 20, 21);
+  const anchor = localDay(2024, 4, 1, 9);
+
+  function tap(symptom: string, y: number, m0: number, d: number, hour = 14) {
+    return { loggedAt: localDay(y, m0, d, hour), symptom };
+  }
+
+  function ringOf(report: Awaited<ReturnType<typeof buildSummary>>, key: string) {
+    return report.rings.find((r) => r.key === key)!;
+  }
+
+  it('scores a day that carries only taps, so logging is never invisible', async () => {
+    emptyStores();
+    quickSymptomFindMany.mockResolvedValue([tap('anxiety', 2024, 5, 20)]);
+
+    const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+    const mood = ringOf(report, 'mood');
+    // 70 baseline - 8 for the single tap.
+    expect(mood.pct).toBe(62);
+    expect(mood.band).not.toBeNull();
+  });
+
+  it('knocks an answered day down rather than leaving the answer to stand alone', async () => {
+    installFixture([dayBundle(2024, 5, 20, { moodCategory: 'Calm' })]);
+    quickSymptomFindMany.mockResolvedValue([
+      tap('irritability', 2024, 5, 20, 11),
+      tap('irritability', 2024, 5, 20, 15),
+      tap('anxiety', 2024, 5, 20, 18),
+    ]);
+
+    const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+    // 'Calm' scores 100; three taps take 24 off it.
+    expect(ringOf(report, 'mood').pct).toBe(76);
+  });
+
+  it('caps the knock-down so one bad afternoon cannot bottom out a day', async () => {
+    installFixture([dayBundle(2024, 5, 20, { moodCategory: 'Calm' })]);
+    quickSymptomFindMany.mockResolvedValue(
+      Array.from({ length: 9 }, (_, i) => tap('anxiety', 2024, 5, 20, 9 + i))
+    );
+
+    const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+    expect(ringOf(report, 'mood').pct).toBe(70);
+  });
+
+  it('never lets taps raise a score', async () => {
+    installFixture([dayBundle(2024, 5, 20, { moodCategory: 'Sad' })]);
+    const withoutTaps = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+
+    installFixture([dayBundle(2024, 5, 20, { moodCategory: 'Sad' })]);
+    quickSymptomFindMany.mockResolvedValue([tap('anxiety', 2024, 5, 20)]);
+    const withTaps = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+
+    expect(withTaps.rings.find((r) => r.key === 'mood')!.pct!).toBeLessThan(
+      withoutTaps.rings.find((r) => r.key === 'mood')!.pct!
+    );
+  });
+
+  it('folds chills into the heat ring and leaves hot-flash taps to the daily row', async () => {
+    emptyStores();
+    quickSymptomFindMany.mockResolvedValue([tap('chills', 2024, 5, 20)]);
+    const chills = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+    expect(ringOf(chills, 'hotFlashes').pct).toBe(62);
+
+    // Hot-flash taps are already counted in HotFlashDailyLog by the writer, so
+    // charging them again here would double-count the same log.
+    emptyStores();
+    hotFlashFindMany.mockResolvedValue([
+      { date: dateOnly(2024, 5, 20), category: '1–2', count: 2 },
+    ]);
+    quickSymptomFindMany.mockResolvedValue([
+      tap('hot_flash', 2024, 5, 20, 12),
+      tap('hot_flash', 2024, 5, 20, 16),
+    ]);
+    const taps = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+    expect(ringOf(taps, 'hotFlashes').pct).toBe(70);
+  });
+
+  it("scores the heat day on its tap count when that is worse than the answer", async () => {
+    emptyStores();
+    // Answered "None" in the morning, three taps logged after it.
+    hotFlashFindMany.mockResolvedValue([
+      { date: dateOnly(2024, 5, 20), category: 'None', count: 3 },
+    ]);
+
+    const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+    expect(ringOf(report, 'hotFlashes').pct).toBe(35);
+    // The stat card counts the taps, not the bucket midpoint.
+    expect(report.stats.find((st) => st.key === 'hotFlashes')!.value).toBe('3');
+  });
+
+  it('leaves metrics the taps say nothing about untouched', async () => {
+    installFixture([dayBundle(2024, 5, 20)]);
+    quickSymptomFindMany.mockResolvedValue([tap('anxiety', 2024, 5, 20)]);
+
+    const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+    expect(ringOf(report, 'sleep').pct).toBe(100);
+    expect(ringOf(report, 'energy').pct).toBe(100);
+    expect(ringOf(report, 'focus').pct).toBe(100);
   });
 });

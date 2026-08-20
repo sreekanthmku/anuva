@@ -16,7 +16,12 @@ import { runGovernor } from './governor.js';
 import { firstNameOf, nudgeQuestion, type QuestionContext } from './questionVariants.js';
 import { selectL2Nudge } from './selectL2Nudge.js';
 import { OVERWHELMED } from './signals.js';
+import { dayKey } from '../dayKey.js';
 
+/**
+ * Local midnight. Correct for timestamp columns; **never** for a `@db.Date`
+ * column — those take `dayKey`, see ../dayKey.ts for why.
+ */
 export function startOfDay(d: Date): Date {
   const s = new Date(d);
   s.setHours(0, 0, 0, 0);
@@ -88,19 +93,20 @@ export interface BuildDispatchOptions {
 }
 
 async function ensureDailyState(userId: string, dayStart: Date) {
+  const date = dayKey(dayStart);
   return prisma.nudgeDailyState.upsert({
-    where: { userId_date: { userId, date: dayStart } },
-    create: { userId, date: dayStart },
+    where: { userId_date: { userId, date } },
+    create: { userId, date },
     update: {},
   });
 }
 
 // Mark nudge engagement when mood/sleep are logged via the manual /mood,/sleep path.
 export async function markTrackerEngagement(userId: string, now: Date): Promise<void> {
-  const dayStart = startOfDay(now);
+  const date = dayKey(now);
   await prisma.nudgeDailyState.upsert({
-    where: { userId_date: { userId, date: dayStart } },
-    create: { userId, date: dayStart, lastEngagedAt: now, morningAnchorResponded: true },
+    where: { userId_date: { userId, date } },
+    create: { userId, date, lastEngagedAt: now, morningAnchorResponded: true },
     update: { lastEngagedAt: now, morningAnchorResponded: true },
   });
 }
@@ -186,8 +192,8 @@ export async function recordSend(
       });
     }),
     prisma.nudgeDailyState.upsert({
-      where: { userId_date: { userId, date: dayStart } },
-      create: { userId, date: dayStart, nudgeCount: 1, distressFlag: setDistress },
+      where: { userId_date: { userId, date: dayKey(dayStart) } },
+      create: { userId, date: dayKey(dayStart), nudgeCount: 1, distressFlag: setDistress },
       update: { nudgeCount: { increment: 1 }, ...(setDistress ? { distressFlag: true } : {}) },
     }),
   ]);
@@ -247,8 +253,8 @@ async function persistAnswer(userId: string, def: NudgeDef, answer: string, logg
       const extra = model === 'stressLog' ? { overwhelmed: answer === OVERWHELMED } : {};
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (prisma as any)[model].upsert({
-        where: { userId_date: { userId, date: dayStart } },
-        create: { userId, date: dayStart, category: answer, ...extra },
+        where: { userId_date: { userId, date: dayKey(dayStart) } },
+        create: { userId, date: dayKey(dayStart), category: answer, ...extra },
         update: { category: answer, ...extra },
       });
     }
@@ -290,8 +296,8 @@ export async function storeResponse(
 
   await prisma.$transaction([
     prisma.nudgeDailyState.upsert({
-      where: { userId_date: { userId, date: dayStart } },
-      create: { userId, date: dayStart, ...engagementPatch },
+      where: { userId_date: { userId, date: dayKey(dayStart) } },
+      create: { userId, date: dayKey(dayStart), ...engagementPatch },
       update: engagementPatch,
     }),
     ...(lastSend
@@ -355,7 +361,7 @@ async function readAnswer(userId: string, def: NudgeDef, dayStart: Date): Promis
     default: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const r = await (prisma as any)[s.model].findUnique({
-        where: { userId_date: { userId, date: dayStart } },
+        where: { userId_date: { userId, date: dayKey(dayStart) } },
       });
       return r?.category ?? null;
     }

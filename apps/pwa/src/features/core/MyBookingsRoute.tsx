@@ -97,7 +97,8 @@ function RecordingPlayer({ consultationId }: { consultationId: string }) {
 const DOCUMENT_KIND_LABEL: Record<ConsultationDocumentKind, string> = {
   prescription: 'Prescription',
   diet_plan: 'Diet plan',
-  other: 'Document',
+  care_plan: 'Care plan',
+  suggestion: 'Suggestion',
 };
 
 function formatFileSize(bytes: number): string {
