@@ -36,7 +36,9 @@ pnpm build
 
 ## Frontends and API
 
-In dev, Vite proxies `/api/*` to the Express app, so the PWA and Admin call paths like `/api/examples` without CORS issues.
+In dev, Vite proxies `/api/*` to the Express app, so the PWA and Admin call paths like `/api/admin/...` without CORS issues.
+
+**Admin panel** (`apps/admin`, `:5174`): password login against `/admin/auth/login`, then full CRUD for every Prisma entity via `/admin/entities/*`. Set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` in `.env`. Docs: [`apps/api/src/admin/ADMIN.md`](apps/api/src/admin/ADMIN.md). Tests: `pnpm --filter @anuva/api test`.
 
 To point the PWA at a remote API, set `VITE_API_URL` (full origin, no trailing slash); otherwise it uses the dev proxy.
 

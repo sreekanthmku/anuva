@@ -80,11 +80,34 @@ LIVEKIT_RECORDING_AUDIO_ONLY=true
 LIVEKIT_RECORDING_FILE_PREFIX=consultation-recordings
 CALL_CONSENT_TEXT_VERSION=recording-consent-v1
 
-# Shared key for the /doctor routes, sent by the doctor PWA as the x-doctor-key header.
-DOCTOR_ACCESS_KEY=<long random string>
+# Doctor portal session cookie. Reuses the SESSION_COOKIE_* settings; only the name differs.
+DOCTOR_SESSION_COOKIE_NAME=anuva_doctor_session
+DOCTOR_SESSION_TTL_HOURS=12
 ```
 
-The `/doctor` routes expose patient names, phone numbers, and the ability to mint a LiveKit token for any consultation, so they are gated behind `DOCTOR_ACCESS_KEY`. The check **fails closed**: if the variable is unset the routes return 503 rather than serving unauthenticated. This is a shared key, not per-doctor identity — the schema has no doctor accounts yet. Replace it with real accounts before there is more than one doctor.
+The `/doctor` routes expose patient names, phone numbers, and the ability to mint a LiveKit token, so every request must carry a signed-in session. Doctors sign in with a username and password at `POST /doctor/auth/login`; the session lands in an httpOnly cookie and resolves to one of two scopes:
+
+| Row | Scope | Sees |
+|-----|-------|------|
+| `Specialist` with `portalRole = doctor` | `doctor` | only that specialist's consultations |
+| `Specialist` with `portalRole = admin` | `admin` | every booking |
+
+The credential lives on the `Specialist` row itself, because a specialist *is* the person — a
+separate account table only bought a second `active` flag that could disagree with the first. An
+`admin` row is an ops login with no patient-facing profile; `/consultations/specialists` filters
+`portalRole = 'doctor'`, so it never reaches the booking catalog.
+
+The check **fails closed**: a missing cookie, an expired or unknown session, a deactivated account, or a deactivated specialist is a 401. `/doctor/auth/login` and `/doctor/auth/logout` are the only routes outside the guard.
+
+Scoping is enforced server-side in two places, not in the UI: `GET /doctor/consultations` filters on `specialistId`, and `getDoctorConsultation` (used by all three call routes) looks up by `id` **and** `specialistId`, so another doctor's consultation is a 404 rather than a 403 — the portal cannot be used to enumerate bookings.
+
+Passwords are stored as scrypt (`scrypt$N$r$p$salt$key`, see `apps/api/src/doctorAuth.ts`), not SHA-256, because they are human-chosen and low-entropy. Session tokens still use SHA-256 — they are 32 random bytes and have to be looked up by hash on every request.
+
+Logins are set in the admin panel under **Specialist Logins**: pick a specialist, set a username and password. `password` is write-only — hashed on the way in, never returned — and saving one revokes that specialist's existing sessions, since a reset usually means the old password leaked. A doctor changes their own at `POST /doctor/auth/password`, which also signs out every other device.
+
+Login failures are throttled per account: 8 within a window locks it for 15 minutes. The counters (`failedLoginCount`, `lockedUntil`) live on the `Specialist` row, so a restart cannot void the lockout.
+
+`GET /doctor/me` returns `{ scope, username, specialistKey, specialistName }`. The doctor PWA calls it on every load, both to discover whether a session cookie is still valid and to label the screen ("Your consultation bookings" vs. the admin's "All consultation bookings").
 
 No extra secret is needed for the webhook — LiveKit signs it with the same API key/secret pair. It does need to know where to send it, which is configured in `apps/livekit/livekit.yaml`:
 
@@ -160,7 +183,8 @@ LIVEKIT_API_KEY=<same as above>
 LIVEKIT_API_SECRET=<same as above>
 LIVEKIT_RECORDING_FILE_PREFIX=/out          # the path Egress writes to
 RECORDING_LOCAL_DIR=/recordings             # where the API reads the same files
-DOCTOR_ACCESS_KEY=<long random string>
+DOCTOR_SESSION_COOKIE_NAME=anuva_doctor_session
+DOCTOR_SESSION_TTL_HOURS=12
 ```
 
 `LIVEKIT_URL` must be the **public** `wss://` URL, not an internal hostname: the API hands this
@@ -207,13 +231,15 @@ pnpm --filter @anuva/database db:generate
 pnpm seed                      # specialists + bookable slots
 ```
 
-`.env` needs `DOCTOR_ACCESS_KEY` — the `/doctor` routes are gated behind it and **fail closed**, so an unset key means the doctor app gets 401 on everything:
+The doctor portal needs a login — nothing extra goes in `.env`, credentials live on the specialist row. Set one in the admin panel under **Specialist Logins**. A specialist with `portalRole = admin` gets the all-bookings view; a normal specialist sees only their own.
+
+The PWA prompts for a username and password on first load and keeps the session in an httpOnly cookie for `DOCTOR_SESSION_TTL_HOURS`. To check an account from the shell:
 
 ```bash
-DOCTOR_ACCESS_KEY="<any long random string>"
+curl -X POST http://localhost:3001/doctor/auth/login \
+  -H 'Content-Type: application/json' -c cookies.txt \
+  -d '{"username":"kekin","password":"<the password you set>"}'
 ```
-
-The doctor PWA prompts for this on first load and keeps it in localStorage.
 
 > `apps/admin` and `apps/doctor-pwa` are both configured on port **5174**, so `pnpm dev` cannot run them together. Start the apps individually as below.
 
@@ -239,7 +265,7 @@ pnpm --filter @anuva/doctor-pwa dev     # :5174
 Then:
 
 1. **Patient** — open `http://localhost:5173`, sign in, book a consultation.
-2. **Doctor** — open `http://localhost:5174` in a *separate browser profile or a private window* (the two apps must not share a mic-permission prompt or a tab). Enter the `DOCTOR_ACCESS_KEY`. The booking appears; tap `Start call`.
+2. **Doctor** — open `http://localhost:5174` in a *separate browser profile or a private window* (the two apps must not share a mic-permission prompt or a tab). Sign in with a doctor account's username and password. The booking appears; tap `Start call`.
 3. **Patient** — open `/consultations/<consultationId>/call`. With recording disabled there is no consent gate; join directly.
 4. Confirm two-way audio/video. Grant mic access in both windows.
 5. **Doctor** — `End call`. The call row moves to `ended`.

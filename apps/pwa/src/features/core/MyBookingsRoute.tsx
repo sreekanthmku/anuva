@@ -291,9 +291,17 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
                 <span className="block truncate text-[13px] font-semibold">
                   {doc.title?.trim() || DOCUMENT_KIND_LABEL[doc.kind]}
                 </span>
-                <span className="block truncate text-[11px] text-on-surface-variant">
-                  {DOCUMENT_KIND_LABEL[doc.kind]} · {documentUploadedAt(doc.createdAt)} ·{' '}
-                  {formatFileSize(doc.sizeBytes)}
+                {/* Wraps instead of truncating: on a narrow phone one line cannot hold the kind,
+                    the upload date and the size, and the date is the part people look for. The
+                    kind is dropped when it is already the title, so it is never printed twice. */}
+                <span className="mt-0.5 block text-[11px] leading-[1.35] text-on-surface-variant">
+                  {[
+                    doc.title?.trim() ? DOCUMENT_KIND_LABEL[doc.kind] : null,
+                    documentUploadedAt(doc.createdAt),
+                    formatFileSize(doc.sizeBytes),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </span>
               </span>
               <span className="shrink-0 text-[12px] font-semibold text-primary">

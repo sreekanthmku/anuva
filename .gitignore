@@ -33,3 +33,5 @@ pnpm-debug.log*
 # Internal docs
 ANU_Nudge_Engine_Dev_Reference.docx
 Image_20260619_000213_718.jpeg
+.pnpm-store/
+node_modules/
