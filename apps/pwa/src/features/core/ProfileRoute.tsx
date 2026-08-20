@@ -5,6 +5,12 @@ import { BottomNav } from './components/BottomNav';
 
 const menuRows: { label: string; hint: string; id?: string; to?: string }[] = [
   {
+    id: 'assessment-report',
+    label: 'View my assessment report',
+    hint: 'Your personalised report · save as PDF',
+    to: '/assessment-report',
+  },
+  {
     id: 'bookings',
     label: 'Your consultations',
     hint: 'Upcoming, past & recordings',

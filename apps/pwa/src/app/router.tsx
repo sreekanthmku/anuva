@@ -20,6 +20,7 @@ import ConsultationBookingRoute from '../features/core/ConsultationBookingRoute'
 import MyBookingsRoute from '../features/core/MyBookingsRoute';
 import ConsultationCallRoute from '../features/core/ConsultationCallRoute';
 import ProfileRoute from '../features/core/ProfileRoute';
+import AssessmentReportRoute from '../features/core/AssessmentReportRoute';
 import PrivacyRoute from '../features/core/PrivacyRoute';
 import HelpRoute from '../features/core/HelpRoute';
 import LoginRoute from '../features/auth/LoginRoute';
@@ -181,6 +182,14 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <ProfileRoute />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assessment-report"
+          element={
+            <ProtectedRoute>
+              <AssessmentReportRoute />
             </ProtectedRoute>
           }
         />

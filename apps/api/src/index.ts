@@ -191,6 +191,7 @@ import { isAnuChatConfigured } from './anu/openai.js';
 import { loadCache, cacheStats } from './anu/cache.js';
 import { httpLogger, logger } from './logger.js';
 import { createAdminRouter } from './admin/index.js';
+import { createReport14Router } from './report14/index.js';
 import { AdminError } from './admin/errors.js';
 import {
   CLEARED_LOCK_STATE,
@@ -315,6 +316,16 @@ app.use(express.json({ limit: '512kb' }));
 // Dedicated Admin API — completely separate from patient and doctor routes.
 // Auth, validation, and CRUD live under apps/api/src/admin/.
 app.use('/admin', createAdminRouter({ prisma }));
+
+// 14-Day Assessment Report — self-contained module under apps/api/src/report14/.
+// Auth is injected rather than imported so the module carries no dependency on
+// this file; it also handles its own errors, so nothing else here changes.
+app.use(
+  '/report14',
+  createReport14Router({
+    resolveUserId: async (req) => (await requireCurrentUser(req)).id,
+  }),
+);
 
 // Guards every /doctor route, including any added later. Express 4 does not forward rejected
 // promises from middleware, so the async guard is wrapped and reports through next() itself.
