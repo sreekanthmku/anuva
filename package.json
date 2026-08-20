@@ -7,6 +7,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "check:erasure": "node scripts/check-erasure-coverage.mjs",
+    "seed:logs": "node scripts/seed-user-logs.mjs",
     "db:generate": "pnpm --filter @anuva/database db:generate",
     "db:migrate": "pnpm --filter @anuva/database db:migrate",
     "db:push": "pnpm --filter @anuva/database db:push"
