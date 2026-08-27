@@ -8,8 +8,8 @@ import type {
   FamilyTodayResponse,
   ReportDeltaTone,
   ReportRing,
-  WeeklyReportResponse,
 } from '@anuva/shared';
+import { getLibraryFeed } from '../library.js';
 import { buildSummary } from '../report/build.js';
 import { summaryAnchor } from '../report/calendar.js';
 import {
@@ -46,7 +46,15 @@ import { FamilyError } from './errors.js';
 
 const DIGEST_CACHE_TTL_MS = 5 * 60 * 1000;
 
-type CacheEntry = { at: number; summary: WeeklyReportResponse };
+/**
+ * Whatever `buildSummary` actually returns, rather than the `SummaryResult` wire schema.
+ * The two are the same shape today, but this module consumes the builder's output — typing it
+ * against the schema means every field added to the wire contract breaks this file before it has
+ * anything to do with the family app.
+ */
+type SummaryResult = Awaited<ReturnType<typeof buildSummary>>;
+
+type CacheEntry = { at: number; summary: SummaryResult };
 
 /**
  * A family member pulling to refresh should not re-run a seven-day multi-table aggregate. Keyed by
@@ -59,7 +67,7 @@ export function clearDigestCache(): void {
   summaryCache.clear();
 }
 
-async function loadSummary(userId: string): Promise<WeeklyReportResponse> {
+async function loadSummary(userId: string): Promise<SummaryResult> {
   const cached = summaryCache.get(userId);
   if (cached && Date.now() - cached.at < DIGEST_CACHE_TTL_MS) {
     return cached.summary;
@@ -83,7 +91,7 @@ async function loadSummary(userId: string): Promise<WeeklyReportResponse> {
   return summary;
 }
 
-function ringFor(summary: WeeklyReportResponse, key: FamilyMetricKey): ReportRing | undefined {
+function ringFor(summary: SummaryResult, key: FamilyMetricKey): ReportRing | undefined {
   return summary.rings.find((ring) => ring.key === key);
 }
 
@@ -101,7 +109,7 @@ function toneOf(ring: ReportRing | undefined): ReportDeltaTone {
   return ring!.deltaTone;
 }
 
-function buildMetrics(summary: WeeklyReportResponse): FamilyMetric[] {
+function buildMetrics(summary: SummaryResult): FamilyMetric[] {
   return FAMILY_METRIC_KEYS.map((key) => {
     const ring = ringFor(summary, key);
     const tone = toneOf(ring);
@@ -120,7 +128,7 @@ function buildMetrics(summary: WeeklyReportResponse): FamilyMetric[] {
  * support suggestion and the explainer, so that both speak to the same thing rather than one card
  * talking about sleep while the next talks about stress.
  */
-function weakestMetric(summary: WeeklyReportResponse): FamilyMetricKey | null {
+function weakestMetric(summary: SummaryResult): FamilyMetricKey | null {
   let weakest: { key: FamilyMetricKey; pct: number } | null = null;
 
   for (const key of FAMILY_METRIC_KEYS) {
@@ -137,7 +145,7 @@ function weakestMetric(summary: WeeklyReportResponse): FamilyMetricKey | null {
 /** Below this, a metric is having a hard enough week to say so out loud. */
 const NEEDS_SUPPORT_BELOW = 60;
 
-function buildStatus(summary: WeeklyReportResponse, weakest: FamilyMetricKey | null) {
+function buildStatus(summary: SummaryResult, weakest: FamilyMetricKey | null) {
   const label = 'Overall status';
 
   if (summary.dataState === 'empty' || weakest === null) {
@@ -185,7 +193,7 @@ function buildStatus(summary: WeeklyReportResponse, weakest: FamilyMetricKey | n
   };
 }
 
-function buildProgress(summary: WeeklyReportResponse) {
+function buildProgress(summary: SummaryResult) {
   // `daysElapsedInPeriod` rather than `periodLength`: mid-week, "3 of 7" reads as four missed days
   // that have not happened yet. It is also the honest denominator for someone who joined on Thursday.
   const totalDays = Math.max(1, summary.daysElapsedInPeriod);
@@ -301,6 +309,48 @@ function weekIndex(now: Date): number {
   return Math.floor(now.getTime() / (7 * 24 * 60 * 60 * 1000));
 }
 
+/**
+ * Topics, drawn from the real library rather than a hardcoded list.
+ *
+ * Three of the library's five categories are served: `clinical` is her medical reading and has no
+ * business in the family app, and `nutrition` is close enough to a care plan to leave out. What is
+ * left — sleep, mind, movement — is general education about the transition, which is exactly what a
+ * family member is here to learn.
+ *
+ * Titles only. The family app has no reader, and shipping slugs would imply one exists.
+ *
+ * The list rotates weekly off the same index as the nudges, so the tab changes without anyone
+ * scheduling anything, and falls back to the static list if the library ever comes back empty.
+ */
+const FAMILY_TOPIC_CATEGORIES = ['sleep', 'mind', 'movement'] as const;
+const TOPICS_SHOWN = 4;
+
+export function buildFamilyTopics(now = new Date()): string[] {
+  const titles: string[] = [];
+
+  for (const category of FAMILY_TOPIC_CATEGORIES) {
+    try {
+      const feed = getLibraryFeed({ category });
+      for (const article of [feed.feature, ...feed.articles]) {
+        if (article) titles.push(article.title);
+      }
+    } catch {
+      // A malformed library must not take the family app's Learn tab down with it.
+    }
+  }
+
+  if (titles.length === 0) {
+    return LEARN_TOPICS;
+  }
+
+  // Rotate the window rather than shuffling: the same week shows the same four to everyone, and
+  // consecutive weeks move along the list instead of re-randomising it.
+  const start = (weekIndex(now) * TOPICS_SHOWN) % titles.length;
+  return Array.from({ length: Math.min(TOPICS_SHOWN, titles.length) }, (_, offset) =>
+    titles[(start + offset) % titles.length]!,
+  );
+}
+
 export function buildFamilyLearn(now = new Date()): FamilyLearnResponse {
   const index = weekIndex(now);
   const nudge = LEARN_NUDGES[index % LEARN_NUDGES.length]!;
@@ -313,7 +363,7 @@ export function buildFamilyLearn(now = new Date()): FamilyLearnResponse {
     nudge: { label: 'This week’s nudge', headline: nudge.headline, body: nudge.body },
     tip: { label: 'Communication tip', headline: tip.headline, body: tip.body },
     topicsLabel: 'Explore topics',
-    topics: LEARN_TOPICS,
+    topics: buildFamilyTopics(now),
   };
 }
 

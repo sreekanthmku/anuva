@@ -26,6 +26,7 @@ import {
   stdev,
 } from './scoring.js';
 import { dayKey, fromDayKey, isoDay } from '../dayKey.js';
+import { buildJointsSummary } from './joints.js';
 
 export const WEEK_DAYS = 7;
 
@@ -900,8 +901,16 @@ export async function buildSummary(
   const timestampRange = { gte: w.fetchStart, lt: addDays(w.fetchEnd, 1) };
   const dateRange = { gte: toDateOnly(w.fetchStart), lt: toDateOnly(addDays(w.fetchEnd, 1)) };
 
-  const [sleepRows, energyRows, stressRows, moodRows, focusRows, hotFlashRows, quickRows] =
-    await Promise.all([
+  const [
+    sleepRows,
+    energyRows,
+    stressRows,
+    moodRows,
+    focusRows,
+    hotFlashRows,
+    quickRows,
+    jointRows,
+  ] = await Promise.all([
     prisma.sleepLog.findMany({
       where: { userId, loggedAt: timestampRange },
       select: { loggedAt: true, quality: true, category: true, hours: true },
@@ -932,6 +941,19 @@ export async function buildSummary(
     prisma.quickSymptomLog.findMany({
       where: { userId, loggedAt: timestampRange },
       select: { loggedAt: true, symptom: true },
+    }),
+    // Joints & Stiffness. Fetched with the rest but kept out of `sources`: it is
+    // not a ring and does not feed the wellness composite. See ./joints.ts.
+    prisma.jointLog.findMany({
+      where: { userId, date: dateRange },
+      select: {
+        date: true,
+        severity: true,
+        areas: true,
+        symptoms: true,
+        impact: true,
+        score: true,
+      },
     }),
   ]);
 
@@ -1111,6 +1133,22 @@ export async function buildSummary(
   // One meaning on every tab: the user's own previous level. No dot when there
   // is no comparable history — never a borrowed population line.
 
+  // Joints & Stiffness. `fromDayKey` first: the rows come from a `@db.Date`
+  // column, whose value is a UTC instant, and comparing that against local
+  // window bounds is a day out west of UTC.
+  const joints = buildJointsSummary(
+    jointRows.map((row) => ({ ...row, date: fromDayKey(row.date) })),
+    {
+      coverageStart: w.coverageStart,
+      coverageEnd: w.coverageEnd,
+      seriesStart: seriesRange(w).start,
+      seriesEnd: seriesRange(w).end,
+      prevStart: w.prevStart,
+      prevEnd: w.prevEnd,
+      daysInWindow: w.offset === 0 ? w.daysElapsedInPeriod : w.periodLength,
+    },
+  );
+
   const withReference = rings.filter((r) => r.reference != null);
   const referenceNote =
     withReference.length > 0
@@ -1153,6 +1191,7 @@ export async function buildSummary(
       series: ring.series,
     })),
     stats,
+    joints,
     insights:
       dataState === 'empty'
         ? []

@@ -111,6 +111,19 @@ export const STAT_SCALES: Record<string, ChartScale> = {
     labelPrecision: 0,
     valuePrecision: 0,
   },
+  /**
+   * Joint discomfort, 0-100 and higher-is-worse. Same axis as a score, kept
+   * explicit so it never silently falls through to the default.
+   */
+  joints: {
+    kind: 'score',
+    floor: 0,
+    ceiling: 100,
+    step: 10,
+    minSpan: 20,
+    labelPrecision: 0,
+    valuePrecision: 0,
+  },
   wellness: {
     kind: 'score',
     floor: 0,

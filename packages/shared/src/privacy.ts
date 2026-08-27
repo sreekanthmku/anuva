@@ -52,6 +52,7 @@ export const ERASURE_TRACKER_MODELS = [
   'brainFogLog',
   'bloatingLog',
   'painLog',
+  'jointLog',
   // Derived, and deleted with the source rather than left behind: a weekly report whose logs are
   // gone is a claim about a week we can no longer support.
   'weeklyReport',
@@ -295,7 +296,33 @@ export const privacyExportSchema = z.object({
 });
 export type PrivacyExport = z.infer<typeof privacyExportSchema>;
 
+/**
+ * DPDP §11 is a right to *information*, and part of that information is who else received the data.
+ * Until family sharing existed there was nobody to name; now there can be, so it has to be
+ * disclosed — and disclosed as a named person, because "a family member" is not an answer to
+ * "who has my data".
+ *
+ * `kind` exists so this list can grow to cover the processors (2Factor, Firebase, OpenAI, LiveKit)
+ * that COMPLIANCE_AUDIT §1.8 records as undisclosed. Those are a separate piece of work; the shape
+ * is here so it does not need a schema change when it happens.
+ */
+export const privacyRecipientSchema = z.object({
+  key: z.string(),
+  kind: z.enum(['family', 'processor']),
+  /** Who they are, in her words — a person's name for family. */
+  name: z.string(),
+  /** What they can actually see, one plain line per thing. */
+  receives: z.array(z.string()),
+  /** When they gained access. Null where it is not a dated event. */
+  since: z.string().nullable(),
+  /** How she stops it. */
+  control: z.string(),
+});
+export type PrivacyRecipient = z.infer<typeof privacyRecipientSchema>;
+
 export const privacySummaryResponseSchema = z.object({
+  /** Who else holds any of this. Empty is the common case and means exactly that: nobody. */
+  recipients: z.array(privacyRecipientSchema),
   /** What we hold, by category, with counts. */
   categories: z.array(privacyDataCategorySchema),
   /** The pending account deletion, if one is running. */

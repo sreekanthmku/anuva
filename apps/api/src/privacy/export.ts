@@ -17,6 +17,7 @@ import {
   ERASURE_TRACKER_MODELS,
   CLINICAL_RECORD_RETENTION_YEARS,
 } from '@anuva/shared';
+import { FAMILY_SHARED_SCOPES } from '../family/content.js';
 import { logger } from '../logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -43,6 +44,13 @@ function findManyDelegateFor(model: string): FindManyDelegate {
     throw new Error(`Erasure registry names "${model}", which is not a Prisma delegate.`);
   }
   return delegate;
+}
+
+/** Same masking as every screen: enough to recognise the number, not enough to dial it. */
+function maskThirdPartyPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length <= 4) return phone;
+  return `${phone.slice(0, Math.max(0, phone.length - 6))}${'*'.repeat(Math.max(0, phone.length - 6))}${phone.slice(-2)}`;
 }
 
 async function dumpTrackerLogs(userId: string): Promise<Record<string, unknown[]>> {
@@ -72,6 +80,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     tickets,
     devices,
     trackerLogs,
+    familyMembers,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -191,6 +200,26 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
       take: MAX_ROWS_PER_COLLECTION,
     }),
     dumpTrackerLogs(userId),
+    // Who she shared with, and what they did. DPDP §11 covers who else received the data, so an
+    // export that omits this is incomplete. Their phone is a third party's, so it is masked here
+    // exactly as it is on screen; the notes they sent are absent because they were never stored.
+    prisma.familyMember.findMany({
+      where: { userId },
+      select: {
+        name: true,
+        relationship: true,
+        phone: true,
+        status: true,
+        phoneVerifiedAt: true,
+        createdAt: true,
+        revokedAt: true,
+        supportActions: {
+          select: { kind: true, date: true, createdAt: true },
+          take: MAX_ROWS_PER_COLLECTION,
+          orderBy: { date: 'desc' },
+        },
+      },
+    }),
   ]);
 
   return {
@@ -206,6 +235,20 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
      */
     disclosure: {
       recipients: DATA_RECIPIENTS,
+      /**
+       * The people, as opposed to the processors. Named because "a family member" does not answer
+       * "who has my data", and separated from `recipients` because these are individuals she chose
+       * and can disconnect, not vendors we chose.
+       */
+      familyRecipients: familyMembers
+        .filter((member) => member.status === 'active')
+        .map((member) => ({
+          name: member.name,
+          relationship: member.relationship,
+          maskedPhone: maskThirdPartyPhone(member.phone),
+          since: member.createdAt.toISOString(),
+          canSee: [...FAMILY_SHARED_SCOPES],
+        })),
       clinicalRecordRetentionYears: CLINICAL_RECORD_RETENTION_YEARS,
     },
     account: user,
@@ -219,6 +262,22 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     chat: { threads: chatThreads, anuTurns },
     anonymousQuestions: questions,
     supportRequests: tickets,
+    familySharing: familyMembers.map((member) => ({
+      name: member.name,
+      relationship: member.relationship,
+      // A third party's number. Masked even in her own export: it is not her personal data to
+      // receive a full copy of.
+      maskedPhone: maskThirdPartyPhone(member.phone),
+      status: member.status,
+      verifiedAt: member.phoneVerifiedAt.toISOString(),
+      joinedAt: member.createdAt.toISOString(),
+      revokedAt: member.revokedAt?.toISOString() ?? null,
+      // The gesture, never the words: notes sent from the family app are pushed and not stored.
+      checkIns: member.supportActions.map((action) => ({
+        kind: action.kind,
+        day: action.date.toISOString().slice(0, 10),
+      })),
+    })),
     devices,
     trackedHealth: trackerLogs,
   };

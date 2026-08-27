@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type {
+  LogJointBody,
   MoodEmotion,
   NudgeDayTracker,
   NudgeTier,
@@ -11,12 +12,21 @@ import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 import { MoodLogSheet } from './components/MoodLogSheet';
 import { SleepLogSheet } from './components/SleepLogSheet';
+import { JointsLogSheet } from './components/JointsLogSheet';
 import { useNudgeDay } from './hooks/useNudgeDay';
 import { useMoodLog } from './hooks/useMoodLog';
 import { useSleepLog } from './hooks/useSleepLog';
+import { useJointLog } from './hooks/useJointLog';
 
 // Mood (L1-003) + sleep (L1-001) keep the emoji scale + extras via these sheets.
 const EMOJI_TRACKERS = new Set(['L1-001', 'L1-003']);
+
+/**
+ * Joints & Stiffness has no nudge behind it, so it is absent from the day sheet
+ * and injected into the Body section here — directly after hot flashes, which is
+ * the ordering the spec asks for.
+ */
+const JOINTS_AFTER_TRACKER = 'L1-005';
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 
@@ -91,6 +101,7 @@ export default function SymptomTrackRoute() {
   const { data, loading, error, respond, reload } = useNudgeDay();
   const moodLog = useMoodLog();
   const sleepLog = useSleepLog();
+  const jointLog = useJointLog();
 
   // Optimistic answer overlay + per-tracker saving + manual re-open editing.
   const [localAnswers, setLocalAnswers] = useState<Record<string, string>>({});
@@ -101,11 +112,14 @@ export default function SymptomTrackRoute() {
   const [moodSaving, setMoodSaving] = useState(false);
   const [sleepOpen, setSleepOpen] = useState(false);
   const [sleepSaving, setSleepSaving] = useState(false);
+  const [jointsOpen, setJointsOpen] = useState(false);
+  const [jointsSaving, setJointsSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
 
   const todayMood = moodLog.data?.today ?? null;
   const todaySleep = sleepLog.data?.today ?? null;
+  const todayJoints = jointLog.data?.today ?? null;
 
   const handleLogMood = async (feeling: number, emotions: MoodEmotion[]) => {
     setMoodSaving(true);
@@ -131,6 +145,22 @@ export default function SymptomTrackRoute() {
     }
   };
 
+  const handleLogJoints = async (body: LogJointBody) => {
+    setJointsSaving(true);
+    try {
+      const entry = await jointLog.logJoints(body);
+      showToast(
+        entry.severity === 'none'
+          ? 'No joint discomfort today — good to know.'
+          : "Logged. I'll watch how this moves with your cycle.",
+      );
+    } catch {
+      showToast("Couldn't save that — we'll retry later.");
+    } finally {
+      setJointsSaving(false);
+    }
+  };
+
   const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
   const weekDays = useMemo(() => getCurrentWeekDays(), []);
 
@@ -151,8 +181,11 @@ export default function SymptomTrackRoute() {
   const answerOf = (t: NudgeDayTracker): string | null => localAnswers[t.nudgeId] ?? t.answer;
   const isAnswered = (t: NudgeDayTracker): boolean => answerOf(t) !== null;
 
-  const answeredCount = trackers.filter(isAnswered).length;
-  const total = trackers.length;
+  // Joints is one more thing to log on this page, so it counts here — the day
+  // sheet's own totals cannot include it, since no nudge backs it.
+  const jointsAnswered = todayJoints !== null;
+  const answeredCount = trackers.filter(isAnswered).length + (jointsAnswered ? 1 : 0);
+  const total = trackers.length + (jointLog.loading ? 0 : 1);
   const pct = total ? Math.round((answeredCount / total) * 100) : 0;
 
   const submit = async (t: NudgeDayTracker, answer: string) => {
@@ -188,6 +221,118 @@ export default function SymptomTrackRoute() {
       else next.add(id);
       return next;
     });
+
+  /**
+   * The Joints & Stiffness row. Same shape as the mood and sleep rows — a
+   * summary line plus Log/Change — because it opens a sheet rather than
+   * answering inline.
+   */
+  const jointsCard = (
+    <div key="joints" className="flex items-center justify-between gap-2">
+      <div className="min-w-0">
+        <span className="text-[13px] text-on-surface" style={{ fontFamily: FONT_BODY }}>
+          Joints &amp; stiffness
+          {jointsAnswered && <span className="ml-1.5 text-primary">✓</span>}
+        </span>
+        <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
+          {todayJoints ? todayJoints.summary : 'Not logged yet'}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => setJointsOpen(true)}
+        className="shrink-0 rounded-full border border-border-default px-3.5 py-1.5 text-[12px] text-on-surface"
+        style={{ fontFamily: FONT_BODY }}
+      >
+        {jointsAnswered ? 'Change' : 'Log'}
+      </button>
+    </div>
+  );
+
+  /** One nudge-backed tracker row. Extracted so the Joints card can sit between rows. */
+  const renderTracker = (t: NudgeDayTracker) => {
+    // Mood & sleep keep the emoji scale + extras via their sheets.
+    if (EMOJI_TRACKERS.has(t.nudgeId)) {
+      const answered = t.answer !== null;
+      const openSheet = () =>
+        t.nudgeId === 'L1-003' ? setMoodOpen(true) : setSleepOpen(true);
+      return (
+        <div key={t.nudgeId} className="flex items-center justify-between gap-2">
+          <div>
+            <span
+              className="text-[13px] text-on-surface"
+              style={{ fontFamily: FONT_BODY }}
+            >
+              {t.label}
+              {answered && <span className="ml-1.5 text-primary">✓</span>}
+            </span>
+            <p
+              className="text-[12px] text-on-surface-variant"
+              style={{ fontFamily: FONT_BODY }}
+            >
+              {answered ? t.answer : 'Not logged yet'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={openSheet}
+            className="rounded-full border border-border-default px-3.5 py-1.5 text-[12px] text-on-surface"
+            style={{ fontFamily: FONT_BODY }}
+          >
+            {answered ? 'Change' : 'Log'}
+          </button>
+        </div>
+      );
+    }
+
+    const answer = answerOf(t);
+    const answered = answer !== null;
+    const showOptions = !answered || editing.has(t.nudgeId);
+    return (
+      <div key={t.nudgeId}>
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <span
+            className="text-[13px] text-on-surface"
+            style={{ fontFamily: FONT_BODY }}
+          >
+            {t.label}
+            {answered && <span className="ml-1.5 text-primary">✓</span>}
+          </span>
+          {answered && !showOptions && (
+            <button
+              type="button"
+              onClick={() => toggleEdit(t.nudgeId)}
+              className="text-[10px] uppercase tracking-[0.1em] text-outline"
+              style={{ fontFamily: FONT_MONO }}
+            >
+              Change
+            </button>
+          )}
+        </div>
+
+        {showOptions ? (
+          <div className="flex flex-wrap gap-2">
+            {t.options.map((opt) => (
+              <OptionChip
+                key={opt}
+                label={opt}
+                selected={answer === opt}
+                disabled={saving === t.nudgeId}
+                onClick={() => submit(t, opt)}
+              />
+            ))}
+          </div>
+        ) : (
+          <p
+            className="text-[13px] text-on-surface-variant"
+            style={{ fontFamily: FONT_BODY }}
+          >
+            {answer}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
@@ -260,9 +405,14 @@ export default function SymptomTrackRoute() {
 
         {TIERS.map((tier) => {
           const items = trackers.filter((t) => t.tier === tier.key);
-          if (items.length === 0) return null;
+          const hasJoints = tier.key === 'body' && !jointLog.loading;
+          // Body still has something to show when only Joints is available — it
+          // is the one tracker on this page the nudge day sheet knows nothing about.
+          if (items.length === 0 && !hasJoints) return null;
           const open = openTiers.has(tier.key);
-          const tierAnswered = items.filter(isAnswered).length;
+          const tierTotal = items.length + (hasJoints ? 1 : 0);
+          const tierAnswered =
+            items.filter(isAnswered).length + (hasJoints && jointsAnswered ? 1 : 0);
 
           return (
             <section
@@ -292,95 +442,21 @@ export default function SymptomTrackRoute() {
                   }`}
                   style={{ fontFamily: FONT_MONO }}
                 >
-                  {tierAnswered}/{items.length} {open ? '▾' : '▸'}
+                  {tierAnswered}/{tierTotal} {open ? '▾' : '▸'}
                 </span>
               </button>
 
               {open && (
                 <div className="flex flex-col gap-4 border-t border-primary/10 px-4 py-4">
-                  {items.map((t) => {
-                    // Mood & sleep keep the emoji scale + extras via their sheets.
-                    if (EMOJI_TRACKERS.has(t.nudgeId)) {
-                      const answered = t.answer !== null;
-                      const openSheet = () =>
-                        t.nudgeId === 'L1-003' ? setMoodOpen(true) : setSleepOpen(true);
-                      return (
-                        <div key={t.nudgeId} className="flex items-center justify-between gap-2">
-                          <div>
-                            <span
-                              className="text-[13px] text-on-surface"
-                              style={{ fontFamily: FONT_BODY }}
-                            >
-                              {t.label}
-                              {answered && <span className="ml-1.5 text-primary">✓</span>}
-                            </span>
-                            <p
-                              className="text-[12px] text-on-surface-variant"
-                              style={{ fontFamily: FONT_BODY }}
-                            >
-                              {answered ? t.answer : 'Not logged yet'}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={openSheet}
-                            className="rounded-full border border-border-default px-3.5 py-1.5 text-[12px] text-on-surface"
-                            style={{ fontFamily: FONT_BODY }}
-                          >
-                            {answered ? 'Change' : 'Log'}
-                          </button>
-                        </div>
-                      );
-                    }
-
-                    const answer = answerOf(t);
-                    const answered = answer !== null;
-                    const showOptions = !answered || editing.has(t.nudgeId);
-                    return (
-                      <div key={t.nudgeId}>
-                        <div className="mb-2 flex items-baseline justify-between gap-2">
-                          <span
-                            className="text-[13px] text-on-surface"
-                            style={{ fontFamily: FONT_BODY }}
-                          >
-                            {t.label}
-                            {answered && <span className="ml-1.5 text-primary">✓</span>}
-                          </span>
-                          {answered && !showOptions && (
-                            <button
-                              type="button"
-                              onClick={() => toggleEdit(t.nudgeId)}
-                              className="text-[10px] uppercase tracking-[0.1em] text-outline"
-                              style={{ fontFamily: FONT_MONO }}
-                            >
-                              Change
-                            </button>
-                          )}
-                        </div>
-
-                        {showOptions ? (
-                          <div className="flex flex-wrap gap-2">
-                            {t.options.map((opt) => (
-                              <OptionChip
-                                key={opt}
-                                label={opt}
-                                selected={answer === opt}
-                                disabled={saving === t.nudgeId}
-                                onClick={() => submit(t, opt)}
-                              />
-                            ))}
-                          </div>
-                        ) : (
-                          <p
-                            className="text-[13px] text-on-surface-variant"
-                            style={{ fontFamily: FONT_BODY }}
-                          >
-                            {answer}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {items.map((t) => (
+                    <Fragment key={t.nudgeId}>
+                      {renderTracker(t)}
+                      {/* Body ordering per spec: Hot flashes, then Joints & Stiffness. */}
+                      {hasJoints && t.nudgeId === JOINTS_AFTER_TRACKER && jointsCard}
+                    </Fragment>
+                  ))}
+                  {/* Still show Joints if the hot-flash tracker is ever absent. */}
+                  {hasJoints && !items.some((t) => t.nudgeId === JOINTS_AFTER_TRACKER) && jointsCard}
                 </div>
               )}
             </section>
@@ -417,6 +493,14 @@ export default function SymptomTrackRoute() {
         saving={sleepSaving}
         onClose={() => setSleepOpen(false)}
         onSave={handleLogSleep}
+      />
+
+      <JointsLogSheet
+        open={jointsOpen}
+        initial={todayJoints}
+        saving={jointsSaving}
+        onClose={() => setJointsOpen(false)}
+        onSave={handleLogJoints}
       />
 
       <BottomNav />

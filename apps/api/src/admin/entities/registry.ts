@@ -1323,6 +1323,19 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     defaultSort: 'loggedAt',
   }),
 
+  // Joints & Stiffness keeps its answers in named columns (`severity`, `impact`) rather than a
+  // single `category`, so it also needs its own definition.
+  def({
+    resource: 'joint-logs',
+    label: 'Joint Logs',
+    prismaModel: 'jointLog',
+    group: 'Tracking',
+    searchFields: ['userId', 'severity', 'id'],
+    filterFields: ['userId', 'source', 'severity', 'impact'],
+    sortableFields: ['date', 'loggedAt', 'createdAt', 'score'],
+    defaultSort: 'date',
+  }),
+
   // Same daily shape, but the answer column is `flow`, not `category`, so it cannot ride
   // makeDailyLogEntities below.
   def({
@@ -1354,6 +1367,60 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     ['bloating-logs', 'Bloating Logs', 'bloatingLog'],
     ['pain-logs', 'Pain Logs', 'painLog'],
   ]),
+
+  // ── Family sharing ───────────────────────────────────────
+  // Read-only in practice: these are support tools. Note that no view here exposes an invite token
+  // (only its hash is stored) or the text of a note (never stored at all).
+  def({
+    resource: 'family-members',
+    label: 'Family Members',
+    prismaModel: 'familyMember',
+    group: 'Family',
+    searchFields: ['userId', 'name', 'phone', 'id'],
+    filterFields: ['userId', 'status', 'relationship'],
+    sortableFields: ['createdAt', 'lastSeenAt'],
+    defaultSort: 'createdAt',
+  }),
+  def({
+    resource: 'family-invites',
+    label: 'Family Invites',
+    prismaModel: 'familyInvite',
+    group: 'Family',
+    searchFields: ['userId', 'id'],
+    filterFields: ['userId', 'status'],
+    sortableFields: ['createdAt', 'expiresAt', 'sharedAt'],
+    defaultSort: 'createdAt',
+  }),
+  def({
+    resource: 'family-sessions',
+    label: 'Family Sessions',
+    prismaModel: 'familySession',
+    group: 'Family',
+    searchFields: ['familyMemberId', 'id'],
+    filterFields: ['familyMemberId'],
+    sortableFields: ['createdAt', 'lastSeenAt', 'expiresAt'],
+    defaultSort: 'createdAt',
+  }),
+  def({
+    resource: 'family-fcm-tokens',
+    label: 'Family Push Tokens',
+    prismaModel: 'familyFcmToken',
+    group: 'Family',
+    searchFields: ['familyMemberId', 'deviceId', 'id'],
+    filterFields: ['familyMemberId', 'status', 'platform'],
+    sortableFields: ['createdAt', 'updatedAt'],
+    defaultSort: 'createdAt',
+  }),
+  def({
+    resource: 'family-support-actions',
+    label: 'Family Support Actions',
+    prismaModel: 'familySupportAction',
+    group: 'Family',
+    searchFields: ['userId', 'familyMemberId', 'id'],
+    filterFields: ['userId', 'kind'],
+    sortableFields: ['date', 'createdAt'],
+    defaultSort: 'date',
+  }),
 
   // ── Nudge governor ───────────────────────────────────────
   def({

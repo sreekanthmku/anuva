@@ -315,11 +315,11 @@ describe('renderReportPdf', () => {
     expect(text).toContain('REPORT 3C');
   });
 
-  it('keeps the template version in PDF metadata for traceability', async () => {
+  it('keeps the template version out of the PDF metadata too', async () => {
     const doc = buildDocument(classificationFor(3, 'C', []), 'Metadata');
     const bytes = (await renderReportPdf(doc)).bytes;
-    // Not drawn on the page any more, but still recoverable from the file.
-    expect(metadataContains(bytes, 'AW-CB-002')).toBe(true);
+    // The copy revision is internal — it appears nowhere in the delivered file.
+    expect(metadataContains(bytes, 'AW-CB-002')).toBe(false);
     expect(metadataContains(bytes, 'Report 3C')).toBe(true);
   });
 

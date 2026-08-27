@@ -12,6 +12,7 @@ const moodFindMany = vi.fn();
 const brainFogFindMany = vi.fn();
 const hotFlashFindMany = vi.fn();
 const quickSymptomFindMany = vi.fn();
+const jointFindMany = vi.fn();
 
 vi.mock('@anuva/database', () => ({
   prisma: {
@@ -22,6 +23,8 @@ vi.mock('@anuva/database', () => ({
     brainFogLog: { findMany: (...args: unknown[]) => brainFogFindMany(...args) },
     hotFlashDailyLog: { findMany: (...args: unknown[]) => hotFlashFindMany(...args) },
     quickSymptomLog: { findMany: (...args: unknown[]) => quickSymptomFindMany(...args) },
+    // Joints & Stiffness is fetched with the rest but is not a ring; see src/report/joints.ts.
+    jointLog: { findMany: (...args: unknown[]) => jointFindMany(...args) },
   },
 }));
 
@@ -56,6 +59,7 @@ function emptyStores() {
   brainFogFindMany.mockResolvedValue([]);
   hotFlashFindMany.mockResolvedValue([]);
   quickSymptomFindMany.mockResolvedValue([]);
+  jointFindMany.mockResolvedValue([]);
 }
 
 type FixtureOpts = {
@@ -115,6 +119,7 @@ function installFixture(parts: ReturnType<typeof dayBundle>[]) {
   brainFogFindMany.mockResolvedValue(parts.map((p) => p.focus));
   hotFlashFindMany.mockResolvedValue(parts.map((p) => p.hot));
   quickSymptomFindMany.mockResolvedValue([]);
+  jointFindMany.mockResolvedValue([]);
 }
 
 /** Inclusive local calendar walk. */
@@ -241,7 +246,7 @@ describe('buildSummary — empty / sparse', () => {
     expect(report.anuReflection).toMatch(/1 day in|still learning/i);
   });
 
-  it('clamps oversized daily offset and still queries all six log models', async () => {
+  it('clamps oversized daily offset and still queries every log model', async () => {
     const report = await buildSummary(USER_ID, anchor, 'daily', 999, now);
 
     expect(report.period).toBe('daily');
@@ -254,6 +259,7 @@ describe('buildSummary — empty / sparse', () => {
     expect(moodFindMany).toHaveBeenCalledTimes(1);
     expect(brainFogFindMany).toHaveBeenCalledTimes(1);
     expect(hotFlashFindMany).toHaveBeenCalledTimes(1);
+    expect(jointFindMany).toHaveBeenCalledTimes(1);
 
     const sleepArgs = sleepFindMany.mock.calls[0]![0] as {
       where: { userId: string; loggedAt: { gte: Date; lt: Date } };

@@ -1,8 +1,9 @@
 /**
  * Overlay content blocks.
  *
- * Verbatim from Anuva_Report_Copy_Brief_v2_14_Blocks (AW-CB-002 v1.1). Fixed
- * copy: do not edit without the medical advisor's sign-off.
+ * Verbatim from Anuva_Report_Copy_Brief_v2_14_Blocks_Revised (AW-CB-002 v1.1,
+ * medical-advisor revision of 2026-08-28). Fixed copy: do not edit without the
+ * medical advisor's sign-off.
  *
  * The brief declares six overlays (Risk, QoL, Lifestyle, Treatment Preference,
  * Gut Health, Family Support) but supplies copy for only two. The other four are
@@ -57,7 +58,7 @@ export const OVERLAY_BLOCKS: Record<OverlayId, OverlayBlock> = {
       {
         title: 'Microbiome and supplement support',
         bullets: [
-          'Probiotic strains with evidence for perimenopausal gut health: Lactobacillus rhamnosus, L. acidophilus, Bifidobacterium longum',
+          'Probiotic supplementation may support gut health in some women during perimenopause — discuss suitable options with your dietician.',
           'Prebiotic foods feed beneficial bacteria: garlic, onion, banana, oats, asparagus — introduce slowly if bloating is present',
           'If antibiotics were taken in the last 12 months, microbiome restoration should be a priority — discuss with your dietician',
           'Digestive enzymes may support symptoms of bloating and incomplete digestion — particularly useful around meals',

@@ -65,6 +65,7 @@ model User {
   brainFogLogs       BrainFogLog[]
   bloatingLogs       BloatingLog[]
   painLogs           PainLog[]
+  jointLogs          JointLog[]
   nudgeDailyStates   NudgeDailyState[]
   nudgeSendLogs      NudgeSendLog[]
   l3TriggerLogs      L3TriggerLog[]
@@ -333,9 +334,28 @@ model FamilyMember {
   invite         FamilyInvite?
   sessions       FamilySession[]
   supportActions FamilySupportAction[]
+  fcmTokens      FamilyFcmToken[]
 
   @@index([userId, status])
   @@index([phone])
+}
+
+/// Push tokens for the family app. Mirrors `FcmToken` and reuses its platform and status enums, so
+/// there is one story about device registration rather than two. No `userId`: the device belongs to
+/// the family member, and dies with them by cascade — which is also why `check:erasure` does not
+/// flag it.
+model FamilyFcmToken {
+  id             String         @id @default(cuid())
+  familyMemberId String
+  member         FamilyMember   @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+  token          String         @unique
+  platform       FcmPlatform
+  status         FcmTokenStatus @default(ACTIVE)
+  deviceId       String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([familyMemberId, status])
 }
 
 /// Mirrors `Session`, including the sha256 token hash, so the family cookie behaves exactly like
@@ -1333,6 +1353,31 @@ model PainLog {
   date      DateTime @db.Date
   category  String // L2-005 answer (pain type)
   source    String   @default("nudge")
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+// Joints & Stiffness — Track > Body. No nudge writes this table; the tracker page
+// is the only surface, so `source` exists to keep a later surface honest rather
+// than to distinguish a nudge.
+model JointLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  severity  String // none | mild | moderate | severe
+  areas     String[] // joint area enum values
+  symptoms  String[] // joint symptom enum values
+  impact    String? // not_at_all | a_little | moderately | a_lot — absent when severity is none
+  timeOfDay String? // optional deeper input
+  triggers  String[] // optional deeper input
+  /// Internal 0-100 discomfort score, higher is worse. Stored so a trend never
+  /// depends on the weighting in force when it is read.
+  score     Int
+  source    String   @default("tracker")
   loggedAt  DateTime @default(now())
   createdAt DateTime @default(now())
 

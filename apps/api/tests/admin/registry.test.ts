@@ -65,12 +65,20 @@ const PRISMA_MODELS = [
   'brainFogLog',
   'bloatingLog',
   'painLog',
+  'jointLog',
   'nudgeDailyState',
   'nudgeSendLog',
   'l3TriggerLog',
   'anuChatTurn',
   'anuResponseCache',
   'supportTicket',
+  // Family sharing. Sessions and push tokens are listed for the same reason `session` and
+  // `fcmToken` are: support cannot answer "why are they not getting notifications" without them.
+  'familyMember',
+  'familyInvite',
+  'familySupportAction',
+  'familySession',
+  'familyFcmToken',
 ] as const;
 
 describe('ADMIN_ENTITIES registry', () => {

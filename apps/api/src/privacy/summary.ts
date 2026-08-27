@@ -44,6 +44,8 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
     tickets,
     devices,
     sessions,
+    familyMembers,
+    familySupportActions,
   ] = await Promise.all([
     prisma.chatMessage.count({ where: { thread: { userId } } }),
     prisma.anuChatTurn.count({ where: { userId } }),
@@ -58,6 +60,8 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
     prisma.supportTicket.count({ where: { userId } }),
     prisma.fcmToken.count({ where: { userId } }),
     prisma.session.count({ where: { userId } }),
+    prisma.familyMember.count({ where: { userId } }),
+    prisma.familySupportAction.count({ where: { userId } }),
   ]);
 
   return [
@@ -123,6 +127,16 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
       count: devices + sessions,
       purpose: 'Keeping you signed in, and delivering your notifications.',
       retention: null,
+    },
+    {
+      key: 'family',
+      label: 'Family sharing',
+      // Members plus the record of what they did. Notes they sent are not counted, because they
+      // were never stored — see family/messages.ts.
+      count: familyMembers + familySupportActions,
+      purpose:
+        'Who you invited to support you, and when they checked in on you. Never what they wrote.',
+      retention: 'Deleted with your account. Disconnecting someone ends their access at once.',
     },
   ];
 }

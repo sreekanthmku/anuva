@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { jointsSummarySchema } from './joints.js';
 
 /**
  * Summary — computed live from the daily nudge logs (sleep, energy, stress,
@@ -196,6 +197,12 @@ export const weeklyReportResponseSchema = z.object({
   rings: z.array(reportRingSchema),
   stats: z.array(reportStatSchema),
   insights: z.array(reportInsightSchema),
+  /**
+   * Joints & Stiffness for the window, or null when the tracker was never
+   * logged in it. Its own block rather than a ring: the score runs
+   * higher-is-worse, and the summary is prose the rings cannot carry.
+   */
+  joints: jointsSummarySchema.nullable(),
   /** Populated on monthly only; empty otherwise. */
   weekBreakdown: z.array(summaryWeekBreakdownSchema),
   anuReflection: z.string(),

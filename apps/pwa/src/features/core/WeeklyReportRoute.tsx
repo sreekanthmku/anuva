@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
+  JointsSummary,
   ReportInsight,
   ReportRing,
   ReportRingKey,
@@ -137,6 +138,102 @@ function ReportProgressRings({
         ))}
       </div>
     </div>
+  );
+}
+
+// ── Joints & Stiffness ───────────────────────────────────────
+
+const JOINT_DIRECTION_COPY: Record<'improving' | 'steady' | 'worsening', string> = {
+  improving: 'easing',
+  steady: 'steady',
+  worsening: 'more than before',
+};
+
+const JOINT_DIRECTION_COLOR: Record<'improving' | 'steady' | 'worsening', string> = {
+  improving: DELTA_TONE_COLOR.positive,
+  steady: DELTA_TONE_COLOR.neutral,
+  worsening: DELTA_TONE_COLOR.attention,
+};
+
+/**
+ * Its own card rather than a ring or a stat tile.
+ *
+ * The discomfort score runs higher-is-worse, so it cannot sit in the rings
+ * without inverting; and the four things worth saying about a week of joints —
+ * how bad, how often, where, and what it cost her — are prose, not one number.
+ * The chart carries the shape; the words carry the claim.
+ */
+function JointsCard({ joints, report }: { joints: JointsSummary; report: WeeklyReportResponse }) {
+  const rows: { label: string; value: string }[] = [
+    {
+      label: 'Days with discomfort',
+      value: `${joints.daysWithDiscomfort} of ${joints.daysInWindow} days`,
+    },
+    ...(joints.mostAffectedArea
+      ? [{ label: 'Most affected area', value: joints.mostAffectedArea }]
+      : []),
+    ...(joints.mostCommonSymptom
+      ? [{ label: 'Most common symptom', value: joints.mostCommonSymptom }]
+      : []),
+    ...(joints.impact ? [{ label: 'Impact on your day', value: joints.impact }] : []),
+  ];
+
+  return (
+    <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
+      <Eyebrow className="mb-2">Joints &amp; stiffness</Eyebrow>
+
+      <div className="flex items-baseline gap-2">
+        <span className="text-[24px] leading-none text-on-surface">
+          {joints.averageDiscomfort}
+        </span>
+        {joints.direction && (
+          <span
+            className="text-[11.5px]"
+            style={{ fontFamily: MULISH, color: JOINT_DIRECTION_COLOR[joints.direction] }}
+          >
+            {JOINT_DIRECTION_COPY[joints.direction]}
+          </span>
+        )}
+      </div>
+      <div
+        className="mt-1.5 text-[9.5px] uppercase tracking-[0.1em] text-outline"
+        style={{ fontFamily: MULISH }}
+      >
+        Average discomfort
+      </div>
+
+      <div className="mt-2.5">
+        <Sparkline
+          values={joints.trend}
+          color="#B8923C"
+          seriesStart={report.seriesStart}
+          coverageStart={report.seriesCoverageStart}
+          coverageEnd={report.coverageEnd}
+          scale={scaleFor('joints')}
+          label="Joint discomfort"
+          unit=""
+        />
+      </div>
+      <p className="mt-2 text-[9.5px] leading-[1.35] text-outline" style={{ fontFamily: MULISH }}>
+        Higher means more discomfort — the opposite of the rings above.
+      </p>
+
+      <dl className="mt-3 flex flex-col gap-1.5">
+        {rows.map((row) => (
+          <div key={row.label} className="flex items-baseline justify-between gap-3">
+            <dt className="text-[11.5px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
+              {row.label}
+            </dt>
+            <dd
+              className="text-right text-[12.5px] text-on-surface"
+              style={{ fontFamily: MULISH }}
+            >
+              {row.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </article>
   );
 }
 
@@ -552,6 +649,8 @@ function ReportBody({
               {wellness && <StatCard stat={wellness} report={report} wide />}
             </div>
           ))}
+
+        {report.joints && <JointsCard joints={report.joints} report={report} />}
 
         {report.calibrating && (
           <article className="rounded-[20px] border border-tertiary/25 bg-surface-raised p-4">

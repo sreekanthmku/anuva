@@ -319,7 +319,7 @@ function buildPdf(doc: ReportDocument): Promise<Buffer> {
         Title: `Anuva Wellness Assessment Report ${doc.reportId}`,
         Author: 'Anuva Wellness',
         Subject: doc.title,
-        Creator: `Anuva Wellness · template ${doc.templateVersion}`,
+        Creator: 'Anuva Wellness',
       },
       // Off so the `pageAdded` hook below is attached before the first page
       // exists; otherwise page one would be the only page without the mark.
@@ -389,11 +389,10 @@ function buildPdf(doc: ReportDocument): Promise<Buffer> {
     hr(ctx, 14, 12);
     pdf.font(SANS).fontSize(7.8).fillColor(INK_SOFT).text(doc.disclaimer, { lineGap: 1.9 });
 
-    // No printed colophon. The template version and report ID live in the PDF's
-    // metadata (see `info` above) instead, so a document stays traceable to the
-    // copy revision that produced it without putting internal references in
-    // front of the reader. `cacheKeyFor` hashes templateVersion explicitly, so
-    // dropping it from the page does not weaken cache invalidation.
+    // No printed colophon and no template version anywhere in the file — not on
+    // the page and not in the PDF metadata. The internal copy revision is not a
+    // reader-facing detail. `cacheKeyFor` still hashes templateVersion, so cache
+    // invalidation on a copy change is unaffected.
 
     pdf.end();
   });

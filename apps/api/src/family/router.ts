@@ -28,6 +28,8 @@
  *   POST   /family/support-actions
  *   POST   /family/messages                a short note, pushed to her and stored nowhere
  *   POST   /family/support-actions/remind-later
+ *   POST   /family/push/register           device registration for the family app
+ *   POST   /family/push/unregister
  *   POST   /family/logout
  */
 
@@ -53,6 +55,10 @@ import {
   familyTodayResponseSchema,
   familyStatusResponseSchema,
   markFamilyInviteSharedBodySchema,
+  registerFcmBodySchema,
+  registerFcmResponseSchema,
+  unregisterFcmBodySchema,
+  unregisterFcmResponseSchema,
   markFamilyInviteSharedResponseSchema,
   removeFamilyMemberResponseSchema,
   revokeFamilyInviteResponseSchema,
@@ -71,6 +77,7 @@ import { buildFamilyActivity } from './activity.js';
 import { buildFamilyLearn, buildFamilyPrivacy, buildFamilyToday } from './digest.js';
 import { familyMeBody, previewInvite, requestJoinOtp, verifyJoinOtp, type OtpDeps } from './join.js';
 import { sendFamilyMessage } from './messages.js';
+import { registerFamilyToken, unregisterFamilyToken } from './push.js';
 import { rateLimit } from './rateLimit.js';
 import { kindsDoneToday, recordSupportAction, scheduleSupportReminder } from './supportActions.js';
 
@@ -327,6 +334,39 @@ export function createFamilyRouter({
       noStore(res);
       const identity = await requireFamilyMember(req);
       res.json(familyRemindLaterResponseSchema.parse(await scheduleSupportReminder(identity.memberId)));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/push/register', async (req, res, next) => {
+    try {
+      noStore(res);
+      const identity = await requireFamilyMember(req);
+      const body = registerFcmBodySchema.parse(req.body);
+      await registerFamilyToken({
+        familyMemberId: identity.memberId,
+        token: body.fcmToken,
+        platform: body.platform,
+        deviceId: body.deviceId,
+      });
+      res.json(registerFcmResponseSchema.parse({ ok: true }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/push/unregister', async (req, res, next) => {
+    try {
+      noStore(res);
+      const identity = await requireFamilyMember(req);
+      const body = unregisterFcmBodySchema.parse(req.body);
+      await unregisterFamilyToken({
+        familyMemberId: identity.memberId,
+        token: body.fcmToken,
+        deviceId: body.deviceId,
+      });
+      res.json(unregisterFcmResponseSchema.parse({ ok: true }));
     } catch (e) {
       next(e);
     }

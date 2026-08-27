@@ -73,6 +73,12 @@ import {
   cycleSetupBodySchema,
   cycleSettingsBodySchema,
   logPeriodFlowBodySchema,
+  logJointBodySchema,
+  jointLogSchema,
+  jointStateResponseSchema,
+  jointDiscomfortScore,
+  JOINT_SEVERITY_LABELS,
+  type JointSeverity,
   logPeriodBodySchema,
   endPeriodBodySchema,
   cycleStateResponseSchema,
@@ -171,6 +177,7 @@ import {
   buildCycleStateResponse,
   isBleedingDay,
   pendingFlowDates,
+  todayDateOnly,
 } from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
 import { startSupportRetentionJob } from './supportRetention.js';
@@ -178,6 +185,7 @@ import { eraseScope } from './privacy/erasure.js';
 import { createDataExport, resolveExportPath, unlinkExportFile } from './privacy/export.js';
 import { startPrivacyRetentionJobs } from './privacy/retention.js';
 import { buildPrivacyCategories } from './privacy/summary.js';
+import { buildPrivacyRecipients } from './privacy/recipients.js';
 import {
   buildDispatch,
   storeResponse,
@@ -200,6 +208,7 @@ import { httpLogger, logger } from './logger.js';
 import { createAdminRouter } from './admin/index.js';
 import { createReport14Router } from './report14/index.js';
 import { createFamilyRouter } from './family/index.js';
+import { startFamilyJobs } from './family/jobs.js';
 import { AdminError } from './admin/errors.js';
 import {
   CLEARED_LOCK_STATE,
@@ -4384,6 +4393,113 @@ app.post('/sleep', async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────
+// Joints & Stiffness (Track > Body)
+// ─────────────────────────────────────────────
+//
+// The one daily tracker with no nudge behind it: nothing dispatches it, and it is
+// not in the nudge day sheet. The Track page is the only surface that writes it.
+
+function serializeJointLog(j: {
+  date: Date;
+  severity: string;
+  areas: string[];
+  symptoms: string[];
+  impact: string | null;
+  timeOfDay: string | null;
+  triggers: string[];
+  score: number;
+}) {
+  const severity = j.severity as JointSeverity;
+  return jointLogSchema.parse({
+    date: j.date.toISOString().split('T')[0]!,
+    severity,
+    areas: j.areas,
+    symptoms: j.symptoms,
+    impact: j.impact,
+    timeOfDay: j.timeOfDay,
+    triggers: j.triggers,
+    score: j.score,
+    summary: JOINT_SEVERITY_LABELS[severity],
+  });
+}
+
+app.get('/joints', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const today = dayKey(new Date());
+
+    const recent = await prisma.jointLog.findMany({
+      where: { userId: user.id },
+      orderBy: { date: 'desc' },
+      take: 14,
+    });
+
+    const todayRow = recent.find((r) => r.date.getTime() === today.getTime()) ?? null;
+
+    res.json(
+      jointStateResponseSchema.parse({
+        today: todayRow ? serializeJointLog(todayRow) : null,
+        recent: recent.map(serializeJointLog),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/joints', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const body = logJointBodySchema.parse(req.body);
+
+    const now = new Date();
+    const todayStr = todayDateOnly(now);
+    const dateStr = body.date ?? todayStr;
+    // A day in the future would sit ahead of every trend that reads this table.
+    if (dateStr > todayStr) {
+      throw new HttpError(400, 'Joint discomfort cannot be logged for a future day.');
+    }
+
+    // "No discomfort" ends the tracker, so the follow-ups are legitimately empty
+    // — and must be *stored* empty, or a corrected answer would keep yesterday's
+    // areas. Any other severity has answered Q2-Q4, so a missing impact means a
+    // client that skipped the flow rather than a user who had nothing to say.
+    const isNone = body.severity === 'none';
+    if (!isNone && body.impact === null) {
+      throw new HttpError(400, 'Tell us how much it is affecting your day.');
+    }
+
+    const data = {
+      severity: body.severity,
+      areas: isNone ? [] : body.areas,
+      symptoms: isNone ? [] : body.symptoms,
+      impact: isNone ? null : body.impact,
+      timeOfDay: isNone ? null : body.timeOfDay,
+      triggers: isNone ? [] : body.triggers,
+      score: jointDiscomfortScore(body.severity, isNone ? null : body.impact),
+    };
+
+    const date = dayKey(new Date(`${dateStr}T00:00:00`));
+    const saved = await prisma.jointLog.upsert({
+      where: { userId_date: { userId: user.id, date } },
+      create: { userId: user.id, date, ...data },
+      update: { ...data, loggedAt: now },
+    });
+
+    // Same engagement credit the other manual trackers take.
+    await markTrackerEngagement(user.id, now);
+    req.log.info(
+      { date: dateStr, severity: data.severity, score: data.score },
+      'Joint discomfort logged',
+    );
+
+    res.status(201).json(serializeJointLog(saved));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
 // Quick symptom logging (multiple per day)
 // ─────────────────────────────────────────────
 
@@ -5233,8 +5349,10 @@ app.get('/privacy/summary', async (req, res, next) => {
     const user = await requireCurrentUser(req);
     setNoStoreHeaders(res);
 
-    const [categories, pendingDeletion, history, latestExport, recentExport] = await Promise.all([
+    const [categories, recipients, pendingDeletion, history, latestExport, recentExport] =
+      await Promise.all([
       buildPrivacyCategories(user.id),
+      buildPrivacyRecipients(user.id),
       prisma.dataDeletionRequest.findFirst({
         where: { userId: user.id, status: { in: ['pending', 'processing'] } },
         orderBy: { requestedAt: 'desc' },
@@ -5262,6 +5380,7 @@ app.get('/privacy/summary', async (req, res, next) => {
     res.json(
       privacySummaryResponseSchema.parse({
         categories,
+        recipients,
         pendingDeletion: pendingDeletion ? serializeDeletionRequest(pendingDeletion) : null,
         history: history.map(serializeDeletionRequest),
         latestExport: latestExport ? serializeDataExport(latestExport) : null,
@@ -5649,6 +5768,7 @@ async function startServer() {
   startNudgeScheduler();
   startSupportRetentionJob();
   startPrivacyRetentionJobs();
+  startFamilyJobs();
 
   // Warm the ANU semantic cache so a restart does not send every question
   // straight to the model until the index refills.
