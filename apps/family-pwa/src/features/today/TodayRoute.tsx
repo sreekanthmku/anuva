@@ -1,6 +1,12 @@
 import { useCallback, useState } from 'react';
 import type { FamilySupportActionKind } from '@anuva/shared';
-import { fetchToday, postRemindLater, postSupportAction } from '../../shared/lib/familyApi';
+import {
+  fetchToday,
+  postFamilyMessage,
+  postRemindLater,
+  postSupportAction,
+} from '../../shared/lib/familyApi';
+import { ACTION_LABELS } from '../data/labels';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
 import { Card, ErrorCard, Eyebrow, PageIntro, SectionLabel, SkeletonCard } from '../shell/ui';
 import { SupportActionSheet, Toast } from '../support/SupportActionSheet';
@@ -26,6 +32,20 @@ export function TodayRoute() {
         await reload();
       } catch (e) {
         showToast(e instanceof Error ? e.message : 'Could not record that.');
+      }
+    },
+    [showToast, reload],
+  );
+
+  const sendMessage = useCallback(
+    async (text: string) => {
+      setSheetOpen(false);
+      try {
+        const result = await postFamilyMessage(text);
+        showToast(result.toast);
+        await reload();
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : 'Could not send that note.');
       }
     },
     [showToast, reload],
@@ -79,17 +99,25 @@ export function TodayRoute() {
         <Eyebrow>{support.label}</Eyebrow>
         <h2 className="font-display text-[20px] leading-tight text-on-surface">{support.headline}</h2>
         <p className="mt-2 text-[14px] leading-[1.55] text-on-surface-variant">{support.body}</p>
+        {/* Doing one thing does not use up the day: she may be worth a message *and* flowers. So
+            what is done is confirmed above the button, and the button stays live. */}
+        {support.completedToday ? (
+          <p className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] font-semibold text-success">
+            <span aria-hidden>✓</span>
+            <span>
+              Done today:{' '}
+              {support.completedKinds
+                .map((kind) => ACTION_LABELS[kind] ?? kind)
+                .join(', ')}
+            </span>
+          </p>
+        ) : null}
         <button
           type="button"
-          disabled={support.completedToday}
           onClick={() => setSheetOpen(true)}
-          className={`mt-4 flex min-h-[48px] w-full items-center justify-center rounded-full px-5 text-[14.5px] font-semibold transition-colors ${
-            support.completedToday
-              ? 'bg-success/15 text-success'
-              : 'bg-secondary text-on-secondary shadow-[0_8px_20px_rgba(201,126,146,0.28)]'
-          }`}
+          className="mt-3 flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary shadow-[0_8px_20px_rgba(201,126,146,0.28)]"
         >
-          {support.completedToday ? support.completedCta : support.cta}
+          {support.completedToday ? 'Do something else too' : support.cta}
         </button>
       </Card>
 
@@ -146,8 +174,10 @@ export function TodayRoute() {
 
       <SupportActionSheet
         open={sheetOpen}
+        doneKinds={support.completedKinds}
         onClose={() => setSheetOpen(false)}
         onDone={(kind) => void takeAction(kind)}
+        onSendMessage={sendMessage}
         onRemindLater={() => void remindLater()}
       />
       <Toast message={toast} />

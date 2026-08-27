@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { useAuth } from '../auth/auth-context';
+import { FamilyConnectionSection } from '../family/FamilyConnectionSection';
 import { BottomNav } from './components/BottomNav';
 
 const menuRows: { label: string; hint: string; id?: string; to?: string }[] = [
@@ -112,6 +113,8 @@ export default function ProfileRoute() {
             ))}
           </ul>
         </article>
+
+        <FamilyConnectionSection />
 
         <button
           type="button"

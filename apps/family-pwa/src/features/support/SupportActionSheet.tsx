@@ -2,21 +2,37 @@ import { useEffect, useId, useState } from 'react';
 import type { FamilySupportActionKind } from '@anuva/shared';
 import { SUPPORT_ACTIONS, supportSheet } from '../data/labels';
 
+const MAX_MESSAGE = 280;
+
 type Props = {
   open: boolean;
+  /** Already taken today. Marked, but still selectable — re-tapping is idempotent server-side. */
+  doneKinds: FamilySupportActionKind[];
+  /** Sends a note as a push notification. Nothing is stored, so there is no thread to open. */
+  onSendMessage: (text: string) => Promise<void>;
   onClose: () => void;
   /** Which action they chose — recorded server-side, so the kind has to travel with it. */
   onDone: (kind: FamilySupportActionKind) => void;
   onRemindLater: () => void;
 };
 
-export function SupportActionSheet({ open, onClose, onDone, onRemindLater }: Props) {
+export function SupportActionSheet({
+  open,
+  doneKinds,
+  onClose,
+  onDone,
+  onSendMessage,
+  onRemindLater,
+}: Props) {
   const titleId = useId();
   const [selected, setSelected] = useState<FamilySupportActionKind>('message');
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setSelected('message');
+    setText('');
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
@@ -51,6 +67,7 @@ export function SupportActionSheet({ open, onClose, onDone, onRemindLater }: Pro
         <div className="mt-4 grid grid-cols-2 gap-2.5" role="group" aria-label="Support actions">
           {SUPPORT_ACTIONS.map((action) => {
             const pressed = selected === action.id;
+            const done = doneKinds.includes(action.id);
             return (
               <button
                 key={action.id}
@@ -64,17 +81,53 @@ export function SupportActionSheet({ open, onClose, onDone, onRemindLater }: Pro
                 }`}
               >
                 {action.label}
+                {done ? (
+                  <span className="mt-0.5 block text-[11px] font-medium text-success">
+                    ✓ done today
+                  </span>
+                ) : null}
               </button>
             );
           })}
         </div>
 
+        {/* Composing only appears for a message: the other three are gestures arranged elsewhere,
+            with nothing to type. */}
+        {selected === 'message' ? (
+          <div className="mt-4">
+            <label className="block">
+              <span className="text-[12px] font-semibold text-on-surface">Write her a note</span>
+              <textarea
+                value={text}
+                onChange={(event) => setText(event.target.value.slice(0, MAX_MESSAGE))}
+                rows={3}
+                placeholder="Thinking of you today."
+                className="mt-1.5 w-full resize-none rounded-[16px] border border-border-default bg-surface-container-low px-3.5 py-3 text-[14px] leading-[1.5] text-on-surface"
+              />
+            </label>
+            <div className="mt-1 flex items-center justify-between text-[11px] text-outline">
+              <span>Arrives as a notification. Not saved anywhere.</span>
+              <span>
+                {text.length}/{MAX_MESSAGE}
+              </span>
+            </div>
+          </div>
+        ) : null}
+
         <button
           type="button"
-          onClick={() => onDone(selected)}
-          className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[15px] font-semibold text-on-secondary shadow-[0_8px_20px_rgba(201,126,146,0.28)]"
+          disabled={sending || (selected === 'message' && text.trim().length === 0)}
+          onClick={() => {
+            if (selected !== 'message') {
+              onDone(selected);
+              return;
+            }
+            setSending(true);
+            void onSendMessage(text.trim()).finally(() => setSending(false));
+          }}
+          className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[15px] font-semibold text-on-secondary shadow-[0_8px_20px_rgba(201,126,146,0.28)] disabled:opacity-60"
         >
-          {supportSheet.done}
+          {sending ? 'Sending…' : selected === 'message' ? 'Send note' : supportSheet.done}
         </button>
         <button
           type="button"

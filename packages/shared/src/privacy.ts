@@ -32,6 +32,7 @@ import { z } from 'zod';
 /** Symptom, cycle, mood and nudge history, plus everything derived from it. */
 export const ERASURE_TRACKER_MODELS = [
   'periodLog',
+  'periodFlowLog',
   'periodDailyStatus',
   'moodLog',
   'sleepLog',

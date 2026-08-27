@@ -1,5 +1,6 @@
 import type {
   FamilyLearnResponse,
+  FamilyMessageResponse,
   FamilyPrivacyResponse,
   FamilyRemindLaterResponse,
   FamilySupportActionKind,
@@ -32,5 +33,12 @@ export function postSupportAction(
 export function postRemindLater(): Promise<FamilyRemindLaterResponse> {
   return apiFetch<FamilyRemindLaterResponse>('/api/family/support-actions/remind-later', {
     method: 'POST',
+  });
+}
+
+export function postFamilyMessage(text: string): Promise<FamilyMessageResponse> {
+  return apiFetch<FamilyMessageResponse>('/api/family/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text }),
   });
 }

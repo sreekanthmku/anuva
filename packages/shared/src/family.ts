@@ -90,6 +90,30 @@ export const createFamilyInviteResponseSchema = z.object({
   invite: familyInviteSchema,
 });
 
+/**
+ * Her side of the support loop: what her family actually did.
+ *
+ * This is the only thing that travels back toward her, and it is deliberately small — who is
+ * connected, what they did today, and how much of the week they showed up for. No timestamps beyond
+ * a day, because "he messaged you at 23:14" invites a conversation about the time rather than the
+ * gesture.
+ */
+export const familyActivityResponseSchema = z.object({
+  member: familyMemberSummarySchema.nullable(),
+  /** Null when they have not done anything today. */
+  today: z
+    .object({
+      kinds: z.array(familySupportActionKindSchema),
+      headline: z.string(),
+      body: z.string(),
+    })
+    .nullable(),
+  /** Distinct days in the current week on which they did something. */
+  daysThisWeek: z.number().int().nonnegative(),
+  /** Pre-built copy for the week line, e.g. "3 of 4 days this week". Null before anything happens. */
+  weekLine: z.string().nullable(),
+});
+
 export const markFamilyInviteSharedBodySchema = z.object({
   channel: familyShareChannelSchema,
 });
@@ -187,6 +211,11 @@ export const familySupportCardSchema = familyCardSchema.extend({
   cta: z.string(),
   completedCta: z.string(),
   completedToday: z.boolean(),
+  /**
+   * Which actions they have already taken today. Doing one thing does not use up the day — they may
+   * message her and send flowers — so the client marks what is done rather than locking the button.
+   */
+  completedKinds: z.array(familySupportActionKindSchema),
 });
 
 export const familyProgressCardSchema = familyCardSchema.extend({
@@ -238,6 +267,24 @@ export const familyPrivacyResponseSchema = z.object({
   privateItems: z.array(z.string()),
 });
 
+/**
+ * A note from a family member, delivered as a push notification and never stored.
+ *
+ * The text lives only in the FCM payload and, for the cold-start case, in the URL *fragment* of the
+ * deep link — fragments never reach a server, so it stays out of access logs the same way the invite
+ * token does. Capped short: this is a "thinking of you", not correspondence, and the whole thing has
+ * to fit in an FCM data payload and a notification body.
+ */
+export const familyMessageBodySchema = z.object({
+  text: z.string().trim().min(1).max(280),
+});
+
+export const familyMessageResponseSchema = z.object({
+  /** False when she has no active device registered — worth telling them rather than lying. */
+  delivered: z.boolean(),
+  toast: z.string(),
+});
+
 export const familySupportActionBodySchema = z.object({
   kind: familySupportActionKindSchema,
 });
@@ -265,6 +312,7 @@ export type FamilyInvite = z.infer<typeof familyInviteSchema>;
 export type FamilyMemberSummary = z.infer<typeof familyMemberSummarySchema>;
 export type FamilyStatusResponse = z.infer<typeof familyStatusResponseSchema>;
 export type CreateFamilyInviteResponse = z.infer<typeof createFamilyInviteResponseSchema>;
+export type FamilyActivityResponse = z.infer<typeof familyActivityResponseSchema>;
 export type MarkFamilyInviteSharedBody = z.infer<typeof markFamilyInviteSharedBodySchema>;
 export type MarkFamilyInviteSharedResponse = z.infer<typeof markFamilyInviteSharedResponseSchema>;
 export type RevokeFamilyInviteResponse = z.infer<typeof revokeFamilyInviteResponseSchema>;
@@ -283,6 +331,8 @@ export type FamilyProgressCard = z.infer<typeof familyProgressCardSchema>;
 export type FamilyTodayResponse = z.infer<typeof familyTodayResponseSchema>;
 export type FamilyLearnResponse = z.infer<typeof familyLearnResponseSchema>;
 export type FamilyPrivacyResponse = z.infer<typeof familyPrivacyResponseSchema>;
+export type FamilyMessageBody = z.infer<typeof familyMessageBodySchema>;
+export type FamilyMessageResponse = z.infer<typeof familyMessageResponseSchema>;
 export type FamilySupportActionBody = z.infer<typeof familySupportActionBodySchema>;
 export type FamilySupportActionResponse = z.infer<typeof familySupportActionResponseSchema>;
 export type FamilyRemindLaterResponse = z.infer<typeof familyRemindLaterResponseSchema>;

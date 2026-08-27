@@ -72,6 +72,7 @@ import {
   verifyOtpBodySchema,
   cycleSetupBodySchema,
   cycleSettingsBodySchema,
+  logPeriodFlowBodySchema,
   logPeriodBodySchema,
   endPeriodBodySchema,
   cycleStateResponseSchema,
@@ -164,7 +165,13 @@ import {
   notifyDoctorsQuestionAsked,
 } from './doctorNotifications.js';
 import { notifyAskerQuestionAnswered } from './qaNotifications.js';
-import { buildCycleStateResponse } from './cycleCalc.js';
+import {
+  PERIOD_LENGTH_MAX,
+  bleedingDays,
+  buildCycleStateResponse,
+  isBleedingDay,
+  pendingFlowDates,
+} from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
 import { startSupportRetentionJob } from './supportRetention.js';
 import { eraseScope } from './privacy/erasure.js';
@@ -4013,7 +4020,7 @@ app.get('/anu/cache-stats', (_req, res) => {
 // ─────────────────────────────────────────────
 
 async function getCycleData(userId: string) {
-  const [settings, periods] = await Promise.all([
+  const [settings, periods, flows] = await Promise.all([
     prisma.cycleSettings.findUnique({ where: { userId } }),
     prisma.periodLog.findMany({
       where: { userId },
@@ -4022,8 +4029,15 @@ async function getCycleData(userId: string) {
       // cycle-length learning to have real history to average.
       take: 24,
     }),
+    // Same depth as the period logs, so every bleeding day the calendar can
+    // render carries the flow answer that belongs to it.
+    prisma.periodFlowLog.findMany({
+      where: { userId },
+      orderBy: { date: 'desc' },
+      take: 24 * PERIOD_LENGTH_MAX,
+    }),
   ]);
-  return { settings, periods };
+  return { settings, periods, flows };
 }
 
 function serializePeriodLog(p: { id: string; startDate: Date; endDate: Date | null }) {
@@ -4034,15 +4048,28 @@ function serializePeriodLog(p: { id: string; startDate: Date; endDate: Date | nu
   };
 }
 
-async function cycleStatePayload(userId: string) {
-  const { settings, periods } = await getCycleData(userId);
+function serializePeriodFlowLog(f: { date: Date; flow: string }) {
+  return { date: f.date.toISOString().split('T')[0]!, flow: f.flow };
+}
+
+async function cycleStatePayload(userId: string, now = new Date()) {
+  const { settings, periods, flows } = await getCycleData(userId);
   const serializedPeriods = periods.map(serializePeriodLog);
+  const state = buildCycleStateResponse(serializedPeriods, settings, now);
+  const flowLogs = flows.map(serializePeriodFlowLog);
+
   return cycleStateResponseSchema.parse({
     settings: settings
       ? { cycleLength: settings.cycleLength, periodLength: settings.periodLength }
       : null,
-    ...buildCycleStateResponse(serializedPeriods, settings),
+    ...state,
     recentPeriods: serializedPeriods,
+    flowLogs,
+    pendingFlowDates: pendingFlowDates(
+      bleedingDays(serializedPeriods, state.effectivePeriodLength, now),
+      flowLogs.map((f) => f.date),
+      now,
+    ),
   });
 }
 
@@ -4131,6 +4158,8 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
       where: { id },
       data: { endDate: new Date(endDate) },
     });
+    // Closing a period early can push its later days out of the bleed.
+    await deleteOrphanedFlowLogs(user.id);
     res.json(await cycleStatePayload(user.id));
   } catch (e) {
     next(e);
@@ -4146,7 +4175,77 @@ app.delete('/cycle/period/:id', async (req, res, next) => {
       throw new HttpError(404, 'Period log not found.');
     }
     await prisma.periodLog.delete({ where: { id } });
+    // Flow answers only exist for bleeding days. Deleting the period that made
+    // those days bleeding days leaves rows describing a bleed the user has since
+    // said never happened, and the prompt would never surface them again.
+    await deleteOrphanedFlowLogs(user.id);
     res.json(await cycleStatePayload(user.id));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Drop flow rows whose day is no longer a bleeding day.
+ *
+ * Editing the cycle can strand them two ways: deleting a period log, or closing
+ * one early so its later days fall outside the bleed. Rather than reasoning about
+ * which edit happened, recompute the bleeding days and keep only what still fits.
+ * Bounded by the same 24-period window the rest of the tracker reads.
+ */
+async function deleteOrphanedFlowLogs(userId: string, now = new Date()): Promise<void> {
+  const { settings, periods, flows } = await getCycleData(userId);
+  const serializedPeriods = periods.map(serializePeriodLog);
+  const { effectivePeriodLength } = buildCycleStateResponse(serializedPeriods, settings, now);
+  const valid = new Set(bleedingDays(serializedPeriods, effectivePeriodLength, now));
+
+  const orphaned = flows
+    .map(serializePeriodFlowLog)
+    .filter((f) => !valid.has(f.date))
+    .map((f) => f.date);
+  if (orphaned.length === 0) return;
+
+  await prisma.periodFlowLog.deleteMany({
+    where: { userId, date: { in: orphaned.map((d) => new Date(d)) } },
+  });
+}
+
+/**
+ * Flow intensity for one bleeding day, from the in-app home prompt or a
+ * correction tapped on the calendar. Not a notification — nothing here schedules
+ * or sends anything; the client decides when to ask.
+ */
+app.post('/cycle/flow', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { date, flow, source } = logPeriodFlowBodySchema.parse(req.body);
+
+    const now = new Date();
+    const { settings, periods } = await getCycleData(user.id);
+    const serializedPeriods = periods.map(serializePeriodLog);
+    const { effectivePeriodLength } = buildCycleStateResponse(serializedPeriods, settings, now);
+
+    // Flow is only meaningful on a day she actually bled, and only logged periods
+    // make a day a bleeding day. Enforced here, not just in the UI, so a stale
+    // client cannot write flow onto a predicted or future day.
+    if (!isBleedingDay(date, serializedPeriods, effectivePeriodLength, now)) {
+      throw new HttpError(400, 'Flow can only be logged for a day inside a logged period.');
+    }
+
+    await prisma.periodFlowLog.upsert({
+      // `dayKey`, not local midnight: the column is `@db.Date`, and Prisma writes
+      // the UTC date part — local midnight in IST lands on the previous day.
+      where: { userId_date: { userId: user.id, date: dayKey(new Date(`${date}T00:00:00`)) } },
+      create: { userId: user.id, date: dayKey(new Date(`${date}T00:00:00`)), flow, source },
+      update: { flow, source, loggedAt: now },
+    });
+
+    // Same engagement credit the manual /mood and /sleep logs take, so the nudge
+    // governor counts her as having shown up today.
+    await markTrackerEngagement(user.id, now);
+    req.log.info({ date, flow, source }, 'Period flow logged');
+
+    res.status(201).json(await cycleStatePayload(user.id, now));
   } catch (e) {
     next(e);
   }

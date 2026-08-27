@@ -1,6 +1,7 @@
 import { prisma } from '@anuva/database';
 import type {
   FamilyLearnResponse,
+  FamilySupportActionKind,
   FamilyMetric,
   FamilyMetricKey,
   FamilyPrivacyResponse,
@@ -248,7 +249,7 @@ export async function buildFamilyToday(input: {
   userId: string;
   memberFirstName: string;
   patientFirstName: string;
-  completedToday: boolean;
+  completedKinds: FamilySupportActionKind[];
 }): Promise<FamilyTodayResponse> {
   const now = new Date();
   const [summary, upcoming] = await Promise.all([loadSummary(input.userId), buildUpcoming(input.userId)]);
@@ -277,7 +278,8 @@ export async function buildFamilyToday(input: {
       body: support.body,
       cta: 'Choose a supportive action',
       completedCta: '✓ Support action completed',
-      completedToday: input.completedToday,
+      completedToday: input.completedKinds.length > 0,
+      completedKinds: input.completedKinds,
     },
     metricsLabel: 'This week · shared with you',
     metrics: buildMetrics(summary),

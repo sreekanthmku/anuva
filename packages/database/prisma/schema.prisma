@@ -45,6 +45,7 @@ model User {
   fcmTokens         FcmToken[]
   cycleSettings      CycleSettings?
   periodLogs         PeriodLog[]
+  periodFlowLogs     PeriodFlowLog[]
   moodLogs           MoodLog[]
   sleepLogs          SleepLog[]
   quickSymptomLogs   QuickSymptomLog[]
@@ -367,7 +368,10 @@ model FamilySupportAction {
 
   createdAt DateTime @default(now())
 
-  @@unique([familyMemberId, date])
+  /// Per *kind*, not per day: a family member may message her and send flowers on the same day, and
+  /// collapsing those onto one row would silently overwrite the first. Re-tapping the same action is
+  /// still idempotent, which caps this at four rows per member per day.
+  @@unique([familyMemberId, date, kind])
   @@index([userId, date])
 }
 
@@ -1031,6 +1035,20 @@ model PeriodLog {
 
   @@unique([userId, startDate])
   @@index([userId])
+}
+
+model PeriodFlowLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  flow      String // light | regular | heavy
+  source    String   @default("prompt") // prompt | calendar
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }
 
 model MoodLog {

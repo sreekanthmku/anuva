@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CycleStateResponse } from '@anuva/shared';
+import type { CycleStateResponse, PeriodFlow } from '@anuva/shared';
 import { CycleCalendar } from './CycleCalendar';
 import { CyclePhaseBadge, CycleTrackerSummary } from './CycleTrackerSummary';
 import {
@@ -22,6 +22,13 @@ const PERIOD_MAX = 10;
 const PERIOD_DEFAULT = 5;
 
 const BODY = '"Mulish", -apple-system, system-ui, sans-serif';
+
+/** Same three answers the home prompt offers, so a correction matches the question. */
+const FLOW_OPTIONS: { value: PeriodFlow; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'regular', label: 'Regular' },
+  { value: 'heavy', label: 'Heavy' },
+];
 
 function RangeSlider({
   value,
@@ -104,6 +111,7 @@ type Props = {
   onSetup: (lastPeriodStart: string, cycleLength: number, periodLength: number) => Promise<unknown>;
   onLogPeriod: (startDate: string) => Promise<void>;
   onEndPeriod: (id: string, endDate: string) => Promise<void>;
+  onLogFlow: (date: string, flow: PeriodFlow, source?: 'prompt' | 'calendar') => Promise<void>;
   onDeletePeriod: (id: string) => Promise<void>;
   onUpdateSettings: (cycleLength: number, periodLength: number) => Promise<void>;
 };
@@ -124,6 +132,7 @@ export function CycleTrackerSheet({
   onSetup,
   onLogPeriod,
   onEndPeriod,
+  onLogFlow,
   onDeletePeriod,
   onUpdateSettings,
 }: Props) {
@@ -186,6 +195,11 @@ export function CycleTrackerSheet({
     );
   }, [cycleData, selectedDate]);
 
+  const selectedFlow = useMemo(
+    () => cycleData?.flowLogs.find((f) => f.date === selectedDate)?.flow ?? null,
+    [cycleData?.flowLogs, selectedDate],
+  );
+
   // Every hook must run before this early return, or the hook count changes
   // when the sheet opens (React error #310).
   if (!open) return null;
@@ -213,6 +227,16 @@ export function CycleTrackerSheet({
     setSaving(true);
     try {
       await onEndPeriod(id, endDate);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogFlow = async (flow: PeriodFlow) => {
+    setSaving(true);
+    try {
+      // A correction, not an answer to the home prompt — recorded as such.
+      await onLogFlow(selectedDate, flow, 'calendar');
     } finally {
       setSaving(false);
     }
@@ -648,6 +672,43 @@ export function CycleTrackerSheet({
                 >
                   {CYCLE_PHASE_CONFIG[selectedMark.phase].insight}
                 </p>
+              )}
+
+              {/* Flow lives on bleeding days only, and only on days already logged. */}
+              {selectedMark?.isPeriod && !selectedMark.isFuture && (
+                <div className="mt-4">
+                  <p
+                    className="mb-2 text-[11px] uppercase tracking-[0.12em] text-outline"
+                    style={{ fontFamily: BODY }}
+                  >
+                    Flow
+                  </p>
+                  <div className="flex gap-2">
+                    {FLOW_OPTIONS.map((option) => {
+                      const active = selectedFlow === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          disabled={saving}
+                          aria-pressed={active}
+                          onClick={() => handleLogFlow(option.value)}
+                          className="flex-1 rounded-full border py-[10px] text-[12.5px] font-medium disabled:opacity-50"
+                          style={{
+                            background: active ? 'rgba(192, 64, 90,0.12)' : 'transparent',
+                            borderColor: active
+                              ? 'rgba(192, 64, 90,0.35)'
+                              : 'rgba(180, 159, 176, 0.35)',
+                            color: active ? '#C0405A' : '#6B5568',
+                            fontFamily: BODY,
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
 
               <div className="mt-4 flex flex-col gap-2.5">

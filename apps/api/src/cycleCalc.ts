@@ -181,7 +181,16 @@ function buildPrediction(
 
 type ComputedCycleState = Omit<
   CycleStateResponse,
-  'settings' | 'recentPeriods' | 'avgPeriodLength' | 'avgCycleLength' | 'cycleLengthVariation' | 'isIrregular' | 'loggedCycleCount'
+  | 'settings'
+  | 'recentPeriods'
+  | 'avgPeriodLength'
+  | 'avgCycleLength'
+  | 'cycleLengthVariation'
+  | 'isIrregular'
+  | 'loggedCycleCount'
+  // Flow needs its own DB read, so it is assembled by the route, not the pure math.
+  | 'flowLogs'
+  | 'pendingFlowDates'
 >;
 
 const EMPTY_STATE: ComputedCycleState = {
@@ -294,7 +303,7 @@ export function buildCycleStateResponse(
   periods: PeriodLogEntry[],
   settings: CycleSettingsInput | null,
   now: Date = new Date(),
-): Omit<CycleStateResponse, 'settings' | 'recentPeriods'> {
+): Omit<CycleStateResponse, 'settings' | 'recentPeriods' | 'flowLogs' | 'pendingFlowDates'> {
   const stats = computeCycleStats(periods);
   return {
     ...computeCycleState(periods, settings, now),
@@ -304,4 +313,81 @@ export function buildCycleStateResponse(
     loggedCycleCount: stats.loggedCycleCount,
     avgPeriodLength: computeAvgPeriodLength(periods),
   };
+}
+
+// ─────────────────────────────────────────────
+// Period flow (per bleeding day)
+// ─────────────────────────────────────────────
+
+/**
+ * How far back the flow prompt is willing to chase a missed day. Older bleeding
+ * days are left alone: every period logged before this feature existed would
+ * otherwise queue up as unanswered, and a woman returning after a break would be
+ * asked about a period she has stopped thinking about.
+ */
+export const FLOW_BACKLOG_WINDOW_DAYS = 7;
+
+/** Most unanswered days offered at once, newest first. */
+export const FLOW_BACKLOG_MAX = 3;
+
+/**
+ * The days a logged period was actually bleeding, ascending, never past today.
+ *
+ * Only *logged* periods count. A predicted period is a guess, and asking how a
+ * bleed felt on a day she may not have bled is worse than not asking —
+ * `pendingPeriodConfirm` already owns "did your period start?".
+ *
+ * An open log (no `endDate`) runs for the effective period length but is clamped
+ * at today, so the prompt never reaches a day that has not happened.
+ */
+export function bleedingDays(
+  periods: PeriodLogEntry[],
+  effectivePeriodLength: number,
+  now: Date = new Date(),
+): string[] {
+  const todayStr = todayDateOnly(now);
+  const days = new Set<string>();
+
+  for (const period of periods) {
+    if (period.startDate > todayStr) continue;
+    const assumedEnd = toDateOnly(
+      addDays(parseDateOnly(period.startDate), effectivePeriodLength - 1),
+    );
+    const rawEnd = period.endDate ?? assumedEnd;
+    const end = rawEnd > todayStr ? todayStr : rawEnd;
+
+    for (let d = parseDateOnly(period.startDate); toDateOnly(d) <= end; d = addDays(d, 1)) {
+      days.add(toDateOnly(d));
+    }
+  }
+
+  return [...days].sort();
+}
+
+/**
+ * Bleeding days still missing a flow answer — newest first, so the prompt asks
+ * about today before it asks about yesterday.
+ */
+export function pendingFlowDates(
+  bleeding: string[],
+  answeredDates: Iterable<string>,
+  now: Date = new Date(),
+): string[] {
+  const answered = new Set(answeredDates);
+  const earliest = toDateOnly(addDays(parseDateOnly(todayDateOnly(now)), -FLOW_BACKLOG_WINDOW_DAYS));
+
+  return bleeding
+    .filter((date) => date >= earliest && !answered.has(date))
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, FLOW_BACKLOG_MAX);
+}
+
+/** Whether a flow answer is allowed for this date at all. */
+export function isBleedingDay(
+  date: string,
+  periods: PeriodLogEntry[],
+  effectivePeriodLength: number,
+  now: Date = new Date(),
+): boolean {
+  return bleedingDays(periods, effectivePeriodLength, now).includes(date);
 }

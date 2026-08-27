@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { CycleStateResponse } from '@anuva/shared';
+import type { CycleStateResponse, PeriodFlow } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
 
 type CycleTrackerState = {
@@ -62,6 +62,21 @@ export function useCycleTracker() {
     setState({ data, loading: false, error: null });
   }, []);
 
+  /**
+   * Flow for one bleeding day. `source` separates the home prompt from a
+   * correction tapped on the calendar, which the admin log reads.
+   */
+  const logFlow = useCallback(
+    async (date: string, flow: PeriodFlow, source: 'prompt' | 'calendar' = 'prompt') => {
+      const data = await apiFetch<CycleStateResponse>('/api/cycle/flow', {
+        method: 'POST',
+        body: JSON.stringify({ date, flow, source }),
+      });
+      setState({ data, loading: false, error: null });
+    },
+    []
+  );
+
   const updateSettings = useCallback(
     async (cycleLength: number, periodLength: number) => {
       await apiFetch('/api/cycle/settings', {
@@ -80,6 +95,7 @@ export function useCycleTracker() {
     logPeriod,
     endPeriod,
     deletePeriod,
+    logFlow,
     updateSettings,
   };
 }

@@ -14,18 +14,24 @@ import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
 import { NotificationSyncBanner } from './components/NotificationSyncBanner';
+import { FamilyCheckInCard } from '../family/FamilyCheckInCard';
+import { FamilyMessageDialog } from '../family/FamilyMessageDialog';
+import { useFamilyActivity } from '../family/useFamilyActivity';
+import { useFamilyMessage } from '../family/useFamilyMessage';
 import { CycleTrackerSheet } from './components/CycleTrackerSheet';
 import { CyclePhaseBadge, CycleTrackerSummary } from './components/CycleTrackerSummary';
 import { MoodLogSheet } from './components/MoodLogSheet';
 import { SleepLogSheet } from './components/SleepLogSheet';
 import { QuickLogMessageDialog } from './components/QuickLogMessageDialog';
 import { NudgeCheckInDialog } from './components/NudgeCheckInDialog';
+import { PeriodFlowSheet } from './components/PeriodFlowSheet';
 import { useHomeNotificationPrompt } from './hooks/useHomeNotificationPrompt';
 import { useCycleTracker } from './hooks/useCycleTracker';
 import { useMoodLog } from './hooks/useMoodLog';
 import { useSleepLog } from './hooks/useSleepLog';
 import { useQuickLog } from './hooks/useQuickLog';
 import { useNudgeDay } from './hooks/useNudgeDay';
+import { usePeriodFlowPrompt } from './hooks/usePeriodFlowPrompt';
 import {
   getCalibrationProgress,
   getJourneyDay,
@@ -105,6 +111,9 @@ export default function AnuDashboardRoute() {
   const detailedCompleted = detailedStatus === 'completed';
   const notificationPrompt = useHomeNotificationPrompt();
   const [greeting, setGreeting] = useState(() => getTimeGreeting());
+  // Same minute tick as the greeting: the flow prompt opens at noon, and a user
+  // already sitting on this page must not have to reload to see it.
+  const [now, setNow] = useState(() => new Date());
   const [cycleOpen, setCycleOpen] = useState(false);
   const [moodOpen, setMoodOpen] = useState(false);
   const [moodSaving, setMoodSaving] = useState(false);
@@ -136,7 +145,14 @@ export default function AnuDashboardRoute() {
   const mood = useMoodLog();
   const sleep = useSleepLog();
   const quick = useQuickLog();
+  const familyActivity = useFamilyActivity(true);
+  const familyMessage = useFamilyMessage();
   const nudgeDay = useNudgeDay();
+  const flowPrompt = usePeriodFlowPrompt({
+    cycleData: cycle.data,
+    now,
+    onLogFlow: cycle.logFlow,
+  });
   const todayMood = mood.data?.today ?? null;
   const todaySleep = sleep.data?.today ?? null;
   const quickCounts = quick.data?.counts ?? null;
@@ -224,10 +240,13 @@ export default function AnuDashboardRoute() {
       : 0;
 
   useEffect(() => {
-    const updateGreeting = () => setGreeting(getTimeGreeting());
+    const tick = () => {
+      setGreeting(getTimeGreeting());
+      setNow(new Date());
+    };
 
-    updateGreeting();
-    const intervalId = window.setInterval(updateGreeting, 60_000);
+    tick();
+    const intervalId = window.setInterval(tick, 60_000);
 
     return () => window.clearInterval(intervalId);
   }, []);
@@ -609,6 +628,8 @@ export default function AnuDashboardRoute() {
         )}
       </section>
 
+      <FamilyCheckInCard activity={familyActivity.data} />
+
       <section className="px-3 pt-3">
         <button
           type="button"
@@ -688,6 +709,7 @@ export default function AnuDashboardRoute() {
         onSetup={cycle.setup}
         onLogPeriod={cycle.logPeriod}
         onEndPeriod={cycle.endPeriod}
+        onLogFlow={cycle.logFlow}
         onDeletePeriod={cycle.deletePeriod}
         onUpdateSettings={cycle.updateSettings}
       />
@@ -711,6 +733,8 @@ export default function AnuDashboardRoute() {
         onSave={handleLogSleep}
       />
 
+      <FamilyMessageDialog message={familyMessage.message} onDismiss={familyMessage.dismiss} />
+
       <QuickLogMessageDialog
         open={quickMessage !== null}
         message={quickMessage?.message ?? ''}
@@ -726,6 +750,28 @@ export default function AnuDashboardRoute() {
           onComplete={nudgeDay.reload}
         />
       )}
+
+      {/*
+        In-app popup, not a notification. Yields to every other modal so only one
+        thing is ever on screen — including the cycle drawer, which must never
+        have this stacked on top of it.
+      */}
+      <PeriodFlowSheet
+        open={
+          flowPrompt.open &&
+          flowPrompt.date !== null &&
+          !notificationPrompt.open &&
+          !nudgeSlot &&
+          !cycleOpen &&
+          !moodOpen &&
+          !sleepOpen &&
+          quickMessage === null
+        }
+        date={flowPrompt.date ?? ''}
+        saving={flowPrompt.saving}
+        onClose={flowPrompt.skip}
+        onSave={flowPrompt.save}
+      />
 
       {toast && (
         <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+16px)] z-[80] flex justify-center px-4">

@@ -14,12 +14,21 @@ const TOASTS: Record<FamilySupportActionKind, string> = {
   chocolates: '✓ Chocolates on the way. Recorded for today.',
 };
 
-export async function hasActedToday(familyMemberId: string, now = new Date()): Promise<boolean> {
-  const existing = await prisma.familySupportAction.findUnique({
-    where: { familyMemberId_date: { familyMemberId, date: dayKey(now) } },
-    select: { id: true },
+/**
+ * Which actions they have already taken today. Doing one does not use up the day — messaging her and
+ * sending flowers are both worth doing — so this returns the set rather than a boolean, and the
+ * client marks what is done instead of disabling the button.
+ */
+export async function kindsDoneToday(
+  familyMemberId: string,
+  now = new Date(),
+): Promise<FamilySupportActionKind[]> {
+  const rows = await prisma.familySupportAction.findMany({
+    where: { familyMemberId, date: dayKey(now) },
+    select: { kind: true },
+    orderBy: { createdAt: 'asc' },
   });
-  return Boolean(existing);
+  return rows.map((row) => row.kind);
 }
 
 export async function recordSupportAction(input: {
@@ -29,17 +38,24 @@ export async function recordSupportAction(input: {
 }): Promise<{ completedToday: true; toast: string }> {
   const now = new Date();
 
-  // Upsert rather than create: tapping twice in a day is a re-affirmation, not an error, and the
-  // unique index on (member, day) is what keeps the row count honest.
+  // Upsert per *kind*: tapping the same action twice in a day is a re-affirmation rather than an
+  // error, but a different action is a genuinely new one and must not overwrite the first. The
+  // unique index on (member, day, kind) is what keeps both true, and caps this at four rows a day.
   await prisma.familySupportAction.upsert({
-    where: { familyMemberId_date: { familyMemberId: input.familyMemberId, date: dayKey(now) } },
+    where: {
+      familyMemberId_date_kind: {
+        familyMemberId: input.familyMemberId,
+        date: dayKey(now),
+        kind: input.kind,
+      },
+    },
     create: {
       familyMemberId: input.familyMemberId,
       userId: input.userId,
       kind: input.kind,
       date: dayKey(now),
     },
-    update: { kind: input.kind },
+    update: {},
   });
 
   return { completedToday: true, toast: TOASTS[input.kind] };

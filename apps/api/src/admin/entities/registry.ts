@@ -1323,6 +1323,19 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     defaultSort: 'loggedAt',
   }),
 
+  // Same daily shape, but the answer column is `flow`, not `category`, so it cannot ride
+  // makeDailyLogEntities below.
+  def({
+    resource: 'period-flow-logs',
+    label: 'Period Flow Logs',
+    prismaModel: 'periodFlowLog',
+    group: 'Tracking',
+    searchFields: ['userId', 'flow', 'id'],
+    filterFields: ['userId', 'source', 'flow'],
+    sortableFields: ['date', 'loggedAt', 'createdAt'],
+    defaultSort: 'date',
+  }),
+
   // Nudge daily tracker logs (same shape family)
   ...makeDailyLogEntities([
     ['energy-logs', 'Energy Logs', 'energyLog'],

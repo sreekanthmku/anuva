@@ -19,3 +19,11 @@ export const supportSheet = {
   done: 'Done',
   remindLater: 'Remind me later',
 } as const;
+
+/** For confirming what has already been done today, without restating the full action name. */
+export const ACTION_LABELS: Record<FamilySupportActionKind, string> = {
+  message: 'messaged her',
+  call: 'called her',
+  flowers: 'sent flowers',
+  chocolates: 'sent chocolates',
+};

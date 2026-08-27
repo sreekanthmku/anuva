@@ -11,6 +11,7 @@
  *   POST   /family/invites                mint a fresh link, replacing any pending one
  *   POST   /family/invites/:id/shared     record that she sent it — the only thing that closes the gate
  *   POST   /family/invites/:id/revoke     kill a pending link
+ *   GET    /family/activity               what her family actually did — her side of the loop
  *   DELETE /family/members/:id            disconnect the family member, freeing the slot
  *
  * Public (guarded by the invite token alone):
@@ -23,7 +24,9 @@
  *   GET    /family/today                  the digest — the only route that reads her logs
  *   GET    /family/learn
  *   GET    /family/privacy
+ *   POST   /family/messages                a short note, pushed to her and stored nowhere
  *   POST   /family/support-actions
+ *   POST   /family/messages                a short note, pushed to her and stored nowhere
  *   POST   /family/support-actions/remind-later
  *   POST   /family/logout
  */
@@ -32,6 +35,7 @@ import { Router } from 'express';
 import type { CookieOptions, NextFunction, Request, Response } from 'express';
 import {
   createFamilyInviteResponseSchema,
+  familyActivityResponseSchema,
   familyJoinPreviewResponseSchema,
   familyJoinRequestOtpBodySchema,
   familyJoinRequestOtpResponseSchema,
@@ -40,6 +44,8 @@ import {
   familyLearnResponseSchema,
   familyLogoutResponseSchema,
   familyMeResponseSchema,
+  familyMessageBodySchema,
+  familyMessageResponseSchema,
   familyPrivacyResponseSchema,
   familyRemindLaterResponseSchema,
   familySupportActionBodySchema,
@@ -61,10 +67,12 @@ import {
   revokeInvite,
   rotateInvite,
 } from './invites.js';
+import { buildFamilyActivity } from './activity.js';
 import { buildFamilyLearn, buildFamilyPrivacy, buildFamilyToday } from './digest.js';
 import { familyMeBody, previewInvite, requestJoinOtp, verifyJoinOtp, type OtpDeps } from './join.js';
+import { sendFamilyMessage } from './messages.js';
 import { rateLimit } from './rateLimit.js';
-import { hasActedToday, recordSupportAction, scheduleSupportReminder } from './supportActions.js';
+import { kindsDoneToday, recordSupportAction, scheduleSupportReminder } from './supportActions.js';
 
 export interface FamilyRouterDeps {
   /** Resolves the signed-in patient, or throws. Supplied by the host app. */
@@ -99,6 +107,16 @@ export function createFamilyRouter({
       noStore(res);
       const userId = await resolveUserId(req);
       res.json(familyStatusResponseSchema.parse(await getFamilyStatus(userId)));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.get('/activity', async (req, res, next) => {
+    try {
+      noStore(res);
+      const userId = await resolveUserId(req);
+      res.json(familyActivityResponseSchema.parse(await buildFamilyActivity(userId)));
     } catch (e) {
       next(e);
     }
@@ -235,7 +253,7 @@ export function createFamilyRouter({
         userId: identity.userId,
         memberFirstName: identity.name.trim().split(/\s+/)[0] || 'there',
         patientFirstName: identity.patientName?.trim().split(/\s+/)[0] || 'She',
-        completedToday: await hasActedToday(identity.memberId),
+        completedKinds: await kindsDoneToday(identity.memberId),
       });
       res.json(familyTodayResponseSchema.parse(body));
     } catch (e) {
@@ -259,6 +277,29 @@ export function createFamilyRouter({
       const identity = await requireFamilyMember(req);
       const her = identity.patientName?.trim().split(/\s+/)[0] || 'She';
       res.json(familyPrivacyResponseSchema.parse(buildFamilyPrivacy(her)));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/messages', async (req, res, next) => {
+    try {
+      noStore(res);
+      const identity = await requireFamilyMember(req);
+      const { text } = familyMessageBodySchema.parse(req.body);
+      const result = await sendFamilyMessage({
+        familyMemberId: identity.memberId,
+        memberName: identity.name,
+        userId: identity.userId,
+        text,
+      });
+      // Deliberately logs the length and nothing else. The note is not stored, and a log line is
+      // storage.
+      req.log?.info?.(
+        { delivered: result.delivered, textLength: text.length },
+        'family: message pushed',
+      );
+      res.json(familyMessageResponseSchema.parse(result));
     } catch (e) {
       next(e);
     }

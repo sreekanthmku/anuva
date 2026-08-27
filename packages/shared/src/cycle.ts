@@ -19,6 +19,21 @@ export const endPeriodBodySchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
 });
 
+export const periodFlowSchema = z.enum(['light', 'regular', 'heavy']);
+
+export const logPeriodFlowBodySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  flow: periodFlowSchema,
+  /** Where the answer came from — the home prompt, or a correction from the calendar. */
+  source: z.enum(['prompt', 'calendar']).default('prompt'),
+});
+
+/** Flow logged for one bleeding day. */
+export const periodFlowEntrySchema = z.object({
+  date: z.string(),
+  flow: periodFlowSchema,
+});
+
 export const periodLogSchema = z.object({
   id: z.string(),
   startDate: z.string(),
@@ -73,6 +88,13 @@ export const cycleStateResponseSchema = z.object({
   pendingPeriodConfirm: z.boolean(),
   recentPeriods: z.array(periodLogSchema),
   predictions: z.array(cyclePredictionSchema),
+  /** Flow answers for the logged bleeding days in `recentPeriods`. */
+  flowLogs: z.array(periodFlowEntrySchema),
+  /**
+   * Bleeding days up to today that carry no flow answer yet, newest first.
+   * Drives the home-page flow prompt; empty means nothing to ask.
+   */
+  pendingFlowDates: z.array(z.string()),
 });
 
 export type CycleSetupBody = z.infer<typeof cycleSetupBodySchema>;
@@ -81,6 +103,9 @@ export type LogPeriodBody = z.infer<typeof logPeriodBodySchema>;
 export type EndPeriodBody = z.infer<typeof endPeriodBodySchema>;
 export type CycleStateResponse = z.infer<typeof cycleStateResponseSchema>;
 export type PeriodLogEntry = z.infer<typeof periodLogSchema>;
+export type PeriodFlow = z.infer<typeof periodFlowSchema>;
+export type LogPeriodFlowBody = z.infer<typeof logPeriodFlowBodySchema>;
+export type PeriodFlowEntry = z.infer<typeof periodFlowEntrySchema>;
 export type CyclePhase = z.infer<typeof cyclePhaseSchema>;
 export type CycleStatus = z.infer<typeof cycleStatusSchema>;
 export type CyclePrediction = z.infer<typeof cyclePredictionSchema>;

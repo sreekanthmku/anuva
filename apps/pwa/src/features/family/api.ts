@@ -1,5 +1,6 @@
 import type {
   CreateFamilyInviteResponse,
+  FamilyActivityResponse,
   FamilyShareChannel,
   FamilyStatusResponse,
   MarkFamilyInviteSharedResponse,
@@ -22,4 +23,12 @@ export function markFamilyInviteShared(
     method: 'POST',
     body: JSON.stringify({ channel }),
   });
+}
+
+export function fetchFamilyActivity(): Promise<FamilyActivityResponse> {
+  return apiFetch<FamilyActivityResponse>('/api/family/activity', { cache: 'no-store' });
+}
+
+export function removeFamilyMember(memberId: string): Promise<{ removed: true }> {
+  return apiFetch<{ removed: true }>(`/api/family/members/${memberId}`, { method: 'DELETE' });
 }

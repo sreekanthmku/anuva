@@ -44,6 +44,7 @@ const PRISMA_MODELS = [
   'chatMessage',
   'cycleSettings',
   'periodLog',
+  'periodFlowLog',
   'moodLog',
   'sleepLog',
   'quickSymptomLog',
