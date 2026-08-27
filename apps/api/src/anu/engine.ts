@@ -2,8 +2,8 @@
 //
 //   1. Red-flag gate   deterministic, pre-model, verbatim clinician text
 //   2. Embed           OpenAI text-embedding-3-small, 512 dims
-//   3. Cache lookup    in-memory cosine scan, >= 0.94 serves a stored reply
-//   4. Generate        gpt-4o-mini with the measured few-shot prompt
+//   3. Cache lookup    in-memory cosine scan, >= 0.97 serves a stored reply
+//   4. Generate        ANU_CHAT_MODEL (gpt-5-mini) with the measured few-shot prompt
 //
 // Every turn is written to AnuChatTurn with the reply snapshotted, so what a
 // user was told on a given day stays reconstructible after prompts change.
@@ -25,7 +25,12 @@ const THREAD_IDLE_MS = 30 * 60 * 1000;
 // routing decision (which path served the turn, and how well it scored) is.
 const log = logger.child({ module: 'anu' });
 
-async function loadHistory(userId: string): Promise<PriorTurn[]> {
+/// The suggestions ride along because whether she TAPPED a chip or TYPED her own
+/// words is the signal the name rule turns on — see nameDirective in prompt.ts.
+/// It is knowable here and only guessable by the model, so it is decided here.
+type HistoryRow = PriorTurn & { suggestions: string[] };
+
+async function loadHistory(userId: string): Promise<HistoryRow[]> {
   const rows = await prisma.anuChatTurn.findMany({
     where: {
       userId,
@@ -36,7 +41,7 @@ async function loadHistory(userId: string): Promise<PriorTurn[]> {
     },
     orderBy: { createdAt: 'desc' },
     take: HISTORY_TURNS,
-    select: { userMessage: true, reply: true, symptom: true },
+    select: { userMessage: true, reply: true, symptom: true, suggestions: true },
   });
   return rows.reverse();
 }
@@ -288,7 +293,12 @@ export async function answer(
   // 4. Miss — generate with the thread's context, then remember it if the
   // question stands alone. The near-miss score is stored too, so the threshold
   // can be retuned from what real questions actually scored.
-  const generated = await generateReply(userMessage, history, name);
+  // A message that exactly matches a chip we offered her was tapped, not typed.
+  // Her opening message has no chips behind it, so it counts as typed — which is
+  // the turn the name belongs on.
+  const offered = history.at(-1)?.suggestions ?? [];
+  const sheTyped = !offered.includes(userMessage);
+  const generated = await generateReply(userMessage, history, name, sheTyped);
   const reply = generated.reply;
 
   // The model only nominates a label; it is resolved against the bank here, so

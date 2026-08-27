@@ -9,7 +9,7 @@ import { buildMessages, type PriorTurn } from './prompt.js';
 const env = {
   baseUrl: () => process.env.OPENAI_BASE_URL?.trim() || 'https://api.openai.com/v1',
   apiKey: () => process.env.OPENAI_API_KEY?.trim() || '',
-  chatModel: () => process.env.ANU_CHAT_MODEL?.trim() || 'gpt-4o-mini',
+  chatModel: () => process.env.ANU_CHAT_MODEL?.trim() || 'gpt-5-mini',
   embedModel: () => process.env.ANU_EMBED_MODEL?.trim() || 'text-embedding-3-small',
   timeoutMs: () => Number(process.env.ANU_CHAT_TIMEOUT_MS || 20000),
 };
@@ -107,14 +107,28 @@ function parseReply(raw: string): GeneratedReply {
   }
 }
 
-export async function generateReply(
-  userMessage: string,
-  history: PriorTurn[] = [],
-  name: string | null = null,
-): Promise<GeneratedReply> {
-  const json = await openaiFetch<ChatResponse>('/chat/completions', {
-    model: env.chatModel(),
-    response_format: { type: 'json_object' },
+/// The GPT-5 and o-series families take a different set of sampling parameters
+/// from the GPT-4 chat models, and sending the wrong set is a 400 rather than a
+/// silently ignored field. So ANU_CHAT_MODEL cannot be swapped by itself — the
+/// body has to follow the family.
+const REASONING_MODEL = /^(gpt-5|o[134])/;
+
+/// The reply the user reads runs ~100 tokens on either family. The difference is
+/// that a reasoning model spends tokens thinking BEFORE it writes, and that
+/// spend counts against the same cap: set it to 320 and the model can use the
+/// whole budget reasoning and return an empty `content`, which surfaces here as
+/// a failed turn rather than a short one. So the cap is loose and the length is
+/// governed by the prompt instead, and `reasoning_effort` is held at minimal —
+/// this is a voice task, not a maths one, and thinking longer does not make the
+/// reply warmer.
+const REASONING_MAX_TOKENS = 1500;
+
+function samplingParams(model: string): Record<string, unknown> {
+  if (REASONING_MODEL.test(model)) {
+    // temperature is not accepted by this family at all — sending it 400s.
+    return { max_completion_tokens: REASONING_MAX_TOKENS, reasoning_effort: 'minimal' };
+  }
+  return {
     // 0.4-0.5 was measured for the differential-completeness numbers, but sat
     // low enough that the model reused one opening line for every symptom.
     // 0.7 restores variety in wording; the medical content is constrained by
@@ -124,12 +138,31 @@ export async function generateReply(
     // bounds the most expensive part of the turn (output bills at 4x input).
     // Raised from 220 to leave room for the JSON envelope and chips.
     max_tokens: 320,
-    messages: buildMessages(userMessage, history, name),
+  };
+}
+
+export async function generateReply(
+  userMessage: string,
+  history: PriorTurn[] = [],
+  name: string | null = null,
+  sheTyped = true,
+): Promise<GeneratedReply> {
+  const model = env.chatModel();
+  const json = await openaiFetch<ChatResponse>('/chat/completions', {
+    model,
+    response_format: { type: 'json_object' },
+    ...samplingParams(model),
+    messages: buildMessages(userMessage, history, name, sheTyped),
   });
 
   const raw = json.choices[0]?.message?.content?.trim();
   if (!raw) {
-    throw new Error('OpenAI returned an empty reply.');
+    // A reasoning model that spent its whole budget thinking lands here, and the
+    // fix is the cap rather than a retry — say so instead of leaving a bare
+    // "empty reply" for whoever reads the logs.
+    throw new Error(
+      `OpenAI returned an empty reply (model ${model}). If this is a reasoning model, its token cap may be exhausted by reasoning before any content is written.`,
+    );
   }
   return parseReply(raw);
 }

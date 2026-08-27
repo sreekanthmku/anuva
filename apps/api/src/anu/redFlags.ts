@@ -88,6 +88,14 @@ export const RED_FLAG_RULES: RedFlagRule[] = [
       /\b(pad|pads)\b[^.]{0,40}\bevery\s+hour\b/i,
       /\b(heavy|heavily)\s+bleed[^.]{0,60}\b(dizz|faint|weak|light[- ]?headed)/i,
       /\b(dizz|faint|weak|light[- ]?headed)[^.]{0,60}\b(heavy|heavily)\s+bleed/i,
+      // The two above only match the ADJECTIVE order ("heavy bleeding"). Women
+      // write the verb order at least as often — "I am bleeding heavily and feel
+      // faint" matched nothing until these were added — and "flooding" is the
+      // word this product's own prompt teaches her to use.
+      /\bbleed(ing)?\b[^.]{0,20}\bheavil?y\b[^.]{0,60}\b(dizz|faint|weak|light[- ]?headed)/i,
+      /\b(dizz|faint|weak|light[- ]?headed)[^.]{0,60}\bbleed(ing)?\b[^.]{0,20}\bheavil?y\b/i,
+      /\bflooding\b[^.]{0,60}\b(dizz|faint|weak|light[- ]?headed)/i,
+      /\b(dizz|faint|weak|light[- ]?headed)[^.]{0,60}\bflooding\b/i,
     ],
   },
   {
@@ -102,6 +110,12 @@ export const RED_FLAG_RULES: RedFlagRule[] = [
       /\b(no|without|haven'?t had|have not had|not had|stopped)[^.]{0,40}\bperiods?\b[^.]{0,50}\b((12|twelve)\s+months?|a\s+year|one\s+year|\d+\s+years?)\b/i,
       /\b((12|twelve)\s+months?|a\s+year|one\s+year|\d+\s+years?)\b[^.]{0,50}\b(no|without|since|since my last)\s+periods?\b/i,
       /\bperiods?\s+stopped\b[^.]{0,80}\bbleed/i,
+      // The two patterns above require the gap phrase and "periods" to sit
+      // together without an article between them, so the plainest way of saying
+      // it — "bleeding after 12 months without a period" — fell through, even
+      // though it is quoted word for word in the HARD RULES of the prompt.
+      /\b((12|twelve)\s+months?|a\s+year|one\s+year|\d+\s+years?)\b[^.]{0,30}\b(without|with\s+no|no)\b[^.]{0,15}\bperiods?\b/i,
+      /\bbleed[^.]{0,60}\b((12|twelve)\s+months?|a\s+year|one\s+year|\d+\s+years?)\b[^.]{0,30}\b(without|with\s+no|no|since)\b/i,
       /\bbleed[^.]{0,60}\bafter\s+menopause\b/i,
       /\bpost[- ]?menopausal\s+bleed/i,
     ],
