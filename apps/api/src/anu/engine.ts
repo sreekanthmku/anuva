@@ -41,6 +41,28 @@ async function loadHistory(userId: string): Promise<PriorTurn[]> {
   return rows.reverse();
 }
 
+/// Every question she has already asked in this thread — which is NOT the same
+/// window as the history replayed to the model, and must not share it.
+///
+/// HISTORY_TURNS is capped at 2 because prompt size is a cost. Chip dedup has no
+/// such budget: it never reaches the model, it just needs the strings. Sharing
+/// the two-turn window meant a chip fell back out of "already asked" three turns
+/// later and was offered again as though it were new — so "Why does joint pain
+/// happen?" came back around while its own answer was still on screen. There are
+/// only four follow-up chips per symptom (see symptoms.ts), so a two-turn memory
+/// guarantees the loop rather than merely risking it.
+const THREAD_QUESTION_LIMIT = 40;
+
+async function loadAskedQuestions(userId: string): Promise<string[]> {
+  const rows = await prisma.anuChatTurn.findMany({
+    where: { userId, createdAt: { gte: new Date(Date.now() - THREAD_IDLE_MS) } },
+    orderBy: { createdAt: 'desc' },
+    take: THREAD_QUESTION_LIMIT,
+    select: { userMessage: true },
+  });
+  return rows.map((row) => row.userMessage);
+}
+
 /// Only the opening message of a thread may be cached.
 ///
 /// Anything asked after it is answered in the context of that thread, so its
@@ -272,13 +294,16 @@ export async function answer(
   // The model only nominates a label; it is resolved against the bank here, so
   // anything it invented is dropped and the chips are always bank wording.
   const symptom = findSymptom(generated.symptom);
-  const asked = [...history.map((h) => h.userMessage), userMessage];
   // On the turn a symptom is first raised, the bank's own "log this" CTA takes
   // one of the three slots; after that the slots are all follow-up questions.
   const isOpeningTurn = history.length === 0;
+  // The extra read is only worth paying for when there are chips to build.
   const suggestions = symptom
     ? [
-        ...followUpChips(symptom, asked).slice(0, isOpeningTurn ? 2 : 3),
+        ...followUpChips(symptom, [...(await loadAskedQuestions(userId)), userMessage]).slice(
+          0,
+          isOpeningTurn ? 2 : 3,
+        ),
         ...(isOpeningTurn ? [logChip(symptom)] : []),
       ]
     : [];
