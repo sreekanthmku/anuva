@@ -1,10 +1,16 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { assessmentPath } from '../onboarding/config/assessmentView';
+import { FamilyInviteGate } from '../family/FamilyInviteGate';
+import { useFamilyGate } from '../family/useFamilyGate';
 import { useAuth } from './auth-context';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { status, user } = useAuth();
+  // Mounted here rather than on the dashboard alone: a gate that only blocks Home is not blocking,
+  // because every other authenticated screen is one tab away. The three redirects below run first,
+  // so by the time the gate can open she is signed in, past the assessment, and subscribed.
+  const gate = useFamilyGate(status === 'authenticated' && Boolean(user?.onboardingCompleted));
 
   if (status === 'loading') {
     return (
@@ -39,5 +45,10 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/subscription" replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <FamilyInviteGate gate={gate} />
+    </>
+  );
 }

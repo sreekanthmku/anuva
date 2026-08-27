@@ -15,6 +15,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
+  "db:indexes": "prisma db execute --file prisma/sql/partial-indexes.sql --schema prisma/schema.prisma",
     "lint": "echo \"no lint\""
   },
   "dependencies": {

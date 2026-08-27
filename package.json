@@ -7,10 +7,12 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "check:erasure": "node scripts/check-erasure-coverage.mjs",
+    "check:family": "pnpm --filter @anuva/api check:family",
     "seed:logs": "node scripts/seed-user-logs.mjs",
     "db:generate": "pnpm --filter @anuva/database db:generate",
     "db:migrate": "pnpm --filter @anuva/database db:migrate",
-    "db:push": "pnpm --filter @anuva/database db:push"
+    "db:push": "pnpm --filter @anuva/database db:push && pnpm db:indexes",
+    "db:indexes": "pnpm --filter @anuva/database db:indexes"
   },
   "prisma": {
     "seed": "npm exec --workspace @anuva/api -- tsx apps/api/src/seed-booking.ts"

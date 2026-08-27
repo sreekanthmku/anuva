@@ -76,6 +76,13 @@ export const ERASURE_ACCOUNT_MODELS = [
   'userCarePath',
   'careJourneyStage',
   'subscription',
+  // Family sharing dies with the account, and a tombstone user must not go on holding a relative's
+  // phone number. `familySupportAction` first, then the invite, then the member: the invite points
+  // at the member, so clearing it first saves the FK a SetNull pass. `familySession` is absent on
+  // purpose — it has no `userId` and cascades from `familyMember`.
+  'familySupportAction',
+  'familyInvite',
+  'familyMember',
   'fcmToken',
   'session',
 ] as const;

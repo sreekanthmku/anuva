@@ -71,6 +71,9 @@ model User {
   supportTickets     SupportTicket[]
   deletionRequests   DataDeletionRequest[]
   dataExports        DataExportRequest[]
+  familyInvites        FamilyInvite[]
+  familyMembers        FamilyMember[]
+  familySupportActions FamilySupportAction[]
 }
 
 // ─────────────────────────────────────────────
@@ -195,6 +198,11 @@ enum OtpChallengePurpose {
   /// Re-verification before an export, which is the inverse risk: it creates a portable copy of
   /// her entire health history, so a stolen session must not be able to ask for one.
   data_export
+  /// A family member proving possession of their phone while claiming an invite link. Deliberately
+  /// absent from `authPurposeSchema`, so it can never be driven through the public
+  /// /auth/request-otp: the only guard on this purpose is a valid, unclaimed invite token, and that
+  /// guard lives on the /family/join routes alone.
+  family_join
 }
 
 enum OtpChallengeStatus {
@@ -222,6 +230,145 @@ model OtpChallenge {
   @@index([phone, createdAt])
   @@index([userId])
   @@index([status, expiresAt])
+}
+
+// ─────────────────────────────────────────────
+// Family sharing — the caregiver companion app
+// ─────────────────────────────────────────────
+//
+// One woman shares with at most one family member at a time. She mints a magic link, sends it over
+// WhatsApp, and the first phone to verify an OTP against it claims the slot. Two rules are enforced
+// by partial unique indexes rather than by application code, because both are reachable by two
+// concurrent requests: one active member per user, and one pending invite per user. Prisma cannot
+// express a partial index, so they live in the migration SQL — see the `family_sharing` migration.
+//
+// What crosses this boundary is banded, directional copy only ("Sleep ↓ · Lower this week"), never
+// scores, symptom names, chat, or documents. The one place that translation happens is
+// apps/api/src/family/digest.ts.
+
+enum FamilyInviteStatus {
+  pending
+  accepted
+  revoked
+  expired
+}
+
+enum FamilyMemberStatus {
+  active
+  revoked
+}
+
+enum FamilyRelationship {
+  partner
+  child
+  parent
+  sibling
+  friend
+  other
+}
+
+enum FamilySupportActionKind {
+  message
+  call
+  flowers
+  chocolates
+}
+
+/// One outstanding magic link, single-claim. The raw token exists only in the URL fragment she
+/// shares — we keep sha256 of it, the same way sessions are stored.
+model FamilyInvite {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String             @unique
+  status    FamilyInviteStatus @default(pending)
+  expiresAt DateTime
+
+  /// Last time she actually shared the link. The invite gate's grace window is measured from this
+  /// column and not from a client timer, so a reload, a second device, or a reinstall cannot buy
+  /// more time before the gate re-opens.
+  sharedAt   DateTime?
+  shareCount Int       @default(0)
+
+  acceptedAt DateTime?
+  memberId   String?       @unique
+  member     FamilyMember? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  /// Which version of the sharing-consent copy she agreed to when this link was minted. Bump it
+  /// whenever the gate's wording changes materially — this row is the record of what she consented to.
+  consentVersion String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([status, expiresAt])
+}
+
+model FamilyMember {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  relationship FamilyRelationship
+
+  /// A third party's personal data, held only for as long as the membership. Verified by OTP at
+  /// join; never returned to the family client at all, and returned to her masked only.
+  phone           String
+  phoneVerifiedAt DateTime
+
+  status    FamilyMemberStatus @default(active)
+  revokedAt DateTime?
+
+  lastSeenAt DateTime @default(now())
+
+  /// Set by "Remind me later" on the support sheet; read by the reminder job.
+  supportRemindAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  invite         FamilyInvite?
+  sessions       FamilySession[]
+  supportActions FamilySupportAction[]
+
+  @@index([userId, status])
+  @@index([phone])
+}
+
+/// Mirrors `Session`, including the sha256 token hash, so the family cookie behaves exactly like
+/// the patient and doctor ones. No `user` relation on purpose: a family session belongs to the
+/// member, and dies with them by cascade.
+model FamilySession {
+  id             String       @id @default(cuid())
+  tokenHash      String       @unique
+  familyMemberId String
+  member         FamilyMember @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+  expiresAt      DateTime
+  lastSeenAt     DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+
+  @@index([familyMemberId])
+}
+
+/// One recorded supportive action per member per day — what turns the Today CTA into
+/// "✓ Support action completed", and what later tells her someone checked in.
+model FamilySupportAction {
+  id             String       @id @default(cuid())
+  familyMemberId String
+  member         FamilyMember @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind FamilySupportActionKind
+  /// `dayKey()` — UTC midnight of the local calendar day, the same convention as every log table.
+  date DateTime                @db.Date
+
+  createdAt DateTime @default(now())
+
+  @@unique([familyMemberId, date])
+  @@index([userId, date])
 }
 
 enum MenopauseStage {

@@ -1,52 +1,54 @@
-import { privacyContent } from '../data/dummy';
-import { Card, PageIntro, SectionLabel } from '../shell/ui';
-
-function ListCard({ items, check }: { items: readonly string[]; check?: boolean }) {
-  return (
-    <Card className="overflow-hidden">
-      <ul>
-        {items.map((item, index) => (
-          <li
-            key={item}
-            className={`flex min-h-[48px] items-start gap-3 px-5 py-3.5 text-[14.5px] leading-snug text-on-surface ${
-              index < items.length - 1 ? 'border-b border-border-default' : ''
-            }`}
-          >
-            {check ? (
-              <span className="mt-0.5 text-success" aria-hidden>
-                ✓
-              </span>
-            ) : (
-              <span className="mt-0.5 text-outline" aria-hidden>
-                ·
-              </span>
-            )}
-            <span className="font-medium">{item.replace(/\s*✓\s*$/, '')}</span>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  );
-}
+import { fetchPrivacy } from '../../shared/lib/familyApi';
+import { useFamilyResource } from '../../shared/lib/useFamilyResource';
+import { Card, ErrorCard, PageIntro, SectionLabel, SkeletonCard } from '../shell/ui';
 
 export function PrivacyRoute() {
+  const { data, error, loading, reload } = useFamilyResource(fetchPrivacy);
+
+  if (loading && !data) {
+    return (
+      <div className="space-y-4">
+        <SkeletonCard lines={3} />
+        <SkeletonCard lines={3} />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <ErrorCard message={error ?? 'Could not load what is shared.'} onRetry={() => void reload()} />;
+  }
+
   return (
     <div className="space-y-4">
-      <PageIntro
-        eyebrow={privacyContent.eyebrow}
-        title={privacyContent.title}
-        subline={privacyContent.subline}
-      />
+      <PageIntro eyebrow={data.eyebrow} title={data.title} subline={data.subline} />
 
-      <section>
-        <SectionLabel>{privacyContent.sharedLabel}</SectionLabel>
-        <ListCard items={privacyContent.shared} check />
-      </section>
+      <Card className="px-5 py-5">
+        <SectionLabel>{data.sharedLabel}</SectionLabel>
+        <ul className="mt-1 space-y-2">
+          {data.shared.map((item) => (
+            <li key={item} className="flex gap-2 text-[14px] leading-[1.55] text-on-surface">
+              <span aria-hidden className="text-success">
+                ✓
+              </span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
 
-      <section>
-        <SectionLabel>{privacyContent.privateLabel}</SectionLabel>
-        <ListCard items={privacyContent.privateItems} />
-      </section>
+      <Card className="px-5 py-5">
+        <SectionLabel>{data.privateLabel}</SectionLabel>
+        <ul className="mt-1 space-y-2">
+          {data.privateItems.map((item) => (
+            <li key={item} className="flex gap-2 text-[14px] leading-[1.55] text-on-surface-variant">
+              <span aria-hidden className="text-outline">
+                ·
+              </span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </div>
   );
 }

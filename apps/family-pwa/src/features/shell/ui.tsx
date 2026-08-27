@@ -92,3 +92,38 @@ export function PageIntro({
     </header>
   );
 }
+
+/** Card-shaped placeholder while a screen's single fetch is in flight. */
+export function SkeletonCard({ lines = 2 }: { lines?: number }) {
+  return (
+    <div className="rounded-[20px] border border-border-default bg-surface-raised px-5 py-5">
+      <div className="h-3 w-24 animate-pulse rounded-full bg-surface-container" />
+      <div className="mt-3 h-5 w-3/4 animate-pulse rounded-full bg-surface-container" />
+      {Array.from({ length: lines }).map((_, index) => (
+        <div
+          key={index}
+          className="mt-2 h-3 animate-pulse rounded-full bg-surface-container"
+          style={{ width: `${90 - index * 15}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="rounded-[20px] border border-border-default bg-surface-raised px-5 py-5" role="alert">
+      <h2 className="font-display text-[17px] leading-snug text-on-surface">
+        This did not load
+      </h2>
+      <p className="mt-2 text-[13.5px] leading-[1.55] text-on-surface-variant">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-4 flex min-h-[44px] w-full items-center justify-center rounded-full border border-border-default px-5 text-[13.5px] font-semibold text-primary"
+      >
+        Try again
+      </button>
+    </div>
+  );
+}

@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check:family": "node scripts/check-family-invites.mjs",
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.build.json && rm -rf dist/data && cp -R src/data dist/data",
     "start": "node dist/index.js",

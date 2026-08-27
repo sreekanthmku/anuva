@@ -1,54 +1,47 @@
-import { learnContent } from '../data/dummy';
-import { Card, PageIntro, SectionLabel } from '../shell/ui';
+import { fetchLearn } from '../../shared/lib/familyApi';
+import { useFamilyResource } from '../../shared/lib/useFamilyResource';
+import { Card, ErrorCard, PageIntro, SectionLabel, SkeletonCard } from '../shell/ui';
 
 export function LearnRoute() {
+  const { data, error, loading, reload } = useFamilyResource(fetchLearn);
+
+  if (loading && !data) {
+    return (
+      <div className="space-y-4">
+        <SkeletonCard lines={2} />
+        <SkeletonCard lines={2} />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <ErrorCard message={error ?? 'Could not load this week’s reading.'} onRetry={() => void reload()} />;
+  }
+
   return (
     <div className="space-y-4">
-      <PageIntro
-        eyebrow={learnContent.eyebrow}
-        title={learnContent.title}
-        subline={learnContent.subline}
-      />
+      <PageIntro eyebrow={data.eyebrow} title={data.title} subline={data.subline} />
 
-      <Card className="overflow-hidden bg-secondary-container/50 px-5 py-5">
-        <SectionLabel>{learnContent.nudge.label}</SectionLabel>
-        <h2 className="font-display text-[22px] leading-[1.2] text-on-surface">
-          {learnContent.nudge.headline}
-        </h2>
-        <p className="mt-2 text-[14px] leading-[1.55] text-on-surface-variant">
-          {learnContent.nudge.body}
-        </p>
-      </Card>
-
-      <Card className="px-5 py-5">
-        <SectionLabel>{learnContent.tip.label}</SectionLabel>
-        <h2 className="font-display text-[18px] leading-snug text-on-surface">
-          {learnContent.tip.headline}
-        </h2>
-        <p className="mt-2 text-[14px] leading-[1.55] text-on-surface-variant">
-          {learnContent.tip.body}
-        </p>
-      </Card>
+      {[data.nudge, data.tip].map((card) => (
+        <Card key={card.label} className="px-5 py-5">
+          <SectionLabel>{card.label}</SectionLabel>
+          <h2 className="font-display text-[19px] leading-snug text-on-surface">{card.headline}</h2>
+          <p className="mt-2 text-[14px] leading-[1.55] text-on-surface-variant">{card.body}</p>
+        </Card>
+      ))}
 
       <section>
-        <SectionLabel>{learnContent.topicsLabel}</SectionLabel>
-        <Card className="overflow-hidden">
-          <ul>
-            {learnContent.topics.map((topic, index) => (
-              <li
-                key={topic}
-                className={`flex min-h-[52px] items-center justify-between gap-3 px-5 py-3.5 text-[14.5px] text-on-surface ${
-                  index < learnContent.topics.length - 1 ? 'border-b border-border-default' : ''
-                }`}
-              >
-                <span className="font-medium leading-snug">{topic}</span>
-                <span className="text-outline" aria-hidden>
-                  ›
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
+        <SectionLabel>{data.topicsLabel}</SectionLabel>
+        <ul className="space-y-2">
+          {data.topics.map((topic) => (
+            <li
+              key={topic}
+              className="rounded-[16px] border border-border-default bg-surface-raised px-4 py-3.5 text-[14px] text-on-surface"
+            >
+              {topic}
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );

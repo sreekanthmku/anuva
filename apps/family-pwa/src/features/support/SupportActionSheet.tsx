@@ -1,20 +1,18 @@
 import { useEffect, useId, useState } from 'react';
-import {
-  supportActions,
-  supportSheet,
-  type SupportActionId,
-} from '../data/dummy';
+import type { FamilySupportActionKind } from '@anuva/shared';
+import { SUPPORT_ACTIONS, supportSheet } from '../data/labels';
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onDone: () => void;
+  /** Which action they chose — recorded server-side, so the kind has to travel with it. */
+  onDone: (kind: FamilySupportActionKind) => void;
   onRemindLater: () => void;
 };
 
 export function SupportActionSheet({ open, onClose, onDone, onRemindLater }: Props) {
   const titleId = useId();
-  const [selected, setSelected] = useState<SupportActionId>('message');
+  const [selected, setSelected] = useState<FamilySupportActionKind>('message');
 
   useEffect(() => {
     if (!open) return;
@@ -51,7 +49,7 @@ export function SupportActionSheet({ open, onClose, onDone, onRemindLater }: Pro
         </h2>
 
         <div className="mt-4 grid grid-cols-2 gap-2.5" role="group" aria-label="Support actions">
-          {supportActions.map((action) => {
+          {SUPPORT_ACTIONS.map((action) => {
             const pressed = selected === action.id;
             return (
               <button
@@ -73,7 +71,7 @@ export function SupportActionSheet({ open, onClose, onDone, onRemindLater }: Pro
 
         <button
           type="button"
-          onClick={onDone}
+          onClick={() => onDone(selected)}
           className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[15px] font-semibold text-on-secondary shadow-[0_8px_20px_rgba(201,126,146,0.28)]"
         >
           {supportSheet.done}

@@ -10,6 +10,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@anuva/shared": "workspace:*",
     "@fontsource/dancing-script": "^5.2.8",
     "@fontsource/fraunces": "^5.2.9",
     "@fontsource/mulish": "^5.2.8",

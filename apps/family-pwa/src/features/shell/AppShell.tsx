@@ -1,8 +1,14 @@
 import type { ReactNode } from 'react';
-import { caregiver } from '../data/dummy';
+import { useFamilyAuth } from '../auth/family-auth-context';
 import { BottomNav } from './BottomNav';
 
 function TopBar() {
+  // Real identity now. The rest of the screens are still on dummy copy until the content routes
+  // land — see the family plan, phase 3.
+  const { me } = useFamilyAuth();
+  const firstName = me?.member.firstName ?? '';
+  const initials = me?.member.initials ?? '·';
+
   return (
     <header className="sticky top-0 z-30 border-b border-border-default bg-surface/90 backdrop-blur">
       <div className="mx-auto flex max-w-[560px] items-center gap-3 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -25,9 +31,9 @@ function TopBar() {
         </div>
         <span
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary-fixed font-display text-[13px] text-primary"
-          aria-label={`Signed in as ${caregiver.firstName}`}
+          aria-label={firstName ? `Signed in as ${firstName}` : 'Signed in'}
         >
-          {caregiver.initials}
+          {initials}
         </span>
       </div>
     </header>

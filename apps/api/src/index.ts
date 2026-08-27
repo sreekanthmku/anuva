@@ -192,6 +192,7 @@ import { loadCache, cacheStats } from './anu/cache.js';
 import { httpLogger, logger } from './logger.js';
 import { createAdminRouter } from './admin/index.js';
 import { createReport14Router } from './report14/index.js';
+import { createFamilyRouter } from './family/index.js';
 import { AdminError } from './admin/errors.js';
 import {
   CLEARED_LOCK_STATE,
@@ -324,6 +325,25 @@ app.use(
   '/report14',
   createReport14Router({
     resolveUserId: async (req) => (await requireCurrentUser(req)).id,
+  }),
+);
+
+// Family sharing — self-contained module under apps/api/src/family/. Same injected-auth,
+// own-error-handler shape as report14, so nothing in this file changes when its routes grow.
+app.use(
+  '/family',
+  createFamilyRouter({
+    resolveUserId: async (req) => (await requireCurrentUser(req)).id,
+    normalizePhone,
+    sessionCookieOptions: getSessionCookieOptions,
+    otp: {
+      send: sendOtpWithTwoFactor,
+      verify: verifyOtpWithTwoFactor,
+      expiryMinutes: OTP_EXPIRY_MINUTES,
+      resendCooldownSeconds: OTP_RESEND_COOLDOWN_SECONDS,
+      maxSendsPer15Minutes: OTP_MAX_SENDS_PER_15_MINUTES,
+      maxVerifyAttempts: OTP_MAX_VERIFY_ATTEMPTS,
+    },
   }),
 );
 
