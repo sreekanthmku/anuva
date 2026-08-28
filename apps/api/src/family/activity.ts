@@ -19,6 +19,18 @@ const ACTION_PHRASES: Record<FamilySupportActionKind, string> = {
   chocolates: 'sent you chocolates 🍫',
 };
 
+/**
+ * The same gestures again, as standalone lines rather than clauses in a sentence — what the card
+ * expands into when she taps it. Sentence-shaped, because in the detail view each one is a row of
+ * its own rather than part of a list.
+ */
+const ACTION_LINES: Record<FamilySupportActionKind, string> = {
+  message: 'Sent you a message',
+  call: 'Called you',
+  flowers: 'Sent you flowers',
+  chocolates: 'Sent you chocolates',
+};
+
 function joinPhrases(phrases: string[]): string {
   if (phrases.length === 1) return phrases[0]!;
   if (phrases.length === 2) return `${phrases[0]} and ${phrases[1]}`;
@@ -85,7 +97,7 @@ export async function buildFamilyActivity(userId: string): Promise<FamilyActivit
     },
     today: todayKinds.length
       ? {
-          kinds: todayKinds,
+          items: todayKinds.map((kind) => ({ kind, label: ACTION_LINES[kind] })),
           headline: `${first} checked in on you`,
           body: `${first} ${joinPhrases(todayKinds.map((kind) => ACTION_PHRASES[kind]))} today.`,
         }

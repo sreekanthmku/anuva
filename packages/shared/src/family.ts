@@ -103,7 +103,18 @@ export const familyActivityResponseSchema = z.object({
   /** Null when they have not done anything today. */
   today: z
     .object({
-      kinds: z.array(familySupportActionKindSchema),
+      /**
+       * One entry per gesture, in the order they happened. The label is built server-side for the
+       * same reason the headline is: the server owns how a gesture is described to her, and the
+       * client only decides what it looks like.
+       */
+      items: z.array(
+        z.object({
+          kind: familySupportActionKindSchema,
+          /** Phrased from her side, sentence-shaped: "Sent you flowers." */
+          label: z.string(),
+        }),
+      ),
       headline: z.string(),
       body: z.string(),
     })
