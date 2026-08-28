@@ -33,6 +33,8 @@ import { useSleepLog } from './hooks/useSleepLog';
 import { useQuickLog } from './hooks/useQuickLog';
 import { useNudgeDay } from './hooks/useNudgeDay';
 import { useDailyInsight } from './library/useLibrary';
+import { useAnuHomeCard } from './hooks/useAnuHomeCard';
+import { relativeTime } from '../../shared/lib/relativeTime';
 import { usePeriodFlowPrompt } from './hooks/usePeriodFlowPrompt';
 import {
   getCalibrationProgress,
@@ -152,6 +154,7 @@ export default function AnuDashboardRoute() {
   const familyGift = useFamilyGift();
   const nudgeDay = useNudgeDay();
   const dailyInsight = useDailyInsight();
+  const anuCard = useAnuHomeCard();
   const flowPrompt = usePeriodFlowPrompt({
     cycleData: cycle.data,
     now,
@@ -265,6 +268,21 @@ export default function AnuDashboardRoute() {
       setNudgeSlot(requestedNudge);
     }
   }, [searchParams]);
+
+  // `?cycle=1` — the home card's cycle signals link here, and the tracker is a
+  // sheet on this screen rather than a route of its own.
+  useEffect(() => {
+    if (searchParams.get('cycle') === '1') setCycleOpen(true);
+  }, [searchParams]);
+
+  const closeCycleSheet = () => {
+    setCycleOpen(false);
+    if (searchParams.has('cycle')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('cycle');
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const closeNudgeDialog = () => {
     setNudgeSlot(null);
@@ -458,43 +476,49 @@ export default function AnuDashboardRoute() {
         </article>
       </section>
 
-      <section className="px-3 pt-3">
-        <article className="rounded-[20px] bg-secondary-container px-[18px] py-4">
-          <div className="flex items-start gap-3">
-            <img
-              src="/anu.png"
-              alt="ANU avatar"
-              className="mt-0.5 h-8 w-8 shrink-0 object-contain"
-            />
-            <div className="flex-1">
-              <Eyebrow>ANU · just now</Eyebrow>
-              <p
-                className="text-[16px] leading-[1.45] text-on-surface"
-                style={{ fontFamily: SERIF }}
-              >
-                &quot;You logged two hot flashes yesterday. Want me to suggest a 3-minute cooling
-                ritual for tonight?&quot;
-              </p>
-              <div className="mt-4 flex gap-2.5">
-                <button
-                  type="button"
-                  className="rounded-full bg-primary px-5 py-2.5 text-[14px] font-semibold text-on-primary transition-opacity active:opacity-85"
-                  style={{ fontFamily: '"Mulish", sans-serif' }}
+      {anuCard.card && (
+        <section className="px-3 pt-3">
+          <article className="rounded-[20px] bg-secondary-container px-[18px] py-4">
+            <div className="flex items-start gap-3">
+              <img
+                src="/anu.png"
+                alt="ANU avatar"
+                className="mt-0.5 h-8 w-8 shrink-0 object-contain"
+              />
+              <div className="flex-1">
+                <Eyebrow>
+                  ANU
+                  {anuCard.card.sinceAt ? ` · ${relativeTime(anuCard.card.sinceAt)}` : ''}
+                </Eyebrow>
+                <p
+                  className="text-[16px] leading-[1.45] text-on-surface"
+                  style={{ fontFamily: SERIF }}
                 >
-                  Yes, show me
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full border border-primary/25 px-5 py-2.5 text-[14px] font-semibold text-primary transition-colors active:bg-primary/5"
-                  style={{ fontFamily: '"Mulish", sans-serif' }}
-                >
-                  Later
-                </button>
+                  &quot;{anuCard.card.text}&quot;
+                </p>
+                <div className="mt-4 flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => anuCard.accept()}
+                    className="rounded-full bg-primary px-5 py-2.5 text-[14px] font-semibold text-on-primary transition-opacity active:opacity-85"
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
+                  >
+                    {anuCard.card.primary.label}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => anuCard.dismiss()}
+                    className="rounded-full border border-primary/25 px-5 py-2.5 text-[14px] font-semibold text-primary transition-colors active:bg-primary/5"
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
+                  >
+                    Later
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </article>
-      </section>
+          </article>
+        </section>
+      )}
 
       {nudgeDay.data && nudgeDay.data.answeredCount < nudgeDay.data.total && (
         <section className="px-3 pt-3">
@@ -713,7 +737,7 @@ export default function AnuDashboardRoute() {
 
       <CycleTrackerSheet
         open={cycleOpen}
-        onClose={() => setCycleOpen(false)}
+        onClose={closeCycleSheet}
         cycleData={cycle.data}
         loading={cycle.loading}
         onSetup={cycle.setup}

@@ -378,6 +378,17 @@ export {
 } from './library.js';
 
 export {
+  homeCardActionSchema,
+  homeCardSchema,
+  homeCardResponseSchema,
+  homeCardEventBodySchema,
+  type HomeCardAction,
+  type HomeCard,
+  type HomeCardResponse,
+  type HomeCardEventBody,
+} from './homeCard.js';
+
+export {
   summaryPeriodSchema,
   reportRingKeySchema,
   reportReferenceSchema,

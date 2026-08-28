@@ -115,6 +115,8 @@ import {
   libraryArticleParamsSchema,
   libraryArticleResponseSchema,
   libraryDailyInsightResponseSchema,
+  homeCardResponseSchema,
+  homeCardEventBodySchema,
   anonymousQuestionTopicSchema,
   createAnonymousQuestionBodySchema,
   createAnonymousQuestionResponseSchema,
@@ -203,6 +205,8 @@ import { recordQuickSymptom } from './logging/writeThrough.js';
 import { dayKey } from './dayKey.js';
 import { answer as anuAnswer } from './anu/engine.js';
 import { getDailyInsight, getLibraryArticle, getLibraryFeed } from './library.js';
+import { buildHomeCard } from './homeCard/build.js';
+import { prismaHomeCardStore, recordHomeCardEvent } from './homeCard/store.js';
 import { isAnuChatConfigured } from './anu/openai.js';
 import { loadCache, cacheStats } from './anu/cache.js';
 import { httpLogger, logger } from './logger.js';
@@ -5212,6 +5216,40 @@ app.get('/support/tickets', async (req, res, next) => {
         remainingToday: await remainingSupportTicketsToday(user.id),
       }),
     );
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ─────────────────────────────────────────────
+// Home
+// ─────────────────────────────────────────────
+
+// The ANU card on the home screen. Rule-picked from her own logs — see
+// homeCard/signals.ts for why this is not a model call.
+app.get('/home/anu-card', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const card = await buildHomeCard(
+      { id: user.id, name: user.name },
+      new Date(),
+      prismaHomeCardStore,
+    );
+    res.json(homeCardResponseSchema.parse({ card }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// What she did with the card. Fire-and-forget from the client: the tap has
+// already navigated by the time this lands, and a lost event costs a row in the
+// tap-through numbers, nothing she can see.
+app.post('/home/anu-card/event', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { signalId, event } = homeCardEventBodySchema.parse(req.body);
+    const recorded = await recordHomeCardEvent(user.id, signalId, event);
+    res.json({ recorded });
   } catch (e) {
     next(e);
   }

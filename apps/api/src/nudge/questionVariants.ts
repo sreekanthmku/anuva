@@ -221,7 +221,7 @@ export function renderNudgeQuestion(template: string, firstName: string | null):
  * show them two different sentences for the same question. The hash still spreads users across
  * variants and moves everyone along as the date changes.
  */
-function variantIndex(seed: string, count: number): number {
+export function variantIndex(seed: string, count: number): number {
   let hash = 2166136261;
   for (let i = 0; i < seed.length; i += 1) {
     hash ^= seed.charCodeAt(i);

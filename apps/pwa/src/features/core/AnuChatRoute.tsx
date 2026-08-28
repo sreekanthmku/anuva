@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { AnuChatHistoryResponse, AnuChatResponse } from '@anuva/shared';
 import { apiFetch } from '../../shared/lib/api';
 import { BottomNav } from './components/BottomNav';
@@ -18,6 +18,7 @@ const openingPrompts = ['I feel tired', "I can't sleep", 'I get hot flashes'];
 
 export default function AnuChatRoute() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [input, setInput] = useState('');
@@ -26,6 +27,10 @@ export default function AnuChatRoute() {
   const [error, setError] = useState<string | null>(null);
   const messageListRef = useRef<HTMLElement | null>(null);
   const didInitialScroll = useRef(false);
+  /// `?ask=` fires exactly once per mount. It writes into her permanent thread
+  /// and costs a real model call, so a remount, a StrictMode double-effect or a
+  /// back-navigation must not send it twice.
+  const didAutoSend = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +90,20 @@ export default function AnuChatRoute() {
     },
     [sending],
   );
+
+  // Sent here from the home card: the card's own copy is deterministic, and the
+  // reply is generated in this thread so it passes the same red-flag gate as
+  // anything she types. Waits for history — sending before the restore lands
+  // would drop her new turn above the older ones.
+  const ask = searchParams.get('ask');
+  useEffect(() => {
+    if (historyLoading || !ask || didAutoSend.current) return;
+
+    didAutoSend.current = true;
+    // Drop the param before sending, so a refresh mid-reply cannot re-fire it.
+    setSearchParams({}, { replace: true });
+    void send(ask);
+  }, [ask, historyLoading, send, setSearchParams]);
 
   // Pin to the newest message. The list itself is scrolled rather than calling
   // scrollIntoView, which can scroll an ancestor instead and fights the fixed

@@ -274,6 +274,7 @@ export const ADMIN_NO_CREATE = new Set([
   'consultation-call-consents',
   'consultation-calls',
   'nudge-send-logs',
+  'anu-home-card-logs',
   'l3-trigger-logs',
   'nudge-daily-states',
   'specialist-sessions',

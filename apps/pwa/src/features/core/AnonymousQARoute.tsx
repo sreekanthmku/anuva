@@ -7,6 +7,7 @@ import {
 } from '@anuva/shared';
 import { BottomNav } from './components/BottomNav';
 import { useAnonymousQa } from './qa/useAnonymousQa';
+import { relativeTime } from '../../shared/lib/relativeTime';
 
 const MIN_QUESTION_LENGTH = 10;
 const MAX_QUESTION_LENGTH = 1200;
@@ -30,20 +31,6 @@ function Eyebrow({ children, mint = false }: { children: string; mint?: boolean 
       <span style={{ fontFamily: '"Mulish", sans-serif' }}>{children}</span>
     </div>
   );
-}
-
-function relativeDay(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '';
-
-  const hours = Math.floor((Date.now() - then) / 3_600_000);
-  if (hours < 1) return 'Just now';
-  if (hours < 24) return `${hours}h ago`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-
-  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
 function AnswerBlock({ answer }: { answer: AnonymousQuestion['answers'][number] }) {
@@ -120,7 +107,7 @@ function QuestionCard({ question, showTopic }: { question: AnonymousQuestion; sh
             Verified expert
           </span>
         ) : (
-          <span>{relativeDay(question.createdAt)}</span>
+          <span>{relativeTime(question.createdAt)}</span>
         )}
       </div>
     </article>

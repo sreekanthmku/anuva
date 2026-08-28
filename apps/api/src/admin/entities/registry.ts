@@ -1214,6 +1214,26 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     ),
   }),
   def({
+    // Read-only on purpose: the copy itself lives in code
+    // (apps/api/src/homeCard/signals.ts), and this table is the evidence for
+    // rewriting it — impressions against taps, per signal.
+    resource: 'anu-home-card-logs',
+    label: 'ANU Home Card Logs',
+    prismaModel: 'anuHomeCardLog',
+    group: 'Chat',
+    searchFields: ['userId', 'signalId', 'id'],
+    filterFields: ['userId', 'signalId'],
+    sortableFields: ['shownAt', 'date', 'impressions', 'createdAt'],
+    defaultSort: 'shownAt',
+    createSchema: objectSchema({
+      userId: z.string().min(1),
+      signalId: z.string().min(1),
+      date: dateString,
+      impressions: z.number().int().optional(),
+    }),
+    updateSchema: loosePartialSchema,
+  }),
+  def({
     resource: 'anu-response-cache',
     label: 'ANU Response Cache',
     prismaModel: 'anuResponseCache',

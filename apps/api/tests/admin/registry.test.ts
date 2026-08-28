@@ -70,6 +70,7 @@ const PRISMA_MODELS = [
   'nudgeSendLog',
   'l3TriggerLog',
   'anuChatTurn',
+  'anuHomeCardLog',
   'anuResponseCache',
   'supportTicket',
   // Family sharing. Sessions and push tokens are listed for the same reason `session` and

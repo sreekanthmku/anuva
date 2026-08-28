@@ -70,6 +70,7 @@ model User {
   nudgeSendLogs      NudgeSendLog[]
   l3TriggerLogs      L3TriggerLog[]
   anuChatTurns       AnuChatTurn[]
+  anuHomeCardLogs    AnuHomeCardLog[]
   supportTickets     SupportTicket[]
   deletionRequests   DataDeletionRequest[]
   dataExports        DataExportRequest[]
@@ -531,6 +532,44 @@ enum SymptomCategory {
   sleep
   mood
   lifestyle
+}
+
+/// One ANU home-card impression per user per signal per day.
+///
+/// Two jobs. First, cooldown: a signal that has just been shown stays quiet for
+/// its `cooldownHours` so the same observation is not repeated at her for three
+/// days running. Second, measurement: `tappedAt` over impressions is the only
+/// evidence available for whether a piece of copy earns its place, and the copy
+/// lives in code precisely so it can be rewritten on that evidence.
+model AnuHomeCardLog {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Registry id from homeCard/signals.ts. Deliberately a plain string: the
+  /// registry changes with copy releases, and an enum would need a migration to
+  /// add a rule.
+  signalId String
+
+  /// `dayKey()` — UTC midnight of the local calendar day, the same convention as every log table.
+  date DateTime @db.Date
+
+  /// Last impression of this signal on this day, not the first: cooldown asks
+  /// "how long since she last saw this", and re-mounting the dashboard is
+  /// another sighting.
+  shownAt     DateTime  @default(now())
+  impressions Int       @default(1)
+  /// She acted on it. Null is the normal case, not a failure.
+  tappedAt    DateTime?
+  /// "Later" — suppresses the card for the rest of that day.
+  dismissedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, signalId, date])
+  /// Cooldown lookup: latest sighting per signal for one user.
+  @@index([userId, signalId, shownAt])
+  /// Tap-through by signal, across users.
+  @@index([signalId, date])
 }
 
 model Symptom {
