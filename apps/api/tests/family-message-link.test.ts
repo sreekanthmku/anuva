@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-const { readFamilyMessageFromHash } = await import(
+const { readFamilyMessageFromHash, readFamilyGiftFromHash } = await import(
   '../../pwa/src/features/family/familyMessageLink.js'
 ).catch(() => import('../../pwa/src/features/family/familyMessageLink.ts' as string));
 
@@ -35,5 +35,33 @@ describe('family message deep link', () => {
     for (const hash of ['', '#', '#nudge=morning', '#familyFrom=Wilfred']) {
       expect(readFamilyMessageFromHash(hash)).toBeNull();
     }
+  });
+});
+
+describe('family gift deep link', () => {
+  it('reads the gift kind and sender out of a fragment', () => {
+    expect(readFamilyGiftFromHash('#familyGift=flowers&familyFrom=Wilfred')).toEqual({
+      kind: 'flowers',
+      from: 'Wilfred',
+    });
+    expect(readFamilyGiftFromHash('#familyGift=chocolates&familyFrom=A')?.kind).toBe('chocolates');
+  });
+
+  it('falls back to a neutral sender', () => {
+    expect(readFamilyGiftFromHash('#familyGift=flowers')?.from).toBe('Your family');
+  });
+
+  // A newer sender talking to an older app must show nothing rather than a card with no picture.
+  it('is null for an unknown or missing kind', () => {
+    for (const hash of ['', '#', '#familyGift=', '#familyGift=puppies', '#familyMessage=hi']) {
+      expect(readFamilyGiftFromHash(hash)).toBeNull();
+    }
+  });
+
+  // The two live in the same fragment slot and must never both fire.
+  it('does not confuse a note for a gift', () => {
+    const hash = '#familyMessage=hello&familyFrom=Wilfred';
+    expect(readFamilyGiftFromHash(hash)).toBeNull();
+    expect(readFamilyMessageFromHash('#familyGift=flowers&familyFrom=Wilfred')).toBeNull();
   });
 });

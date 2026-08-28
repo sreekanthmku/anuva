@@ -25,7 +25,7 @@
  *   GET    /family/learn
  *   GET    /family/privacy
  *   POST   /family/messages                a short note, pushed to her and stored nowhere
- *   POST   /family/support-actions
+ *   POST   /family/support-actions     records the gesture; flowers/chocolates also push to her
  *   POST   /family/messages                a short note, pushed to her and stored nowhere
  *   POST   /family/support-actions/remind-later
  *   POST   /family/push/register           device registration for the family app
@@ -320,9 +320,10 @@ export function createFamilyRouter({
       const result = await recordSupportAction({
         familyMemberId: identity.memberId,
         userId: identity.userId,
+        memberName: identity.name,
         kind,
       });
-      req.log?.info?.({ kind }, 'family: support action recorded');
+      req.log?.info?.({ kind, delivered: result.delivered }, 'family: support action recorded');
       res.json(familySupportActionResponseSchema.parse(result));
     } catch (e) {
       next(e);

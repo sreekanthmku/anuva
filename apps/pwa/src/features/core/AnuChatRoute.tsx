@@ -267,7 +267,7 @@ export default function AnuChatRoute() {
         )}
 
         <section className="flex items-center gap-2.5 bg-surface px-5 pb-2 pt-1.5">
-          <label className="flex flex-1 items-center gap-2 rounded-full border border-border-default bg-surface-container-low px-5 py-1.5">
+          <label className="flex flex-1 items-center gap-2 rounded-full border border-border-default bg-surface-container-low px-5 py-1.5 [-webkit-tap-highlight-color:transparent]">
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
@@ -276,7 +276,7 @@ export default function AnuChatRoute() {
               }}
               disabled={sending}
               placeholder="Share what you're feeling..."
-              className="w-full border-none bg-transparent text-[14px] text-on-surface outline-none placeholder:text-outline"
+              className="w-full border-none bg-transparent text-[16px] text-on-surface placeholder:text-outline [-webkit-tap-highlight-color:transparent] [outline:none] focus:[outline:none]"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             />
           </label>

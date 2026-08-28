@@ -15,8 +15,8 @@ import { dayKey } from '../dayKey.js';
 const ACTION_PHRASES: Record<FamilySupportActionKind, string> = {
   message: 'messaged you',
   call: 'called you',
-  flowers: 'sent you flowers',
-  chocolates: 'sent you chocolates',
+  flowers: 'sent you flowers 💐',
+  chocolates: 'sent you chocolates 🍫',
 };
 
 function joinPhrases(phrases: string[]): string {

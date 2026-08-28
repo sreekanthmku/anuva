@@ -292,6 +292,12 @@ export const familySupportActionBodySchema = z.object({
 export const familySupportActionResponseSchema = z.object({
   completedToday: z.literal(true),
   toast: z.string(),
+  /**
+   * Only meaningful for the gift kinds (`flowers`, `chocolates`), which are pushed to her phone the
+   * way a note is. Absent for `message` — that route has its own response — and for `call`, which
+   * is a self-report about something that happened outside the app.
+   */
+  delivered: z.boolean().optional(),
 });
 
 export const familyRemindLaterResponseSchema = z.object({

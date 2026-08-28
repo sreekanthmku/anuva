@@ -1,5 +1,6 @@
 import { prisma } from '@anuva/database';
 import type { FamilySupportActionKind } from '@anuva/shared';
+import { sendPushToAllTokens } from '../fcm.js';
 import { dayKey } from '../dayKey.js';
 
 /**
@@ -10,9 +11,72 @@ import { dayKey } from '../dayKey.js';
 const TOASTS: Record<FamilySupportActionKind, string> = {
   message: '✓ Message sent. She will see that you thought of her.',
   call: '✓ Call logged. A voice helps more than a text on a hard day.',
-  flowers: '✓ Flowers on the way. Recorded for today.',
-  chocolates: '✓ Chocolates on the way. Recorded for today.',
+  flowers: '✓ Virtual flowers sent. They are on her phone now.',
+  chocolates: '✓ Virtual chocolates sent. They are on her phone now.',
 };
+
+/**
+ * The two gestures that are *delivered* rather than merely recorded. Real flowers and chocolates
+ * are a later phase; until then these arrive as a push and a card in her app, which is a real thing
+ * happening on her screen rather than a row only her family can see.
+ */
+const GIFT_KINDS = ['flowers', 'chocolates'] as const;
+type FamilyGiftKind = (typeof GIFT_KINDS)[number];
+
+function isGiftKind(kind: FamilySupportActionKind): kind is FamilyGiftKind {
+  return (GIFT_KINDS as readonly string[]).includes(kind);
+}
+
+/** Phrased for her lock screen. Short — the whole gesture has to survive a notification preview. */
+const GIFT_PUSH: Record<FamilyGiftKind, { title: (first: string) => string; body: string }> = {
+  flowers: {
+    title: (first) => `${first} sent you flowers 💐`,
+    body: 'A bouquet, thinking of you today. Tap to open it.',
+  },
+  chocolates: {
+    title: (first) => `${first} sent you chocolates 🍫`,
+    body: 'Something sweet for a hard day. Tap to open it.',
+  },
+};
+
+const GIFT_UNDELIVERED_TOAST: Record<FamilyGiftKind, string> = {
+  flowers: 'Recorded for today, but her phone has no notifications set up, so she will not see them.',
+  chocolates: 'Recorded for today, but her phone has no notifications set up, so she will not see them.',
+};
+
+function firstNameOf(name: string): string {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
+/**
+ * Delivery carries the gift kind and the sender's first name in the deep link's *fragment*, for the
+ * same reason a note does: fragments never reach a server, so nothing about the gesture lands in an
+ * access log. Nothing about the gift is stored beyond the `FamilySupportAction` row itself.
+ */
+async function deliverGift(input: {
+  userId: string;
+  memberName: string;
+  kind: FamilyGiftKind;
+}): Promise<boolean> {
+  const rows = await prisma.fcmToken.findMany({
+    where: { userId: input.userId, status: 'ACTIVE' },
+    select: { token: true },
+  });
+  const tokens = [...new Set(rows.map((row) => row.token))];
+  if (tokens.length === 0) return false;
+
+  const first = firstNameOf(input.memberName);
+  const copy = GIFT_PUSH[input.kind];
+  const deepLink = `/home#familyGift=${input.kind}&familyFrom=${encodeURIComponent(first)}`;
+
+  const { successCount } = await sendPushToAllTokens(
+    tokens,
+    { title: copy.title(first), body: copy.body },
+    { url: deepLink, familyGift: input.kind, familyFrom: first },
+  );
+
+  return successCount > 0;
+}
 
 /**
  * Which actions they have already taken today. Doing one does not use up the day — messaging her and
@@ -34,31 +98,59 @@ export async function kindsDoneToday(
 export async function recordSupportAction(input: {
   familyMemberId: string;
   userId: string;
+  memberName: string;
   kind: FamilySupportActionKind;
-}): Promise<{ completedToday: true; toast: string }> {
+}): Promise<{ completedToday: true; toast: string; delivered?: boolean }> {
   const now = new Date();
 
   // Upsert per *kind*: tapping the same action twice in a day is a re-affirmation rather than an
   // error, but a different action is a genuinely new one and must not overwrite the first. The
   // unique index on (member, day, kind) is what keeps both true, and caps this at four rows a day.
-  await prisma.familySupportAction.upsert({
-    where: {
-      familyMemberId_date_kind: {
+  //
+  // `count` distinguishes the first tap of the day from a re-tap, which the gift kinds need:
+  // recording twice is harmless, but notifying her twice for the same bouquet is not.
+  const { count } = await prisma.familySupportAction.createMany({
+    data: [
+      {
         familyMemberId: input.familyMemberId,
-        date: dayKey(now),
+        userId: input.userId,
         kind: input.kind,
+        date: dayKey(now),
       },
-    },
-    create: {
-      familyMemberId: input.familyMemberId,
-      userId: input.userId,
-      kind: input.kind,
-      date: dayKey(now),
-    },
-    update: {},
+    ],
+    skipDuplicates: true,
+  });
+  const firstTapToday = count > 0;
+
+  if (!isGiftKind(input.kind)) {
+    return { completedToday: true, toast: TOASTS[input.kind] };
+  }
+
+  if (!firstTapToday) {
+    // Already sent today. Say so rather than silently doing nothing, and do not push again.
+    return {
+      completedToday: true,
+      toast:
+        input.kind === 'flowers'
+          ? 'Already sent her flowers today. She has them.'
+          : 'Already sent her chocolates today. She has them.',
+      delivered: true,
+    };
+  }
+
+  // Recorded before delivery is attempted, same as a note: the gesture happened either way, and her
+  // "your family checked in" card should not depend on whether her phone had notifications on.
+  const delivered = await deliverGift({
+    userId: input.userId,
+    memberName: input.memberName,
+    kind: input.kind,
   });
 
-  return { completedToday: true, toast: TOASTS[input.kind] };
+  return {
+    completedToday: true,
+    toast: delivered ? TOASTS[input.kind] : GIFT_UNDELIVERED_TOAST[input.kind],
+    delivered,
+  };
 }
 
 /**

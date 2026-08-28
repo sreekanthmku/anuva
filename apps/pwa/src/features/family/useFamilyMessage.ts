@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  readFamilyGiftFromHash,
   readFamilyMessageFromHash,
   stripFamilyMessageFromUrl,
+  type FamilyGift,
   type FamilyMessage,
 } from './familyMessageLink';
 
@@ -32,4 +34,29 @@ export function useFamilyMessage() {
   }, [consume]);
 
   return { message, dismiss: () => setMessage(null) };
+}
+
+/**
+ * The gift half of the same delivery, on the same two arrival paths as a note (cold start via
+ * `openWindow`, warm start via the router's `nudge-navigate` post). Kept as its own hook rather
+ * than folded into `useFamilyMessage` because only one of the two can be in a given hash, and two
+ * hooks reading the same fragment would race to strip it.
+ */
+export function useFamilyGift() {
+  const [gift, setGift] = useState<FamilyGift | null>(null);
+
+  const consume = useCallback(() => {
+    const next = readFamilyGiftFromHash(window.location.hash);
+    if (!next) return;
+    setGift(next);
+    stripFamilyMessageFromUrl();
+  }, []);
+
+  useEffect(() => {
+    consume();
+    window.addEventListener('hashchange', consume);
+    return () => window.removeEventListener('hashchange', consume);
+  }, [consume]);
+
+  return { gift, dismiss: () => setGift(null) };
 }

@@ -15,9 +15,10 @@ import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
 import { NotificationSyncBanner } from './components/NotificationSyncBanner';
 import { FamilyCheckInCard } from '../family/FamilyCheckInCard';
+import { FamilyGiftDialog } from '../family/FamilyGiftDialog';
 import { FamilyMessageDialog } from '../family/FamilyMessageDialog';
 import { useFamilyActivity } from '../family/useFamilyActivity';
-import { useFamilyMessage } from '../family/useFamilyMessage';
+import { useFamilyGift, useFamilyMessage } from '../family/useFamilyMessage';
 import { CycleTrackerSheet } from './components/CycleTrackerSheet';
 import { CyclePhaseBadge, CycleTrackerSummary } from './components/CycleTrackerSummary';
 import { MoodLogSheet } from './components/MoodLogSheet';
@@ -147,6 +148,7 @@ export default function AnuDashboardRoute() {
   const quick = useQuickLog();
   const familyActivity = useFamilyActivity(true);
   const familyMessage = useFamilyMessage();
+  const familyGift = useFamilyGift();
   const nudgeDay = useNudgeDay();
   const flowPrompt = usePeriodFlowPrompt({
     cycleData: cycle.data,
@@ -734,6 +736,8 @@ export default function AnuDashboardRoute() {
       />
 
       <FamilyMessageDialog message={familyMessage.message} onDismiss={familyMessage.dismiss} />
+
+      <FamilyGiftDialog gift={familyGift.gift} onDismiss={familyGift.dismiss} />
 
       <QuickLogMessageDialog
         open={quickMessage !== null}

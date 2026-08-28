@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import type { FamilySupportActionKind } from '@anuva/shared';
-import { SUPPORT_ACTIONS, supportSheet } from '../data/labels';
+import { GIFT_KINDS, SUPPORT_ACTIONS, supportSheet } from '../data/labels';
+import { twemojiUrl } from '../../shared/lib/twemoji';
 
 const MAX_MESSAGE = 280;
 
@@ -42,6 +43,9 @@ export function SupportActionSheet({
 
   if (!open) return null;
 
+  const selectedAction = SUPPORT_ACTIONS.find((action) => action.id === selected);
+  const isGift = GIFT_KINDS.includes(selected);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
       <button
@@ -80,7 +84,19 @@ export function SupportActionSheet({
                     : 'border-border-default bg-surface-container-low text-on-surface'
                 }`}
               >
-                {action.label}
+                <span className="flex items-center gap-2">
+                  {action.emoji ? (
+                    <img
+                      src={twemojiUrl(action.emoji)}
+                      alt=""
+                      aria-hidden
+                      width={22}
+                      height={22}
+                      className="shrink-0"
+                    />
+                  ) : null}
+                  <span className="leading-snug">{action.label}</span>
+                </span>
                 {done ? (
                   <span className="mt-0.5 block text-[11px] font-medium text-success">
                     ✓ done today
@@ -114,6 +130,29 @@ export function SupportActionSheet({
           </div>
         ) : null}
 
+        {/* The gifts are delivered, not just recorded — say what actually reaches her, and say what
+            does not reach her yet, before the tap rather than in the toast afterwards. */}
+        {isGift ? (
+          <div className="mt-4 flex items-start gap-3 rounded-[18px] border border-secondary/25 bg-secondary/10 px-3.5 py-3">
+            <img
+              src={twemojiUrl(selectedAction?.emoji ?? '💐')}
+              alt=""
+              aria-hidden
+              width={34}
+              height={34}
+              className="mt-0.5 shrink-0"
+            />
+            <div>
+              <p className="text-[13px] font-semibold leading-snug text-on-surface">
+                {supportSheet.giftNote}
+              </p>
+              <p className="mt-1 text-[11.5px] leading-snug text-outline">
+                {supportSheet.giftComingSoon}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         <button
           type="button"
           disabled={sending || (selected === 'message' && text.trim().length === 0)}
@@ -127,7 +166,13 @@ export function SupportActionSheet({
           }}
           className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[15px] font-semibold text-on-secondary shadow-[0_8px_20px_rgba(201,126,146,0.28)] disabled:opacity-60"
         >
-          {sending ? 'Sending…' : selected === 'message' ? 'Send note' : supportSheet.done}
+          {sending
+            ? 'Sending…'
+            : selected === 'message'
+              ? 'Send note'
+              : isGift
+                ? `Send ${selectedAction?.emoji ?? ''}`.trim()
+                : 'Done'}
         </button>
         <button
           type="button"
