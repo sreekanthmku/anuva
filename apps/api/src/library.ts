@@ -6,6 +6,7 @@ import {
   type LibraryArticleResponse,
   type LibraryArticleSummary,
   type LibraryCategoryFacet,
+  type LibraryDailyInsightResponse,
   type LibraryFeedQuery,
   type LibraryFeedResponse,
 } from '@anuva/shared';
@@ -127,4 +128,96 @@ export function getLibraryArticle(slug: string): LibraryArticleResponse | null {
   ].slice(0, 3);
 
   return { article, related: related.map(toSummary) };
+}
+
+/// Today's insight.
+///
+/// The pick is a pure function of the calendar day: no per-user state, no
+/// database, so everyone opening the app on the same day sees the same line,
+/// and a reinstall or a second device cannot resync it.
+///
+/// Rotation walks one fixed, seeded shuffle of the catalogue, one article per
+/// day. That single order is what makes the no-repeat promise hold at every
+/// point, not only inside an arbitrary window: an article cannot return until
+/// all N others have been shown. Reshuffling per pass would break it — a fresh
+/// permutation can put yesterday's article first tomorrow. What does change per
+/// pass is which key takeaway is quoted, so a second walk through the
+/// catalogue is not a second walk through the same sentences.
+const ROTATION_TZ = process.env.NUDGE_TIMEZONE?.trim() || 'Asia/Kolkata';
+
+/// `YYYY-MM-DD` for `at` in the rotation timezone. `en-CA` is ISO-ordered.
+function rotationDay(at: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: ROTATION_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(at);
+}
+
+/// Whole days since the epoch for a `YYYY-MM-DD` day. The day string is already
+/// timezone-resolved, so parsing it as UTC keeps the arithmetic exact.
+function dayNumber(day: string): number {
+  return Math.floor(Date.parse(`${day}T00:00:00Z`) / 86_400_000);
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+  };
+}
+
+/// Fisher-Yates driven by a seeded PRNG — same seed, same order, on every
+/// process and every deploy.
+function shuffled<T>(items: readonly T[], seed: number): T[] {
+  const out = items.slice();
+  const rand = mulberry32(seed);
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rand() * (i + 1));
+    const a = out[i] as T;
+    out[i] = out[j] as T;
+    out[j] = a;
+  }
+  return out;
+}
+
+/// The rotation order. Shuffled off a stable slug sort — `articles` is sorted by
+/// `publishedAt`, so ordering off that would reshuffle the whole rotation every
+/// time a piece is published. `ROTATION_SEED` is arbitrary; changing it reorders
+/// the rotation, which is the only reason to touch it.
+const ROTATION_SEED = 0x616e75;
+
+let rotationCache: LibraryArticle[] | null = null;
+
+function rotationOrder(): LibraryArticle[] {
+  if (!rotationCache) {
+    const bySlug = [...library().articles].sort((a, b) => a.slug.localeCompare(b.slug));
+    rotationCache = shuffled(bySlug, ROTATION_SEED);
+  }
+  return rotationCache;
+}
+
+export function getDailyInsight(at: Date = new Date()): LibraryDailyInsightResponse | null {
+  const { articles } = library();
+  if (articles.length === 0) return null;
+
+  const date = rotationDay(at);
+  const total = articles.length;
+  const day = dayNumber(date);
+  // `day` is positive for every date after 1970, so `%` needs no rescue.
+  const pass = Math.floor(day / total);
+  const position = day % total;
+
+  const article = rotationOrder()[position];
+  if (!article) return null;
+
+  const takeaways = article.keyTakeaways;
+  const text = takeaways[pass % takeaways.length] ?? article.dek;
+
+  return { date, text, article: toSummary(article) };
 }

@@ -360,6 +360,7 @@ export {
   libraryArticleParamsSchema,
   libraryArticleResponseSchema,
   libraryContentFileSchema,
+  libraryDailyInsightResponseSchema,
   type LibraryCategory,
   type LibraryTone,
   type LibraryBlock,
@@ -373,6 +374,7 @@ export {
   type LibraryArticleParams,
   type LibraryArticleResponse,
   type LibraryContentFile,
+  type LibraryDailyInsightResponse,
 } from './library.js';
 
 export {

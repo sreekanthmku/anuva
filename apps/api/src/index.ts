@@ -114,6 +114,7 @@ import {
   libraryFeedResponseSchema,
   libraryArticleParamsSchema,
   libraryArticleResponseSchema,
+  libraryDailyInsightResponseSchema,
   anonymousQuestionTopicSchema,
   createAnonymousQuestionBodySchema,
   createAnonymousQuestionResponseSchema,
@@ -201,7 +202,7 @@ import { randomQuickLogMessage } from './quickLogMessages.js';
 import { recordQuickSymptom } from './logging/writeThrough.js';
 import { dayKey } from './dayKey.js';
 import { answer as anuAnswer } from './anu/engine.js';
-import { getLibraryArticle, getLibraryFeed } from './library.js';
+import { getDailyInsight, getLibraryArticle, getLibraryFeed } from './library.js';
 import { isAnuChatConfigured } from './anu/openai.js';
 import { loadCache, cacheStats } from './anu/cache.js';
 import { httpLogger, logger } from './logger.js';
@@ -5226,6 +5227,21 @@ app.get('/library', (req, res, next) => {
   try {
     const query = libraryFeedQuerySchema.parse(req.query);
     res.json(libraryFeedResponseSchema.parse(getLibraryFeed(query)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// The dashboard's "Today's insight". Same pick for every user on a given day —
+// see `getDailyInsight`. Declared before `/library/articles/:slug` only for
+// reading order; the paths do not overlap.
+app.get('/library/daily-insight', (_req, res, next) => {
+  try {
+    const insight = getDailyInsight();
+    if (!insight) {
+      throw new HttpError(404, 'No insight available.');
+    }
+    res.json(libraryDailyInsightResponseSchema.parse(insight));
   } catch (e) {
     next(e);
   }

@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import type {
   LibraryArticleResponse,
   LibraryCategory,
+  LibraryDailyInsightResponse,
   LibraryFeedResponse,
 } from '@anuva/shared';
-import { fetchLibraryArticle, fetchLibraryFeed } from './api';
+import { fetchDailyInsight, fetchLibraryArticle, fetchLibraryFeed } from './api';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -80,4 +81,28 @@ export function useLibraryArticle(slug: string | undefined) {
   }, [load]);
 
   return { state, error, data, reload: load };
+}
+
+/// Dashboard "Today's insight". The pick is server-side and date-derived, so
+/// there is nothing to persist here — a failed load simply hides the card.
+export function useDailyInsight() {
+  const [insight, setInsight] = useState<LibraryDailyInsightResponse | null>(null);
+
+  useEffect(() => {
+    let live = true;
+
+    fetchDailyInsight()
+      .then((data) => {
+        if (live) setInsight(data);
+      })
+      .catch(() => {
+        // Editorial garnish, not care data — no error surface on the dashboard.
+      });
+
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return insight;
 }

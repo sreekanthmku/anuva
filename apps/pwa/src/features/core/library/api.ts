@@ -1,6 +1,7 @@
 import type {
   LibraryArticleResponse,
   LibraryCategory,
+  LibraryDailyInsightResponse,
   LibraryFeedResponse,
 } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
@@ -19,4 +20,8 @@ export async function fetchLibraryFeed(params?: {
 
 export async function fetchLibraryArticle(slug: string): Promise<LibraryArticleResponse> {
   return apiFetch<LibraryArticleResponse>(`/api/library/articles/${encodeURIComponent(slug)}`);
+}
+
+export async function fetchDailyInsight(): Promise<LibraryDailyInsightResponse> {
+  return apiFetch<LibraryDailyInsightResponse>('/api/library/daily-insight');
 }

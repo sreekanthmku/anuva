@@ -125,3 +125,15 @@ export type LibraryFeedResponse = z.infer<typeof libraryFeedResponseSchema>;
 export type LibraryArticleParams = z.infer<typeof libraryArticleParamsSchema>;
 export type LibraryArticleResponse = z.infer<typeof libraryArticleResponseSchema>;
 export type LibraryContentFile = z.infer<typeof libraryContentFileSchema>;
+
+/// One editorial line surfaced on the dashboard each day. The pick is derived
+/// from the date alone, so every user sees the same insight on the same day.
+export const libraryDailyInsightResponseSchema = z.object({
+  /// The day the pick belongs to, `YYYY-MM-DD` in the rotation timezone.
+  date: z.string(),
+  /// The line to show — a key takeaway from the article, not the dek.
+  text: z.string(),
+  article: libraryArticleSummarySchema,
+});
+
+export type LibraryDailyInsightResponse = z.infer<typeof libraryDailyInsightResponseSchema>;

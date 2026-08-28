@@ -32,6 +32,7 @@ import { useMoodLog } from './hooks/useMoodLog';
 import { useSleepLog } from './hooks/useSleepLog';
 import { useQuickLog } from './hooks/useQuickLog';
 import { useNudgeDay } from './hooks/useNudgeDay';
+import { useDailyInsight } from './library/useLibrary';
 import { usePeriodFlowPrompt } from './hooks/usePeriodFlowPrompt';
 import {
   getCalibrationProgress,
@@ -150,6 +151,7 @@ export default function AnuDashboardRoute() {
   const familyMessage = useFamilyMessage();
   const familyGift = useFamilyGift();
   const nudgeDay = useNudgeDay();
+  const dailyInsight = useDailyInsight();
   const flowPrompt = usePeriodFlowPrompt({
     cycleData: cycle.data,
     now,
@@ -680,28 +682,34 @@ export default function AnuDashboardRoute() {
         </section>
       )}
 
-      <section className="px-3 pb-5 pt-3">
-        <article className="rounded-[20px] bg-tertiary-container px-[18px] py-4">
-          <Eyebrow tone="gold">Today&apos;s insight</Eyebrow>
-          <p className="text-[18px] leading-[1.45] text-on-surface" style={{ fontFamily: SERIF }}>
-            Cooling the bedroom to 22°C before sleep can reduce night sweats by up to 40%.
-          </p>
-          <div className="mt-3.5 flex items-center justify-between">
-            <span
-              className="text-[12px] font-medium text-on-surface-variant"
-              style={{ fontFamily: '"Mulish", sans-serif' }}
-            >
-              Dr. Meera Rao · AIIMS
-            </span>
-            <span
-              className="text-[13px] font-semibold text-on-tertiary-container"
-              style={{ fontFamily: '"Mulish", sans-serif' }}
-            >
-              Read →
-            </span>
-          </div>
-        </article>
-      </section>
+      {dailyInsight && (
+        <section className="px-3 pb-5 pt-3">
+          <button
+            type="button"
+            onClick={() => navigate(`/library/${dailyInsight.article.slug}`)}
+            className="w-full rounded-[20px] bg-tertiary-container px-[18px] py-4 text-left transition-opacity active:opacity-90"
+          >
+            <Eyebrow tone="gold">Today&apos;s insight</Eyebrow>
+            <p className="text-[18px] leading-[1.45] text-on-surface" style={{ fontFamily: SERIF }}>
+              {dailyInsight.text}
+            </p>
+            <div className="mt-3.5 flex items-center justify-between gap-3">
+              <span
+                className="text-[12px] font-medium text-on-surface-variant"
+                style={{ fontFamily: '"Mulish", sans-serif' }}
+              >
+                {dailyInsight.article.author.name} · {dailyInsight.article.author.credential}
+              </span>
+              <span
+                className="shrink-0 text-[13px] font-semibold text-on-tertiary-container"
+                style={{ fontFamily: '"Mulish", sans-serif' }}
+              >
+                Read →
+              </span>
+            </div>
+          </button>
+        </section>
+      )}
 
       <CycleTrackerSheet
         open={cycleOpen}

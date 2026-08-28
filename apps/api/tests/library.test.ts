@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLibraryArticle, getLibraryFeed } from '../src/library.js';
+import { getDailyInsight, getLibraryArticle, getLibraryFeed } from '../src/library.js';
 
 describe('getLibraryFeed', () => {
   it('returns featured article as feature on unfiltered feed and excludes it from articles', () => {
@@ -88,5 +88,63 @@ describe('getLibraryArticle', () => {
 
   it('returns null for unknown slug', () => {
     expect(getLibraryArticle('does-not-exist')).toBeNull();
+  });
+});
+
+describe('getDailyInsight', () => {
+  const at = (day: string) => new Date(`${day}T09:00:00+05:30`);
+  // The feature is pulled out of `articles`, so add it back for the catalogue size.
+  const total = getLibraryFeed({}).articles.length + 1;
+
+  it('is the same pick for everyone on a given day and stable across calls', () => {
+    const a = getDailyInsight(at('2026-08-28'));
+    const b = getDailyInsight(new Date('2026-08-28T23:30:00+05:30'));
+
+    expect(a).not.toBeNull();
+    expect(a?.date).toBe('2026-08-28');
+    expect(b).toEqual(a);
+  });
+
+  it('shows every article once before repeating any', () => {
+    const start = new Date('2026-01-01T09:00:00+05:30');
+    const slugs: string[] = [];
+
+    for (let i = 0; i < total; i += 1) {
+      const insight = getDailyInsight(new Date(start.getTime() + i * 86_400_000));
+      expect(insight).not.toBeNull();
+      slugs.push(insight!.article.slug);
+    }
+
+    expect(new Set(slugs).size).toBe(total);
+  });
+
+  it('never repeats an article inside any window of the catalogue length', () => {
+    // Not just one aligned pass: a sliding window catches a reshuffle putting
+    // yesterday's article at the head of the next pass.
+    const start = new Date('2026-01-01T09:00:00+05:30');
+    const slugs = Array.from(
+      { length: total * 3 },
+      (_, i) => getDailyInsight(new Date(start.getTime() + i * 86_400_000))!.article.slug
+    );
+
+    for (let i = 0; i + total <= slugs.length; i += 1) {
+      expect(new Set(slugs.slice(i, i + total)).size).toBe(total);
+    }
+  });
+
+  it('quotes a different takeaway on the next pass through the catalogue', () => {
+    const day = new Date('2026-01-01T09:00:00+05:30');
+    const first = getDailyInsight(day)!;
+    const nextPass = getDailyInsight(new Date(day.getTime() + total * 86_400_000))!;
+
+    expect(nextPass.article.slug).toBe(first.article.slug);
+    expect(nextPass.text).not.toBe(first.text);
+  });
+
+  it('quotes a key takeaway of the article it links to', () => {
+    const insight = getDailyInsight(at('2026-08-28'))!;
+    const { article } = getLibraryArticle(insight.article.slug)!;
+
+    expect(article.keyTakeaways).toContain(insight.text);
   });
 });

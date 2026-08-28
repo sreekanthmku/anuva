@@ -48,7 +48,6 @@ export default function ProfileRoute() {
           >
             ← Home
           </button>
-          <img src="/anu.png" alt="Anuva" className="h-5 w-5 object-contain opacity-80" />
         </div>
       </header>
 
