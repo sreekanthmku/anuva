@@ -6,6 +6,7 @@ import { PrivacyRoute } from './features/privacy/PrivacyRoute';
 import { FamilyAuthProvider } from './features/auth/FamilyAuthProvider';
 import { FamilyProtectedRoute } from './features/auth/FamilyProtectedRoute';
 import JoinRoute from './features/auth/JoinRoute';
+import SignInRoute from './features/auth/SignInRoute';
 
 function ShellLayout() {
   return (
@@ -24,6 +25,9 @@ export default function App() {
         <Routes>
           {/* Public: the magic link lands here, token in the fragment. */}
           <Route path="/join" element={<JoinRoute />} />
+          {/* Public: a returning member whose session lapsed. The phone they verified at join is
+              the credential — the invite link was single-use and is long gone. */}
+          <Route path="/signin" element={<SignInRoute />} />
           <Route element={<ShellLayout />}>
             <Route path="/" element={<TodayRoute />} />
             <Route path="/learn" element={<LearnRoute />} />

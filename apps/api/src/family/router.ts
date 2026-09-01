@@ -18,6 +18,8 @@
  *   GET    /family/join/preview           her first name and whether the link still works
  *   POST   /family/join/request-otp       send a code to the family member's phone
  *   POST   /family/join/verify-otp        claim the link, create the member, open a family session
+ *   POST   /family/signin/request-otp     a returning member's lapsed session: code to their phone
+ *   POST   /family/signin/verify-otp      re-open the session against the phone verified at join
  *
  * Family side (`anuva_family_session`):
  *   GET    /family/me
@@ -53,6 +55,10 @@ import {
   familySupportActionBodySchema,
   familySupportActionResponseSchema,
   familyTodayResponseSchema,
+  familySignInRequestOtpBodySchema,
+  familySignInRequestOtpResponseSchema,
+  familySignInVerifyBodySchema,
+  familySignInVerifyResponseSchema,
   familyStatusResponseSchema,
   markFamilyInviteSharedBodySchema,
   registerFcmBodySchema,
@@ -77,6 +83,7 @@ import { buildFamilyActivity } from './activity.js';
 import { buildFamilyLearn, buildFamilyPrivacy, buildFamilyToday } from './digest.js';
 import { familyMeBody, previewInvite, requestJoinOtp, verifyJoinOtp, type OtpDeps } from './join.js';
 import { sendFamilyMessage } from './messages.js';
+import { requestSignInOtp, verifySignInOtp } from './signin.js';
 import { registerFamilyToken, unregisterFamilyToken } from './push.js';
 import { rateLimit } from './rateLimit.js';
 import { kindsDoneToday, recordSupportAction, scheduleSupportReminder } from './supportActions.js';
@@ -91,9 +98,17 @@ export interface FamilyRouterDeps {
   otp: OtpDeps;
 }
 
-/** The preview route is the only unauthenticated one. Keyed per IP, per minute. */
+/** The preview route needs no credential at all. Keyed per IP, per minute. */
 const PREVIEW_LIMIT = 10;
 const PREVIEW_WINDOW_MS = 60_000;
+
+/**
+ * Sign-in is the other route reachable without a credential, and it answers whether a phone number
+ * is connected to somebody — so it gets a tighter per-IP budget than the preview. The SMS behind it
+ * is separately capped per phone in Postgres; this cap is what stops one host enumerating numbers.
+ */
+const SIGNIN_LIMIT = 5;
+const SIGNIN_WINDOW_MS = 60_000;
 
 function noStore(res: Response): void {
   // The gate state names a family member. Never let a shared cache hold it.
@@ -235,6 +250,48 @@ export function createFamilyRouter({
       res.cookie(FAMILY_SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions(sessionExpiresAt));
       req.log?.info?.({ relationship: body.relationship }, 'family: member joined');
       res.json(familyJoinVerifyResponseSchema.parse(payload));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/signin/request-otp', async (req, res, next) => {
+    try {
+      noStore(res);
+
+      if (!rateLimit(`signin:${req.ip ?? 'unknown'}`, SIGNIN_LIMIT, SIGNIN_WINDOW_MS)) {
+        throw new FamilyError(429, 'rate_limited', 'Too many attempts. Try again in a minute.');
+      }
+
+      const body = familySignInRequestOtpBodySchema.parse(req.body);
+      const result = await requestSignInOtp({ phone: normalizePhone(body.phone) }, otp);
+      req.log?.info?.(
+        { challengeId: result.challengeId, phone: result.maskedPhone },
+        'family: sign-in code sent',
+      );
+      res.json(familySignInRequestOtpResponseSchema.parse(result));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/signin/verify-otp', async (req, res, next) => {
+    try {
+      noStore(res);
+
+      if (!rateLimit(`signin:${req.ip ?? 'unknown'}`, SIGNIN_LIMIT, SIGNIN_WINDOW_MS)) {
+        throw new FamilyError(429, 'rate_limited', 'Too many attempts. Try again in a minute.');
+      }
+
+      const body = familySignInVerifyBodySchema.parse(req.body);
+      const { body: payload, sessionToken, sessionExpiresAt } = await verifySignInOtp(
+        { ...body, phone: normalizePhone(body.phone) },
+        otp,
+      );
+
+      res.cookie(FAMILY_SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions(sessionExpiresAt));
+      req.log?.info?.('family: member signed back in');
+      res.json(familySignInVerifyResponseSchema.parse(payload));
     } catch (e) {
       next(e);
     }

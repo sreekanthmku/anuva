@@ -22,7 +22,10 @@ export function FamilyProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (status === 'anonymous') {
-    return <Navigate to="/join" replace />;
+    // Sign-in, not /join: a family session lasts 90 days, so by far the most common way to land
+    // here is a lapsed session on a member who joined months ago and has no link left to open.
+    // Someone arriving with a live invite link lands on /join directly, token in the fragment.
+    return <Navigate to="/signin" replace />;
   }
 
   return <>{children}</>;

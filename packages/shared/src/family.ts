@@ -192,6 +192,31 @@ export const familyMeResponseSchema = z.object({
 
 export const familyJoinVerifyResponseSchema = familyMeResponseSchema;
 
+// ─────────────────────────────────────────────
+// Family side — signing back in
+// ─────────────────────────────────────────────
+
+/**
+ * A family session lasts 90 days and the invite link that opened it is single-use, so once it
+ * lapses the member has no way back in without asking her for a new link. These two routes are that
+ * way back: the phone they already proved at join is the credential, and an OTP against it re-opens
+ * the session. No invite token is involved — the membership row is the standing grant, and it is
+ * still checked for `active` on every request afterwards.
+ */
+export const familySignInRequestOtpBodySchema = z.object({
+  phone: z.string().min(6).max(20),
+});
+
+export const familySignInRequestOtpResponseSchema = familyJoinRequestOtpResponseSchema;
+
+export const familySignInVerifyBodySchema = z.object({
+  challengeId: z.string(),
+  phone: z.string().min(6).max(20),
+  otp: z.string().min(4).max(8),
+});
+
+export const familySignInVerifyResponseSchema = familyMeResponseSchema;
+
 export const familyLogoutResponseSchema = z.object({ ok: z.literal(true) });
 
 // ─────────────────────────────────────────────
@@ -340,6 +365,10 @@ export type FamilyJoinRequestOtpResponse = z.infer<typeof familyJoinRequestOtpRe
 export type FamilyJoinVerifyBody = z.infer<typeof familyJoinVerifyBodySchema>;
 export type FamilyJoinVerifyResponse = z.infer<typeof familyJoinVerifyResponseSchema>;
 export type FamilyMeResponse = z.infer<typeof familyMeResponseSchema>;
+export type FamilySignInRequestOtpBody = z.infer<typeof familySignInRequestOtpBodySchema>;
+export type FamilySignInRequestOtpResponse = z.infer<typeof familySignInRequestOtpResponseSchema>;
+export type FamilySignInVerifyBody = z.infer<typeof familySignInVerifyBodySchema>;
+export type FamilySignInVerifyResponse = z.infer<typeof familySignInVerifyResponseSchema>;
 export type FamilyLogoutResponse = z.infer<typeof familyLogoutResponseSchema>;
 export type FamilyMetric = z.infer<typeof familyMetricSchema>;
 export type FamilyCard = z.infer<typeof familyCardSchema>;

@@ -206,6 +206,11 @@ enum OtpChallengePurpose {
   /// /auth/request-otp: the only guard on this purpose is a valid, unclaimed invite token, and that
   /// guard lives on the /family/join routes alone.
   family_join
+  /// A family member who already joined re-opening a lapsed session. Their invite link is spent
+  /// and single-use, so the phone they proved at join is the only credential they still hold. Also
+  /// absent from `authPurposeSchema`: it is driven from /family/signin alone, and only for a phone
+  /// that already owns an active membership.
+  family_signin
 }
 
 enum OtpChallengeStatus {

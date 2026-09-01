@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { FamilyJoinPreviewResponse, FamilyRelationship } from '@anuva/shared';
 import { ApiError } from '../../shared/lib/api';
+import { AuthShell } from './AuthShell';
+import { authMulish as mulish } from './authStyles';
 import { useFamilyAuth } from './family-auth-context';
 import {
   fetchInvitePreview,
@@ -30,30 +32,6 @@ const RELATIONSHIPS: { value: FamilyRelationship; label: string }[] = [
   { value: 'other', label: 'Someone else' },
 ];
 
-const mulish = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' };
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="min-h-mobile bg-surface px-5 pb-10 pt-[max(2rem,env(safe-area-inset-top))]">
-      <div className="mx-auto w-full max-w-[420px]">
-        <div className="flex items-center gap-2.5">
-          <img src="/anuva-logo-icon.png" alt="" className="h-9 w-9 object-contain" aria-hidden />
-          <div>
-            <div
-              className="text-[15px] tracking-[0.14em] text-on-surface"
-              style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
-            >
-              anuva family
-            </div>
-            <p className="font-script text-[13px] text-secondary">a soft place to land.</p>
-          </div>
-        </div>
-        <div className="mt-7">{children}</div>
-      </div>
-    </main>
-  );
-}
-
 export default function JoinRoute() {
   const navigate = useNavigate();
   const { setSession } = useFamilyAuth();
@@ -74,8 +52,11 @@ export default function JoinRoute() {
   const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
+    // No token in the fragment means they did not arrive from a link — a bookmark, or the app icon
+    // on their home screen. Nothing to preview, so send them to sign-in rather than telling someone
+    // who joined months ago that a link they never opened has expired.
     if (!token) {
-      setStep('invalid');
+      navigate('/signin', { replace: true });
       return;
     }
 
@@ -91,7 +72,7 @@ export default function JoinRoute() {
         setStep('invalid');
       }
     })();
-  }, [token]);
+  }, [token, navigate]);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -148,18 +129,18 @@ export default function JoinRoute() {
 
   if (step === 'loading') {
     return (
-      <Shell>
+      <AuthShell>
         <p className="text-[13.5px] text-on-surface-variant" style={mulish}>
           Checking your link…
         </p>
-      </Shell>
+      </AuthShell>
     );
   }
 
   if (step === 'invalid') {
     const claimed = preview?.status === 'claimed';
     return (
-      <Shell>
+      <AuthShell>
         <h1
           className="text-[24px] leading-[1.2] text-on-surface"
           style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
@@ -172,14 +153,24 @@ export default function JoinRoute() {
             : (error ??
               'It may have expired, or been replaced by a newer one. Ask her to share it again.')}
         </p>
-      </Shell>
+        <Link
+          to="/signin"
+          className="mt-6 inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary"
+          style={mulish}
+        >
+          Sign in with your phone
+        </Link>
+        <p className="mt-3 text-[12px] leading-[1.6] text-outline" style={mulish}>
+          If you joined before, your number still works — you do not need a new link.
+        </p>
+      </AuthShell>
     );
   }
 
   const her = preview?.patientFirstName ?? 'She';
 
   return (
-    <Shell>
+    <AuthShell>
       <div
         className="text-[11px] font-semibold uppercase tracking-[0.16em] text-tertiary"
         style={mulish}
@@ -332,6 +323,6 @@ export default function JoinRoute() {
           </button>
         </form>
       )}
-    </Shell>
+    </AuthShell>
   );
 }

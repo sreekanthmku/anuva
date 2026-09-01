@@ -5,6 +5,10 @@ import type {
   FamilyJoinVerifyBody,
   FamilyJoinVerifyResponse,
   FamilyMeResponse,
+  FamilySignInRequestOtpBody,
+  FamilySignInRequestOtpResponse,
+  FamilySignInVerifyBody,
+  FamilySignInVerifyResponse,
 } from '@anuva/shared';
 import { apiFetch } from '../../shared/lib/api';
 
@@ -24,6 +28,28 @@ export function requestJoinCode(body: FamilyJoinRequestOtpBody): Promise<FamilyJ
 
 export function verifyJoinCode(body: FamilyJoinVerifyBody): Promise<FamilyJoinVerifyResponse> {
   return apiFetch<FamilyJoinVerifyResponse>('/api/family/join/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Signing back in after the 90-day session lapses. The invite link is single-use and long gone by
+ * then, so the phone verified at join is the credential.
+ */
+export function requestSignInCode(
+  body: FamilySignInRequestOtpBody,
+): Promise<FamilySignInRequestOtpResponse> {
+  return apiFetch<FamilySignInRequestOtpResponse>('/api/family/signin/request-otp', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function verifySignInCode(
+  body: FamilySignInVerifyBody,
+): Promise<FamilySignInVerifyResponse> {
+  return apiFetch<FamilySignInVerifyResponse>('/api/family/signin/verify-otp', {
     method: 'POST',
     body: JSON.stringify(body),
   });
