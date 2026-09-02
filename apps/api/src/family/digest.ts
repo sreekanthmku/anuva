@@ -1,6 +1,7 @@
 import { prisma } from '@anuva/database';
 import type {
   FamilyLearnResponse,
+  FamilyRelationship,
   FamilySupportActionKind,
   FamilyMetric,
   FamilyMetricKey,
@@ -9,7 +10,6 @@ import type {
   ReportDeltaTone,
   ReportRing,
 } from '@anuva/shared';
-import { getLibraryFeed } from '../library.js';
 import { buildSummary } from '../report/build.js';
 import { summaryAnchor } from '../report/calendar.js';
 import {
@@ -22,7 +22,6 @@ import {
   FAMILY_SHARED_SCOPES,
   LEARN_NUDGES,
   LEARN_TIPS,
-  LEARN_TOPICS,
   METRIC_NOUNS,
   SUPPORT_BY_METRIC,
   SUPPORT_STEADY,
@@ -30,6 +29,7 @@ import {
   arrowFor,
   metricValue,
 } from './content.js';
+import { familyArticleSections } from './articles.js';
 import { FamilyError } from './errors.js';
 
 /**
@@ -310,51 +310,30 @@ function weekIndex(now: Date): number {
 }
 
 /**
- * Topics, drawn from the real library rather than a hardcoded list.
+ * The Learn tab.
  *
- * Three of the library's five categories are served: `clinical` is her medical reading and has no
- * business in the family app, and `nutrition` is close enough to a care plan to leave out. What is
- * left — sleep, mind, movement — is general education about the transition, which is exactly what a
- * family member is here to learn.
+ * Two rotating cards on top — a nudge and a tip, moved along by the week index so the tab changes
+ * without a schedule or stored state — and under them the family article list.
  *
- * Titles only. The family app has no reader, and shipping slugs would imply one exists.
- *
- * The list rotates weekly off the same index as the nudges, so the tab changes without anyone
- * scheduling anything, and falls back to the static list if the library ever comes back empty.
+ * The list is drawn from `articles.ts`, the family app's own corpus, and never from the patient
+ * library. That separation is the point: her library is care reading written for her, and serving
+ * it here would hand a family member her care content. It is also why this list is filtered by
+ * relationship rather than shown whole.
  */
-const FAMILY_TOPIC_CATEGORIES = ['sleep', 'mind', 'movement'] as const;
-const TOPICS_SHOWN = 4;
-
-export function buildFamilyTopics(now = new Date()): string[] {
-  const titles: string[] = [];
-
-  for (const category of FAMILY_TOPIC_CATEGORIES) {
-    try {
-      const feed = getLibraryFeed({ category });
-      for (const article of [feed.feature, ...feed.articles]) {
-        if (article) titles.push(article.title);
-      }
-    } catch {
-      // A malformed library must not take the family app's Learn tab down with it.
-    }
-  }
-
-  if (titles.length === 0) {
-    return LEARN_TOPICS;
-  }
-
-  // Rotate the window rather than shuffling: the same week shows the same four to everyone, and
-  // consecutive weeks move along the list instead of re-randomising it.
-  const start = (weekIndex(now) * TOPICS_SHOWN) % titles.length;
-  return Array.from({ length: Math.min(TOPICS_SHOWN, titles.length) }, (_, offset) =>
-    titles[(start + offset) % titles.length]!,
-  );
+/**
+ * This week's nudge on its own, so the push job can send it without asking for a relationship it
+ * does not have. The tab and the notification therefore cannot drift apart.
+ */
+export function weeklyLearnNudge(now = new Date()): { headline: string; body: string } {
+  return LEARN_NUDGES[weekIndex(now) % LEARN_NUDGES.length]!;
 }
 
-export function buildFamilyLearn(now = new Date()): FamilyLearnResponse {
-  const index = weekIndex(now);
-  const nudge = LEARN_NUDGES[index % LEARN_NUDGES.length]!;
-  const tip = LEARN_TIPS[index % LEARN_TIPS.length]!;
+export function buildFamilyLearn(
+  relationship: FamilyRelationship,
+  now = new Date(),
+): FamilyLearnResponse {
+  const nudge = weeklyLearnNudge(now);
+  const tip = LEARN_TIPS[weekIndex(now) % LEARN_TIPS.length]!;
 
   return {
     eyebrow: 'Family learning',
@@ -362,8 +341,8 @@ export function buildFamilyLearn(now = new Date()): FamilyLearnResponse {
     subline: 'Two supportive nudges each week',
     nudge: { label: 'This week’s nudge', headline: nudge.headline, body: nudge.body },
     tip: { label: 'Communication tip', headline: tip.headline, body: tip.body },
-    topicsLabel: 'Explore topics',
-    topics: buildFamilyTopics(now),
+    articlesLabel: 'Explore topics',
+    sections: familyArticleSections(relationship),
   };
 }
 

@@ -52,7 +52,7 @@ function selectRows(args: { where?: Where; take?: number }): TurnRow[] {
 }
 
 const mocks = vi.hoisted(() => ({
-  generateReply: vi.fn(async () => ({ reply: '<<generated>>', symptom: null as string | null })),
+  generateReply: vi.fn(async () => ({ reply: '<<generated>>', symptom: 'Joint pain' as string | null })),
   embedQuestion: vi.fn(async () => new Float32Array(512)),
   lookup: vi.fn(async () => ({ hit: null, bestScore: 0.1 })),
   store: vi.fn(async () => undefined),
@@ -106,17 +106,14 @@ const { answer } = await import('../src/anu/probe/engine.js');
 
 const USER = 'user_probe';
 
-/// The chip she taps at each rung, in order.
-const TAPS = [
-  'Joints — knees, fingers, wrists',
-  'Mornings — stiff for a while',
-  'Sleep is broken',
-  'More stress than usual',
-  'Stairs, chores, everyday things',
-];
-
 function lastTurn(): TurnRow {
   return rows[rows.length - 1]!;
+}
+
+/// Whatever directive the model was handed on the Nth call, or undefined when
+/// the classic engine took the turn (it passes none).
+function directive(call = 0): string | undefined {
+  return mocks.generateReply.mock.calls[call]?.[4] as string | undefined;
 }
 
 beforeEach(() => {
@@ -124,92 +121,160 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('entering the ladder', () => {
-  it('asks the first rung for a vague opener, with no model call', async () => {
+describe('a vague opener', () => {
+  it('asks the location rung with no model call at all', async () => {
     const res = await answer(USER, 'feeling body pain');
 
     expect(res.source).toBe('probe');
     expect(res.reply).toContain('Where does it sit most?');
     expect(res.suggestions).toContain('Joints — knees, fingers, wrists');
-    expect(res.escalation).toBeNull();
     expect(mocks.generateReply).not.toHaveBeenCalled();
     expect(lastTurn()).toMatchObject({ mode: 'probe', probeAxis: 'location', probeDepth: 0 });
   });
 
-  it('leaves an opener that already names a symptom to the classic engine', async () => {
-    const res = await answer(USER, 'my joint pain is bad today');
-
-    expect(res.source).toBe('model');
-    expect(mocks.generateReply).toHaveBeenCalledTimes(1);
-    // The classic engine passes no directive at all — this turn went through
-    // it untouched.
-    expect(mocks.generateReply.mock.calls[0]![4]).toBeUndefined();
-    expect(lastTurn().probeAxis).toBeNull();
-  });
-});
-
-describe('walking the ladder', () => {
-  it('locks the symptom from her tap and answers it in full', async () => {
+  it('locks the symptom from her answer and asks the next rung, still without explaining', async () => {
     await answer(USER, 'feeling body pain');
-    const res = await answer(USER, TAPS[0]!);
+    const res = await answer(USER, 'Joints — knees, fingers, wrists');
 
-    expect(res.source).toBe('model');
-    expect(mocks.generateReply).toHaveBeenCalledTimes(1);
-    const directive = mocks.generateReply.mock.calls[0]![4] as string;
-    expect(directive).toContain('Joint pain');
-    expect(directive).toContain('do NOT end on a question');
-    // The generated answer, then the app's own next question underneath it.
-    expect(res.reply).toContain('<<generated>>');
+    // Authored ack plus the next question. No model call: the whole descent of
+    // a vague ladder is free.
+    expect(res.source).toBe('probe');
+    expect(mocks.generateReply).not.toHaveBeenCalled();
     expect(res.reply).toContain('When is it worst?');
-    // The symptom recorded is the ladder's, not whatever the model nominated.
     expect(lastTurn()).toMatchObject({
       symptom: 'Joint pain',
       probeAxis: 'timing',
       probeDepth: 1,
     });
   });
+});
 
-  it('serves the three middle rungs without a model call', async () => {
-    await answer(USER, 'feeling body pain');
-    await answer(USER, TAPS[0]!);
-    mocks.generateReply.mockClear();
+describe('a named symptom', () => {
+  // The case from the bug report. "Joint pain" used to fall through to classic,
+  // which explained the cause and offered advice on turn one — the thing the
+  // ladder exists to stop.
+  it('enters the ladder rather than falling through to classic', async () => {
+    const res = await answer(USER, 'Joint pain');
 
-    const timing = await answer(USER, TAPS[1]!);
-    expect(timing.source).toBe('probe');
-    expect(timing.reply).toContain('Has anything else turned up');
-
-    const cluster = await answer(USER, TAPS[2]!);
-    expect(cluster.source).toBe('probe');
-    expect(cluster.reply).toContain('Anything shifted in the last few months?');
-
-    const context = await answer(USER, TAPS[3]!);
-    expect(context.source).toBe('probe');
-    expect(context.reply).toContain("What's it stopping you doing?");
-
-    expect(mocks.generateReply).not.toHaveBeenCalled();
-    expect(lastTurn()).toMatchObject({ probeAxis: 'impact', probeDepth: 4 });
+    expect(res.source).toBe('model');
+    // Acknowledgement only, and the app's own question underneath it.
+    expect(directive()).toContain('Do NOT explain why it happens');
+    expect(directive()).toContain('the reason comes at the END');
+    expect(res.reply).toContain('Is there any pattern to when it lands?');
+    expect(res.suggestions).toContain('First thing in the morning');
+    expect(lastTurn()).toMatchObject({ symptom: 'Joint pain', probeAxis: 'timing' });
   });
 
-  it('carries her answers forward rather than re-deriving them', async () => {
-    await answer(USER, 'feeling body pain');
-    for (const tap of TAPS.slice(0, 4)) await answer(USER, tap);
+  it('skips the location rung, so the ladder is four rungs and not five', async () => {
+    await answer(USER, 'Joint pain');
+
+    // location is already answered by the symptom itself.
+    expect(lastTurn().probeAnswers).toEqual({ location: 'joint pain' });
+    expect(lastTurn().probeDepth).toBe(1);
+  });
+
+  it('answers a greeting without starting a ladder', async () => {
+    mocks.generateReply.mockResolvedValueOnce({ reply: 'Hi, I am Anu.', symptom: null });
+    const res = await answer(USER, 'hi');
+
+    expect(res.reply).toBe('Hi, I am Anu.');
+    expect(res.suggestions).toEqual([]);
+    expect(lastTurn().probeAxis).toBeNull();
+  });
+});
+
+describe('depth follows what she has already said', () => {
+  it('skips the rungs her opening message answers', async () => {
+    mocks.generateReply.mockResolvedValueOnce({
+      reply: '<<ack>>',
+      symptom: 'Joint pain',
+    });
+    // Timing and cluster are both in that sentence.
+    const res = await answer(USER, 'my knees are stiff every morning and my periods have changed');
 
     expect(lastTurn().probeAnswers).toEqual({
-      location: 'joints',
+      location: 'joint pain',
       timing: 'worst in the mornings',
-      cluster: 'broken sleep',
-      context: 'more stress',
+      cluster: 'cycle changes',
     });
+    // Straight to the fourth rung — two questions left, not four.
+    expect(res.reply).toContain('Anything shifted in the last few months?');
+    expect(lastTurn().probeAxis).toBe('context');
+  });
+
+  it('still asks the two rungs a keyword cannot answer for her', async () => {
+    mocks.generateReply.mockResolvedValueOnce({ reply: '<<ack>>', symptom: 'Joint pain' });
+    const res = await answer(
+      USER,
+      'stiff every morning, my periods have changed, and work has been stressful',
+    );
+
+    // Timing and cluster came out of her sentence. "What's changed recently" did
+    // NOT — a passing mention of work stress is not her answering that.
+    expect(lastTurn().probeAnswers).toEqual({
+      location: 'joint pain',
+      timing: 'worst in the mornings',
+      cluster: 'cycle changes',
+    });
+    expect(res.reply).toContain('Anything shifted in the last few months?');
+  });
+
+  it('absorbs extra answers she volunteers mid-ladder', async () => {
+    await answer(USER, 'feeling body pain');
+    await answer(USER, 'Joints — knees, fingers, wrists');
+    mocks.generateReply.mockClear();
+
+    // Answers the timing rung AND the cluster rung in one sentence.
+    const res = await answer(USER, 'mornings mostly, and my periods have changed too');
+
+    expect(lastTurn().probeAnswers).toMatchObject({
+      timing: 'worst in the mornings',
+      cluster: 'cycle changes',
+    });
+    // So the cluster rung is not asked back.
+    expect(res.reply).toContain('Anything shifted in the last few months?');
+    expect(mocks.generateReply).not.toHaveBeenCalled();
+  });
+
+  // One phrase must not answer three different rungs. "My sleep is broken"
+  // legitimately answers the cluster rung; recording it as ALSO meaning she
+  // sleeps less than she used to and that the pain stops her sleeping would be
+  // putting words in her mouth and then reasoning from them.
+  it('never lets one mention fill the rungs she has to judge for herself', async () => {
+    mocks.generateReply.mockResolvedValueOnce({ reply: '<<ack>>', symptom: 'Joint pain' });
+    await answer(USER, 'my knees hurt and my sleep is broken');
+
+    expect(lastTurn().probeAnswers).toEqual({
+      location: 'joint pain',
+      cluster: 'broken sleep',
+    });
+    expect(lastTurn().probeAxis).toBe('timing');
+  });
+});
+
+describe('the reason lands once, at the end', () => {
+  const TAPS = [
+    'Joints — knees, fingers, wrists',
+    'Mornings — stiff for a while',
+    'Sleep is broken',
+    'More stress than usual',
+    'Stairs, chores, everyday things',
+  ];
+
+  it('makes exactly one model call across a full five-rung ladder', async () => {
+    await answer(USER, 'feeling body pain');
+    for (const tap of TAPS) await answer(USER, tap);
+
+    // Six turns, one completion — and it is the closing one.
+    expect(mocks.generateReply).toHaveBeenCalledTimes(1);
+    expect(directive()).toContain('the only turn in this flow where you explain');
   });
 
   it('closes with the traced chain and ends the ladder', async () => {
     await answer(USER, 'feeling body pain');
     for (const tap of TAPS.slice(0, 4)) await answer(USER, tap);
-    mocks.generateReply.mockClear();
-
     const res = await answer(USER, TAPS[4]!);
 
-    expect(res.source).toBe('model');
     expect(res.reply).toContain(
       "Here's the thread we pulled together: joint pain, worst in the mornings, " +
         "alongside broken sleep, with more stress in the mix — and it's landing on everyday things.",
@@ -220,37 +285,41 @@ describe('walking the ladder', () => {
     expect(lastTurn()).toMatchObject({ probeAxis: null, probeDepth: 5, symptom: 'Joint pain' });
   });
 
-  it('hands the turn after the close back to the classic engine', async () => {
+  it('converges early when she asks for the answer instead of giving one', async () => {
     await answer(USER, 'feeling body pain');
-    for (const tap of TAPS) await answer(USER, tap);
+    await answer(USER, TAPS[0]!);
+    await answer(USER, TAPS[1]!);
     mocks.generateReply.mockClear();
 
-    await answer(USER, 'What can I do today?');
-    expect(mocks.generateReply.mock.calls[0]![4]).toBeUndefined();
+    const res = await answer(USER, 'why does this happen?');
+
+    // She gets the reason now, built from the two rungs she did answer.
+    expect(directive()).toContain('the only turn in this flow where you explain');
+    expect(directive()).toContain('do NOT ask for the rest');
+    expect(res.reply).toContain('joint pain, worst in the mornings');
+    expect(lastTurn().probeAxis).toBeNull();
   });
+
+  // One ladder per thread. After it closes, a follow-up wants an ANSWER —
+  // meeting "why does this happen?" with a second round of questions is the
+  // exact failure the ladder was built to remove.
+  it.each(['Log joint pain', 'why does this happen?', 'my shoulders hurt too'])(
+    'hands "%s" to the classic engine after the ladder has closed',
+    async (message) => {
+      await answer(USER, 'feeling body pain');
+      for (const tap of TAPS) await answer(USER, tap);
+      mocks.generateReply.mockClear();
+
+      await answer(USER, message);
+      expect(directive()).toBeUndefined();
+    },
+  );
 });
 
 describe('answering in her own words', () => {
-  // Most women type rather than tap, so these are the paths that carry real
-  // traffic — not the exact-chip ones above.
-  it('locks the symptom from a typed answer, and says she typed it', async () => {
+  it('advances a rung from her own words, with no model call', async () => {
     await answer(USER, 'feeling body pain');
-    const res = await answer(USER, 'mostly my knees, and my fingers some days');
-
-    expect(res.source).toBe('model');
-    const directive = mocks.generateReply.mock.calls[0]![4] as string;
-    expect(directive).toContain('Joint pain');
-    expect(directive).toContain('in her own words');
-    expect(directive).not.toContain('tapped');
-    // sheTyped is true, which is what the name rules in prompt.ts turn on.
-    expect(mocks.generateReply.mock.calls[0]![3]).toBe(true);
-    expect(res.reply).toContain('When is it worst?');
-    expect(lastTurn()).toMatchObject({ symptom: 'Joint pain', probeAxis: 'timing', probeDepth: 1 });
-  });
-
-  it('advances a middle rung from her own words, with no model call', async () => {
-    await answer(USER, 'feeling body pain');
-    await answer(USER, TAPS[0]!);
+    await answer(USER, 'mostly my knees');
     mocks.generateReply.mockClear();
 
     const res = await answer(USER, 'yes, mornings are the worst');
@@ -258,21 +327,13 @@ describe('answering in her own words', () => {
     expect(res.source).toBe('probe');
     expect(res.reply).toContain('Has anything else turned up');
     expect(mocks.generateReply).not.toHaveBeenCalled();
-    expect(lastTurn().probeAnswers).toEqual({
-      location: 'joints',
-      timing: 'worst in the mornings',
-    });
   });
 
   it('asks again rather than picking, when her words cover two options', async () => {
     await answer(USER, 'feeling body pain');
-    mocks.generateReply.mockClear();
-
     const res = await answer(USER, 'my neck and my knees both');
 
-    // No symptom was locked from an ambiguous answer — the rung is repeated.
     expect(res.reply).toContain('Where does it sit most?');
-    expect(res.suggestions).toContain('Joints — knees, fingers, wrists');
     expect(lastTurn()).toMatchObject({ symptom: null, probeAxis: 'location', probeDepth: 0 });
   });
 });
@@ -280,57 +341,32 @@ describe('answering in her own words', () => {
 describe('leaving the ladder', () => {
   it('answers an aside and keeps the rung on screen', async () => {
     await answer(USER, 'feeling body pain');
-    await answer(USER, TAPS[0]!);
-    await answer(USER, TAPS[1]!);
-    expect(lastTurn().probeAxis).toBe('cluster');
+    await answer(USER, 'Joints — knees, fingers, wrists');
     mocks.generateReply.mockClear();
 
-    const res = await answer(USER, 'wait, is this going to be permanent?');
+    const res = await answer(USER, 'is this going to be permanent?');
 
-    expect(res.source).toBe('model');
-    // Her question is answered, and the rung she has not answered is repeated
-    // underneath with its chips still offered.
     expect(res.reply).toContain('<<generated>>');
-    expect(res.reply).toContain('Has anything else turned up');
-    expect(res.suggestions).toContain('Sleep is broken');
-    expect(mocks.generateReply.mock.calls[0]![4]).toContain('Answer HER message');
-    expect(lastTurn()).toMatchObject({ probeAxis: 'cluster', probeDepth: 2, probeHandbacks: 1 });
+    expect(res.reply).toContain('When is it worst?');
+    expect(directive()).toContain('Answer HER message');
+    expect(lastTurn()).toMatchObject({ probeAxis: 'timing', probeHandbacks: 1 });
 
     // And the ladder still works afterwards.
-    const resumed = await answer(USER, TAPS[2]!);
+    const resumed = await answer(USER, 'Mornings — stiff for a while');
     expect(resumed.source).toBe('probe');
-    expect(resumed.reply).toContain('Anything shifted in the last few months?');
   });
 
   it('gives up after a second aside rather than badgering her', async () => {
     await answer(USER, 'feeling body pain');
-    await answer(USER, TAPS[0]!);
-    await answer(USER, TAPS[1]!);
-    await answer(USER, 'wait, is this going to be permanent?');
+    await answer(USER, 'Joints — knees, fingers, wrists');
+    await answer(USER, 'is this going to be permanent?');
     mocks.generateReply.mockClear();
 
-    const res = await answer(USER, 'and will HRT help with it?');
+    const res = await answer(USER, 'and does everyone get it this badly?');
 
-    // Classic engine, no ladder directive, no rung repeated a third time.
-    expect(mocks.generateReply.mock.calls[0]![4]).toBeUndefined();
+    expect(directive()).toBeUndefined();
     expect(res.source).toBe('model');
-    expect(res.reply).not.toContain('Has anything else turned up');
     expect(lastTurn().probeAxis).toBeNull();
-  });
-
-  it('resets the handback count once she answers a rung', async () => {
-    await answer(USER, 'feeling body pain');
-    await answer(USER, TAPS[0]!);
-    await answer(USER, 'wait, is this going to be permanent?');
-    expect(lastTurn().probeHandbacks).toBe(1);
-
-    await answer(USER, TAPS[1]!);
-    expect(lastTurn().probeHandbacks).toBe(0);
-
-    // So a later aside gets the rung repeated again, rather than being treated
-    // as the second strike of a run that ended two turns ago.
-    const res = await answer(USER, 'sorry, one more thing — is it hormonal?');
-    expect(res.reply).toContain('Has anything else turned up');
   });
 
   it('ends the ladder when she picks the way out of the first rung', async () => {
@@ -348,8 +384,7 @@ describe('leaving the ladder', () => {
 describe('safety', () => {
   it('escalates mid-ladder instead of finishing its questions', async () => {
     await answer(USER, 'feeling body pain');
-    await answer(USER, TAPS[0]!);
-    await answer(USER, TAPS[1]!);
+    await answer(USER, 'Joints — knees, fingers, wrists');
     mocks.generateReply.mockClear();
 
     const res = await answer(USER, 'honestly I feel hopeless');
@@ -358,14 +393,12 @@ describe('safety', () => {
     expect(res.suggestions).toEqual([]);
     expect(res.escalation?.area).toBe('Mental health');
     expect(res.escalation?.helplines.map((h) => h.number)).toContain('14416');
-    // The safety reply is clinician-authored and served verbatim — no model ran.
     expect(mocks.generateReply).not.toHaveBeenCalled();
     expect(lastTurn().mode).toBe('probe');
 
-    // The ladder does not resume afterwards. Picking back up with "has anything
-    // else turned up around the same months?" after a crisis reply would be
-    // grotesque, so the safety turn ends it.
-    const after = await answer(USER, TAPS[2]!);
+    // And it does not resume. Picking back up with "has anything else turned up
+    // around the same months?" after a crisis reply would be grotesque.
+    const after = await answer(USER, 'Sleep is broken');
     expect(after.source).toBe('model');
   });
 

@@ -11,6 +11,7 @@ import {
   getCycleLengthSourceLabel,
   getCycleRingDash,
   hasAssumedEnd,
+  hasUnconfirmedEnd,
   isCycleTrackerReady,
   isEditablePeriod,
   periodLogForDate,
@@ -146,31 +147,80 @@ describe('getCycleRingDash', () => {
 describe('periodLogForDate', () => {
   const now = new Date(2025, 2, 12, 12, 0, 0); // 12 Mar 2025
 
-  it('keeps an open period through a longer-than-usual bleed', () => {
-    // Day 6 of an open period whose effective length is 5. The action for this
-    // day must still be "period ended", not "period started".
+  it('keeps her current period through a bleed that outlasts our prediction', () => {
+    // Day 6 of a period we predicted would end on day 5. The action for this day
+    // must still be "period ended", not "period started".
     const data = cycle({
       effectivePeriodLength: 5,
-      recentPeriods: [{ id: 'p1', startDate: '2025-03-07', endDate: null }],
+      recentPeriods: [
+        { id: 'p1', startDate: '2025-03-07', endDate: '2025-03-11', endDateSource: 'inferred' },
+      ],
       editablePeriodId: 'p1',
     });
     expect(periodLogForDate(data, '2025-03-12', now)?.id).toBe('p1');
     expect(periodLogForDate(data, '2025-03-07', now)?.id).toBe('p1');
   });
 
-  it('does not reach past today for an open period', () => {
+  it('does not reach past today', () => {
     const data = cycle({
-      recentPeriods: [{ id: 'p1', startDate: '2025-03-07', endDate: null }],
+      recentPeriods: [
+        { id: 'p1', startDate: '2025-03-07', endDate: '2025-03-11', endDateSource: 'inferred' },
+      ],
     });
     expect(periodLogForDate(data, '2025-03-13', now)).toBeNull();
   });
 
-  it('respects the end date she gave for a closed period', () => {
+  it('stops a predicted end short of the next period she logged', () => {
+    // Without this bound an old period whose end we predicted would claim every
+    // day that followed it, and days from cycles ago would still offer to end it.
     const data = cycle({
-      recentPeriods: [{ id: 'p1', startDate: '2025-03-01', endDate: '2025-03-04' }],
+      recentPeriods: [
+        { id: 'newer', startDate: '2025-03-08', endDate: '2025-03-12', endDateSource: 'inferred' },
+        { id: 'older', startDate: '2025-01-05', endDate: '2025-01-09', endDateSource: 'inferred' },
+      ],
+      editablePeriodId: 'newer',
+    });
+    // Days between the two periods belong to neither.
+    expect(periodLogForDate(data, '2025-02-01', now)).toBeNull();
+    expect(periodLogForDate(data, '2025-03-07', now)).toBeNull();
+    expect(periodLogForDate(data, '2025-01-06', now)?.id).toBe('older');
+    expect(periodLogForDate(data, '2025-03-10', now)?.id).toBe('newer');
+  });
+
+  it('treats an end date she gave as final', () => {
+    const data = cycle({
+      recentPeriods: [
+        { id: 'p1', startDate: '2025-03-01', endDate: '2025-03-04', endDateSource: 'user' },
+      ],
     });
     expect(periodLogForDate(data, '2025-03-04', now)?.id).toBe('p1');
+    // Her own end date does not stretch to today the way a prediction does.
     expect(periodLogForDate(data, '2025-03-05', now)).toBeNull();
+  });
+});
+
+describe('hasUnconfirmedEnd', () => {
+  it('is true while the end is still our prediction', () => {
+    expect(
+      hasUnconfirmedEnd({
+        id: 'p',
+        startDate: '2025-03-01',
+        endDate: '2025-03-05',
+        endDateSource: 'inferred',
+      }),
+    ).toBe(true);
+    expect(hasUnconfirmedEnd({ id: 'p', startDate: '2025-03-01', endDate: null })).toBe(true);
+  });
+
+  it('is false once she has closed the period herself', () => {
+    expect(
+      hasUnconfirmedEnd({
+        id: 'p',
+        startDate: '2025-03-01',
+        endDate: '2025-03-05',
+        endDateSource: 'user',
+      }),
+    ).toBe(false);
   });
 });
 

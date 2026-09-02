@@ -122,6 +122,41 @@ describe('no diagnosis', () => {
   });
 });
 
+describe('the rungs never explain', () => {
+  // The point of the ladder is WHERE the reason goes: it lands once, at the end,
+  // with the whole picture. An acknowledgement that explains a little spends
+  // that payoff before there is anything to reason from, and turns the flow into
+  // a lecture with questions bolted on. This is the test that keeps it honest —
+  // a well-meant edit to an ack is exactly how the behaviour would come back.
+  it('never names a mechanism on the way down', () => {
+    expectNone([
+      'hormon',
+      'inflammat',
+      'because',
+      'due to',
+      "that's why",
+      'the reason is',
+      'what happens is',
+      'your body is',
+    ]);
+  });
+
+  it('never gives advice on the way down', () => {
+    expectNone([
+      'you should',
+      'you could try',
+      'try a ',
+      'try to ',
+      'can help',
+      'will help',
+      'helps with',
+      'i suggest',
+      'i recommend',
+      'make sure you',
+    ]);
+  });
+});
+
 describe('shape', () => {
   it('never uses headings, bullets or numbered lists', () => {
     for (const { where, text } of STRINGS) {

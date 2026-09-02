@@ -214,10 +214,11 @@ export function buildCycleDayMarks(
   const periodLength = data?.effectivePeriodLength ?? 5;
   const cycleLength = getCycleLength(data);
   const predictions = data?.predictions ?? [];
+  const answeredFlowDays = new Set((data?.flowLogs ?? []).map((f) => f.date));
   const logged = (data?.recentPeriods ?? []).map((p) => ({
     start: p.startDate,
     end: loggedPeriodEnd(p, periodLength, todayStr),
-    // Only the day she named is certain; the rest of an assumed span is our guess.
+    // Only the day she named is certain; the rest of a predicted span is our guess.
     assumedFrom: p.endDate == null || p.endDateSource === 'inferred' ? p.startDate : null,
   }));
 
@@ -228,7 +229,9 @@ export function buildCycleDayMarks(
     const isAssumedPeriod =
       coveringLog != null &&
       coveringLog.assumedFrom != null &&
-      dateISO > coveringLog.assumedFrom;
+      dateISO > coveringLog.assumedFrom &&
+      // Recording flow for a day is her telling us she bled on it.
+      !answeredFlowDays.has(dateISO);
     const prediction = findPredictionForDate(dateISO, predictions);
     const predictedBleed =
       !!prediction && dateISO >= prediction.periodStart && dateISO <= prediction.periodEnd;
@@ -317,10 +320,14 @@ export function isEditablePeriod(
 /**
  * The logged period a day belongs to, for deciding which actions that day offers.
  *
- * An open period owns every day from its start through today, however long that
- * is. Capping it at her usual length is what used to make the "period ended"
- * action vanish on a longer-than-average period and offer "period started"
- * instead — one tap from a second period she never had.
+ * An end date she set herself is final. A predicted end is provisional, so the
+ * period keeps hold of its days through today even once the prediction has run
+ * out — otherwise a bleed that outlasts our guess would offer "period started"
+ * on day six, one tap from a second period she never had.
+ *
+ * That reach is bounded by the next period she logged. Without that bound a
+ * provisional end would swallow every day that followed it, and days from
+ * cycles ago would still be offering to end a period she has long finished.
  *
  * Distinct from `loggedPeriodEnd`, which answers the narrower question of how
  * many days to shade.
@@ -332,13 +339,38 @@ export function periodLogForDate(
 ): PeriodLog | null {
   const todayStr = todayISO(now);
   const periods = data?.recentPeriods ?? [];
+
   return (
     periods.find((p) => {
       if (dateISO < p.startDate) return false;
-      if (p.endDate != null) return dateISO <= p.endDate;
-      return dateISO <= todayStr;
+      if (p.endDateSource !== 'inferred' && p.endDate != null) return dateISO <= p.endDate;
+
+      const nextStart = periods
+        .filter((other) => other.startDate > p.startDate)
+        .sort((a, b) => a.startDate.localeCompare(b.startDate))[0]?.startDate;
+
+      if (nextStart != null) {
+        // A later period exists, so this one is finished: the end predicted for
+        // it stands, and can never run into its successor.
+        const cap = addDaysISO(nextStart, -1);
+        const end = p.endDate != null && p.endDate < cap ? p.endDate : cap;
+        return dateISO <= end;
+      }
+
+      // Her current period. The prediction is provisional, so the period keeps
+      // its days through today even once the prediction has run out.
+      const end = p.endDate != null && p.endDate > todayStr ? p.endDate : todayStr;
+      return dateISO <= end;
     }) ?? null
   );
+}
+
+/**
+ * Whether this period's end is still ours to revise — she has not closed it
+ * herself. Only these can be ended, and only on her current period.
+ */
+export function hasUnconfirmedEnd(period: PeriodLog): boolean {
+  return period.endDate == null || period.endDateSource === 'inferred';
 }
 
 /**

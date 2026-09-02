@@ -1,4 +1,5 @@
 import type {
+  FamilyArticleResponse,
   FamilyLearnResponse,
   FamilyMessageResponse,
   FamilyPrivacyResponse,
@@ -15,6 +16,13 @@ export function fetchToday(): Promise<FamilyTodayResponse> {
 
 export function fetchLearn(): Promise<FamilyLearnResponse> {
   return apiFetch<FamilyLearnResponse>('/api/family/learn', { cache: 'no-store' });
+}
+
+/** One family article. Slug is path-encoded; the server decides whether this reader may see it. */
+export function fetchFamilyArticle(slug: string): Promise<FamilyArticleResponse> {
+  return apiFetch<FamilyArticleResponse>(`/api/family/articles/${encodeURIComponent(slug)}`, {
+    cache: 'no-store',
+  });
 }
 
 export function fetchPrivacy(): Promise<FamilyPrivacyResponse> {

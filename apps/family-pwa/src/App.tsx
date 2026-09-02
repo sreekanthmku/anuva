@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom
 import { AppShell } from './features/shell/AppShell';
 import { TodayRoute } from './features/today/TodayRoute';
 import { LearnRoute } from './features/learn/LearnRoute';
+import { ArticleRoute } from './features/learn/ArticleRoute';
 import { PrivacyRoute } from './features/privacy/PrivacyRoute';
 import { FamilyAuthProvider } from './features/auth/FamilyAuthProvider';
 import { FamilyProtectedRoute } from './features/auth/FamilyProtectedRoute';
@@ -31,6 +32,7 @@ export default function App() {
           <Route element={<ShellLayout />}>
             <Route path="/" element={<TodayRoute />} />
             <Route path="/learn" element={<LearnRoute />} />
+            <Route path="/learn/:slug" element={<ArticleRoute />} />
             <Route path="/privacy" element={<PrivacyRoute />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

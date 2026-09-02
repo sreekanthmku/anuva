@@ -180,13 +180,6 @@ export const LEARN_TIPS: { headline: string; body: string }[] = [
   },
 ];
 
-export const LEARN_TOPICS = [
-  'Perimenopause and hormones',
-  'Sleep and low energy',
-  'Brain fog and mood',
-  'Hot flashes and stress',
-];
-
 /**
  * A booked consultation, described softly.
  *

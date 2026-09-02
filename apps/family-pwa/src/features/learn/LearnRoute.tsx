@@ -1,7 +1,16 @@
 import { fetchLearn } from '../../shared/lib/familyApi';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
 import { Card, ErrorCard, PageIntro, SectionLabel, SkeletonCard } from '../shell/ui';
+import { ArticleCard } from './ArticleCard';
 
+/**
+ * The Learn tab: this week's two rotating cards, then the family article index.
+ *
+ * The list is whatever the server sent. It is already filtered to this member's relationship — a
+ * teen's list and a partner's list are genuinely different — so the client neither filters nor
+ * sorts. These are the family app's own articles; her library in `apps/pwa` is a separate corpus
+ * behind a separate endpoint and nothing here reaches into it.
+ */
 export function LearnRoute() {
   const { data, error, loading, reload } = useFamilyResource(fetchLearn);
 
@@ -30,18 +39,22 @@ export function LearnRoute() {
         </Card>
       ))}
 
-      <section>
-        <SectionLabel>{data.topicsLabel}</SectionLabel>
-        <ul className="space-y-2">
-          {data.topics.map((topic) => (
-            <li
-              key={topic}
-              className="rounded-[16px] border border-border-default bg-surface-raised px-4 py-3.5 text-[14px] text-on-surface"
-            >
-              {topic}
-            </li>
+      <section className="pt-1">
+        <SectionLabel>{data.articlesLabel}</SectionLabel>
+        <div className="space-y-6">
+          {data.sections.map((section) => (
+            <div key={section.label}>
+              <h2 className="mb-2 font-display text-[15px] text-on-surface-variant">
+                {section.label}
+              </h2>
+              <ul className="space-y-2">
+                {section.articles.map((article) => (
+                  <ArticleCard key={article.slug} article={article} />
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
     </div>
   );

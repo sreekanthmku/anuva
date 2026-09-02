@@ -11,6 +11,7 @@ import {
   formatCycleDateLong,
   getCycleLengthSourceLabel,
   hasAssumedEnd,
+  hasUnconfirmedEnd,
   isCycleTrackerReady,
   isEditablePeriod,
   periodLogForDate,
@@ -333,7 +334,13 @@ export function CycleTrackerSheet({
   };
 
   const cycleLength = cycleData?.settings?.cycleLength ?? CYCLE_DEFAULT;
-  const ongoingPeriod = cycleData?.recentPeriods.find((p) => !p.endDate);
+  /**
+   * The period the main view offers to end: her current one, and only while its
+   * end is still a prediction. Matching any period without a confirmed end used
+   * to surface "Period ended today" on the strength of a log from cycles ago.
+   */
+  const ongoingPeriod =
+    editablePeriod && hasUnconfirmedEnd(editablePeriod) ? editablePeriod : undefined;
   const today = todayISO();
 
   const totalSetupSteps = 3;
@@ -863,7 +870,7 @@ export function CycleTrackerSheet({
                   </p>
                 ) : selectedPeriodLog ? (
                   <>
-                    {selectedPeriodLog.endDate == null && (
+                    {selectedIsEditable && (
                       <button
                         type="button"
                         disabled={saving}
@@ -882,8 +889,9 @@ export function CycleTrackerSheet({
 
                     {hasAssumedEnd(selectedPeriodLog) && (
                       <p className="text-[11px] text-outline" style={{ fontFamily: BODY }}>
-                        We estimated this period ended{' '}
-                        {formatCycleDate(selectedPeriodLog.endDate!)}.
+                        {selectedPeriodLog.endDate! > today
+                          ? `We expect this period to end ${formatCycleDate(selectedPeriodLog.endDate!)}.`
+                          : `We estimated this period ended ${formatCycleDate(selectedPeriodLog.endDate!)}.`}
                       </p>
                     )}
 
@@ -899,7 +907,7 @@ export function CycleTrackerSheet({
                           className="w-full rounded-full border border-border-default py-[12px] text-[13px] text-on-surface disabled:opacity-50"
                           style={{ fontFamily: BODY }}
                         >
-                          Change dates
+                          Change start date
                         </button>
                         <button
                           type="button"
@@ -913,9 +921,9 @@ export function CycleTrackerSheet({
                       </>
                     ) : (
                       <p className="text-[11px] leading-[1.5] text-outline" style={{ fontFamily: BODY }}>
-                        Recorded {formatCycleDate(selectedPeriodLog.startDate)}
+                        Started {formatCycleDate(selectedPeriodLog.startDate)}
                         {selectedPeriodLog.endDate
-                          ? ` – ${formatCycleDate(selectedPeriodLog.endDate)}`
+                          ? `, ${hasAssumedEnd(selectedPeriodLog) ? 'estimated to have ended' : 'ended'} ${formatCycleDate(selectedPeriodLog.endDate)}`
                           : ''}
                         . Only your latest period can be changed — you can still update the flow
                         for any day.
@@ -953,7 +961,7 @@ export function CycleTrackerSheet({
                   style={{ fontFamily: BODY }}
                 >
                   <span className="h-px w-3 bg-primary/60" />
-                  Change dates
+                  Change start date
                 </div>
                 <h2
                   className="text-[20px] text-on-surface"
@@ -978,6 +986,11 @@ export function CycleTrackerSheet({
             >
               Currently {formatCycleDateLong(editablePeriod.startDate)}. Pick the day it really
               began — your flow entries stay on the days you recorded them.
+              {editablePeriod.endDate && hasAssumedEnd(editablePeriod)
+                ? ' The expected end date moves with it.'
+                : editablePeriod.endDate
+                  ? ` It still ends ${formatCycleDate(editablePeriod.endDate)}.`
+                  : ''}
             </p>
 
             <CycleCalendar

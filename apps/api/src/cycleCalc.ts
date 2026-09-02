@@ -178,8 +178,12 @@ export function resolveEditablePeriodId(periods: PeriodLogEntry[]): string | nul
 }
 
 /**
- * Where a period is assumed to have ended when she never closed it: her usual
+ * Where a period is predicted to have ended when she never closed it: her usual
  * period length, cut short by `notAfter` when a newer period starts sooner.
+ *
+ * Every period carries an end date from the moment it is logged — hers once she
+ * closes it, ours until then. A period with no end at all would otherwise go on
+ * claiming every day that followed it, for as long as the record lasted.
  */
 export function assumedEndDate(
   startDate: string,
@@ -483,11 +487,13 @@ export function promptableBleedingDays(
 
     // Her own account of the first day is never in doubt.
     days.add(period.startDate);
-    if (period.endDate != null) continue; // assumed end — the start day is all we know
 
-    const assumed = assumedEndDate(period.startDate, effectivePeriodLength, todayStr);
+    // The end is our prediction, so the prompt walks forward only as far as she
+    // has stood behind: each day that follows one she has already answered.
+    const predicted = period.endDate ?? assumedEndDate(period.startDate, effectivePeriodLength);
+    const limit = predicted > todayStr ? todayStr : predicted;
     let cursor = period.startDate;
-    while (cursor < assumed && answered.has(cursor)) {
+    while (cursor < limit && answered.has(cursor)) {
       cursor = toDateOnly(addDays(parseDateOnly(cursor), 1));
       days.add(cursor);
     }

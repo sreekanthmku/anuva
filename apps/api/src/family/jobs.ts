@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { prisma } from '@anuva/database';
 import { logger } from '../logger.js';
-import { buildFamilyLearn } from './digest.js';
+import { weeklyLearnNudge } from './digest.js';
 import { sendToFamilyMember } from './push.js';
 
 const log = logger.child({ module: 'family-jobs' });
@@ -72,13 +72,13 @@ export async function sendWeeklyLearnNudge(now = new Date()): Promise<number> {
     select: { id: true },
   });
 
-  const learn = buildFamilyLearn(now);
+  const nudge = weeklyLearnNudge(now);
   let sent = 0;
 
   for (const member of members) {
     sent += await sendToFamilyMember(
       member.id,
-      { title: learn.nudge.headline, body: learn.nudge.body },
+      { title: nudge.headline, body: nudge.body },
       { url: '/learn' },
     );
   }

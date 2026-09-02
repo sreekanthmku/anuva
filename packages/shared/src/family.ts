@@ -279,14 +279,88 @@ export const familyTodayResponseSchema = z.object({
   upcoming: familyCardSchema.nullable(),
 });
 
+/**
+ * Family reading — its own corpus, deliberately not the patient library.
+ *
+ * `apps/pwa`'s library is her reading: clinical explainers, nutrition, movement, written for the
+ * woman living the transition. The family app's articles are written for the people around her, and
+ * every one of them carries an action the reader is meant to take. Serving one from the other would
+ * put her care content in a family member's hands, which is the wrong disclosure direction even
+ * though the content itself is general. The two never share a schema, a store or an endpoint.
+ */
+
+/** Who an article is written for. Derived from the member's relationship, never sent by the client. */
+export const familyArticleReaderSchema = z.enum(['partner', 'teen', 'adult']);
+
+/**
+ * Which readers may see an article at all. Most are `everyone`; two are not, and both exclusions
+ * are editorial requirements rather than preferences: the teen article tells a child they are not
+ * responsible for a parent's health, and the intimacy article is adult-partner content that must
+ * never appear in a child's list.
+ */
+export const familyArticleAudienceSchema = z.enum(['everyone', 'teens', 'partners']);
+
+export const familyArticleSummarySchema = z.object({
+  slug: z.string(),
+  /** Editorial number from the source document — shown as "Topic 03", stable across rotations. */
+  number: z.number().int().positive(),
+  title: z.string(),
+  /** One-line list preview. */
+  teaser: z.string(),
+  audience: familyArticleAudienceSchema,
+  /** "Partners and teens", "Teens only" — server-worded, because the client knows no audiences. */
+  audienceLabel: z.string(),
+  /** Computed from the copy this reader is actually served, so it is not a fixed claim. */
+  readingMinutes: z.number().int().positive(),
+});
+
+/**
+ * The reader's own action is the only role-specific part. The explanation is common to everyone, so
+ * a partner and a teen read the same facts and are asked for different things.
+ */
+export const familyArticleActionSchema = z.object({
+  label: z.string(),
+  text: z.string(),
+});
+
+export const familyArticleSchema = familyArticleSummarySchema.extend({
+  reader: familyArticleReaderSchema,
+  body: z.array(z.string()).min(1),
+  /** Absent only if an article has nothing to ask of this reader. */
+  action: familyArticleActionSchema.nullable(),
+  sayingLabel: z.string(),
+  /** A sentence the reader can use as-is. */
+  saying: z.string(),
+  sourcesLabel: z.string(),
+  sources: z.array(z.string()).min(1),
+  /** The standing disclaimer. Server-owned so it cannot be dropped by a client redesign. */
+  footer: z.string(),
+});
+
+/** Articles arrive grouped, because a flat list of eighteen reads as a backlog. */
+export const familyArticleSectionSchema = z.object({
+  label: z.string(),
+  articles: z.array(familyArticleSummarySchema).min(1),
+});
+
 export const familyLearnResponseSchema = z.object({
   eyebrow: z.string(),
   title: z.string(),
   subline: z.string(),
   nudge: familyCardSchema,
   tip: familyCardSchema,
-  topicsLabel: z.string(),
-  topics: z.array(z.string()),
+  articlesLabel: z.string(),
+  sections: z.array(familyArticleSectionSchema),
+});
+
+export const familyArticleParamsSchema = z.object({
+  slug: z.string().min(1).max(80),
+});
+
+export const familyArticleResponseSchema = z.object({
+  article: familyArticleSchema,
+  /** Two more from the same section, so the reader has somewhere to go next. */
+  more: z.array(familyArticleSummarySchema),
 });
 
 /**
@@ -375,7 +449,15 @@ export type FamilyCard = z.infer<typeof familyCardSchema>;
 export type FamilySupportCard = z.infer<typeof familySupportCardSchema>;
 export type FamilyProgressCard = z.infer<typeof familyProgressCardSchema>;
 export type FamilyTodayResponse = z.infer<typeof familyTodayResponseSchema>;
+export type FamilyArticleReader = z.infer<typeof familyArticleReaderSchema>;
+export type FamilyArticleAudience = z.infer<typeof familyArticleAudienceSchema>;
+export type FamilyArticleSummary = z.infer<typeof familyArticleSummarySchema>;
+export type FamilyArticleAction = z.infer<typeof familyArticleActionSchema>;
+export type FamilyArticle = z.infer<typeof familyArticleSchema>;
+export type FamilyArticleSection = z.infer<typeof familyArticleSectionSchema>;
 export type FamilyLearnResponse = z.infer<typeof familyLearnResponseSchema>;
+export type FamilyArticleParams = z.infer<typeof familyArticleParamsSchema>;
+export type FamilyArticleResponse = z.infer<typeof familyArticleResponseSchema>;
 export type FamilyPrivacyResponse = z.infer<typeof familyPrivacyResponseSchema>;
 export type FamilyMessageBody = z.infer<typeof familyMessageBodySchema>;
 export type FamilyMessageResponse = z.infer<typeof familyMessageResponseSchema>;

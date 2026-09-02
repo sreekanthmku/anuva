@@ -24,7 +24,8 @@
  * Family side (`anuva_family_session`):
  *   GET    /family/me
  *   GET    /family/today                  the digest — the only route that reads her logs
- *   GET    /family/learn
+ *   GET    /family/learn                  the family article index, filtered to their relationship
+ *   GET    /family/articles/:slug        one family article, rendered for their role
  *   GET    /family/privacy
  *   POST   /family/messages                a short note, pushed to her and stored nowhere
  *   POST   /family/support-actions     records the gesture; flowers/chocolates also push to her
@@ -40,6 +41,8 @@ import type { CookieOptions, NextFunction, Request, Response } from 'express';
 import {
   createFamilyInviteResponseSchema,
   familyActivityResponseSchema,
+  familyArticleParamsSchema,
+  familyArticleResponseSchema,
   familyJoinPreviewResponseSchema,
   familyJoinRequestOtpBodySchema,
   familyJoinRequestOtpResponseSchema,
@@ -81,6 +84,7 @@ import {
 } from './invites.js';
 import { buildFamilyActivity } from './activity.js';
 import { buildFamilyLearn, buildFamilyPrivacy, buildFamilyToday } from './digest.js';
+import { familyArticle } from './articles.js';
 import { familyMeBody, previewInvite, requestJoinOtp, verifyJoinOtp, type OtpDeps } from './join.js';
 import { sendFamilyMessage } from './messages.js';
 import { requestSignInOtp, verifySignInOtp } from './signin.js';
@@ -328,8 +332,26 @@ export function createFamilyRouter({
   router.get('/learn', async (req, res, next) => {
     try {
       noStore(res);
-      await requireFamilyMember(req);
-      res.json(familyLearnResponseSchema.parse(buildFamilyLearn()));
+      const identity = await requireFamilyMember(req);
+      res.json(familyLearnResponseSchema.parse(buildFamilyLearn(identity.relationship)));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  /**
+   * One family article. Filtered by relationship in `familyArticle`, which returns null for an
+   * article this reader may not see — so a guessed slug reads exactly like a slug that does not
+   * exist, and the audience rules are not something the client is trusted to enforce.
+   */
+  router.get('/articles/:slug', async (req, res, next) => {
+    try {
+      noStore(res);
+      const identity = await requireFamilyMember(req);
+      const { slug } = familyArticleParamsSchema.parse(req.params);
+      const found = familyArticle(identity.relationship, slug);
+      if (!found) throw new FamilyError(404, 'not_found', 'That article is not available.');
+      res.json(familyArticleResponseSchema.parse(found));
     } catch (e) {
       next(e);
     }

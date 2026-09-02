@@ -31,7 +31,18 @@ pnpm db:migrate   # prisma migrate dev
 pnpm db:push      # prisma db push (no migration file)
 ```
 
-No test suite exists yet.
+### Tests
+
+Vitest, per package — there is no root-level test script:
+
+```bash
+pnpm --filter @anuva/api test        # apps/api/tests
+cd apps/api && npx vitest run --root ../pwa            # apps/pwa/tests
+cd apps/api && npx vitest run --root ../../packages/shared
+```
+
+`@anuva/pwa` and `@anuva/shared` have no `test` script of their own; run them
+through the api package's vitest with `--root`.
 
 ## Architecture
 

@@ -4126,7 +4126,12 @@ app.post('/cycle/setup', async (req, res, next) => {
       }),
       prisma.periodLog.upsert({
         where: { userId_startDate: { userId: user.id, startDate: new Date(lastPeriodStart) } },
-        create: { userId: user.id, startDate: new Date(lastPeriodStart) },
+        create: {
+          userId: user.id,
+          startDate: new Date(lastPeriodStart),
+          endDate: new Date(assumedEndDate(lastPeriodStart, periodLength)),
+          endDateSource: 'inferred',
+        },
         // Setting up again on a day she once removed brings that record back
         // rather than leaving a tombstone holding the date.
         update: { deletedAt: null },
@@ -4260,7 +4265,13 @@ app.post('/cycle/period', async (req, res, next) => {
     }
 
     const created = await prisma.$transaction(async (tx) => {
-      if (previous && previous.endDate == null) {
+      // Her own end date always stands. A prediction that would run into the new
+      // period is pulled back to the day before it.
+      const previousNeedsSealing =
+        previous != null &&
+        previous.endDateSource !== 'user' &&
+        (previous.endDate == null || previous.endDate >= startDate);
+      if (previous && previousNeedsSealing) {
         await tx.periodLog.update({
           where: { id: previous.id },
           data: {
@@ -4275,16 +4286,26 @@ app.post('/cycle/period', async (req, res, next) => {
           },
         });
       }
+      // Every period carries an end from the moment it is logged: ours until she
+      // closes it herself. Without one it would go on claiming every day that
+      // followed, and the calendar would keep offering to end a period she
+      // finished cycles ago.
+      const predictedEnd = new Date(assumedEndDate(startDate, effectivePeriodLength));
       // Re-logging a day she previously removed brings that record back rather
       // than colliding with the tombstone still holding the date.
       return tx.periodLog.upsert({
         where: { userId_startDate: { userId: user.id, startDate: new Date(startDate) } },
-        create: { userId: user.id, startDate: new Date(startDate) },
+        create: {
+          userId: user.id,
+          startDate: new Date(startDate),
+          endDate: predictedEnd,
+          endDateSource: 'inferred',
+        },
         update: { deletedAt: null },
       });
     });
 
-    if (previous && previous.endDate == null) {
+    if (previous && previous.endDateSource !== 'user') {
       await refileFlowLogs(
         user.id,
         {
@@ -4327,16 +4348,35 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
       throw new HttpError(409, 'Only your most recent period can be changed.');
     }
 
-    // Her end date stands where she put it: moving a start means "it began
-    // earlier than I said", not "it ran longer than I said".
     const nextStart = startDate ?? existing.startDate;
-    const nextEnd = endDate ?? existing.endDate;
 
     if (nextStart > todayStr) {
       throw new HttpError(400, 'Period start date cannot be in the future.');
     }
+
+    const { effectivePeriodLength: currentPeriodLength } = buildCycleStateResponse(
+      serializedPeriods,
+      settings,
+      now,
+    );
+
+    /*
+     * An end date she gave us is a fact and stays where she put it: moving a
+     * start means "it began earlier than I said", not "it ran longer".
+     *
+     * A predicted end is not a fact — it is derived from the start — so moving
+     * the start moves it too. Holding it still would stretch the period instead
+     * of relocating it, and a prediction reaching past today would fail the
+     * future-date check below on our own data rather than on anything she did.
+     */
+    const endIsHers = existing.endDateSource === 'user';
+    const nextEnd = endDate ?? (endIsHers ? existing.endDate : assumedEndDate(nextStart, currentPeriodLength));
+    const endIsConfirmed = endDate != null || endIsHers;
+
     if (nextEnd != null) {
-      if (nextEnd > todayStr) {
+      // Only a date she chose has to be in the past; a prediction is allowed to
+      // reach into the days ahead, which is what makes it a prediction.
+      if (endIsConfirmed && nextEnd > todayStr) {
         throw new HttpError(400, 'Period end date cannot be in the future.');
       }
       if (nextEnd < nextStart) {
@@ -4351,7 +4391,7 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
       }
     }
 
-    const { effectivePeriodLength } = buildCycleStateResponse(serializedPeriods, settings, now);
+    const effectivePeriodLength = currentPeriodLength;
     const previous = previousPeriodOf(serializedPeriods, nextStart, id);
     if (previous && nextStart <= effectiveEndOf(previous, effectivePeriodLength)) {
       throw new HttpError(
@@ -4369,7 +4409,7 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
         startDate: new Date(nextStart),
         endDate: nextEnd == null ? null : new Date(nextEnd),
         // Any date she sets herself is hers, not an assumption of ours.
-        endDateSource: nextEnd == null ? 'user' : endDate != null ? 'user' : existing.endDateSource,
+        endDateSource: endIsConfirmed ? 'user' : 'inferred',
       },
     });
 

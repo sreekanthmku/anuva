@@ -3,6 +3,7 @@ import type { PeriodLogEntry } from '@anuva/shared';
 import {
   assumedEndDate,
   computeAvgPeriodLength,
+  diffDaysISO,
   computeCycleGaps,
   computeCycleState,
   promptableBleedingDays,
@@ -310,5 +311,23 @@ describe('promptableBleedingDays', () => {
   it('offers only the first day of a period we closed by assumption', () => {
     const periods = [period('p', '2025-03-05', '2025-03-09', 'inferred')];
     expect(promptableBleedingDays(periods, 5, [], now)).toEqual(['2025-03-05']);
+  });
+});
+
+describe('moving a start date relocates a predicted end', () => {
+  // The rule the PATCH route applies: her own end date is a fact and stays put,
+  // a predicted end is derived from the start and moves with it. Asserted on
+  // assumedEndDate, which is what the route recomputes with.
+  it('keeps the predicted length rather than stretching the period', () => {
+    // Started 7 Mar, predicted to end 11 Mar (5 days). Corrected to 5 Mar.
+    const corrected = assumedEndDate('2025-03-05', 5);
+    expect(corrected).toBe('2025-03-09');
+    // Holding the old end still would have made it a 7-day period.
+    expect(diffDaysISO('2025-03-05', '2025-03-11') + 1).toBe(7);
+    expect(diffDaysISO('2025-03-05', corrected) + 1).toBe(5);
+  });
+
+  it('still refuses to run into the period before it', () => {
+    expect(assumedEndDate('2025-03-05', 5, '2025-03-07')).toBe('2025-03-07');
   });
 });

@@ -2,13 +2,17 @@ import { describe, it, expect } from 'vitest';
 import {
   AXIS_ORDER,
   MAX_DEPTH,
+  NAMED_ROOT,
   PROBE_ROOTS,
   matchOption,
   matchRoot,
+  nextUnansweredAxis,
   optionLabels,
+  prefilledAnswers,
   questionFor,
+  remainingRungs,
   resolveTyped,
-  type ProbeAxis,
+  wantsAnswerNow,
 } from '../src/anu/probe/axes.js';
 import { findSymptomByKey } from '../src/anu/symptoms.js';
 import { matchRedFlag } from '../src/anu/redFlags.js';
@@ -69,14 +73,17 @@ describe('location rung', () => {
 });
 
 describe('acknowledgements', () => {
-  // After she answers one of these rungs the next turn makes NO model call, so
-  // the option's own ack is the entire warm half of the reply. A missing one
-  // leaves her tap answered by a bare question.
-  it.each(['timing', 'cluster', 'context'] as ProbeAxis[])(
+  // Every rung is served without a model call, so the option's own ack is the
+  // entire warm half of the reply. A missing one leaves her answer met by a bare
+  // question. Depth is variable, so ANY rung can be the last one answered —
+  // which is why impact needs an ack too, not just the middle three.
+  it.each(AXIS_ORDER)(
     'gives every %s option an ack, since that rung is served without a model',
     (axis) => {
       for (const root of PROBE_ROOTS) {
         for (const option of questionFor(root, axis).options) {
+          // The deliberate way out ends the ladder; it has its own authored line.
+          if (option.tag === 'elsewhere') continue;
           expect(option.ack?.trim(), `${root.key}/${axis}/${option.label}`).toBeTruthy();
         }
       }
@@ -239,5 +246,97 @@ describe('typed answers', () => {
         expect(new Set(sources).size, `${root.key}/${axis}`).toBe(sources.length);
       }
     }
+  });
+});
+
+describe('variable depth', () => {
+  // The ladder is not five questions. It is however many she has not already
+  // answered, which is what stops it reading like a form.
+  it('reads answers straight out of her opening message', () => {
+    const found = prefilledAnswers(
+      NAMED_ROOT,
+      'stiff every morning, and my periods have gone haywire',
+    );
+    expect(found.timing).toBe('worst in the mornings');
+    expect(found.cluster).toBe('cycle changes');
+    // The location rung is never prefilled here — the symptom is resolved
+    // separately, because it is the one decision with a clinical cost.
+    expect(found.location).toBeUndefined();
+  });
+
+  // Prefilling uses the same abstain rule as everything else. "Sleep" answers
+  // both of the context options, so that rung stays unanswered and gets asked
+  // rather than guessed.
+  it('abstains while prefilling, rather than guessing at an ambiguous phrase', () => {
+    const found = prefilledAnswers(NAMED_ROOT, "my sleep is shot and I'm so stressed");
+    expect(found.cluster).toBe('broken sleep');
+    expect(found.context).toBeUndefined();
+  });
+
+  it('leaves the rungs she said nothing about', () => {
+    expect(prefilledAnswers(NAMED_ROOT, 'my knees hurt')).toEqual({});
+  });
+
+  it('walks the axes in order and stops when there is nothing left', () => {
+    expect(nextUnansweredAxis({})).toBe('location');
+    expect(nextUnansweredAxis({ location: 'joints' })).toBe('timing');
+    expect(
+      nextUnansweredAxis({
+        location: 'joints',
+        timing: 'constant',
+        cluster: 'nothing else',
+        context: 'more stress',
+      }),
+    ).toBe('impact');
+    expect(
+      nextUnansweredAxis({
+        location: 'joints',
+        timing: 'constant',
+        cluster: 'nothing else',
+        context: 'more stress',
+        impact: 'work',
+      }),
+    ).toBeNull();
+  });
+
+  it('counts what is left to ask', () => {
+    expect(remainingRungs({})).toBe(MAX_DEPTH);
+    expect(remainingRungs({ location: 'joints', timing: 'constant' })).toBe(3);
+  });
+
+  // context and impact are never prefilled, so a named symptom always has at
+  // least those two rungs left to ask — the ladder is 2-4 rungs deep for a named
+  // symptom and 3-5 for a vague one, never 0.
+  it('always leaves the two rungs she has to judge for herself', () => {
+    const everything = 'stiff every morning, periods changed, work stress, cannot do the stairs';
+    const prefilled = prefilledAnswers(NAMED_ROOT, everything);
+    expect(prefilled.context).toBeUndefined();
+    expect(prefilled.impact).toBeUndefined();
+    expect(remainingRungs({ location: 'joint pain', ...prefilled })).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('wantsAnswerNow', () => {
+  // She has stopped answering and started asking. Finishing the question list
+  // first is what makes a companion feel like a form.
+  it.each([
+    'why does this happen?',
+    "what's causing it?",
+    'what can I do about it',
+    'should I see a doctor',
+    'just tell me what it is',
+    'stop asking questions',
+  ])('converges the ladder for: %s', (message) => {
+    expect(wantsAnswerNow(message)).toBe(true);
+  });
+
+  it.each([
+    'mostly my knees',
+    'mornings are worst',
+    'nothing else',
+    'more stress than usual',
+    'I am not sure',
+  ])('keeps asking for: %s', (message) => {
+    expect(wantsAnswerNow(message)).toBe(false);
   });
 });

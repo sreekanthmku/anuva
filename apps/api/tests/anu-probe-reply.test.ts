@@ -3,7 +3,7 @@ import {
   asideDirective,
   chainClause,
   convergeDirective,
-  lockDirective,
+  openDirective,
   tracedChain,
 } from '../src/anu/probe/reply.js';
 
@@ -51,31 +51,32 @@ describe('tracedChain', () => {
   });
 });
 
-describe('lockDirective', () => {
-  const directive = lockDirective('Joint pain', 'Joints — knees, fingers, wrists', true);
+describe('openDirective', () => {
+  const directive = openDirective();
 
-  it('names the symptom the tap resolved to', () => {
-    expect(directive).toContain('Joint pain');
-    expect(directive).toContain('Joints — knees, fingers, wrists');
-  });
-
-  // The app appends its own authored question underneath this reply. Two
-  // questions in a row is the interrogation the ladder is built to avoid.
-  it('forbids the model from ending on a question of its own', () => {
-    expect(directive).toContain('do NOT end on a question');
+  // This is the whole complaint the ladder exists to fix: classic explains
+  // "joint pain" before knowing when it happens or what came with it. The
+  // opening turn acknowledges and stops.
+  it('bans explanation four ways, because explaining is what the prompt teaches', () => {
+    expect(directive).toContain('Do NOT explain why it happens');
+    expect(directive).toContain('Do NOT name a cause');
+    expect(directive).toContain('Do NOT give');
+    expect(directive).toContain('the reason comes at the END');
   });
 
   it('holds the tracking offer back for the end of the flow', () => {
-    expect(directive).toContain('Do NOT offer to');
+    expect(directive).toContain('Do NOT offer to track');
   });
 
-  // She may have typed "mostly my knees" instead of tapping. The answer is the
-  // same, but the model must not be told she pressed something she did not.
-  it('does not claim she tapped a chip when she typed her answer', () => {
-    const typed = lockDirective('Joint pain', 'Joints — knees, fingers, wrists', false);
-    expect(typed).not.toContain('tapped');
-    expect(typed).toContain('in her own words');
-    expect(typed).toContain('Joint pain');
+  it('stops the model asking a question, since the app asks its own', () => {
+    expect(directive).toContain('do NOT end on a question');
+  });
+
+  // The same call classifies the symptom, so identifying it costs no extra
+  // model call — and a greeting has to stay answerable.
+  it('asks for the symptom label, and allows null for a greeting', () => {
+    expect(directive).toContain('set "symptom" to the matching');
+    expect(directive).toContain('set "symptom" to null');
   });
 });
 
@@ -94,6 +95,20 @@ describe('asideDirective', () => {
 
 describe('convergeDirective', () => {
   const directive = convergeDirective('Joint pain', FULL);
+
+  // The one turn that explains. Everything before it has been holding this back.
+  it('is the only turn that explains, and says so', () => {
+    expect(directive).toContain('the only turn in this flow where you explain');
+    expect(directive).toContain('hormonal reason in one sentence');
+    expect(directive).toContain('two or three other causes');
+  });
+
+  // The ladder converges early — when she asks for the answer, or when her
+  // opener already covered the rest — so the answers are often partial. Without
+  // this the model asks for the missing rung and restarts the interview.
+  it('tells the model a rung that is missing is simply missing', () => {
+    expect(directive).toContain('do NOT ask for the rest');
+  });
 
   it('replays her answers in rung order', () => {
     const order = ['what and where', 'when it is worst', 'what else turned up', 'what has changed', 'stopping her doing'];

@@ -8,7 +8,7 @@
 
 import { prisma } from '@anuva/database';
 import { THREAD_IDLE_MS } from '../engine.js';
-import { AXIS_ORDER, PROBE_ROOTS, type ProbeAxis, type ProbeRoot } from './axes.js';
+import { AXIS_ORDER, findRootByKey, type ProbeAxis, type ProbeRoot } from './axes.js';
 
 export type ProbeState = {
   root: ProbeRoot;
@@ -71,7 +71,7 @@ export async function loadProbeState(userId: string): Promise<ProbeState | null>
   // still be sitting in old rows. An unrecognised one — like a null, which is
   // how the convergence reply and every hand-back close the ladder — ends it
   // rather than throwing: she gets the classic engine, which is a working reply.
-  const root = PROBE_ROOTS.find((r) => r.key === row.probeRoot);
+  const root = findRootByKey(row.probeRoot);
   const axis = AXIS_ORDER.find((a) => a === row.probeAxis);
   if (!root || !axis) return null;
 
@@ -83,4 +83,24 @@ export async function loadProbeState(userId: string): Promise<ProbeState | null>
     symptomLabel: row.symptom,
     handbacks: row.probeHandbacks ?? 0,
   };
+}
+
+/// Has a ladder already run in this thread?
+///
+/// One ladder per thread. Once it has closed — converged, or handed back — every
+/// later message is a follow-up, and a follow-up wants an ANSWER. Opening a
+/// second ladder would meet "why does this happen?" with another question, which
+/// is the exact failure the ladder was built to remove.
+export async function ladderRanInThread(userId: string): Promise<boolean> {
+  const row = await prisma.anuChatTurn.findFirst({
+    where: {
+      userId,
+      mode: 'probe',
+      createdAt: { gte: new Date(Date.now() - THREAD_IDLE_MS) },
+      // A rung was offered at some point, so a ladder was open.
+      probeDepth: { gt: 0 },
+    },
+    select: { id: true },
+  });
+  return row !== null;
 }
