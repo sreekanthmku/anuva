@@ -4,24 +4,45 @@ import {
   CYCLE_LENGTH_DEFAULT,
   CYCLE_PHASE_CONFIG,
   CYCLE_RING_CIRCUMFERENCE,
+  buildCycleDayMarks,
+  correctionRange,
   formatCycleDate,
   getCycleLength,
+  getCycleLengthSourceLabel,
   getCycleRingDash,
+  hasAssumedEnd,
   isCycleTrackerReady,
+  isEditablePeriod,
+  periodLogForDate,
   type CyclePhase,
 } from '../src/features/core/components/cycleTrackerDisplay';
 
 function cycle(partial: Partial<CycleStateResponse> = {}): CycleStateResponse {
   return {
     settings: null,
+    status: 'unset',
     currentCycleDay: null,
     phase: null,
+    effectiveCycleLength: 28,
+    effectivePeriodLength: 5,
+    cycleLengthSource: 'default',
+    daysLate: null,
+    daysUntilNextPeriod: null,
     nextPeriodDate: null,
     fertileWindowStart: null,
     fertileWindowEnd: null,
     ovulationDate: null,
+    avgCycleLength: null,
+    cycleLengthVariation: null,
+    isIrregular: false,
     avgPeriodLength: null,
+    loggedCycleCount: 0,
+    pendingPeriodConfirm: false,
     recentPeriods: [],
+    editablePeriodId: null,
+    predictions: [],
+    flowLogs: [],
+    pendingFlowDates: [],
     ...partial,
   };
 }
@@ -84,9 +105,20 @@ describe('getCycleLength', () => {
     expect(getCycleLength(cycle({ settings: null }))).toBe(28);
   });
 
-  it('reads cycleLength from settings when present', () => {
-    expect(getCycleLength(cycle({ settings: { cycleLength: 32, periodLength: 5 } }))).toBe(32);
-    expect(getCycleLength(cycle({ settings: { cycleLength: 21, periodLength: 4 } }))).toBe(21);
+  it('prefers the length predictions actually use over her raw setting', () => {
+    // Once her own cycles are learned, `effectiveCycleLength` is the number on
+    // screen — her setting is no longer what drives predictions.
+    const data = cycle({
+      settings: { cycleLength: 32, periodLength: 5 },
+      effectiveCycleLength: 26,
+      cycleLengthSource: 'learned',
+    });
+    expect(getCycleLength(data)).toBe(26);
+  });
+
+  it('reads cycleLength from settings when no effective length is present', () => {
+    const partial = { settings: { cycleLength: 32, periodLength: 5 } } as CycleStateResponse;
+    expect(getCycleLength(partial)).toBe(32);
   });
 });
 
@@ -108,5 +140,141 @@ describe('getCycleRingDash', () => {
 
   it('allows negative progress (caller responsibility)', () => {
     expect(getCycleRingDash(-7, 28)).toBeCloseTo((-7 / 28) * CYCLE_RING_CIRCUMFERENCE, 10);
+  });
+});
+
+describe('periodLogForDate', () => {
+  const now = new Date(2025, 2, 12, 12, 0, 0); // 12 Mar 2025
+
+  it('keeps an open period through a longer-than-usual bleed', () => {
+    // Day 6 of an open period whose effective length is 5. The action for this
+    // day must still be "period ended", not "period started".
+    const data = cycle({
+      effectivePeriodLength: 5,
+      recentPeriods: [{ id: 'p1', startDate: '2025-03-07', endDate: null }],
+      editablePeriodId: 'p1',
+    });
+    expect(periodLogForDate(data, '2025-03-12', now)?.id).toBe('p1');
+    expect(periodLogForDate(data, '2025-03-07', now)?.id).toBe('p1');
+  });
+
+  it('does not reach past today for an open period', () => {
+    const data = cycle({
+      recentPeriods: [{ id: 'p1', startDate: '2025-03-07', endDate: null }],
+    });
+    expect(periodLogForDate(data, '2025-03-13', now)).toBeNull();
+  });
+
+  it('respects the end date she gave for a closed period', () => {
+    const data = cycle({
+      recentPeriods: [{ id: 'p1', startDate: '2025-03-01', endDate: '2025-03-04' }],
+    });
+    expect(periodLogForDate(data, '2025-03-04', now)?.id).toBe('p1');
+    expect(periodLogForDate(data, '2025-03-05', now)).toBeNull();
+  });
+});
+
+describe('isEditablePeriod', () => {
+  it('is true only for the period the server named', () => {
+    const data = cycle({
+      recentPeriods: [
+        { id: 'past', startDate: '2025-01-01', endDate: '2025-01-05' },
+        { id: 'current', startDate: '2025-03-01', endDate: null },
+      ],
+      editablePeriodId: 'current',
+    });
+    expect(isEditablePeriod(data, 'current')).toBe(true);
+    expect(isEditablePeriod(data, 'past')).toBe(false);
+  });
+
+  it('is false when nothing is editable', () => {
+    expect(isEditablePeriod(cycle(), 'anything')).toBe(false);
+  });
+});
+
+describe('correctionRange', () => {
+  const now = new Date(2025, 2, 12, 12, 0, 0);
+
+  it('starts the day after the previous period ended', () => {
+    const data = cycle({
+      recentPeriods: [
+        { id: 'past', startDate: '2025-02-01', endDate: '2025-02-05' },
+        { id: 'current', startDate: '2025-03-01', endDate: null },
+      ],
+      editablePeriodId: 'current',
+    });
+    expect(correctionRange(data, 'current', now)).toEqual({
+      min: '2025-02-06',
+      max: '2025-03-12',
+    });
+  });
+
+  it('uses the previous period assumed end when she never closed it', () => {
+    const data = cycle({
+      effectivePeriodLength: 4,
+      recentPeriods: [
+        { id: 'past', startDate: '2025-02-01', endDate: null },
+        { id: 'current', startDate: '2025-03-01', endDate: null },
+      ],
+      editablePeriodId: 'current',
+    });
+    expect(correctionRange(data, 'current', now)?.min).toBe('2025-02-05');
+  });
+
+  it('never lets a closed period start after it ended', () => {
+    const data = cycle({
+      recentPeriods: [{ id: 'current', startDate: '2025-03-01', endDate: '2025-03-04' }],
+      editablePeriodId: 'current',
+    });
+    expect(correctionRange(data, 'current', now)?.max).toBe('2025-03-04');
+  });
+});
+
+describe('assumed period days', () => {
+  const now = new Date(2025, 2, 12, 12, 0, 0);
+
+  it('marks the days after the start of an assumed-end period', () => {
+    const data = cycle({
+      effectivePeriodLength: 5,
+      recentPeriods: [
+        { id: 'p1', startDate: '2025-03-01', endDate: '2025-03-05', endDateSource: 'inferred' },
+      ],
+    });
+    const marks = buildCycleDayMarks(data, '2025-03-01', '2025-03-06', now);
+    expect(marks.map((m) => m.isAssumedPeriod)).toEqual([false, true, true, true, true, false]);
+  });
+
+  it('asserts nothing about a period she closed herself', () => {
+    const data = cycle({
+      recentPeriods: [
+        { id: 'p1', startDate: '2025-03-01', endDate: '2025-03-05', endDateSource: 'user' },
+      ],
+    });
+    const marks = buildCycleDayMarks(data, '2025-03-01', '2025-03-05', now);
+    expect(marks.every((m) => !m.isAssumedPeriod)).toBe(true);
+  });
+
+  it('reads an end date she gave as her own', () => {
+    expect(hasAssumedEnd({ id: 'p', startDate: '2025-03-01', endDate: '2025-03-05' })).toBe(false);
+    expect(
+      hasAssumedEnd({
+        id: 'p',
+        startDate: '2025-03-01',
+        endDate: '2025-03-05',
+        endDateSource: 'inferred',
+      }),
+    ).toBe(true);
+  });
+});
+
+describe('getCycleLengthSourceLabel', () => {
+  it('says where the number predictions use came from', () => {
+    expect(getCycleLengthSourceLabel(cycle({ cycleLengthSource: 'learned', effectiveCycleLength: 26 })))
+      .toBe('Using your logged average of 26 days');
+    expect(getCycleLengthSourceLabel(cycle({ cycleLengthSource: 'settings', effectiveCycleLength: 30 })))
+      .toBe('Using your setting of 30 days');
+    expect(getCycleLengthSourceLabel(cycle({ cycleLengthSource: 'default' }))).toContain(
+      'until you log more cycles',
+    );
   });
 });

@@ -8,7 +8,7 @@ import {
 } from '../src/anuChat.js';
 
 describe('anuTurnSourceSchema', () => {
-  it.each(['red_flag', 'cache', 'model'] as const)('accepts %s', (source) => {
+  it.each(['red_flag', 'cache', 'model', 'probe'] as const)('accepts %s', (source) => {
     expect(anuTurnSourceSchema.parse(source)).toBe(source);
   });
 

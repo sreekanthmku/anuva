@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-export const anuTurnSourceSchema = z.enum(['red_flag', 'cache', 'model']);
+/// `probe` is a rung of the question ladder: an authored question served
+/// verbatim with its options as chips, no model call and no clinical content.
+/// The client renders it like any other reply — only `red_flag` changes how a
+/// turn is displayed.
+export const anuTurnSourceSchema = z.enum(['red_flag', 'cache', 'model', 'probe']);
 
 export const anuChatBodySchema = z.object({
   message: z.string().trim().min(1, 'Please type a message.').max(1000),

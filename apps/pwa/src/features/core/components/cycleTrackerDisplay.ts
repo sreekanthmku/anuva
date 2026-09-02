@@ -41,6 +41,8 @@ export const CYCLE_PHASE_CONFIG: Record<
 
 export const CYCLE_MARK_COLORS = {
   period: '#C0405A',
+  /** A logged day whose end we assumed rather than were told. */
+  assumedPeriod: 'rgba(192, 64, 90,0.55)',
   predictedPeriod: 'rgba(192, 64, 90,0.55)',
   fertile: '#7A9E7E',
   ovulation: '#C97E92',
@@ -156,6 +158,11 @@ export type CycleDayMark = {
   dateISO: string;
   /** Logged bleeding day — solid. */
   isPeriod: boolean;
+  /**
+   * A logged bleeding day whose end we assumed rather than were told. Drawn
+   * lighter: the app should not assert a date she never gave us.
+   */
+  isAssumedPeriod: boolean;
   /** Predicted bleeding day with no log to back it — outlined. */
   isPredictedPeriod: boolean;
   isFertile: boolean;
@@ -210,11 +217,18 @@ export function buildCycleDayMarks(
   const logged = (data?.recentPeriods ?? []).map((p) => ({
     start: p.startDate,
     end: loggedPeriodEnd(p, periodLength, todayStr),
+    // Only the day she named is certain; the rest of an assumed span is our guess.
+    assumedFrom: p.endDate == null || p.endDateSource === 'inferred' ? p.startDate : null,
   }));
 
   for (let i = 0; i <= days; i++) {
     const dateISO = addDaysISO(fromISO, i);
-    const isPeriod = logged.some((p) => dateISO >= p.start && dateISO <= p.end);
+    const coveringLog = logged.find((p) => dateISO >= p.start && dateISO <= p.end);
+    const isPeriod = coveringLog != null;
+    const isAssumedPeriod =
+      coveringLog != null &&
+      coveringLog.assumedFrom != null &&
+      dateISO > coveringLog.assumedFrom;
     const prediction = findPredictionForDate(dateISO, predictions);
     const predictedBleed =
       !!prediction && dateISO >= prediction.periodStart && dateISO <= prediction.periodEnd;
@@ -236,6 +250,7 @@ export function buildCycleDayMarks(
     marks.push({
       dateISO,
       isPeriod,
+      isAssumedPeriod,
       isPredictedPeriod: predictedBleed && !isPeriod,
       isFertile,
       isOvulation: !!prediction && dateISO === prediction.ovulationDate,
@@ -281,3 +296,95 @@ export function shiftMonth(year: number, month: number, delta: number): { year: 
 }
 
 export const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const;
+
+// ─────────────────────────────────────────────
+// Editing rules
+//
+// Only her current or most recent period can be corrected or removed; everything
+// older is a permanent record. The server names that period, so the client never
+// has to work out which one it is.
+// ─────────────────────────────────────────────
+
+export type PeriodLog = CycleStateResponse['recentPeriods'][number];
+
+export function isEditablePeriod(
+  data: CycleStateResponse | null | undefined,
+  periodId: string,
+): boolean {
+  return data?.editablePeriodId != null && data.editablePeriodId === periodId;
+}
+
+/**
+ * The logged period a day belongs to, for deciding which actions that day offers.
+ *
+ * An open period owns every day from its start through today, however long that
+ * is. Capping it at her usual length is what used to make the "period ended"
+ * action vanish on a longer-than-average period and offer "period started"
+ * instead — one tap from a second period she never had.
+ *
+ * Distinct from `loggedPeriodEnd`, which answers the narrower question of how
+ * many days to shade.
+ */
+export function periodLogForDate(
+  data: CycleStateResponse | null | undefined,
+  dateISO: string,
+  now: Date = new Date(),
+): PeriodLog | null {
+  const todayStr = todayISO(now);
+  const periods = data?.recentPeriods ?? [];
+  return (
+    periods.find((p) => {
+      if (dateISO < p.startDate) return false;
+      if (p.endDate != null) return dateISO <= p.endDate;
+      return dateISO <= todayStr;
+    }) ?? null
+  );
+}
+
+/**
+ * The days a correction may move this period's start to: after the previous
+ * period ended, and no later than today. Offering only legal days means an
+ * impossible correction cannot be expressed, so it never has to be refused.
+ */
+export function correctionRange(
+  data: CycleStateResponse | null | undefined,
+  periodId: string,
+  now: Date = new Date(),
+): { min: string; max: string } | null {
+  const period = (data?.recentPeriods ?? []).find((p) => p.id === periodId);
+  if (!period || !data) return null;
+
+  const previous = data.recentPeriods
+    .filter((p) => p.id !== periodId && p.startDate < period.startDate)
+    .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+
+  const earliest = previous
+    ? addDaysISO(
+        previous.endDate ?? addDaysISO(previous.startDate, data.effectivePeriodLength - 1),
+        1,
+      )
+    : addDaysISO(todayISO(now), -365);
+
+  // A closed period cannot start after it ended.
+  const latest = period.endDate ?? todayISO(now);
+  return { min: earliest, max: latest > todayISO(now) ? todayISO(now) : latest };
+}
+
+/** True when this period's end date is our assumption rather than her answer. */
+export function hasAssumedEnd(period: PeriodLog): boolean {
+  return period.endDate != null && period.endDateSource === 'inferred';
+}
+
+/** How the app describes which cycle length it is predicting from. */
+export function getCycleLengthSourceLabel(
+  data: CycleStateResponse | null | undefined,
+): string | null {
+  if (!data) return null;
+  if (data.cycleLengthSource === 'learned') {
+    return `Using your logged average of ${data.effectiveCycleLength} days`;
+  }
+  if (data.cycleLengthSource === 'settings') {
+    return `Using your setting of ${data.effectiveCycleLength} days`;
+  }
+  return `Using the typical ${data.effectiveCycleLength} days until you log more cycles`;
+}

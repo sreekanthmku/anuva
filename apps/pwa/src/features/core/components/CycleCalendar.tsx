@@ -35,7 +35,11 @@ function DayCell({
   let border = '1px solid transparent';
 
   if (mark.isPeriod) {
-    background = CYCLE_MARK_COLORS.period;
+    // A day whose bleed we assumed is drawn softer than one she confirmed: the
+    // app should not look as certain about our guess as it does about her answer.
+    background = mark.isAssumedPeriod
+      ? CYCLE_MARK_COLORS.assumedPeriod
+      : CYCLE_MARK_COLORS.period;
     color = '#FFFFFF';
   } else if (mark.isPredictedPeriod) {
     color = CYCLE_MARK_COLORS.period;

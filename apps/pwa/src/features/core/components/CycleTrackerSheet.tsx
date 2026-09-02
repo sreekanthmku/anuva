@@ -3,13 +3,17 @@ import type { CycleStateResponse, PeriodFlow } from '@anuva/shared';
 import { CycleCalendar } from './CycleCalendar';
 import { CyclePhaseBadge, CycleTrackerSummary } from './CycleTrackerSummary';
 import {
-  addDaysISO,
   buildCycleDayMarks,
+  correctionRange,
   CYCLE_LENGTH_DEFAULT,
   CYCLE_PHASE_CONFIG,
   formatCycleDate,
   formatCycleDateLong,
+  getCycleLengthSourceLabel,
+  hasAssumedEnd,
   isCycleTrackerReady,
+  isEditablePeriod,
+  periodLogForDate,
   PREGNANCY_CHANCE_LABEL,
   todayISO,
 } from './cycleTrackerDisplay';
@@ -111,14 +115,17 @@ type Props = {
   onSetup: (lastPeriodStart: string, cycleLength: number, periodLength: number) => Promise<unknown>;
   onLogPeriod: (startDate: string) => Promise<void>;
   onEndPeriod: (id: string, endDate: string) => Promise<void>;
+  onUpdatePeriod: (id: string, dates: { startDate?: string; endDate?: string }) => Promise<void>;
   onLogFlow: (date: string, flow: PeriodFlow, source?: 'prompt' | 'calendar') => Promise<void>;
   onDeletePeriod: (id: string) => Promise<void>;
+  onRestorePeriod: (id: string) => Promise<void>;
   onUpdateSettings: (cycleLength: number, periodLength: number) => Promise<void>;
 };
 
 type View =
   | 'main'
   | 'calendar'
+  | 'correct-dates'
   | 'setup-date'
   | 'setup-cycle-length'
   | 'setup-period-length'
@@ -132,8 +139,10 @@ export function CycleTrackerSheet({
   onSetup,
   onLogPeriod,
   onEndPeriod,
+  onUpdatePeriod,
   onLogFlow,
   onDeletePeriod,
+  onRestorePeriod,
   onUpdateSettings,
 }: Props) {
   const [view, setView] = useState<View>(() =>
@@ -147,6 +156,13 @@ export function CycleTrackerSheet({
     () => cycleData?.settings?.periodLength ?? PERIOD_DEFAULT
   );
   const [saving, setSaving] = useState(false);
+  /** Day being considered as the corrected start of her current period. */
+  const [correctionDate, setCorrectionDate] = useState(todayISO());
+  /** Period awaiting a removal confirmation — nothing is removed before this. */
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  /** Just-removed period, offered back for as long as the sheet stays open. */
+  const [undoRemovedId, setUndoRemovedId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Only reset the view when the sheet opens — logging a period from the calendar
   // changes cycleData, and that must not throw the user back to the main view.
@@ -184,16 +200,48 @@ export function CycleTrackerSheet({
     [cycleData, selectedDate],
   );
   /** The logged period covering the selected day, if any — drives edit vs log actions. */
-  const selectedPeriodLog = useMemo(() => {
-    if (!cycleData) return null;
-    const periodLength = cycleData.effectivePeriodLength;
-    return (
-      cycleData.recentPeriods.find((p) => {
-        const end = p.endDate ?? addDaysISO(p.startDate, periodLength - 1);
-        return selectedDate >= p.startDate && selectedDate <= end;
-      }) ?? null
-    );
-  }, [cycleData, selectedDate]);
+  const selectedPeriodLog = useMemo(
+    () => periodLogForDate(cycleData, selectedDate),
+    [cycleData, selectedDate],
+  );
+
+  const editablePeriod = useMemo(
+    () =>
+      cycleData?.editablePeriodId
+        ? (cycleData.recentPeriods.find((p) => p.id === cycleData.editablePeriodId) ?? null)
+        : null,
+    [cycleData],
+  );
+
+  const correctionBounds = useMemo(
+    () => (editablePeriod ? correctionRange(cycleData, editablePeriod.id) : null),
+    [cycleData, editablePeriod],
+  );
+
+  /**
+   * What removing this period costs her, named before she confirms — the dates
+   * that leave her history, and how many flow answers go with them.
+   */
+  const removalSummary = useMemo(() => {
+    const period = cycleData?.recentPeriods.find((p) => p.id === confirmRemoveId);
+    if (!period || !cycleData) return '';
+    const end = period.endDate ?? todayISO();
+    const range =
+      end === period.startDate
+        ? formatCycleDate(period.startDate)
+        : `${formatCycleDate(period.startDate)} – ${formatCycleDate(end)}`;
+    const flowCount = cycleData.flowLogs.filter(
+      (f) => f.date >= period.startDate && f.date <= end,
+    ).length;
+    if (flowCount === 0) return `${range} will be removed from your history.`;
+    return `${range} will be removed from your history, along with your flow entries for ${flowCount} ${
+      flowCount === 1 ? 'day' : 'days'
+    }. You can undo this.`;
+  }, [cycleData, confirmRemoveId]);
+
+  /** Only her current period can be corrected or removed. */
+  const selectedIsEditable =
+    selectedPeriodLog != null && isEditablePeriod(cycleData, selectedPeriodLog.id);
 
   const selectedFlow = useMemo(
     () => cycleData?.flowLogs.find((f) => f.date === selectedDate)?.flow ?? null,
@@ -242,13 +290,36 @@ export function CycleTrackerSheet({
     }
   };
 
-  const handleDeletePeriod = async (id: string) => {
+  /** Surface a refused correction in her own terms rather than failing silently. */
+  const run = async (action: () => Promise<unknown>) => {
     setSaving(true);
+    setActionError(null);
     try {
-      await onDeletePeriod(id);
+      await action();
+      return true;
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'That did not work. Try again.');
+      return false;
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleRemovePeriod = async (id: string) => {
+    const ok = await run(() => onDeletePeriod(id));
+    if (!ok) return;
+    setConfirmRemoveId(null);
+    setUndoRemovedId(id);
+  };
+
+  const handleRestorePeriod = async (id: string) => {
+    const ok = await run(() => onRestorePeriod(id));
+    if (ok) setUndoRemovedId(null);
+  };
+
+  const handleCorrectStart = async (id: string, startDate: string) => {
+    const ok = await run(() => onUpdatePeriod(id, { startDate }));
+    if (ok) setView('calendar');
   };
 
   const handleUpdateSettings = async () => {
@@ -641,6 +712,80 @@ export function CycleTrackerSheet({
               onSelectDate={setSelectedDate}
             />
 
+            {actionError && (
+              <p
+                className="mt-4 rounded-[14px] border p-3 text-[12px] leading-[1.5]"
+                style={{
+                  background: 'rgba(192, 64, 90,0.08)',
+                  borderColor: 'rgba(192, 64, 90,0.28)',
+                  color: '#C0405A',
+                  fontFamily: BODY,
+                }}
+              >
+                {actionError}
+              </p>
+            )}
+
+            {confirmRemoveId && (
+              <div
+                className="mt-4 rounded-[18px] border p-4"
+                style={{
+                  background: 'rgba(192, 64, 90,0.08)',
+                  borderColor: 'rgba(192, 64, 90,0.28)',
+                }}
+              >
+                <p
+                  className="text-[14px] text-on-surface"
+                  style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
+                >
+                  Remove this period?
+                </p>
+                <p
+                  className="mt-1 text-[12px] leading-[1.5] text-on-surface-variant"
+                  style={{ fontFamily: BODY }}
+                >
+                  {removalSummary}
+                </p>
+                <div className="mt-3 flex gap-2.5">
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => handleRemovePeriod(confirmRemoveId)}
+                    className="flex-1 rounded-full py-[11px] text-[13px] font-semibold text-on-secondary disabled:opacity-50"
+                    style={{ background: '#C0405A', fontFamily: BODY }}
+                  >
+                    {saving ? 'Removing…' : 'Remove'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => setConfirmRemoveId(null)}
+                    className="flex-1 rounded-full border border-border-default py-[11px] text-[13px] text-on-surface-variant disabled:opacity-50"
+                    style={{ fontFamily: BODY }}
+                  >
+                    Keep it
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {undoRemovedId && !confirmRemoveId && (
+              <div className="mt-4 flex items-center justify-between gap-3 rounded-[14px] border border-border-default p-3">
+                <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
+                  Period removed.
+                </p>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => handleRestorePeriod(undoRemovedId)}
+                  className="rounded-full border border-border-default px-4 py-2 text-[12px] font-medium text-primary disabled:opacity-50"
+                  style={{ fontFamily: BODY }}
+                >
+                  {saving ? 'Undoing…' : 'Undo'}
+                </button>
+              </div>
+            )}
+
             <div className="mt-5 rounded-[18px] border border-border-default p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -718,7 +863,7 @@ export function CycleTrackerSheet({
                   </p>
                 ) : selectedPeriodLog ? (
                   <>
-                    {!selectedPeriodLog.endDate && selectedDate > selectedPeriodLog.startDate && (
+                    {selectedPeriodLog.endDate == null && (
                       <button
                         type="button"
                         disabled={saving}
@@ -734,17 +879,48 @@ export function CycleTrackerSheet({
                         {saving ? 'Saving…' : 'Period ended this day'}
                       </button>
                     )}
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() => handleDeletePeriod(selectedPeriodLog.id)}
-                      className="w-full rounded-full border border-border-default py-[12px] text-[13px] text-on-surface-variant disabled:opacity-50"
-                      style={{ fontFamily: BODY }}
-                    >
-                      {saving
-                        ? 'Saving…'
-                        : `Remove period starting ${formatCycleDate(selectedPeriodLog.startDate)}`}
-                    </button>
+
+                    {hasAssumedEnd(selectedPeriodLog) && (
+                      <p className="text-[11px] text-outline" style={{ fontFamily: BODY }}>
+                        We estimated this period ended{' '}
+                        {formatCycleDate(selectedPeriodLog.endDate!)}.
+                      </p>
+                    )}
+
+                    {selectedIsEditable ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => {
+                            setCorrectionDate(selectedPeriodLog.startDate);
+                            setView('correct-dates');
+                          }}
+                          className="w-full rounded-full border border-border-default py-[12px] text-[13px] text-on-surface disabled:opacity-50"
+                          style={{ fontFamily: BODY }}
+                        >
+                          Change dates
+                        </button>
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => setConfirmRemoveId(selectedPeriodLog.id)}
+                          className="w-full py-[10px] text-[12px] text-outline underline decoration-border-default underline-offset-4 disabled:opacity-50"
+                          style={{ fontFamily: BODY }}
+                        >
+                          This wasn&rsquo;t a period
+                        </button>
+                      </>
+                    ) : (
+                      <p className="text-[11px] leading-[1.5] text-outline" style={{ fontFamily: BODY }}>
+                        Recorded {formatCycleDate(selectedPeriodLog.startDate)}
+                        {selectedPeriodLog.endDate
+                          ? ` – ${formatCycleDate(selectedPeriodLog.endDate)}`
+                          : ''}
+                        . Only your latest period can be changed — you can still update the flow
+                        for any day.
+                      </p>
+                    )}
                   </>
                 ) : (
                   <button
@@ -767,6 +943,86 @@ export function CycleTrackerSheet({
           </div>
         )}
 
+        {/* CORRECT DATES — her current period only */}
+        {view === 'correct-dates' && editablePeriod && (
+          <div>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <div>
+                <div
+                  className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
+                  style={{ fontFamily: BODY }}
+                >
+                  <span className="h-px w-3 bg-primary/60" />
+                  Change dates
+                </div>
+                <h2
+                  className="text-[20px] text-on-surface"
+                  style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
+                >
+                  When did it start?
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setView('calendar')}
+                className="rounded-full border border-border-default px-4 py-2 text-[12px] text-on-surface-variant"
+                style={{ fontFamily: BODY }}
+              >
+                Cancel
+              </button>
+            </div>
+
+            <p
+              className="mb-4 text-[12px] leading-[1.5] text-on-surface-variant"
+              style={{ fontFamily: BODY }}
+            >
+              Currently {formatCycleDateLong(editablePeriod.startDate)}. Pick the day it really
+              began — your flow entries stay on the days you recorded them.
+            </p>
+
+            <CycleCalendar
+              cycleData={cycleData}
+              selectedDate={correctionDate}
+              onSelectDate={(d) => {
+                // Only legal days respond, so an impossible correction cannot be
+                // expressed and never has to be refused.
+                if (!correctionBounds) return;
+                if (d >= correctionBounds.min && d <= correctionBounds.max) setCorrectionDate(d);
+              }}
+            />
+
+            {correctionBounds && (
+              <p className="mt-3 text-[11px] text-outline" style={{ fontFamily: BODY }}>
+                Choose between {formatCycleDate(correctionBounds.min)} and{' '}
+                {formatCycleDate(correctionBounds.max)}.
+              </p>
+            )}
+
+            {actionError && (
+              <p
+                className="mt-3 text-[12px] leading-[1.5]"
+                style={{ color: '#C0405A', fontFamily: BODY }}
+              >
+                {actionError}
+              </p>
+            )}
+
+            <button
+              type="button"
+              disabled={saving || correctionDate === editablePeriod.startDate}
+              onClick={() => handleCorrectStart(editablePeriod.id, correctionDate)}
+              className="mt-5 w-full rounded-full bg-primary py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-50"
+              style={{ fontFamily: BODY }}
+            >
+              {saving
+                ? 'Saving…'
+                : correctionDate === editablePeriod.startDate
+                  ? 'Pick a different day'
+                  : `Move start to ${formatCycleDate(correctionDate)}`}
+            </button>
+          </div>
+        )}
+
         {/* EDIT SETTINGS */}
         {view === 'edit-settings' && (
           <div>
@@ -778,11 +1034,23 @@ export function CycleTrackerSheet({
               Edit cycle settings
             </div>
             <h2
-              className="mb-5 text-[20px] text-on-surface"
+              className="mb-2 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
               Cycle &amp; period length
             </h2>
+
+            {/* Once her own cycles are learned they win over the setting, so say so
+                rather than offering a number whose effect she cannot see. */}
+            <p
+              className="mb-5 text-[12px] leading-[1.5] text-on-surface-variant"
+              style={{ fontFamily: BODY }}
+            >
+              {getCycleLengthSourceLabel(cycleData)}
+              {cycleData?.cycleLengthSource === 'learned'
+                ? ' — your setting is a starting point until enough cycles are logged.'
+                : ''}
+            </p>
 
             <p
               className="mb-3 text-[11px] uppercase tracking-[0.12em] text-outline"

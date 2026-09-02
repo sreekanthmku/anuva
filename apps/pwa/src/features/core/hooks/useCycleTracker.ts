@@ -47,17 +47,37 @@ export function useCycleTracker() {
     setState({ data, loading: false, error: null });
   }, []);
 
-  const endPeriod = useCallback(async (id: string, endDate: string) => {
-    const data = await apiFetch<CycleStateResponse>(`/api/cycle/period/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ endDate }),
-    });
-    setState({ data, loading: false, error: null });
-  }, []);
+  /**
+   * Correct her current period. Either date may move; the server rejects the pair
+   * if the result would overlap the period before it or run impossibly long.
+   */
+  const updatePeriod = useCallback(
+    async (id: string, dates: { startDate?: string; endDate?: string }) => {
+      const data = await apiFetch<CycleStateResponse>(`/api/cycle/period/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(dates),
+      });
+      setState({ data, loading: false, error: null });
+    },
+    []
+  );
+
+  const endPeriod = useCallback(
+    (id: string, endDate: string) => updatePeriod(id, { endDate }),
+    [updatePeriod]
+  );
 
   const deletePeriod = useCallback(async (id: string) => {
     const data = await apiFetch<CycleStateResponse>(`/api/cycle/period/${id}`, {
       method: 'DELETE',
+    });
+    setState({ data, loading: false, error: null });
+  }, []);
+
+  /** Undo a removal — what the confirmation's undo offers. */
+  const restorePeriod = useCallback(async (id: string) => {
+    const data = await apiFetch<CycleStateResponse>(`/api/cycle/period/${id}/restore`, {
+      method: 'POST',
     });
     setState({ data, loading: false, error: null });
   }, []);
@@ -94,7 +114,9 @@ export function useCycleTracker() {
     setup,
     logPeriod,
     endPeriod,
+    updatePeriod,
     deletePeriod,
+    restorePeriod,
     logFlow,
     updateSettings,
   };

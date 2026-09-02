@@ -15,9 +15,24 @@ export const logPeriodBodySchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
 });
 
-export const endPeriodBodySchema = z.object({
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
-});
+/**
+ * One correction to her current period. Either date may move; the server validates
+ * the resulting interval as a whole rather than each field on its own.
+ */
+export const updatePeriodBodySchema = z
+  .object({
+    startDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD')
+      .optional(),
+    endDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD')
+      .optional(),
+  })
+  .refine((body) => body.startDate != null || body.endDate != null, {
+    message: 'Give a start date, an end date, or both.',
+  });
 
 export const periodFlowSchema = z.enum(['light', 'regular', 'heavy']);
 
@@ -34,10 +49,18 @@ export const periodFlowEntrySchema = z.object({
   flow: periodFlowSchema,
 });
 
+/** Where a period's end date came from — she closed it, or we assumed it. */
+export const endDateSourceSchema = z.enum(['user', 'inferred']);
+
 export const periodLogSchema = z.object({
   id: z.string(),
   startDate: z.string(),
   endDate: z.string().nullable(),
+  /**
+   * `inferred` ends are drawn as estimates and excluded from her averages.
+   * Absent means she closed the period herself.
+   */
+  endDateSource: endDateSourceSchema.optional(),
 });
 
 export const cyclePhaseSchema = z.enum(['period', 'follicular', 'ovulatory', 'luteal']);
@@ -87,6 +110,12 @@ export const cycleStateResponseSchema = z.object({
   /** True once the predicted period date has passed — drives the "did it start?" prompt. */
   pendingPeriodConfirm: z.boolean(),
   recentPeriods: z.array(periodLogSchema),
+  /**
+   * The only period she may move or remove — her current or most recent one.
+   * Null when nothing is logged. Named by the server so the rule is enforced in
+   * one place rather than re-derived by each client.
+   */
+  editablePeriodId: z.string().nullable(),
   predictions: z.array(cyclePredictionSchema),
   /** Flow answers for the logged bleeding days in `recentPeriods`. */
   flowLogs: z.array(periodFlowEntrySchema),
@@ -100,7 +129,8 @@ export const cycleStateResponseSchema = z.object({
 export type CycleSetupBody = z.infer<typeof cycleSetupBodySchema>;
 export type CycleSettingsBody = z.infer<typeof cycleSettingsBodySchema>;
 export type LogPeriodBody = z.infer<typeof logPeriodBodySchema>;
-export type EndPeriodBody = z.infer<typeof endPeriodBodySchema>;
+export type UpdatePeriodBody = z.infer<typeof updatePeriodBodySchema>;
+export type EndDateSource = z.infer<typeof endDateSourceSchema>;
 export type CycleStateResponse = z.infer<typeof cycleStateResponseSchema>;
 export type PeriodLogEntry = z.infer<typeof periodLogSchema>;
 export type PeriodFlow = z.infer<typeof periodFlowSchema>;
