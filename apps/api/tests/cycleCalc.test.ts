@@ -1,33 +1,38 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { PeriodLogEntry } from '@anuva/shared';
-import { computeAvgPeriodLength, computeCycleState } from '../src/cycleCalc.js';
+import {
+  assumedEndDate,
+  computeAvgPeriodLength,
+  computeCycleGaps,
+  computeCycleState,
+  promptableBleedingDays,
+  resolveEditablePeriodId,
+} from '../src/cycleCalc.js';
 
-function period(id: string, startDate: string, endDate: string | null = null): PeriodLogEntry {
-  return { id, startDate, endDate };
-}
-
-/** Mirror of cycleCalc daysBetween — used only to pick inputs that land on a target cycle day. */
-function daysBetween(a: Date, b: Date): number {
-  return Math.floor((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
+function period(
+  id: string,
+  startDate: string,
+  endDate: string | null = null,
+  endDateSource?: 'user' | 'inferred',
+): PeriodLogEntry {
+  return { id, startDate, endDate, endDateSource };
 }
 
 /**
- * Build a YYYY-MM-DD startDate that yields `targetCycleDay` under the same
- * `new Date(iso)` + local-midnight-today rules as computeCycleState.
+ * A YYYY-MM-DD start date that lands on `targetCycleDay` today.
+ *
+ * cycleCalc reads "today" from the local calendar and parses date-only strings at
+ * UTC midnight, so a cycle day is a plain calendar-day difference — no timezone
+ * arithmetic needed here, and none wanted: mixing the two is what used to make
+ * these counts drift by a day in offset zones.
  */
 function startDateForCycleDay(targetCycleDay: number, today: Date): string {
-  const desiredDelta = targetCycleDay - 1;
-  // Prefer a UTC calendar date near (today - desiredDelta).
   const probe = new Date(today);
-  probe.setDate(probe.getDate() - desiredDelta);
-  const iso = `${probe.getFullYear()}-${String(probe.getMonth() + 1).padStart(2, '0')}-${String(probe.getDate()).padStart(2, '0')}`;
-  const actual = daysBetween(new Date(iso), today) + 1;
-  if (actual === targetCycleDay) return iso;
-
-  // Nudge by calendar day if timezone skew shifted the cycle day.
-  const adjust = targetCycleDay - actual;
-  probe.setDate(probe.getDate() - adjust);
-  return `${probe.getFullYear()}-${String(probe.getMonth() + 1).padStart(2, '0')}-${String(probe.getDate()).padStart(2, '0')}`;
+  probe.setDate(probe.getDate() - (targetCycleDay - 1));
+  const y = probe.getFullYear();
+  const m = String(probe.getMonth() + 1).padStart(2, '0');
+  const d = String(probe.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 describe('computeAvgPeriodLength', () => {
@@ -70,6 +75,8 @@ describe('computeCycleState', () => {
   const CYCLE = 28;
   const PERIOD = 5;
 
+  const settings = (cycleLength = CYCLE, periodLength = PERIOD) => ({ cycleLength, periodLength });
+
   beforeEach(() => {
     // Noon local avoids DST midnight edge cases when freezing the clock.
     vi.useFakeTimers();
@@ -81,13 +88,15 @@ describe('computeCycleState', () => {
   });
 
   it('returns all-null fields when there are no periods', () => {
-    expect(computeCycleState([], CYCLE, PERIOD)).toEqual({
+    expect(computeCycleState([], settings())).toMatchObject({
+      status: 'unset',
       currentCycleDay: null,
       phase: null,
       nextPeriodDate: null,
       fertileWindowStart: null,
       fertileWindowEnd: null,
       ovulationDate: null,
+      predictions: [],
     });
   });
 
@@ -97,8 +106,7 @@ describe('computeCycleState', () => {
     const recent = startDateForCycleDay(3, today);
     const state = computeCycleState(
       [period('old', '2024-01-01', '2024-01-05'), period('new', recent, null)],
-      CYCLE,
-      PERIOD,
+      settings(),
     );
     expect(state.currentCycleDay).toBe(3);
     expect(state.phase).toBe('period');
@@ -109,7 +117,7 @@ describe('computeCycleState', () => {
     today.setHours(0, 0, 0, 0);
     for (const day of [1, 5]) {
       const start = startDateForCycleDay(day, today);
-      const state = computeCycleState([period('p', start)], CYCLE, PERIOD);
+      const state = computeCycleState([period('p', start)], settings());
       expect(state.currentCycleDay).toBe(day);
       expect(state.phase).toBe('period');
     }
@@ -121,7 +129,7 @@ describe('computeCycleState', () => {
     // ovulationDayNum = 28 - 14 = 14; follicular while day < 13
     for (const day of [6, 12]) {
       const start = startDateForCycleDay(day, today);
-      const state = computeCycleState([period('p', start)], CYCLE, PERIOD);
+      const state = computeCycleState([period('p', start)], settings());
       expect(state.currentCycleDay).toBe(day);
       expect(state.phase).toBe('follicular');
     }
@@ -133,7 +141,7 @@ describe('computeCycleState', () => {
     // ovulatory while day <= ovulationDayNum + 1 and not follicular → days 13–15
     for (const day of [13, 14, 15]) {
       const start = startDateForCycleDay(day, today);
-      const state = computeCycleState([period('p', start)], CYCLE, PERIOD);
+      const state = computeCycleState([period('p', start)], settings());
       expect(state.currentCycleDay).toBe(day);
       expect(state.phase).toBe('ovulatory');
     }
@@ -144,7 +152,7 @@ describe('computeCycleState', () => {
     today.setHours(0, 0, 0, 0);
     for (const day of [16, 28]) {
       const start = startDateForCycleDay(day, today);
-      const state = computeCycleState([period('p', start)], CYCLE, PERIOD);
+      const state = computeCycleState([period('p', start)], settings());
       expect(state.currentCycleDay).toBe(day);
       expect(state.phase).toBe('luteal');
     }
@@ -154,7 +162,7 @@ describe('computeCycleState', () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const start = startDateForCycleDay(10, today);
-    const state = computeCycleState([period('p', start)], CYCLE, PERIOD);
+    const state = computeCycleState([period('p', start)], settings());
 
     const lastStart = new Date(start);
     const addDays = (d: Date, n: number) => {
@@ -176,10 +184,131 @@ describe('computeCycleState', () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const start = startDateForCycleDay(3, today);
-    const shortPeriod = computeCycleState([period('p', start)], CYCLE, 2);
-    const longPeriod = computeCycleState([period('p', start)], CYCLE, 5);
+    const shortPeriod = computeCycleState([period('p', start)], settings(CYCLE, 2));
+    const longPeriod = computeCycleState([period('p', start)], settings(CYCLE, 5));
     expect(shortPeriod.currentCycleDay).toBe(3);
     expect(shortPeriod.phase).toBe('follicular');
     expect(longPeriod.phase).toBe('period');
+  });
+});
+
+describe('computeCycleGaps', () => {
+  it('averages consistent gaps as-is', () => {
+    const periods = ['2025-01-01', '2025-01-29', '2025-02-26', '2025-03-26'].map((d) =>
+      period(d, d),
+    );
+    expect(computeCycleGaps(periods)).toEqual([28, 28, 28]);
+  });
+
+  it('drops a gap that is roughly double her own spacing', () => {
+    // A 21-day cycler with one cycle missing from the record: 21, 42, 21, 21.
+    // The 42 is inside the plausible 21–45 range, so only a comparison against
+    // her own median can tell it from a genuinely long cycle.
+    const periods = ['2025-01-01', '2025-01-22', '2025-03-05', '2025-03-26', '2025-04-16'].map(
+      (d) => period(d, d),
+    );
+    expect(computeCycleGaps(periods)).toEqual([21, 21, 21]);
+  });
+
+  it('keeps the real variation of an irregular cycler', () => {
+    const periods = ['2025-01-01', '2025-01-25', '2025-03-11', '2025-04-10', '2025-05-08'].map(
+      (d) => period(d, d),
+    );
+    // 24, 45, 30, 28 — the 45 is under 1.75x the median of the others, so it stays.
+    expect(computeCycleGaps(periods)).toEqual([24, 45, 30, 28]);
+  });
+
+  it('leaves gaps outside the plausible range out entirely', () => {
+    const periods = ['2025-01-01', '2025-01-10', '2025-02-07'].map((d) => period(d, d));
+    expect(computeCycleGaps(periods)).toEqual([28]);
+  });
+});
+
+describe('computeAvgPeriodLength with assumed ends', () => {
+  it('ignores an end date we inferred rather than one she gave us', () => {
+    const periods = [
+      period('confirmed', '2025-01-01', '2025-01-07'), // 7 days, her own
+      period('assumed', '2025-02-01', '2025-02-05', 'inferred'), // 5 days, our guess
+    ];
+    // Averaging the guess in would drag 7 down towards it, and the guess is
+    // itself derived from this average — so it must not feed back.
+    expect(computeAvgPeriodLength(periods)).toBe(7);
+  });
+
+  it('returns null when every end date was inferred', () => {
+    const periods = [period('a', '2025-01-01', '2025-01-05', 'inferred')];
+    expect(computeAvgPeriodLength(periods)).toBeNull();
+  });
+});
+
+describe('resolveEditablePeriodId', () => {
+  it('names the most recent period by start date, not by list order', () => {
+    const periods = [
+      period('old', '2025-01-01', '2025-01-05'),
+      period('newest', '2025-03-01'),
+      period('middle', '2025-02-01', '2025-02-05'),
+    ];
+    expect(resolveEditablePeriodId(periods)).toBe('newest');
+  });
+
+  it('is null when nothing is logged', () => {
+    expect(resolveEditablePeriodId([])).toBeNull();
+  });
+});
+
+describe('assumedEndDate', () => {
+  it('runs for her usual period length', () => {
+    expect(assumedEndDate('2025-03-01', 5)).toBe('2025-03-05');
+  });
+
+  it('is cut short when a newer period starts sooner', () => {
+    expect(assumedEndDate('2025-03-01', 5, '2025-03-03')).toBe('2025-03-03');
+  });
+
+  it('never ends before it started', () => {
+    expect(assumedEndDate('2025-03-01', 5, '2025-02-27')).toBe('2025-03-01');
+  });
+});
+
+describe('promptableBleedingDays', () => {
+  const now = new Date(2025, 2, 10, 12, 0, 0); // 10 Mar 2025
+
+  it('offers every day of a period she closed herself', () => {
+    const periods = [period('p', '2025-03-05', '2025-03-08')];
+    expect(promptableBleedingDays(periods, 5, [], now)).toEqual([
+      '2025-03-05',
+      '2025-03-06',
+      '2025-03-07',
+      '2025-03-08',
+    ]);
+  });
+
+  it('offers only the first day of an open period until she answers', () => {
+    const periods = [period('p', '2025-03-08')];
+    expect(promptableBleedingDays(periods, 5, [], now)).toEqual(['2025-03-08']);
+  });
+
+  it('walks forward one day for each day she answers', () => {
+    const periods = [period('p', '2025-03-08')];
+    expect(promptableBleedingDays(periods, 5, ['2025-03-08'], now)).toEqual([
+      '2025-03-08',
+      '2025-03-09',
+    ]);
+    expect(promptableBleedingDays(periods, 5, ['2025-03-08', '2025-03-09'], now)).toEqual([
+      '2025-03-08',
+      '2025-03-09',
+      '2025-03-10',
+    ]);
+  });
+
+  it('never walks past today', () => {
+    const periods = [period('p', '2025-03-09')];
+    const answered = ['2025-03-09', '2025-03-10', '2025-03-11'];
+    expect(promptableBleedingDays(periods, 5, answered, now)).toEqual(['2025-03-09', '2025-03-10']);
+  });
+
+  it('offers only the first day of a period we closed by assumption', () => {
+    const periods = [period('p', '2025-03-05', '2025-03-09', 'inferred')];
+    expect(promptableBleedingDays(periods, 5, [], now)).toEqual(['2025-03-05']);
   });
 });

@@ -146,13 +146,24 @@ export async function generateReply(
   history: PriorTurn[] = [],
   name: string | null = null,
   sheTyped = true,
+  /// An extra turn-specific instruction, inserted as a system message directly
+  /// before her message — the same position nameDirective occupies, and for the
+  /// same reason: it is a judgement about the turn, so it has to be read after
+  /// the history rather than buried at the top of a 3.5k-token prompt.
+  ///
+  /// Used only by the probe ladder (see probe/engine.ts), which appends its own
+  /// authored question after the reply and therefore needs the model to stop
+  /// asking one of its own. Never carries clinical content.
+  directive: string | null = null,
 ): Promise<GeneratedReply> {
   const model = env.chatModel();
+  const messages = buildMessages(userMessage, history, name, sheTyped);
+  if (directive) messages.splice(messages.length - 1, 0, { role: 'system', content: directive });
   const json = await openaiFetch<ChatResponse>('/chat/completions', {
     model,
     response_format: { type: 'json_object' },
     ...samplingParams(model),
-    messages: buildMessages(userMessage, history, name, sheTyped),
+    messages,
   });
 
   const raw = json.choices[0]?.message?.content?.trim();

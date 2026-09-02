@@ -1089,16 +1089,28 @@ model CycleSettings {
   updatedAt    DateTime @updatedAt
 }
 
+/// One recorded period. Only the most recent one is editable — everything older
+/// is a permanent record, so history cannot shift under her later.
 model PeriodLog {
   id        String    @id @default(cuid())
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   startDate DateTime  @db.Date
   endDate   DateTime? @db.Date
+  /// `user` — she closed the period herself. `inferred` — we assumed the end from
+  /// her usual period length when a newer period sealed this one. An inferred end
+  /// is shown as an estimate and never teaches the period-length average, or the
+  /// guess would keep confirming itself.
+  endDateSource String @default("user")
+  /// Removal is reversible: the row is marked, never erased, so her flow answers
+  /// survive an accidental confirm.
+  deletedAt DateTime?
+  flowLogs  PeriodFlowLog[]
   createdAt DateTime  @default(now())
 
   @@unique([userId, startDate])
   @@index([userId])
+  @@index([userId, deletedAt])
 }
 
 model PeriodFlowLog {
@@ -1108,11 +1120,16 @@ model PeriodFlowLog {
   date      DateTime @db.Date
   flow      String // light | regular | heavy
   source    String   @default("prompt") // prompt | calendar
+  /// Flow belongs to its period, not to the calendar, so correcting a period's
+  /// dates carries her answers along instead of stranding them.
+  periodLogId String?
+  periodLog   PeriodLog? @relation(fields: [periodLogId], references: [id], onDelete: Cascade)
   loggedAt  DateTime @default(now())
   createdAt DateTime @default(now())
 
   @@unique([userId, date])
   @@index([userId, date])
+  @@index([periodLogId])
 }
 
 model MoodLog {
@@ -1483,6 +1500,9 @@ enum AnuTurnSource {
   red_flag
   cache
   model
+  /// A rung of the probe ladder: an authored question served verbatim with its
+  /// options as chips. No model call, and no clinical content.
+  probe
 }
 
 /// Immutable audit trail. Records what ANU actually said to whom, and why.
@@ -1505,6 +1525,30 @@ model AnuChatTurn {
   cacheHitId    String? // AnuResponseCache.id when served from cache
   similarity    Float? // cosine score of the cache lookup, when one ran
   promptVersion Int
+
+  /// Which engine served this turn — "classic" or "probe" (see anu/config.ts).
+  /// Also the thread boundary: flipping the rollout mid-conversation must not
+  /// leave the classic engine replaying ladder questions as though they were
+  /// its own, so a mode change starts a fresh thread.
+  mode          String        @default("classic")
+  /// Probe ladder state, carried on the turn rather than in a separate table —
+  /// the classic engine already reconstructs a thread from these rows, and the
+  /// ladder reads its position off the latest one the same way.
+  ///
+  /// `probeRoot` is the vague opener that entered the ladder; `probeAxis` is the
+  /// rung whose options were offered as chips WITH this turn, so it is the rung
+  /// her next message answers; `probeDepth` is how many rungs are done;
+  /// `probeAnswers` is the accumulated {axis: tag} map, which is what makes the
+  /// traced chain and the doctor-prep summary possible.
+  probeRoot     String?
+  probeAxis     String?
+  probeDepth    Int?
+  probeAnswers  Json?
+  /// Consecutive turns where she typed something the current rung could not
+  /// resolve. The rung is re-offered once; a second one ends the ladder, because
+  /// by then she has said twice over that she would rather talk than tap.
+  probeHandbacks Int?
+
   createdAt     DateTime      @default(now())
 
   @@index([userId, createdAt])

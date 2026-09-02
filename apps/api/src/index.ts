@@ -80,7 +80,7 @@ import {
   JOINT_SEVERITY_LABELS,
   type JointSeverity,
   logPeriodBodySchema,
-  endPeriodBodySchema,
+  updatePeriodBodySchema,
   cycleStateResponseSchema,
   logMoodBodySchema,
   moodLogSchema,
@@ -176,10 +176,15 @@ import {
 import { notifyAskerQuestionAnswered } from './qaNotifications.js';
 import {
   PERIOD_LENGTH_MAX,
-  bleedingDays,
+  PERIOD_LENGTH_MIN,
+  addDaysISO,
+  assumedEndDate,
+  diffDaysISO,
   buildCycleStateResponse,
   isBleedingDay,
   pendingFlowDates,
+  promptableBleedingDays,
+  resolveEditablePeriodId,
   todayDateOnly,
 } from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
@@ -203,7 +208,7 @@ import { buildSummaryCalendar, summaryAnchor } from './report/calendar.js';
 import { randomQuickLogMessage } from './quickLogMessages.js';
 import { recordQuickSymptom } from './logging/writeThrough.js';
 import { dayKey } from './dayKey.js';
-import { answer as anuAnswer } from './anu/engine.js';
+import { answer as anuAnswer } from './anu/index.js';
 import { getDailyInsight, getLibraryArticle, getLibraryFeed } from './library.js';
 import { buildHomeCard } from './homeCard/build.js';
 import { prismaHomeCardStore, recordHomeCardEvent } from './homeCard/store.js';
@@ -4037,16 +4042,19 @@ async function getCycleData(userId: string) {
   const [settings, periods, flows] = await Promise.all([
     prisma.cycleSettings.findUnique({ where: { userId } }),
     prisma.periodLog.findMany({
-      where: { userId },
+      // A removed period is marked, not erased, so every read has to skip it.
+      where: { userId, deletedAt: null },
       orderBy: { startDate: 'desc' },
       // Two years of logs: enough for the calendar to scroll back and for
       // cycle-length learning to have real history to average.
       take: 24,
     }),
     // Same depth as the period logs, so every bleeding day the calendar can
-    // render carries the flow answer that belongs to it.
+    // render carries the flow answer that belongs to it. Answers detached by a
+    // correction, or riding along under a removed period, stay in the table but
+    // out of the response — nothing describes a bleed she has since revised away.
     prisma.periodFlowLog.findMany({
-      where: { userId },
+      where: { userId, periodLogId: { not: null }, periodLog: { deletedAt: null } },
       orderBy: { date: 'desc' },
       take: 24 * PERIOD_LENGTH_MAX,
     }),
@@ -4054,11 +4062,17 @@ async function getCycleData(userId: string) {
   return { settings, periods, flows };
 }
 
-function serializePeriodLog(p: { id: string; startDate: Date; endDate: Date | null }) {
+function serializePeriodLog(p: {
+  id: string;
+  startDate: Date;
+  endDate: Date | null;
+  endDateSource?: string;
+}) {
   return {
     id: p.id,
     startDate: p.startDate.toISOString().split('T')[0]!,
     endDate: p.endDate ? p.endDate.toISOString().split('T')[0]! : null,
+    endDateSource: p.endDateSource === 'inferred' ? ('inferred' as const) : ('user' as const),
   };
 }
 
@@ -4072,16 +4086,19 @@ async function cycleStatePayload(userId: string, now = new Date()) {
   const state = buildCycleStateResponse(serializedPeriods, settings, now);
   const flowLogs = flows.map(serializePeriodFlowLog);
 
+  const answered = flowLogs.map((f) => f.date);
+
   return cycleStateResponseSchema.parse({
     settings: settings
       ? { cycleLength: settings.cycleLength, periodLength: settings.periodLength }
       : null,
     ...state,
     recentPeriods: serializedPeriods,
+    editablePeriodId: resolveEditablePeriodId(serializedPeriods),
     flowLogs,
     pendingFlowDates: pendingFlowDates(
-      bleedingDays(serializedPeriods, state.effectivePeriodLength, now),
-      flowLogs.map((f) => f.date),
+      promptableBleedingDays(serializedPeriods, state.effectivePeriodLength, answered, now),
+      answered,
       now,
     ),
   });
@@ -4110,7 +4127,9 @@ app.post('/cycle/setup', async (req, res, next) => {
       prisma.periodLog.upsert({
         where: { userId_startDate: { userId: user.id, startDate: new Date(lastPeriodStart) } },
         create: { userId: user.id, startDate: new Date(lastPeriodStart) },
-        update: {},
+        // Setting up again on a day she once removed brings that record back
+        // rather than leaving a tombstone holding the date.
+        update: { deletedAt: null },
       }),
     ]);
 
@@ -4135,94 +4154,307 @@ app.put('/cycle/settings', async (req, res, next) => {
   }
 });
 
+/**
+ * The period immediately before `startDate`, ignoring `excludeId`.
+ *
+ * Used for the one boundary every write has to respect: a period may not begin
+ * on or before the day the previous one ended.
+ */
+function previousPeriodOf(
+  periods: { id: string; startDate: string; endDate: string | null; endDateSource?: string }[],
+  startDate: string,
+  excludeId?: string,
+) {
+  return periods
+    .filter((p) => p.id !== excludeId && p.startDate < startDate)
+    .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+}
+
+/** Where a period effectively ends: the day she gave us, or the day we assume. */
+function effectiveEndOf(
+  period: { startDate: string; endDate: string | null },
+  effectivePeriodLength: number,
+): string {
+  return period.endDate ?? assumedEndDate(period.startDate, effectivePeriodLength);
+}
+
+/**
+ * Re-file this period's flow answers after its dates change.
+ *
+ * Answers are statements about particular days — "the 6th was heavy" stays true
+ * whatever the period's boundaries turn out to be — so they are never moved and
+ * never deleted. They are only re-filed: days now inside the period belong to
+ * it, days now outside are detached and kept. Widen the period again and they
+ * come back on their own.
+ */
+async function refileFlowLogs(
+  userId: string,
+  period: { id: string; startDate: string; endDate: string | null },
+  effectivePeriodLength: number,
+): Promise<void> {
+  const from = period.startDate;
+  const to = effectiveEndOf(period, effectivePeriodLength);
+
+  await prisma.$transaction([
+    // Detach anything of ours that no longer falls inside the period.
+    prisma.periodFlowLog.updateMany({
+      where: {
+        userId,
+        periodLogId: period.id,
+        OR: [{ date: { lt: dayKey(new Date(`${from}T00:00:00`)) } }, { date: { gt: dayKey(new Date(`${to}T00:00:00`)) } }],
+      },
+      data: { periodLogId: null },
+    }),
+    // Adopt anything unowned that now does.
+    prisma.periodFlowLog.updateMany({
+      where: {
+        userId,
+        periodLogId: null,
+        date: {
+          gte: dayKey(new Date(`${from}T00:00:00`)),
+          lte: dayKey(new Date(`${to}T00:00:00`)),
+        },
+      },
+      data: { periodLogId: period.id },
+    }),
+  ]);
+}
+
+/**
+ * Log the day a period started.
+ *
+ * Two things happen together. The new period is recorded, and the previous one is
+ * sealed: if she never closed it, we write down the end we assume from her usual
+ * period length and mark it inferred, so her history stops being a live
+ * calculation and cannot shift under her when a setting changes later.
+ */
 app.post('/cycle/period', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     const { startDate } = logPeriodBodySchema.parse(req.body);
+    const now = new Date();
+
     // A start date in the future would poison every prediction downstream.
     // One day of slack absorbs the client being ahead of the server's timezone.
     const maxStart = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]!;
     if (startDate > maxStart) {
       throw new HttpError(400, 'Period start date cannot be in the future.');
     }
-    await prisma.periodLog.upsert({
-      where: { userId_startDate: { userId: user.id, startDate: new Date(startDate) } },
-      create: { userId: user.id, startDate: new Date(startDate) },
-      update: {},
-    });
-    res.status(201).json(await cycleStatePayload(user.id));
-  } catch (e) {
-    next(e);
-  }
-});
 
-app.patch('/cycle/period/:id', async (req, res, next) => {
-  try {
-    const user = await requireCurrentUser(req);
-    const { id } = req.params;
-    const { endDate } = endPeriodBodySchema.parse(req.body);
-    const existing = await prisma.periodLog.findUnique({ where: { id } });
-    if (!existing || existing.userId !== user.id) {
-      throw new HttpError(404, 'Period log not found.');
-    }
-    if (endDate < existing.startDate.toISOString().split('T')[0]!) {
-      throw new HttpError(400, 'Period end date cannot be before its start date.');
-    }
-    await prisma.periodLog.update({
-      where: { id },
-      data: { endDate: new Date(endDate) },
-    });
-    // Closing a period early can push its later days out of the bleed.
-    await deleteOrphanedFlowLogs(user.id);
-    res.json(await cycleStatePayload(user.id));
-  } catch (e) {
-    next(e);
-  }
-});
+    const { settings, periods } = await getCycleData(user.id);
+    const serializedPeriods = periods.map(serializePeriodLog);
+    const { effectivePeriodLength } = buildCycleStateResponse(serializedPeriods, settings, now);
 
-app.delete('/cycle/period/:id', async (req, res, next) => {
-  try {
-    const user = await requireCurrentUser(req);
-    const { id } = req.params;
-    const existing = await prisma.periodLog.findUnique({ where: { id } });
-    if (!existing || existing.userId !== user.id) {
-      throw new HttpError(404, 'Period log not found.');
+    const previous = previousPeriodOf(serializedPeriods, startDate);
+    if (previous) {
+      const previousEnd = effectiveEndOf(previous, effectivePeriodLength);
+      // A period cannot begin inside one she has already recorded. Without this
+      // an ongoing period could be logged a second time and become the anchor
+      // for every date the app shows her.
+      if (startDate <= previousEnd) {
+        throw new HttpError(
+          409,
+          `That day falls inside your period starting ${previous.startDate}. Change that period's dates instead.`,
+        );
+      }
     }
-    await prisma.periodLog.delete({ where: { id } });
-    // Flow answers only exist for bleeding days. Deleting the period that made
-    // those days bleeding days leaves rows describing a bleed the user has since
-    // said never happened, and the prompt would never surface them again.
-    await deleteOrphanedFlowLogs(user.id);
-    res.json(await cycleStatePayload(user.id));
+
+    const created = await prisma.$transaction(async (tx) => {
+      if (previous && previous.endDate == null) {
+        await tx.periodLog.update({
+          where: { id: previous.id },
+          data: {
+            endDate: new Date(
+              assumedEndDate(
+                previous.startDate,
+                effectivePeriodLength,
+                addDaysISO(startDate, -1),
+              ),
+            ),
+            endDateSource: 'inferred',
+          },
+        });
+      }
+      // Re-logging a day she previously removed brings that record back rather
+      // than colliding with the tombstone still holding the date.
+      return tx.periodLog.upsert({
+        where: { userId_startDate: { userId: user.id, startDate: new Date(startDate) } },
+        create: { userId: user.id, startDate: new Date(startDate) },
+        update: { deletedAt: null },
+      });
+    });
+
+    if (previous && previous.endDate == null) {
+      await refileFlowLogs(
+        user.id,
+        {
+          id: previous.id,
+          startDate: previous.startDate,
+          endDate: assumedEndDate(previous.startDate, effectivePeriodLength, addDaysISO(startDate, -1)),
+        },
+        effectivePeriodLength,
+      );
+    }
+    req.log.info({ periodId: created.id, startDate }, 'Period logged');
+
+    res.status(201).json(await cycleStatePayload(user.id, now));
   } catch (e) {
     next(e);
   }
 });
 
 /**
- * Drop flow rows whose day is no longer a bleeding day.
+ * Correct her current period's dates.
  *
- * Editing the cycle can strand them two ways: deleting a period log, or closing
- * one early so its later days fall outside the bleed. Rather than reasoning about
- * which edit happened, recompute the bleeding days and keep only what still fits.
- * Bounded by the same 24-period window the rest of the tracker reads.
+ * Only her most recent period can be corrected — everything older is a permanent
+ * record. Both dates are validated as one interval rather than field by field,
+ * because whether a change is legal depends on the pair.
  */
-async function deleteOrphanedFlowLogs(userId: string, now = new Date()): Promise<void> {
-  const { settings, periods, flows } = await getCycleData(userId);
-  const serializedPeriods = periods.map(serializePeriodLog);
-  const { effectivePeriodLength } = buildCycleStateResponse(serializedPeriods, settings, now);
-  const valid = new Set(bleedingDays(serializedPeriods, effectivePeriodLength, now));
+app.patch('/cycle/period/:id', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { id } = req.params;
+    const { startDate, endDate } = updatePeriodBodySchema.parse(req.body);
+    const now = new Date();
+    const todayStr = todayDateOnly(now);
 
-  const orphaned = flows
-    .map(serializePeriodFlowLog)
-    .filter((f) => !valid.has(f.date))
-    .map((f) => f.date);
-  if (orphaned.length === 0) return;
+    const { settings, periods } = await getCycleData(user.id);
+    const serializedPeriods = periods.map(serializePeriodLog);
+    const existing = serializedPeriods.find((p) => p.id === id);
+    if (!existing) throw new HttpError(404, 'Period log not found.');
 
-  await prisma.periodFlowLog.deleteMany({
-    where: { userId, date: { in: orphaned.map((d) => new Date(d)) } },
-  });
-}
+    if (resolveEditablePeriodId(serializedPeriods) !== id) {
+      throw new HttpError(409, 'Only your most recent period can be changed.');
+    }
+
+    // Her end date stands where she put it: moving a start means "it began
+    // earlier than I said", not "it ran longer than I said".
+    const nextStart = startDate ?? existing.startDate;
+    const nextEnd = endDate ?? existing.endDate;
+
+    if (nextStart > todayStr) {
+      throw new HttpError(400, 'Period start date cannot be in the future.');
+    }
+    if (nextEnd != null) {
+      if (nextEnd > todayStr) {
+        throw new HttpError(400, 'Period end date cannot be in the future.');
+      }
+      if (nextEnd < nextStart) {
+        throw new HttpError(400, 'Period end date cannot be before its start date.');
+      }
+      const span = diffDaysISO(nextStart, nextEnd) + 1;
+      if (span > PERIOD_LENGTH_MAX) {
+        throw new HttpError(400, `A period cannot run longer than ${PERIOD_LENGTH_MAX} days.`);
+      }
+      if (span < PERIOD_LENGTH_MIN) {
+        throw new HttpError(400, 'A period must cover at least one day.');
+      }
+    }
+
+    const { effectivePeriodLength } = buildCycleStateResponse(serializedPeriods, settings, now);
+    const previous = previousPeriodOf(serializedPeriods, nextStart, id);
+    if (previous && nextStart <= effectiveEndOf(previous, effectivePeriodLength)) {
+      throw new HttpError(
+        409,
+        `Those dates overlap your period starting ${previous.startDate}.`,
+      );
+    }
+    if (serializedPeriods.some((p) => p.id !== id && p.startDate === nextStart)) {
+      throw new HttpError(409, 'You already have a period recorded on that day.');
+    }
+
+    const updated = await prisma.periodLog.update({
+      where: { id },
+      data: {
+        startDate: new Date(nextStart),
+        endDate: nextEnd == null ? null : new Date(nextEnd),
+        // Any date she sets herself is hers, not an assumption of ours.
+        endDateSource: nextEnd == null ? 'user' : endDate != null ? 'user' : existing.endDateSource,
+      },
+    });
+
+    await refileFlowLogs(
+      user.id,
+      { id: updated.id, startDate: nextStart, endDate: nextEnd },
+      effectivePeriodLength,
+    );
+    req.log.info({ periodId: id, startDate: nextStart, endDate: nextEnd }, 'Period corrected');
+
+    res.json(await cycleStatePayload(user.id, now));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Remove her most recent period.
+ *
+ * Marked, never erased: an accidental confirm is undoable and her flow answers
+ * ride along under the tombstone. Removing repeatedly walks backwards through
+ * her history, which is how a mistake noticed several cycles late stays
+ * reachable without making older periods editable.
+ */
+app.delete('/cycle/period/:id', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { id } = req.params;
+    const { periods } = await getCycleData(user.id);
+    const serializedPeriods = periods.map(serializePeriodLog);
+
+    const existing = serializedPeriods.find((p) => p.id === id);
+    if (!existing) throw new HttpError(404, 'Period log not found.');
+    if (resolveEditablePeriodId(serializedPeriods) !== id) {
+      throw new HttpError(409, 'Only your most recent period can be removed.');
+    }
+
+    await prisma.periodLog.update({ where: { id }, data: { deletedAt: new Date() } });
+    req.log.info({ periodId: id }, 'Period removed');
+
+    res.json(await cycleStatePayload(user.id));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** Undo a removal — what the undo affordance on the confirmation calls. */
+app.post('/cycle/period/:id/restore', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { id } = req.params;
+    const now = new Date();
+
+    const removed = await prisma.periodLog.findUnique({ where: { id } });
+    if (!removed || removed.userId !== user.id || removed.deletedAt == null) {
+      throw new HttpError(404, 'No removed period to restore.');
+    }
+
+    const { settings, periods } = await getCycleData(user.id);
+    const serializedPeriods = periods.map(serializePeriodLog);
+    const { effectivePeriodLength } = buildCycleStateResponse(serializedPeriods, settings, now);
+    const restored = serializePeriodLog(removed);
+
+    // Anything logged since the removal may now sit where this period was.
+    const previous = previousPeriodOf(serializedPeriods, restored.startDate, id);
+    const clashesBefore =
+      previous != null && restored.startDate <= effectiveEndOf(previous, effectivePeriodLength);
+    const next = serializedPeriods
+      .filter((p) => p.startDate > restored.startDate)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
+    const clashesAfter =
+      next != null && next.startDate <= effectiveEndOf(restored, effectivePeriodLength);
+
+    if (clashesBefore || clashesAfter) {
+      throw new HttpError(409, 'That period overlaps one you have logged since.');
+    }
+
+    await prisma.periodLog.update({ where: { id }, data: { deletedAt: null } });
+    req.log.info({ periodId: id }, 'Period restored');
+
+    res.json(await cycleStatePayload(user.id, now));
+  } catch (e) {
+    next(e);
+  }
+});
 
 /**
  * Flow intensity for one bleeding day, from the in-app home prompt or a
@@ -4246,12 +4478,24 @@ app.post('/cycle/flow', async (req, res, next) => {
       throw new HttpError(400, 'Flow can only be logged for a day inside a logged period.');
     }
 
+    // The answer is filed under the period it falls in, so a later correction to
+    // that period's dates can re-file it instead of stranding it on a calendar day.
+    const owner = serializedPeriods.find(
+      (p) => date >= p.startDate && date <= effectiveEndOf(p, effectivePeriodLength),
+    );
+
     await prisma.periodFlowLog.upsert({
       // `dayKey`, not local midnight: the column is `@db.Date`, and Prisma writes
       // the UTC date part — local midnight in IST lands on the previous day.
       where: { userId_date: { userId: user.id, date: dayKey(new Date(`${date}T00:00:00`)) } },
-      create: { userId: user.id, date: dayKey(new Date(`${date}T00:00:00`)), flow, source },
-      update: { flow, source, loggedAt: now },
+      create: {
+        userId: user.id,
+        date: dayKey(new Date(`${date}T00:00:00`)),
+        flow,
+        source,
+        periodLogId: owner?.id ?? null,
+      },
+      update: { flow, source, loggedAt: now, periodLogId: owner?.id ?? null },
     });
 
     // Same engagement credit the manual /mood and /sleep logs take, so the nudge

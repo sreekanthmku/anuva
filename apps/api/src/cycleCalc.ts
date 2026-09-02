@@ -16,6 +16,12 @@ export const PERIOD_LENGTH_DEFAULT = 5;
 const LUTEAL_LENGTH = 14;
 /** Cycle gaps considered when learning the user's own average. */
 const LEARN_WINDOW = 6;
+/**
+ * A gap this many times her own median is read as a cycle she never logged rather
+ * than a real long one. Two unlogged cycles merge into a gap near 2x the median,
+ * and a genuinely long cycle stays well under this, so the two separate cleanly.
+ */
+const GAP_OUTLIER_FACTOR = 1.75;
 /** Two logged cycles is the minimum before we trust learned length over the user's setting. */
 const LEARN_MIN_GAPS = 2;
 /** Spread across recent cycles at or above which we call the cycle irregular. */
@@ -41,6 +47,16 @@ function toDateOnly(d: Date): string {
   return d.toISOString().split('T')[0]!;
 }
 
+/** `n` days from a YYYY-MM-DD date, as YYYY-MM-DD. */
+export function addDaysISO(dateStr: string, n: number): string {
+  return toDateOnly(addDays(parseDateOnly(dateStr), n));
+}
+
+/** Whole calendar days between two YYYY-MM-DD dates. */
+export function diffDaysISO(fromISO: string, toISO: string): number {
+  return diffDays(parseDateOnly(fromISO), parseDateOnly(toISO));
+}
+
 export function todayDateOnly(now: Date = new Date()): string {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -64,8 +80,20 @@ function sortedByStartAsc(periods: PeriodLogEntry[]): PeriodLogEntry[] {
   return [...periods].sort((a, b) => a.startDate.localeCompare(b.startDate));
 }
 
+/** True when the period has an end date she gave us herself, not one we assumed. */
+export function hasConfirmedEnd(period: PeriodLogEntry): boolean {
+  return period.endDate != null && period.endDateSource !== 'inferred';
+}
+
+/**
+ * Her typical period length, from the periods she closed herself.
+ *
+ * Assumed ends are left out on purpose: they are derived from this very average,
+ * so feeding them back in would make the guess keep confirming itself and the
+ * app would never discover that she actually bleeds longer than it thinks.
+ */
 export function computeAvgPeriodLength(periods: PeriodLogEntry[]): number | null {
-  const completed = periods.filter((p) => p.endDate);
+  const completed = periods.filter(hasConfirmedEnd);
   if (completed.length === 0) return null;
   const total = completed.reduce((sum, p) => {
     return sum + diffDays(parseDateOnly(p.startDate), parseDateOnly(p.endDate!)) + 1;
@@ -73,19 +101,40 @@ export function computeAvgPeriodLength(periods: PeriodLogEntry[]): number | null
   return Math.round(total / completed.length);
 }
 
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!;
+}
+
 /**
  * Gaps (in days) between consecutive logged period starts, oldest first.
- * Gaps outside the plausible range are dropped as logging noise rather than
- * averaged in — one mis-tapped date should not move the prediction.
+ *
+ * Two filters, in order. The absolute bounds drop anything outside a plausible
+ * cycle. Then each gap is measured against the median of the rest of her own
+ * gaps: a fixed ceiling cannot tell a long cycle from a cycle she never logged,
+ * because the ranges overlap — a woman on 21-day cycles who misses one produces
+ * a 42-day gap that looks perfectly ordinary in isolation. Comparing against her
+ * own spacing separates them, and leaves a genuinely irregular cycler's real
+ * variation intact.
  */
 export function computeCycleGaps(periods: PeriodLogEntry[]): number[] {
   const sorted = sortedByStartAsc(periods);
-  const gaps: number[] = [];
+  const inRange: number[] = [];
   for (let i = 1; i < sorted.length; i++) {
     const gap = diffDays(parseDateOnly(sorted[i - 1]!.startDate), parseDateOnly(sorted[i]!.startDate));
-    if (gap >= CYCLE_LENGTH_MIN && gap <= CYCLE_LENGTH_MAX) gaps.push(gap);
+    if (gap >= CYCLE_LENGTH_MIN && gap <= CYCLE_LENGTH_MAX) inRange.push(gap);
   }
-  return gaps;
+  // With one or two gaps there is no majority to compare against, so the
+  // absolute bounds are all the protection available.
+  if (inRange.length < 3) return inRange;
+
+  // Each gap is judged against the others, never against a median it helped set —
+  // otherwise a single outlier drags the very threshold meant to catch it.
+  return inRange.filter((gap, i) => {
+    const others = inRange.filter((_, j) => j !== i);
+    return gap <= median(others) * GAP_OUTLIER_FACTOR;
+  });
 }
 
 export type CycleStats = {
@@ -115,6 +164,31 @@ export function computeCycleStats(periods: PeriodLogEntry[]): CycleStats {
     isIrregular: recent.length >= LEARN_MIN_GAPS && variation >= IRREGULAR_VARIATION,
     loggedCycleCount: gaps.length,
   };
+}
+
+/**
+ * The one period she may move or remove: her current or most recent.
+ *
+ * Everything older is a permanent record. Keeping the rule here means the route,
+ * the response and the tests all read it from the same place.
+ */
+export function resolveEditablePeriodId(periods: PeriodLogEntry[]): string | null {
+  const sorted = sortedByStartAsc(periods);
+  return sorted.length === 0 ? null : sorted[sorted.length - 1]!.id;
+}
+
+/**
+ * Where a period is assumed to have ended when she never closed it: her usual
+ * period length, cut short by `notAfter` when a newer period starts sooner.
+ */
+export function assumedEndDate(
+  startDate: string,
+  periodLength: number,
+  notAfter?: string,
+): string {
+  const assumed = toDateOnly(addDays(parseDateOnly(startDate), periodLength - 1));
+  if (notAfter && assumed > notAfter) return notAfter < startDate ? startDate : notAfter;
+  return assumed;
 }
 
 export type CycleSettingsInput = {
@@ -183,6 +257,8 @@ type ComputedCycleState = Omit<
   CycleStateResponse,
   | 'settings'
   | 'recentPeriods'
+  // Named by the route from the same rows it serialises.
+  | 'editablePeriodId'
   | 'avgPeriodLength'
   | 'avgCycleLength'
   | 'cycleLengthVariation'
@@ -259,9 +335,11 @@ export function computeCycleState(
   // Forward-only: the window covering today, else the next one to come.
   const upcoming = predictions.find((p) => p.fertileWindowEnd >= todayStr) ?? null;
 
-  // The logged period's own length wins over the average when the user closed it.
+  // The logged period's own length wins over the average when the user closed it,
+  // clamped so a stray end date far in the future cannot hold the phase on
+  // `period` for the rest of the cycle.
   const lastPeriodLength = lastPeriod.endDate
-    ? diffDays(lastStart, parseDateOnly(lastPeriod.endDate)) + 1
+    ? clamp(diffDays(lastStart, parseDateOnly(lastPeriod.endDate)) + 1, PERIOD_LENGTH_MIN, PERIOD_LENGTH_MAX)
     : periodLength;
   const ovulationCycleDay = cycleLength - LUTEAL_LENGTH;
 
@@ -303,7 +381,10 @@ export function buildCycleStateResponse(
   periods: PeriodLogEntry[],
   settings: CycleSettingsInput | null,
   now: Date = new Date(),
-): Omit<CycleStateResponse, 'settings' | 'recentPeriods' | 'flowLogs' | 'pendingFlowDates'> {
+): Omit<
+  CycleStateResponse,
+  'settings' | 'recentPeriods' | 'editablePeriodId' | 'flowLogs' | 'pendingFlowDates'
+> {
   const stats = computeCycleStats(periods);
   return {
     ...computeCycleState(periods, settings, now),
@@ -358,6 +439,57 @@ export function bleedingDays(
 
     for (let d = parseDateOnly(period.startDate); toDateOnly(d) <= end; d = addDays(d, 1)) {
       days.add(toDateOnly(d));
+    }
+  }
+
+  return [...days].sort();
+}
+
+/**
+ * The bleeding days it is fair to *ask* about, which is narrower than the days
+ * she may answer for.
+ *
+ * A period she closed herself is bleeding all the way through, so every day is
+ * fair game. A period we closed by assumption is only certain on its first day.
+ * An open period is the delicate one: it runs on the assumption that it is still
+ * going, so the prompt walks forward only as far as she has stood behind — the
+ * start day, then each day that follows one she has already answered. Answer day
+ * two and day three opens up; go quiet and the prompt goes quiet with her,
+ * instead of asking how her flow was on a day she may not have bled at all.
+ *
+ * She can still record flow on any bleeding day herself by tapping it in the
+ * calendar; this governs what we bring up unprompted.
+ */
+export function promptableBleedingDays(
+  periods: PeriodLogEntry[],
+  effectivePeriodLength: number,
+  answeredDates: Iterable<string>,
+  now: Date = new Date(),
+): string[] {
+  const answered = new Set(answeredDates);
+  const todayStr = todayDateOnly(now);
+  const days = new Set<string>();
+
+  for (const period of periods) {
+    if (period.startDate > todayStr) continue;
+
+    if (hasConfirmedEnd(period)) {
+      const end = period.endDate! > todayStr ? todayStr : period.endDate!;
+      for (let d = parseDateOnly(period.startDate); toDateOnly(d) <= end; d = addDays(d, 1)) {
+        days.add(toDateOnly(d));
+      }
+      continue;
+    }
+
+    // Her own account of the first day is never in doubt.
+    days.add(period.startDate);
+    if (period.endDate != null) continue; // assumed end — the start day is all we know
+
+    const assumed = assumedEndDate(period.startDate, effectivePeriodLength, todayStr);
+    let cursor = period.startDate;
+    while (cursor < assumed && answered.has(cursor)) {
+      cursor = toDateOnly(addDays(parseDateOnly(cursor), 1));
+      days.add(cursor);
     }
   }
 

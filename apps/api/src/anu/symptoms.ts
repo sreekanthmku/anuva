@@ -72,10 +72,18 @@ const FOLLOW_UP_TEMPLATES: ((symptom: string) => string)[] = [
 ];
 
 const BY_LABEL = new Map(ANU_SYMPTOMS.map((s) => [s.label.toLowerCase(), s]));
+const BY_KEY = new Map(ANU_SYMPTOMS.map((s) => [s.key, s]));
 
 export function findSymptom(label: string | null | undefined): AnuSymptom | null {
   if (!label) return null;
   return BY_LABEL.get(label.trim().toLowerCase()) ?? null;
+}
+
+/// Lookup by bank key ("S27"). The probe ladder narrows to a key rather than a
+/// label, because its options are authored against the bank's own numbering.
+export function findSymptomByKey(key: string | null | undefined): AnuSymptom | null {
+  if (!key) return null;
+  return BY_KEY.get(key.trim()) ?? null;
 }
 
 /// The chips to offer next, skipping anything she has already asked.

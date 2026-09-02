@@ -11,6 +11,7 @@
 import { prisma } from '@anuva/database';
 import type { AnuChatResponse } from '@anuva/shared';
 import { logger } from '../logger.js';
+import type { AnuChatMode } from './config.js';
 import { matchRedFlag } from './redFlags.js';
 import { embedQuestion, generateReply } from './openai.js';
 import { lookup, store } from './cache.js';
@@ -19,7 +20,7 @@ import { findSymptom, followUpChips, logChip } from './symptoms.js';
 
 /// A thread is considered continuous while replies keep coming within this
 /// window; after it, the next message starts fresh.
-const THREAD_IDLE_MS = 30 * 60 * 1000;
+export const THREAD_IDLE_MS = 30 * 60 * 1000;
 
 // Questions and replies are never logged — they are the user's symptom history. Only the
 // routing decision (which path served the turn, and how well it scored) is.
@@ -30,10 +31,14 @@ const log = logger.child({ module: 'anu' });
 /// It is knowable here and only guessable by the model, so it is decided here.
 type HistoryRow = PriorTurn & { suggestions: string[] };
 
-async function loadHistory(userId: string): Promise<HistoryRow[]> {
+export async function loadHistory(userId: string, mode: AnuChatMode): Promise<HistoryRow[]> {
   const rows = await prisma.anuChatTurn.findMany({
     where: {
       userId,
+      // Turns served by the OTHER engine are not this thread. Flipping the
+      // rollout mid-conversation would otherwise leave this engine continuing
+      // from a ladder question it did not ask and cannot answer.
+      mode,
       createdAt: { gte: new Date(Date.now() - THREAD_IDLE_MS) },
       // Safety replies are dead ends, not conversation the model should
       // continue from.
@@ -58,9 +63,9 @@ async function loadHistory(userId: string): Promise<HistoryRow[]> {
 /// guarantees the loop rather than merely risking it.
 const THREAD_QUESTION_LIMIT = 40;
 
-async function loadAskedQuestions(userId: string): Promise<string[]> {
+export async function loadAskedQuestions(userId: string, mode: AnuChatMode): Promise<string[]> {
   const rows = await prisma.anuChatTurn.findMany({
-    where: { userId, createdAt: { gte: new Date(Date.now() - THREAD_IDLE_MS) } },
+    where: { userId, mode, createdAt: { gte: new Date(Date.now() - THREAD_IDLE_MS) } },
     orderBy: { createdAt: 'desc' },
     take: THREAD_QUESTION_LIMIT,
     select: { userMessage: true },
@@ -85,19 +90,27 @@ function isCacheable(history: PriorTurn[]): boolean {
   return history.length === 0;
 }
 
-type TurnRecord = {
+export type TurnRecord = {
   userId: string;
   userMessage: string;
   reply: string;
   suggestions: string[];
   symptom?: string | null;
-  source: 'red_flag' | 'cache' | 'model';
+  source: 'red_flag' | 'cache' | 'model' | 'probe';
   redFlagArea?: string | null;
   cacheHitId?: string | null;
   similarity?: number | null;
+  /// Which engine served the turn. Also the thread boundary — see loadHistory.
+  mode: AnuChatMode;
+  /// Probe ladder position, written only by the ladder (see probe/engine.ts).
+  probeRoot?: string | null;
+  probeAxis?: string | null;
+  probeDepth?: number | null;
+  probeAnswers?: Record<string, string> | null;
+  probeHandbacks?: number | null;
 };
 
-async function recordTurn(turn: TurnRecord): Promise<void> {
+export async function recordTurn(turn: TurnRecord): Promise<void> {
   try {
     await prisma.anuChatTurn.create({
       data: {
@@ -111,6 +124,12 @@ async function recordTurn(turn: TurnRecord): Promise<void> {
         cacheHitId: turn.cacheHitId ?? null,
         similarity: turn.similarity ?? null,
         promptVersion: PROMPT_VERSION,
+        mode: turn.mode,
+        probeRoot: turn.probeRoot ?? null,
+        probeAxis: turn.probeAxis ?? null,
+        probeDepth: turn.probeDepth ?? null,
+        probeAnswers: turn.probeAnswers ?? undefined,
+        probeHandbacks: turn.probeHandbacks ?? null,
       },
     });
   } catch (e) {
@@ -209,6 +228,12 @@ export async function answer(
   userId: string,
   userMessage: string,
   userName?: string | null,
+  /// The engine this turn belongs to. Defaults to `classic`, which is what it
+  /// is when this function is the whole engine. The probe ladder passes
+  /// `probe` when it hands a turn back — a message it does not recognise, or an
+  /// opener already specific enough not to need a ladder — so that the turn
+  /// stays in the same thread as the rungs around it.
+  mode: AnuChatMode = 'classic',
 ): Promise<AnuChatResponse> {
   const name = sanitizeName(userName);
 
@@ -227,6 +252,7 @@ export async function answer(
       suggestions: [],
       source: 'red_flag',
       redFlagArea: rule.area,
+      mode,
     });
     log.warn(
       { userId, area: rule.area, urgency: rule.urgency, specialist: rule.recommendedSpecialist },
@@ -245,7 +271,7 @@ export async function answer(
     };
   }
 
-  const history = await loadHistory(userId);
+  const history = await loadHistory(userId, mode);
   const cacheable = isCacheable(history);
 
   // 2 + 3. Only self-contained questions touch the cache — both to read and to
@@ -270,6 +296,7 @@ export async function answer(
         source: 'cache',
         cacheHitId: result.hit.id,
         similarity: result.hit.similarity,
+        mode,
       });
       log.info(
         {
@@ -310,7 +337,7 @@ export async function answer(
   // The extra read is only worth paying for when there are chips to build.
   const suggestions = symptom
     ? [
-        ...followUpChips(symptom, [...(await loadAskedQuestions(userId)), userMessage]).slice(
+        ...followUpChips(symptom, [...(await loadAskedQuestions(userId, mode)), userMessage]).slice(
           0,
           isOpeningTurn ? 2 : 3,
         ),
@@ -338,6 +365,7 @@ export async function answer(
     symptom: symptom?.label ?? null,
     source: 'model',
     similarity: bestScore,
+    mode,
   });
 
   log.info(
