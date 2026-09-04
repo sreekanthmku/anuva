@@ -24,7 +24,7 @@ import { useSummary } from './hooks/useWeeklyReport';
 import { RING_COLORS } from './ringColors';
 import { DELTA_TONE_COLOR } from './ringDisplay';
 import { SUGGESTION_EMOJI } from './summaryEmoji';
-import { PERIOD_NOUN, daysBetweenIso, periodDetail, periodHeadline } from './summaryDates';
+import { PERIOD_NOUN, daysBetweenIso, formatShortDay, periodHeadline } from './summaryDates';
 
 /**
  * A stat card's line colour matches the ring the metric taps through to, so the
@@ -337,9 +337,16 @@ function PeriodNav({
         {onOpenCalendar && <CalendarButton onClick={onOpenCalendar} />}
       </div>
 
-      <p className="mt-0.5 text-[11px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
-        {data ? periodDetail(data) : ' '}
-      </p>
+      {/* The dates used to be repeated here under the headline, which said the
+          same thing one line above — and literally the same thing once you step
+          back, where the headline *is* the date range. The one thing this line
+          carried that the headline cannot is the coverage caveat, so that is all
+          it says now, and only when it applies. */}
+      {data && data.coverageStart !== data.periodStart && (
+        <p className="mt-1 text-[11px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
+          Your data from {formatShortDay(data.coverageStart)}
+        </p>
+      )}
 
       {data && data.canGoForward && (
         <button
