@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ReportRingKey, WeeklyReportResponse } from '@anuva/shared';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
+import { type CurvePoint, smoothPath } from '../chartCurve';
 import { outOfCoverage, runsOf } from '../chartScale';
 import { RING_COLORS, RING_EMPTY_COLOR } from '../ringColors';
 import { weekAxisLabels, weeklyMeans } from '../summaryAggregate';
@@ -97,20 +98,31 @@ export function WellnessTrendCard({ report }: { report: WeeklyReportResponse }) 
   const count = values.length;
   if (count === 0) return null;
 
+  // Scoped to the series and window so a re-render cannot leave two charts
+  // pointing at one another's gradient.
+  const gradientKey = `${report.period}-${report.offset}-${selected}`;
+  const strokeGradientId = `wellness-stroke-${gradientKey}`;
+  const areaGradientId = `wellness-area-${gradientKey}`;
+
   // 0-100 top to bottom, so a band's row height is a fifth of the plot.
   const y = (value: number) => PLOT_HEIGHT - (Math.min(Math.max(value, 0), 100) / 100) * PLOT_HEIGHT;
 
   const loggedRuns = runsOf(values.map((v) => v != null));
-  // The line breaks across an untracked stretch rather than interpolating a
-  // confident straight line through days nobody logged.
+  // One curve per unbroken run. The line breaks across an untracked stretch
+  // rather than interpolating a confident sweep through days nobody logged.
   const segments = loggedRuns
     .filter(([from, to]) => to > from)
     .map(([from, to]) => {
-      const points: string[] = [];
+      const points: CurvePoint[] = [];
       for (let i = from; i <= to; i += 1) {
-        points.push(`${slotCenter(i, count).toFixed(2)} ${y(values[i]!).toFixed(2)}`);
+        points.push({ x: slotCenter(i, count), y: y(values[i]!) });
       }
-      return `M${points.join(' L')}`;
+      const line = smoothPath(points);
+      return {
+        line,
+        // Closed back along the floor, so the curve carries a tint under it.
+        area: `${line} L${points[points.length - 1]!.x.toFixed(2)} ${PLOT_HEIGHT} L${points[0]!.x.toFixed(2)} ${PLOT_HEIGHT} Z`,
+      };
     });
 
   const loggedIndices = values.map((v, i) => (v != null ? i : -1)).filter((i) => i >= 0);
@@ -195,12 +207,44 @@ export function WellnessTrendCard({ report }: { report: WeeklyReportResponse }) 
               className="block h-full w-full"
               aria-hidden="true"
             >
-              {segments.map((d, i) => (
+              <defs>
+                {/* The line takes its colour from the bands it passes through,
+                    so a hard stretch reads as hard at a glance and the stroke
+                    can never disagree with the dot sitting on it. One gradient
+                    across the whole plot in user space, so every run of the
+                    series shares the same colour ramp. */}
+                <linearGradient
+                  id={strokeGradientId}
+                  gradientUnits="userSpaceOnUse"
+                  x1="0"
+                  y1="0"
+                  x2="100"
+                  y2="0"
+                >
+                  {loggedIndices.map((i) => (
+                    <stop
+                      key={i}
+                      offset={`${slotCenter(i, count)}%`}
+                      stopColor={wellnessColor(values[i]!)}
+                    />
+                  ))}
+                </linearGradient>
+                <linearGradient id={areaGradientId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+                  <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+                </linearGradient>
+              </defs>
+
+              {segments.map((segment, i) => (
+                <path key={`area-${i}`} d={segment.area} fill={`url(#${areaGradientId})`} stroke="none" />
+              ))}
+
+              {segments.map((segment, i) => (
                 <path
-                  key={i}
-                  d={d}
+                  key={`line-${i}`}
+                  d={segment.line}
                   fill="none"
-                  stroke={color}
+                  stroke={loggedIndices.length > 1 ? `url(#${strokeGradientId})` : color}
                   strokeWidth="2.25"
                   strokeLinecap="round"
                   strokeLinejoin="round"

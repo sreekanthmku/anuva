@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
   JointsSummary,
@@ -370,41 +370,29 @@ function ReportSkeleton() {
   );
 }
 
-const INSIGHT_TONE: Record<ReportInsight['tone'], string> = {
-  positive: DELTA_TONE_COLOR.positive,
-  attention: DELTA_TONE_COLOR.attention,
-  neutral: DELTA_TONE_COLOR.neutral,
-};
-
-/**
- * ANU's read on the window, and the way through to her.
- *
- * One card rather than a stack of tone-coloured insight boxes plus a separate
- * quote: the insights and the reflection are the same voice saying the same
- * thing at different lengths, and three cards of it in a row taught the reader
- * to scroll past all three. Tapping anywhere opens the chat, where the obvious
- * next question ("why?") can actually be answered.
- */
-function AnuCard({
-  insights,
-  reflection,
+/** Shell shared by both ANU cards, so the two tabs cannot drift apart. */
+function AnuShell({
+  eyebrow,
+  ariaLabel,
   onOpen,
+  children,
 }: {
-  insights: ReportInsight[];
-  reflection: string;
+  eyebrow: string;
+  ariaLabel: string;
   onOpen: () => void;
+  children: ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onOpen}
-      aria-label="ANU's insight. Open the chat with ANU"
+      aria-label={ariaLabel}
       className="w-full rounded-[20px] border border-border-default bg-primary-container p-[18px] text-left transition-transform active:scale-[0.99]"
     >
-      <div className="mb-2.5 flex items-center gap-3">
+      <div className="mb-2 flex items-center gap-3">
         <img src="/anu.png" alt="" className="h-[22px] w-[22px] object-contain" />
         <Eyebrow tone="plum" className="mb-0">
-          ANU&apos;s insight
+          {eyebrow}
         </Eyebrow>
         <span className="ml-auto text-on-surface-variant" aria-hidden="true">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
@@ -418,26 +406,82 @@ function AnuCard({
           </svg>
         </span>
       </div>
-
-      {insights.map((insight) => (
-        <p
-          key={insight.title}
-          className="mb-2 text-[13.5px] leading-[1.45] text-on-surface"
-          style={{ fontFamily: MULISH }}
-        >
-          <span className="font-semibold" style={{ color: INSIGHT_TONE[insight.tone] }}>
-            {insight.title}.{' '}
-          </span>
-          {insight.body}
-        </p>
-      ))}
-
-      <p className="text-[16px] leading-[1.4] text-on-surface" style={{ fontFamily: FRAUNCES }}>
-        &quot;{reflection}&quot;
-      </p>
+      {children}
     </button>
   );
 }
+
+/**
+ * The day view's way through to ANU — an invitation, not a readout.
+ *
+ * A single day has already been explained twice by the time the reader gets
+ * here: the headline card says how the day went and which metric needs care,
+ * and the nudge says what to do about it. A third block of the same analysis is
+ * what made this card read as two stacked sections. So the day asks a question
+ * instead.
+ */
+function AnuTalkCard({ onOpen }: { onOpen: () => void }) {
+  return (
+    <AnuShell eyebrow="Talk to Anu" ariaLabel="Talk to ANU. Open the chat" onOpen={onOpen}>
+      <p className="text-[14px] leading-[1.45] text-on-surface" style={{ fontFamily: MULISH }}>
+        Something on your mind? I&apos;m here to help.
+      </p>
+    </AnuShell>
+  );
+}
+
+/**
+ * ANU's read on a week or a month — one block of prose, in one voice.
+ *
+ * The insight bodies and the reflection are the same voice at different lengths,
+ * so they run together as sentences rather than being separated into a
+ * tone-titled list and a pull quote. Titles like "↑ Improving" are dropped here
+ * on purpose: "What stood out" above already says which way each metric moved,
+ * and repeating it in bold made one card look like two.
+ */
+function AnuInsightCard({
+  insights,
+  reflection,
+  onOpen,
+}: {
+  insights: ReportInsight[];
+  reflection: string;
+  onOpen: () => void;
+}) {
+  const lines = [...insights.map((insight) => insight.body), reflection];
+
+  return (
+    <AnuShell
+      eyebrow="Anu's insight"
+      ariaLabel="ANU's insight. Open the chat with ANU"
+      onOpen={onOpen}
+    >
+      {lines.map((line) => (
+        <p
+          key={line}
+          className="mb-1.5 text-[13.5px] leading-[1.45] text-on-surface last:mb-0"
+          style={{ fontFamily: MULISH }}
+        >
+          {line}
+        </p>
+      ))}
+    </AnuShell>
+  );
+}
+
+/**
+ * Whether the summary shows the two counted figures — hours slept and heat
+ * episodes — as their own charts.
+ *
+ * Off: neither belongs on this page by design. The reference has no such
+ * section on any tab, and both numbers are still reachable on the per-metric
+ * pages. Kept behind a flag rather than commented out because the section pulls
+ * in `ByTheNumbers`, `StatCard`, `Sparkline`, `scaleFor` and `STAT_COLORS` —
+ * commenting the call site out would force all of them out too, and that is
+ * deleting the feature by degrees. Flip to `true` to bring the section back on
+ * every tab.
+ */
+const SHOW_COUNTED_FIGURES = false;
 
 /** The one small thing to try today. Daily only — see `summarySuggestionSchema`. */
 function SuggestionCard({ title, body }: { title: string; body: string }) {
@@ -608,7 +652,12 @@ function ReportBody({
               {report.suggestion && (
                 <SuggestionCard title={report.suggestion.title} body={report.suggestion.body} />
               )}
-              <WellnessTrendCard report={report} />
+              {/* No chart on the day view: a day is one point, and the trailing
+                  week belongs to the week tab. The day's own score is in the
+                  headline card, and the per-metric history is one tap away on
+                  the metric pages. Hidden, not removed:
+                    <WellnessTrendCard report={report} />
+              */}
             </>
           )}
 
@@ -617,7 +666,11 @@ function ReportBody({
               <DayBalanceStrip balance={report.dayBalance} trackingLabel={report.trackingLabel} />
               <WellnessTrendCard report={report} />
               <StoodOutCard rings={report.rings} onSelect={onSelectRing} />
-              <TrackerListCard report={report} onSelectRing={onSelectRing} />
+              {/* "Your trackers" is a day-view device. On a window, "What stood
+                  out" above already names which metrics moved and each name taps
+                  through to its own day-by-day page. Hidden, not removed:
+                    <TrackerListCard report={report} onSelectRing={onSelectRing} />
+              */}
             </>
           )}
 
@@ -630,27 +683,25 @@ function ReportBody({
               {/* Above the chart, where the reader looks for what the tiles
                   mean. The reflection always exists, so this card always
                   renders — insights are the optional part of it. */}
-              <AnuCard
+              <AnuInsightCard
                 insights={report.insights}
                 reflection={report.anuReflection}
                 onOpen={() => navigate('/chat')}
               />
               {/* Weeks, not days: see WellnessTrendCard. */}
               <WellnessTrendCard report={report} />
-              <TrackerListCard report={report} onSelectRing={onSelectRing} />
+              {/* Same as the week view — the glance tiles name the metrics that
+                  matter over a month and tap through to their own pages.
+                  Hidden, not removed:
+                    <TrackerListCard report={report} onSelectRing={onSelectRing} />
+              */}
             </>
           )}
 
           {report.joints && <JointsCard joints={report.joints} report={report} />}
 
-          {/* Hidden on This week / This month: the sleep-hours and hot-flash
-              charts are day-level detail and belong to the day view and the
-              per-metric pages, not to a window summary. Nothing is removed —
-              `ByTheNumbers` and its data are intact, and dropping this guard
-              brings them back on every tab.
-                <ByTheNumbers report={report} />
-          */}
-          {isDaily && <ByTheNumbers report={report} />}
+          {/* Off on every tab — see SHOW_COUNTED_FIGURES. */}
+          {SHOW_COUNTED_FIGURES && <ByTheNumbers report={report} />}
         </>
       )}
 
@@ -663,15 +714,19 @@ function ReportBody({
         </article>
       )}
 
-      {/* Monthly puts ANU above its chart, matching where the reader looks for
-          the explanation of the tiles — but an empty month has no tiles to
-          explain, so her card comes back down here. */}
-      {(!isMonthly || !hasAnyData) && (
-        <AnuCard
-          insights={report.insights}
-          reflection={report.anuReflection}
-          onOpen={() => navigate('/chat')}
-        />
+      {/* The day view gets the invitation; the window views get the read.
+          Monthly's card sits above its chart instead — but an empty month has
+          no tiles to explain, so it comes back down here. */}
+      {isDaily ? (
+        <AnuTalkCard onOpen={() => navigate('/chat')} />
+      ) : (
+        (!isMonthly || !hasAnyData) && (
+          <AnuInsightCard
+            insights={report.insights}
+            reflection={report.anuReflection}
+            onOpen={() => navigate('/chat')}
+          />
+        )
       )}
     </section>
   );
