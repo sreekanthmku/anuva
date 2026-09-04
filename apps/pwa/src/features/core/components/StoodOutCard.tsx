@@ -1,7 +1,6 @@
 import type { ReportDeltaTone, ReportRing, ReportRingKey } from '@anuva/shared';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
 import { DELTA_TONE_COLOR } from '../ringDisplay';
-import { RING_EMOJI } from '../summaryEmoji';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
 
@@ -40,15 +39,22 @@ export function StoodOutCard({
     <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
       <Eyebrow>What stood out</Eyebrow>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Equal columns, sized to however many groups actually have something in
+          them — a fixed three-up leaves a hole on a week where nothing worsened.
+          `minmax(0, 1fr)` is what lets the labels wrap instead of forcing the
+          track wider than the card. */}
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${grouped.length}, minmax(0, 1fr))` }}
+      >
         {grouped.map((column) => (
-          <div key={column.tone} className="min-w-[104px] flex-1 rounded-starchart-lg bg-surface p-2.5">
-            <div className="mb-1.5 flex items-center gap-1.5">
-              <span aria-hidden="true" className="text-[12px] leading-none">
+          <div key={column.tone} className="min-w-0 rounded-starchart-lg bg-surface p-2.5">
+            <div className="mb-1.5 flex items-start gap-1.5">
+              <span aria-hidden="true" className="mt-px shrink-0 text-[12px] leading-none">
                 {column.emoji}
               </span>
               <span
-                className="text-[10.5px] font-semibold leading-none"
+                className="min-w-0 text-[10.5px] font-semibold leading-[1.25]"
                 style={{ color: DELTA_TONE_COLOR[column.tone], fontFamily: MULISH }}
               >
                 {column.title}
@@ -62,13 +68,19 @@ export function StoodOutCard({
                     type="button"
                     onClick={() => onSelect(ring.key)}
                     aria-label={`${ring.label} — ${column.title.toLowerCase()}. See day by day`}
-                    className="flex min-h-[26px] w-full items-center gap-1.5 text-left text-[11.5px] leading-[1.2] text-on-surface transition-opacity active:opacity-60"
+                    className="flex w-full items-start gap-1.5 py-0.5 text-left text-[11.5px] leading-[1.3] text-on-surface transition-opacity active:opacity-60"
                     style={{ fontFamily: MULISH }}
                   >
-                    <span aria-hidden="true" className="text-[11px] leading-none">
-                      {RING_EMOJI[ring.key]}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">{ring.label}</span>
+                    {/* A bullet, not the metric's emoji: six emoji stacked in a
+                        column this narrow read as a legend rather than a list,
+                        and they pushed the labels into an ellipsis. */}
+                    <span
+                      aria-hidden="true"
+                      className="mt-[6px] h-[3px] w-[3px] shrink-0 rounded-full bg-current opacity-50"
+                    />
+                    {/* Wraps. "Cognitive focus" does not fit a third of a phone
+                        on one line, and truncating it hid which metric it was. */}
+                    <span className="min-w-0 flex-1 break-words">{ring.label}</span>
                   </button>
                 </li>
               ))}

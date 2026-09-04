@@ -791,7 +791,13 @@ export default function WeeklyReportRoute() {
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
-      <header className="sticky top-0 z-30 shrink-0 bg-surface">
+      {/* Scrolls with the page rather than sticking to the top. The header is
+          four stacked things — eyebrow, title, period toggle and the date nav —
+          which pinned about a third of a phone screen open above the content on
+          a page whose whole job is the content. The toggle is a scroll away, and
+          the bottom nav is still fixed. Summary only; other routes keep their
+          sticky headers. */}
+      <header className="shrink-0 bg-surface">
         <div className="px-3 pb-4 pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Eyebrow tone="plum">Your summary</Eyebrow>
           {/* Not "benchmark": nothing on this page compares the user to anyone
