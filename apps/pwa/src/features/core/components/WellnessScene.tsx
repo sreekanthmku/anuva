@@ -187,11 +187,15 @@ export function WellnessScene({ band }: { band: string | null }) {
           )}
         </mask>
 
-        {/* Feathers the left edge into the card instead of ending on a seam. */}
+        {/* Feathers the left edge into the card instead of ending on a seam.
+            The ramp runs the full width so the scene has no point where it
+            "arrives" — there is no visible line where the illustration begins,
+            just a gradient that gets more opaque as it moves right. */}
         <linearGradient id={`${uid}-fade`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#fff" stopOpacity="0" />
-          <stop offset="40%" stopColor="#fff" stopOpacity="0.6" />
-          <stop offset="72%" stopColor="#fff" stopOpacity="1" />
+          <stop offset="35%" stopColor="#fff" stopOpacity="0.18" />
+          <stop offset="65%" stopColor="#fff" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="1" />
         </linearGradient>
         <mask id={`${uid}-edge`}>
           <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill={`url(#${uid}-fade)`} />

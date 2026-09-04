@@ -56,10 +56,12 @@ export function WellnessHeadlineCard({
       className="relative overflow-hidden rounded-[20px] border border-border-default"
       style={{ background: (headline.band && CARD_WASH[headline.band]) || EMPTY_WASH }}
     >
-      {/* Bleeds to the card's edges and feathers out on its left, so the text
-          sits on flat colour rather than on a picture. */}
+      {/* Bleeds to the card's edges and feathers out on its left. Reaches
+          under the text — the leftmost portion of the scene is nearly
+          transparent, so it tints rather than covers, and the ramp has room
+          to fade in without a visible seam. */}
       <div
-        className="pointer-events-none absolute inset-y-0 right-0 w-[54%] max-w-[220px]"
+        className="pointer-events-none absolute inset-y-0 right-0 w-[64%] max-w-[240px]"
         aria-hidden="true"
       >
         <WellnessScene band={headline.band} />
