@@ -30,6 +30,55 @@ export const reportRingKeySchema = z.enum([
 ]);
 
 /**
+ * The day-score ladder.
+ *
+ * A day's wellness is the mean of the metrics logged that day, 0-100
+ * higher-is-better — the same composite the calendar's day dots use. These five
+ * bands are the *same* five the ring gauge is coloured by (`GAUGE_BANDS` in the
+ * PWA, 20 points apart), so a day's word and a day's colour can never disagree.
+ *
+ * Shared rather than duplicated per app: the API sends the band word for a
+ * score, and the summary chart labels its y-axis with the whole ladder. Two
+ * copies of these edges would eventually drift.
+ *
+ * Ordered high to low; the first band whose `min` the score clears wins.
+ */
+export const WELLNESS_BANDS = [
+  { min: 80, label: 'Great' },
+  { min: 60, label: 'Good' },
+  { min: 40, label: 'Okay' },
+  { min: 20, label: 'Hard' },
+  { min: 0, label: 'Very hard' },
+] as const;
+
+export type WellnessBandLabel = (typeof WELLNESS_BANDS)[number]['label'];
+
+/** Null in, null out — an unlogged day is not a bad day. */
+export function wellnessBandFor(score: number | null): WellnessBandLabel | null {
+  if (score == null) return null;
+  return WELLNESS_BANDS.find((b) => score >= b.min)?.label ?? null;
+}
+
+/**
+ * Coarse grouping of the ladder above, for counting days rather than naming
+ * one: good is both green bands, hard is both warm ones, okay is the middle.
+ *
+ * The edges are the ladder's own, not new numbers — a day counted as good is
+ * exactly a day the gauge paints green.
+ */
+export const WELLNESS_GOOD_MIN = 60;
+export const WELLNESS_OKAY_MIN = 40;
+
+export type WellnessGroup = 'good' | 'okay' | 'hard';
+
+export function wellnessGroupFor(score: number | null): WellnessGroup | null {
+  if (score == null) return null;
+  if (score >= WELLNESS_GOOD_MIN) return 'good';
+  if (score >= WELLNESS_OKAY_MIN) return 'okay';
+  return 'hard';
+}
+
+/**
  * The small dot drawn on each ring. It always means the same thing on every
  * period: the user's own previous level for this metric — the trailing 7-day
  * mean on daily, last week on weekly, last month on monthly.
@@ -77,8 +126,25 @@ export const reportRingSchema = z.object({
    */
   delta: z.string(),
   deltaTone: reportDeltaToneSchema,
+  /**
+   * The same move as `delta`, in points, for callers that need to rank metrics
+   * against each other rather than print a sentence — "biggest improvement" on
+   * the monthly view. Null whenever `delta` carries no comparison, so a ranking
+   * can never quietly treat "no baseline yet" as zero movement.
+   *
+   * Never render it bare: a bare +18 does not say points, and it is points, not
+   * a percentage.
+   */
+  deltaValue: z.number().nullable(),
   reference: reportReferenceSchema.nullable(),
   daysLogged: z.number().int(),
+  /**
+   * Days in the window this metric sat in its own two lowest bands — i.e. days
+   * the symptom was actually present, by the same band table that produces
+   * `band`. Counted rather than scored, because "8 days of brain fog" is what a
+   * reader asks about a month; a 43/100 mean is not.
+   */
+  symptomDays: z.number().int(),
   /**
    * Per-day scores across the window, oldest first, starting at
    * `seriesStart`. Null where nothing was logged. Powers the ring detail view.
@@ -126,6 +192,99 @@ export const summaryWeekBreakdownSchema = z.object({
   /** 0-100 mean of every metric logged that week; null when nothing was logged. */
   wellness: z.number().nullable(),
   daysLogged: z.number().int(),
+});
+
+/**
+ * The window's own wellness, in words — the headline the summary opens with.
+ *
+ * `score` is the composite (a single day on daily, the mean of the window's days
+ * on weekly and monthly) and `band` is that score's word off `WELLNESS_BANDS`,
+ * so the headline, the day dots and the ring gauges are all reading one scale.
+ * `headline` and `body` are prose the client must not try to derive from the
+ * number: which metrics carried the window is the whole point of the sentence.
+ */
+export const summaryHeadlineSchema = z.object({
+  /** 0-100 composite, or null when nothing was logged in the window. */
+  score: z.number().nullable(),
+  /** `wellnessBandFor(score)` — "Great" … "Very hard". Null with no score. */
+  band: z.string().nullable(),
+  /** Short verdict: "Doing okay". Always set, even with nothing logged. */
+  headline: z.string(),
+  /** One or two sentences naming what carried the window and what did not. */
+  body: z.string(),
+});
+
+/**
+ * How the window's days split across the ladder — the "4 good days, 2 difficult
+ * days, 1 untracked day" strip.
+ *
+ * Four counts rather than three: the ladder has a middle, and folding okay days
+ * into either neighbour would overstate whichever side won. They sum to the days
+ * of the period that have actually happened, so `untracked` is a real absence
+ * rather than the remainder of an arithmetic the client has to guess at.
+ *
+ * All zero on daily, which is one day and has a headline instead.
+ */
+export const summaryDayBalanceSchema = z.object({
+  /** Days scoring 60+ — both green bands. */
+  good: z.number().int(),
+  /** Days scoring 40-59. */
+  okay: z.number().int(),
+  /** Days below 40 — both warm bands. */
+  hard: z.number().int(),
+  /** Days in the window with nothing logged at all. */
+  untracked: z.number().int(),
+});
+
+/** Colour role for a glance tile; the client owns the actual palette. */
+export const summaryGlanceToneSchema = z.enum(['positive', 'attention', 'improving', 'info', 'neutral']);
+
+/**
+ * One tile of the monthly "at a glance" grid.
+ *
+ * Copy is served rather than composed client-side for the same reason ring
+ * deltas are: the tile makes a claim ("Lower than usual", "vs last month") whose
+ * honesty depends on which comparison was actually available, and only the
+ * builder knows that.
+ *
+ * Populated on monthly only; the array is empty on daily and weekly.
+ */
+export const summaryGlanceTileSchema = z.object({
+  key: z.string(),
+  /** Small label above everything: "Strongest area". */
+  eyebrow: z.string(),
+  /**
+   * The tile's bold line — a metric name on the tiles that name a metric
+   * ("Sleep quality"), the figure itself on the tiles that are a count
+   * ("21 of 30"). One field rather than two shapes of tile.
+   */
+  label: z.string(),
+  /**
+   * A second figure under `label`, on the tiles that need both — "+18 pts"
+   * beneath "Mood stability". Null on the tiles whose figure is already the
+   * bold line.
+   */
+  value: z.string().nullable(),
+  /** Qualifier under the value: "vs last month", "this month". May be empty. */
+  note: z.string(),
+  /** The metric this tile is about, for its colour and icon. Null on counts. */
+  ringKey: reportRingKeySchema.nullable(),
+  tone: summaryGlanceToneSchema,
+});
+
+/**
+ * One thing to try today, off the back of the day's weakest metric.
+ *
+ * Named `suggestion` and not `nudge` on purpose: a *nudge* in this codebase is a
+ * scheduled check-in question owned by the nudge registry, and this is advice
+ * with nothing to answer. The daily view titles it "Today's nudge" for the
+ * reader, who has no such distinction to keep.
+ *
+ * Daily only; null on weekly and monthly.
+ */
+export const summarySuggestionSchema = z.object({
+  title: z.string(),
+  body: z.string(),
 });
 
 export const weeklyReportQuerySchema = z.object({
@@ -194,6 +353,14 @@ export const weeklyReportResponseSchema = z.object({
   dataState: z.enum(['empty', 'insufficient', 'ready']),
   /** Footnote explaining what the ring dots mean. */
   referenceNote: z.string(),
+  /** The window in one line, on the shared day-score ladder. */
+  headline: summaryHeadlineSchema,
+  /** Day split across the ladder. All zero on daily. */
+  dayBalance: summaryDayBalanceSchema,
+  /** Monthly "at a glance" tiles; empty on daily and weekly. */
+  glance: z.array(summaryGlanceTileSchema),
+  /** One thing to try today. Daily only; null otherwise. */
+  suggestion: summarySuggestionSchema.nullable(),
   rings: z.array(reportRingSchema),
   stats: z.array(reportStatSchema),
   insights: z.array(reportInsightSchema),
@@ -250,6 +417,11 @@ export type ReportRing = z.infer<typeof reportRingSchema>;
 export type ReportStat = z.infer<typeof reportStatSchema>;
 export type ReportInsight = z.infer<typeof reportInsightSchema>;
 export type SummaryWeekBreakdown = z.infer<typeof summaryWeekBreakdownSchema>;
+export type SummaryHeadline = z.infer<typeof summaryHeadlineSchema>;
+export type SummaryDayBalance = z.infer<typeof summaryDayBalanceSchema>;
+export type SummaryGlanceTone = z.infer<typeof summaryGlanceToneSchema>;
+export type SummaryGlanceTile = z.infer<typeof summaryGlanceTileSchema>;
+export type SummarySuggestion = z.infer<typeof summarySuggestionSchema>;
 export type SummaryCalendarQuery = z.infer<typeof summaryCalendarQuerySchema>;
 export type SummaryCalendarDay = z.infer<typeof summaryCalendarDaySchema>;
 export type SummaryCalendarResponse = z.infer<typeof summaryCalendarResponseSchema>;

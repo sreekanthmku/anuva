@@ -5,9 +5,14 @@ import type {
   ReportRing,
   ReportRingKey,
   ReportStat,
+  SummaryDayBalance,
+  SummaryGlanceTile,
+  SummaryHeadline,
   SummaryPeriod,
+  SummarySuggestion,
   SummaryWeekBreakdown,
 } from '@anuva/shared';
+import { wellnessBandFor, wellnessGroupFor } from '@anuva/shared';
 import {
   ENERGY_SCORES,
   FOCUS_SCORES,
@@ -20,6 +25,7 @@ import {
   applyEventPenalty,
   bandFor,
   hotFlashDayScore,
+  isSymptomDay,
   lookupScore,
   mean,
   scoreFromFivePoint,
@@ -353,6 +359,11 @@ function withEventPenalty(scores: DayScores, events: Map<string, number>): DaySc
   return out;
 }
 
+/** Days in the range whose score sat in this metric's two lowest bands. */
+function rangeSymptomDays(key: string, map: DayScores, start: Date, end: Date): number {
+  return dailySeries(map, start, end).filter((v) => isSymptomDay(key, v)).length;
+}
+
 /** Days in the range where at least one of the given metrics was logged. */
 function unionDaysLogged(maps: DayScores[], start: Date, end: Date): number {
   const span = dayOffset(start, end);
@@ -517,6 +528,9 @@ function buildDailyRing(src: RingSource, w: PeriodWindow): RingDraft {
     // user never asked to be measured against.
     reference: hasBaseline ? { value: Math.round(baseline!), label: 'your usual' } : null,
     daysLogged: pct == null ? 0 : 1,
+    // One day, so the count is 0 or 1 — but it is the same question the monthly
+    // tile asks, and answering it here keeps one definition of a symptom day.
+    symptomDays: isSymptomDay(src.key, pct) ? 1 : 0,
     series: windowSeries(src.scores, w),
     pctRaw: pct,
     deltaValue: pct != null && hasBaseline ? pct - baseline! : null,
@@ -550,6 +564,10 @@ function buildPeriodRing(src: RingSource, w: PeriodWindow): RingDraft {
         ? { value: Math.round(previous), label: PERIOD_WORDS[w.period].last }
         : null,
     daysLogged,
+    // Counted off the per-day scores, not derived from the window mean: a month
+    // averaging 62 can still hold eight foggy days, and that is the number a
+    // reader asks for.
+    symptomDays: rangeSymptomDays(src.key, src.scores, w.coverageStart, w.coverageEnd),
     series: windowSeries(src.scores, w),
     pctRaw: pct,
     // Only a comparable pair may drive an insight or a direction word.
@@ -659,6 +677,334 @@ const SERIES_NOTES: Record<string, Record<SummaryPeriod, string>> = {
 
 function seriesNote(key: string, period: SummaryPeriod): string {
   return SERIES_NOTES[key]?.[period] ?? 'One point per day across the window.';
+}
+
+// ── Headline, balance, glance ────────────────────────────────
+
+/**
+ * The verdict line for a window, keyed by its band on `WELLNESS_BANDS`.
+ *
+ * Two tables because a day and a stretch of days do not take the same sentence:
+ * "Doing okay" is a state you are in right now, and a week is something that
+ * happened. Both ladders are five deep so every band has a word of its own —
+ * collapsing them to good/okay/hard would put an 85 day and a 61 day under the
+ * same heading.
+ */
+const DAILY_HEADLINE: Record<string, string> = {
+  Great: 'Doing really well',
+  Good: 'Doing well',
+  Okay: 'Doing okay',
+  Hard: 'A hard day',
+  'Very hard': 'A really hard day',
+};
+
+const PERIOD_HEADLINE: Record<string, string> = {
+  Great: 'A strong {noun}',
+  Good: 'A good {noun}',
+  Okay: 'A mixed {noun}',
+  Hard: 'A hard {noun}',
+  'Very hard': 'A really hard {noun}',
+};
+
+/**
+ * One metric's band, as a clause that can be joined into a sentence.
+ *
+ * Written out per band rather than assembled from the band word, because the
+ * band words are nouns and adjectives in different grammatical positions:
+ * "heat episodes is none" and "sleep is some waking" are what template-joining
+ * produces, and neither is a sentence. Keys must match `RING_BANDS`.
+ */
+const RING_CLAUSE: Record<ReportRingKey, Record<string, string>> = {
+  sleep: {
+    Restful: 'sleep was restful',
+    'Some waking': 'sleep broke once or twice',
+    Disturbed: 'sleep was disturbed',
+    'Barely slept': 'you barely slept',
+  },
+  energy: {
+    Strong: 'energy is strong',
+    'Slightly low': 'energy is slightly low',
+    Tired: 'energy is running low',
+    'Very tired': 'energy is very low',
+  },
+  stress: {
+    'Low stress': 'stress is low',
+    Manageable: 'stress is manageable',
+    Stressful: 'stress is running high',
+    'Very stressful': 'stress is very high',
+  },
+  mood: {
+    Stable: 'mood is steady',
+    'Mild shifts': 'mood shifted a little',
+    Unsettled: 'mood is unsettled',
+    'Very unsettled': 'mood is very unsettled',
+  },
+  focus: {
+    Clear: 'focus is clear',
+    'Slightly foggy': 'focus is slightly foggy',
+    Foggy: 'focus is foggy',
+    'Very foggy': 'focus is very foggy',
+  },
+  hotFlashes: {
+    None: 'there were no heat episodes',
+    Mild: 'heat episodes are mild',
+    Moderate: 'heat episodes are moderate',
+    High: 'heat episodes are frequent',
+  },
+};
+
+/** Short subject for the care sentence — "Sleep needs a little extra care." */
+const SHORT_NOUN: Record<ReportRingKey, string> = {
+  sleep: 'Sleep',
+  energy: 'Energy',
+  stress: 'Stress',
+  mood: 'Mood',
+  focus: 'Focus',
+  hotFlashes: 'Heat episodes',
+};
+
+/**
+ * One thing to try, per metric — shown on the daily view against the weakest
+ * thing logged.
+ *
+ * Deliberately small: every line is something doable before bed tonight. This
+ * is not care advice and must never read as clinical instruction; the care path
+ * lives behind ANU and the consultation flow.
+ */
+const SUGGESTION_COPY: Record<ReportRingKey, string> = {
+  sleep: 'Start winding down half an hour earlier tonight — screens down, lights low.',
+  energy: 'A short walk after lunch tends to do more for energy than another coffee.',
+  stress: 'Take five slow breaths before the next thing you have to do.',
+  mood: 'Name the feeling once, out loud or on paper. It usually takes the edge off.',
+  focus: 'Keep one thing on your desk at a time and put the thinking work early.',
+  hotFlashes: 'Hydrate well and keep a layer you can take off easily.',
+};
+
+const STEADY_SUGGESTION =
+  'Nothing needs fixing today — keep whatever routine got you here.';
+
+/** Edges are the wellness ladder's own — see `WELLNESS_BANDS`. */
+function strongestNote(score: number): string {
+  if (score >= 80) return 'Great job!';
+  if (score >= 60) return 'Holding up best';
+  return 'Your steadiest area';
+}
+
+function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function clauseFor(ring: RingDraft): string | null {
+  if (ring.band == null) return null;
+  return RING_CLAUSE[ring.key]?.[ring.band] ?? null;
+}
+
+/**
+ * Two sentences at most: what carried the window, and what did not.
+ *
+ * The weakest metric is only named when it is genuinely in its own bottom two
+ * bands — otherwise the page would find something to worry about on a good day,
+ * which is the fastest way to teach a reader to ignore the sentence.
+ */
+function buildHeadlineBody(rings: RingDraft[], period: SummaryPeriod): string {
+  const scored = [...rings]
+    .filter((r) => r.pctRaw != null && r.band != null)
+    .sort((a, b) => b.pctRaw! - a.pctRaw!);
+
+  if (scored.length === 0) {
+    return period === 'daily'
+      ? 'A couple of check-ins and I can tell you how the day actually went.'
+      : `Nothing logged ${PERIOD_WORDS[period].this} yet — a few check-ins and this fills in.`;
+  }
+
+  const weakest = scored[scored.length - 1]!;
+  // Never both praise and flag the same metric, and never flag the best thing
+  // logged just because it is last in a list of one or two.
+  const needsCare = weakest !== scored[0] && isSymptomDay(weakest.key, weakest.pctRaw);
+
+  const clauses = scored
+    .filter((r) => !(needsCare && r === weakest))
+    .slice(0, 2)
+    .map(clauseFor)
+    .filter((c): c is string => c != null);
+
+  const parts: string[] = [];
+  if (clauses.length > 0) parts.push(`${capitalise(clauses.join(' and '))}.`);
+  if (needsCare) parts.push(`${SHORT_NOUN[weakest.key]} needs a little extra care.`);
+  if (parts.length === 0) parts.push('Everything you logged sat in its middle range.');
+
+  return parts.join(' ');
+}
+
+function buildHeadline(
+  period: SummaryPeriod,
+  score: number | null,
+  rings: RingDraft[]
+): SummaryHeadline {
+  const rounded = score == null ? null : Math.round(score);
+  const band = wellnessBandFor(rounded);
+
+  if (rounded == null || band == null) {
+    return {
+      score: null,
+      band: null,
+      headline: 'Nothing logged yet',
+      body: buildHeadlineBody([], period),
+    };
+  }
+
+  return {
+    score: rounded,
+    band,
+    headline: period === 'daily' ? DAILY_HEADLINE[band]! : fill(PERIOD_HEADLINE[band]!, period),
+    body: buildHeadlineBody(rings, period),
+  };
+}
+
+/**
+ * How the window's days split across the ladder.
+ *
+ * Counted over the coverage range, not the calendar period, so days before the
+ * user joined are not filed as days she failed to track. The four counts
+ * therefore sum to `daysElapsed`.
+ */
+function buildDayBalance(wellness: DayScores, w: PeriodWindow): SummaryDayBalance {
+  const balance: SummaryDayBalance = { good: 0, okay: 0, hard: 0, untracked: 0 };
+  // Daily is one day and has a headline instead — a balance of 1/0/0/0 would
+  // only invite the UI to draw a bar chart of a single column.
+  if (w.period === 'daily' || w.daysElapsed === 0) return balance;
+
+  for (const value of dailySeries(wellness, w.coverageStart, w.coverageEnd)) {
+    const group = wellnessGroupFor(value == null ? null : Math.round(value));
+    if (group == null) balance.untracked += 1;
+    else balance[group] += 1;
+  }
+
+  return balance;
+}
+
+/**
+ * The monthly "at a glance" grid.
+ *
+ * Every tile is omitted rather than emptied when its claim cannot be made: no
+ * comparable previous month means no "biggest improvement" tile, and a month
+ * with no symptom days shows no symptom tile. A grid of "—" says nothing and
+ * still costs a whole screen.
+ */
+function buildGlance(
+  rings: RingDraft[],
+  w: PeriodWindow,
+  counts: { heatDays: number; daysLogged: number; trackedDenominator: number }
+): SummaryGlanceTile[] {
+  if (w.period !== 'monthly') return [];
+
+  const tiles: SummaryGlanceTile[] = [];
+  const byScore = rings.filter((r) => r.pctRaw != null).sort((a, b) => b.pctRaw! - a.pctRaw!);
+
+  const strongest = byScore[0];
+  if (strongest) {
+    tiles.push({
+      key: 'strongest',
+      eyebrow: 'Strongest area',
+      label: strongest.label,
+      value: strongest.band,
+      // Praise has to be earned by the score, not by winning a ranking. The
+      // best of six metrics can still be a middling one, and "Great job!" over
+      // the word "Slightly foggy" is how a page loses the reader's trust.
+      note: strongestNote(strongest.pctRaw!),
+      ringKey: strongest.key,
+      tone: 'positive',
+    });
+  }
+
+  const weakest = byScore.length > 1 ? byScore[byScore.length - 1]! : null;
+  if (weakest) {
+    tiles.push({
+      key: 'attention',
+      eyebrow: 'Needs attention',
+      label: weakest.label,
+      value: weakest.band,
+      // Only claims a comparison when there was one to make.
+      note:
+        weakest.reference != null && weakest.pctRaw! < weakest.reference.value
+          ? `Lower than ${weakest.reference.label}`
+          : 'Worth a closer look',
+      ringKey: weakest.key,
+      tone: 'attention',
+    });
+  }
+
+  const improved = rings
+    .filter((r) => r.deltaValue != null)
+    .sort((a, b) => b.deltaValue! - a.deltaValue!)[0];
+  if (improved && improved.deltaValue! >= PERIOD_STEADY_BAND) {
+    tiles.push({
+      key: 'improvement',
+      eyebrow: 'Biggest improvement',
+      label: improved.label,
+      // Points, and it says so. A bare +18 next to a 0-100 score reads as a
+      // percentage of something.
+      value: `+${Math.round(improved.deltaValue!)} pts`,
+      note: `vs ${PERIOD_WORDS[w.period].last}`,
+      ringKey: improved.key,
+      tone: 'improving',
+    });
+  }
+
+  const commonSymptom = [...rings].sort((a, b) => b.symptomDays - a.symptomDays)[0];
+  if (commonSymptom && commonSymptom.symptomDays > 0) {
+    tiles.push({
+      key: 'symptom',
+      eyebrow: 'Most common symptom',
+      label: commonSymptom.label,
+      value: `${commonSymptom.symptomDays} ${commonSymptom.symptomDays === 1 ? 'day' : 'days'}`,
+      note: PERIOD_WORDS[w.period].this,
+      ringKey: commonSymptom.key,
+      tone: 'info',
+    });
+  }
+
+  if (counts.heatDays > 0) {
+    tiles.push({
+      key: 'heat',
+      eyebrow: 'Heat episodes',
+      label: `${counts.heatDays} ${counts.heatDays === 1 ? 'day' : 'days'}`,
+      value: null,
+      note: PERIOD_WORDS[w.period].this,
+      ringKey: 'hotFlashes',
+      tone: 'neutral',
+    });
+  }
+
+  tiles.push({
+    key: 'tracked',
+    eyebrow: 'Tracked days',
+    label: `${counts.daysLogged} of ${counts.trackedDenominator}`,
+    value: null,
+    note: `days ${PERIOD_WORDS[w.period].this}`,
+    ringKey: null,
+    tone: 'neutral',
+  });
+
+  return tiles;
+}
+
+/** Daily only — one small thing to try, aimed at the weakest thing logged. */
+function buildSuggestion(rings: RingDraft[], period: SummaryPeriod): SummarySuggestion | null {
+  if (period !== 'daily') return null;
+
+  const scored = [...rings]
+    .filter((r) => r.pctRaw != null)
+    .sort((a, b) => a.pctRaw! - b.pctRaw!);
+  if (scored.length === 0) return null;
+
+  const weakest = scored[0]!;
+  return {
+    title: "Today's nudge",
+    body: isSymptomDay(weakest.key, weakest.pctRaw)
+      ? SUGGESTION_COPY[weakest.key]
+      : STEADY_SUGGESTION,
+  };
 }
 
 /**
@@ -1057,6 +1403,10 @@ export async function buildSummary(
   );
   const hotFlashDays = logged(dailySeries(hotFlashCounts, w.coverageStart, w.coverageEnd));
   const hotFlashTotal = Math.round(hotFlashDays.reduce((sum, v) => sum + v, 0));
+  // Days that carried at least one episode — the "3 days this month" tile. Not
+  // the same as the total, and not the same as days logged: a logged zero is a
+  // day with no episodes.
+  const heatDays = hotFlashDays.filter((v) => v > 0).length;
 
   const wellnessDaily = combineDaily(sources.map((s) => s.scores));
   const wellnessScore = rangeMean(wellnessDaily, w.coverageStart, w.coverageEnd);
@@ -1178,6 +1528,14 @@ export async function buildSummary(
     trackingNote,
     dataState,
     referenceNote,
+    headline: buildHeadline(w.period, wellnessScore, rings),
+    dayBalance: buildDayBalance(wellnessDaily, w),
+    glance: buildGlance(rings, w, {
+      heatDays,
+      daysLogged,
+      trackedDenominator: isCurrentPeriod ? w.daysElapsedInPeriod : w.periodLength,
+    }),
+    suggestion: dataState === 'empty' ? null : buildSuggestion(rings, w.period),
     rings: rings.map((ring) => ({
       key: ring.key,
       label: ring.label,
@@ -1186,8 +1544,10 @@ export async function buildSummary(
       detail: ring.detail,
       delta: ring.delta,
       deltaTone: ring.deltaTone,
+      deltaValue: ring.deltaValue,
       reference: ring.reference,
       daysLogged: ring.daysLogged,
+      symptomDays: ring.symptomDays,
       series: ring.series,
     })),
     stats,

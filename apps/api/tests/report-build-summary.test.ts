@@ -151,6 +151,12 @@ function assertResponseShape(report: Awaited<ReturnType<typeof buildSummary>>) {
     expect((ring.pct == null) === (ring.band == null)).toBe(true);
     expect(ring.detail === null || typeof ring.detail === 'string').toBe(true);
     expect(['positive', 'attention', 'neutral', 'none']).toContain(ring.deltaTone);
+    // A ranking field must never let "no comparison" read as "no movement".
+    expect(ring.deltaValue === null || typeof ring.deltaValue === 'number').toBe(true);
+    if (ring.deltaTone === 'none') expect(ring.deltaValue).toBeNull();
+    // A symptom day is a logged day, so it can never outnumber them.
+    expect(Number.isInteger(ring.symptomDays)).toBe(true);
+    expect(ring.symptomDays).toBeLessThanOrEqual(ring.daysLogged);
     // Null reference = no comparable history = no dot drawn.
     if (ring.reference !== null) {
       expect(ring.reference).toEqual(
@@ -194,6 +200,45 @@ function assertResponseShape(report: Awaited<ReturnType<typeof buildSummary>>) {
   // No population claim may reach the client.
   expect(report.referenceNote).not.toMatch(/typical|population|Indian women/i);
   expect(report.rings.every((r) => r.reference?.label !== 'typical')).toBe(true);
+  // Headline — the composite never travels without its word, and never
+  // carries a word without a score behind it.
+  expect((report.headline.score == null) === (report.headline.band == null)).toBe(true);
+  expect(report.headline.headline.length).toBeGreaterThan(0);
+  expect(report.headline.body.length).toBeGreaterThan(0);
+  if (report.headline.score != null) {
+    expect(report.headline.score).toBeGreaterThanOrEqual(0);
+    expect(report.headline.score).toBeLessThanOrEqual(100);
+    // Same number as the wellness stat card — two composites on one page that
+    // disagree is the bug this assertion exists to catch.
+    expect(String(report.headline.score)).toBe(
+      report.stats.find((stat) => stat.key === 'wellness')!.value
+    );
+  }
+
+  // Day balance — four buckets that account for every covered day, and nothing
+  // at all on daily, which is a single day with a headline instead.
+  const balance = report.dayBalance;
+  for (const count of [balance.good, balance.okay, balance.hard, balance.untracked]) {
+    expect(Number.isInteger(count)).toBe(true);
+    expect(count).toBeGreaterThanOrEqual(0);
+  }
+  const balanceTotal = balance.good + balance.okay + balance.hard + balance.untracked;
+  expect(balanceTotal).toBe(report.period === 'daily' ? 0 : report.daysElapsed);
+
+  // Glance tiles are a monthly device; the other periods must not carry them.
+  expect(Array.isArray(report.glance)).toBe(true);
+  if (report.period !== 'monthly') expect(report.glance).toHaveLength(0);
+  for (const tile of report.glance) {
+    expect(tile.label.length).toBeGreaterThan(0);
+    expect(tile.value === null || typeof tile.value === 'string').toBe(true);
+    expect(['positive', 'attention', 'improving', 'info', 'neutral']).toContain(tile.tone);
+    if (tile.ringKey !== null) expect(RING_KEYS).toContain(tile.ringKey);
+  }
+
+  // A suggestion is advice about today; a week has nothing to act on tonight.
+  if (report.period !== 'daily') expect(report.suggestion).toBeNull();
+  if (report.suggestion) expect(report.suggestion.body.length).toBeGreaterThan(0);
+
   expect(Array.isArray(report.insights)).toBe(true);
   expect(Array.isArray(report.weekBreakdown)).toBe(true);
   expect(typeof report.anuReflection).toBe('string');
@@ -1048,5 +1093,248 @@ describe('buildSummary — quick-log taps', () => {
     expect(ringOf(report, 'sleep').pct).toBe(100);
     expect(ringOf(report, 'energy').pct).toBe(100);
     expect(ringOf(report, 'focus').pct).toBe(100);
+  });
+});
+
+describe('buildSummary — headline, balance, glance, suggestion', () => {
+  const now = localDay(2024, 5, 20, 12); // Thu 20 June 2024
+  const anchor = localDay(2024, 4, 1); // 1 May — past calibration
+
+  /** All six metrics at their best. */
+  const GREAT = {
+    sleepCategory: 'I slept well',
+    energyCategory: 'Fresh and active',
+    stressCategory: 'Low stress',
+    moodCategory: 'Calm',
+    focusCategory: 'Clear and focused',
+    hotFlashCategory: 'None',
+    hotFlashCount: 0,
+  } as const;
+
+  /** All six at their worst — composite lands in the bottom band. */
+  const AWFUL = {
+    sleepCategory: 'I barely slept',
+    energyCategory: 'Very tired',
+    stressCategory: 'I feel overwhelmed',
+    moodCategory: 'Emotionally numb',
+    focusCategory: 'Unable to concentrate',
+    hotFlashCategory: 'More than 5',
+    hotFlashCount: 6,
+  } as const;
+
+  /** Scores 50 — deliberately mid-ladder, to prove the middle bucket exists. */
+  const MIDDLING = {
+    sleepCategory: 'I woke up 1–2 times',
+    energyCategory: 'Mentally tired, even after sleeping',
+    stressCategory: 'Stressful',
+    moodCategory: 'Irritated',
+    focusCategory: 'Forgetful',
+    hotFlashCategory: '1–2',
+    hotFlashCount: 2,
+  } as const;
+
+  it('bands the day, names what carried it, and offers one thing to try', async () => {
+    // Everything strong except sleep, which sits in its bottom two bands.
+    installFixture([
+      dayBundle(2024, 5, 20, { ...GREAT, sleepCategory: 'I had disturbed sleep' }),
+    ]);
+
+    const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+
+    assertResponseShape(report);
+    // (40 + 100 * 5) / 6 = 90 — the top band.
+    expect(report.headline.score).toBe(90);
+    expect(report.headline.band).toBe('Great');
+    expect(report.headline.headline).toBe('Doing really well');
+    // Praises the two strongest and flags the weak one exactly once.
+    expect(report.headline.body).toBe(
+      'Energy is strong and stress is low. Sleep needs a little extra care.'
+    );
+    expect(report.suggestion?.title).toBe("Today's nudge");
+    expect(report.suggestion?.body).toMatch(/wind(ing)? down/i);
+    // One day has no balance to show.
+    expect(report.dayBalance).toEqual({ good: 0, okay: 0, hard: 0, untracked: 0 });
+    expect(report.glance).toEqual([]);
+  });
+
+  it('offers no fix on a day with nothing weak enough to fix', async () => {
+    installFixture([dayBundle(2024, 5, 20, GREAT)]);
+
+    const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+
+    expect(report.headline.band).toBe('Great');
+    expect(report.suggestion?.body).toMatch(/nothing needs fixing/i);
+    // Nothing is in a bottom band, so no metric is singled out for care.
+    expect(report.headline.body).not.toMatch(/extra care/i);
+  });
+
+  it('says nothing is logged rather than scoring an empty day zero', async () => {
+    const report = await buildSummary(USER_ID, anchor, 'daily', 0, now);
+
+    expect(report.headline.score).toBeNull();
+    expect(report.headline.band).toBeNull();
+    expect(report.headline.headline).toBe('Nothing logged yet');
+    expect(report.headline.body.length).toBeGreaterThan(0);
+    // No day, no advice — a suggestion here would be advice about nothing.
+    expect(report.suggestion).toBeNull();
+  });
+
+  it('splits the week across the ladder and counts the untracked day', async () => {
+    // Week is Mon 17 – Sun 23; coverage runs to Thu 20, so four days count.
+    installFixture([
+      dayBundle(2024, 5, 17, GREAT), // 100  -> good
+      dayBundle(2024, 5, 18, AWFUL), //   8  -> hard
+      dayBundle(2024, 5, 19, MIDDLING), // 50 -> okay
+      // Thu 20 deliberately unlogged.
+    ]);
+
+    const report = await buildSummary(USER_ID, anchor, 'weekly', 0, now);
+
+    assertResponseShape(report);
+    expect(report.dayBalance).toEqual({ good: 1, okay: 1, hard: 1, untracked: 1 });
+    // (100 + 7.5 + 50) / 3 = 52.5
+    expect(report.headline.score).toBe(53);
+    expect(report.headline.band).toBe('Okay');
+    expect(report.headline.headline).toBe('A mixed week');
+    expect(report.glance).toEqual([]);
+    expect(report.suggestion).toBeNull();
+  });
+
+  it('counts symptom days off the daily scores, not off the window mean', async () => {
+    installFixture([
+      dayBundle(2024, 5, 17, { ...GREAT, sleepCategory: 'I had disturbed sleep' }),
+      dayBundle(2024, 5, 18, { ...GREAT, sleepCategory: 'I had disturbed sleep' }),
+      dayBundle(2024, 5, 19, { ...GREAT, sleepCategory: 'I had disturbed sleep' }),
+      dayBundle(2024, 5, 20, GREAT),
+    ]);
+
+    const report = await buildSummary(USER_ID, anchor, 'weekly', 0, now);
+    const sleep = report.rings.find((r) => r.key === 'sleep')!;
+
+    // Mean sleep is (40*3 + 100)/4 = 55, which is a single number that hides
+    // the three bad nights the count reports.
+    expect(sleep.pct).toBe(55);
+    expect(sleep.symptomDays).toBe(3);
+    expect(report.rings.find((r) => r.key === 'energy')!.symptomDays).toBe(0);
+  });
+
+  describe('monthly glance', () => {
+    function installMonth(opts: { withPreviousMonth: boolean }) {
+      const parts: ReturnType<typeof dayBundle>[] = [];
+
+      if (opts.withPreviousMonth) {
+        // May: mood merely okay, so June's Calm reads as a real improvement.
+        eachDay(localDay(2024, 4, 1), localDay(2024, 4, 31), (y, m0, d) => {
+          parts.push(
+            dayBundle(y, m0, d, {
+              sleepCategory: 'I had disturbed sleep',
+              energyCategory: 'Fresh and active',
+              stressCategory: 'Manageable',
+              moodCategory: "I don't know",
+              focusCategory: 'Clear and focused',
+              hotFlashCategory: 'None',
+              hotFlashCount: 0,
+            })
+          );
+        });
+      }
+
+      // June 1–20: sleep always disturbed, everything else strong, and three
+      // days that carried heat episodes.
+      eachDay(localDay(2024, 5, 1), localDay(2024, 5, 20), (y, m0, d) => {
+        const heat = d <= 3;
+        parts.push(
+          dayBundle(y, m0, d, {
+            sleepCategory: 'I had disturbed sleep',
+            energyCategory: 'Fresh and active',
+            stressCategory: 'Manageable',
+            moodCategory: 'Calm',
+            focusCategory: 'Clear and focused',
+            hotFlashCategory: heat ? '3–5' : 'None',
+            hotFlashCount: heat ? 3 : 0,
+          })
+        );
+      });
+
+      installFixture(parts);
+    }
+
+    it('names the strongest and weakest areas, the common symptom and the count', async () => {
+      installMonth({ withPreviousMonth: false });
+      const report = await buildSummary(USER_ID, anchor, 'monthly', 0, now);
+
+      assertResponseShape(report);
+      const byKey = new Map(report.glance.map((t) => [t.key, t]));
+
+      expect(byKey.get('strongest')).toMatchObject({
+        eyebrow: 'Strongest area',
+        ringKey: 'energy',
+        value: 'Strong',
+        note: 'Great job!',
+        tone: 'positive',
+      });
+      expect(byKey.get('attention')).toMatchObject({
+        eyebrow: 'Needs attention',
+        label: 'Sleep quality',
+        value: 'Disturbed',
+        tone: 'attention',
+      });
+      // 20 disturbed nights beats 3 heat days.
+      expect(byKey.get('symptom')).toMatchObject({
+        ringKey: 'sleep',
+        value: '20 days',
+        note: 'this month',
+      });
+      // Days that carried an episode — not the episode total, and not days logged.
+      expect(byKey.get('heat')).toMatchObject({ label: '3 days', ringKey: 'hotFlashes' });
+      expect(byKey.get('tracked')).toMatchObject({ label: '20 of 20', ringKey: null });
+      // No previous month to compare against, so no improvement claim.
+      expect(byKey.has('improvement')).toBe(false);
+    });
+
+    it('praises the strongest area only when its own score earns it', async () => {
+      // Nothing scores well; focus is merely the least bad of the six.
+      eachDay(localDay(2024, 5, 1), localDay(2024, 5, 20), () => {});
+      const parts: ReturnType<typeof dayBundle>[] = [];
+      eachDay(localDay(2024, 5, 1), localDay(2024, 5, 20), (y, m0, d) => {
+        parts.push(
+          dayBundle(y, m0, d, {
+            sleepCategory: 'I barely slept',
+            energyCategory: 'Very tired',
+            stressCategory: 'Very stressful',
+            moodCategory: 'Sad',
+            focusCategory: 'Forgetful', // 40 — the highest score here
+            hotFlashCategory: 'More than 5',
+            hotFlashCount: 6,
+          })
+        );
+      });
+      installFixture(parts);
+
+      const report = await buildSummary(USER_ID, anchor, 'monthly', 0, now);
+      const strongest = report.glance.find((t) => t.key === 'strongest')!;
+
+      expect(strongest.ringKey).toBe('focus');
+      // "Great job!" over the word "Foggy" is how a page loses its reader.
+      expect(strongest.note).toBe('Your steadiest area');
+    });
+
+    it('claims an improvement only against a comparable previous month', async () => {
+      installMonth({ withPreviousMonth: true });
+      const report = await buildSummary(USER_ID, anchor, 'monthly', 0, now);
+
+      const improvement = report.glance.find((t) => t.key === 'improvement');
+      expect(improvement).toMatchObject({ ringKey: 'mood', note: 'vs last month' });
+      // Points, and it says points — never a bare number next to a 0-100 score.
+      expect(improvement!.value).toMatch(/^\+\d+ pts$/);
+    });
+
+    it('drops every tile whose claim it cannot make on an empty month', async () => {
+      const report = await buildSummary(USER_ID, anchor, 'monthly', 0, now);
+
+      // Only the tracked-days tile survives: it is the one honest figure.
+      expect(report.glance.map((t) => t.key)).toEqual(['tracked']);
+      expect(report.glance[0]!.label).toBe('0 of 20');
+    });
   });
 });

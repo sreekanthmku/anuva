@@ -3,24 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import type {
   JointsSummary,
   ReportInsight,
-  ReportRing,
   ReportRingKey,
   ReportStat,
   SummaryPeriod,
-  SummaryWeekBreakdown,
   WeeklyReportResponse,
 } from '@anuva/shared';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { BottomNav } from './components/BottomNav';
-import { MetricRing } from './components/MetricRing';
+import { DayBalanceStrip } from './components/DayBalanceStrip';
+import { GlanceGrid } from './components/GlanceGrid';
 import { PeriodToggle } from './components/PeriodToggle';
+import { StoodOutCard } from './components/StoodOutCard';
 import { SummaryDatePickerSheet } from './components/SummaryDatePickerSheet';
 import { Sparkline } from './components/Sparkline';
+import { TrackerRow } from './components/TrackerRow';
+import { WellnessHeadlineCard } from './components/WellnessHeadlineCard';
+import { WellnessTrendCard } from './components/WellnessTrendCard';
 import { scaleFor } from './chartScale';
 import { useSummary } from './hooks/useWeeklyReport';
-import { RING_COLORS, RING_EMPTY_COLOR, gaugeBandColor } from './ringColors';
-import { DELTA_TONE_COLOR, ringAriaLabel } from './ringDisplay';
-import { PERIOD_NOUN, daysBetweenIso, formatRange, periodDetail, periodHeadline } from './summaryDates';
+import { RING_COLORS } from './ringColors';
+import { DELTA_TONE_COLOR } from './ringDisplay';
+import { SUGGESTION_EMOJI } from './summaryEmoji';
+import { PERIOD_NOUN, daysBetweenIso, periodDetail, periodHeadline } from './summaryDates';
 
 /**
  * A stat card's line colour matches the ring the metric taps through to, so the
@@ -40,9 +44,16 @@ const FRAUNCES = '"Fraunces", sans-serif';
 const PERIOD_STORAGE_KEY = 'anuva.summary.period';
 
 const TRACKER_EYEBROW: Record<SummaryPeriod, string> = {
-  daily: 'Daily tracker',
-  weekly: 'Weekly tracker',
-  monthly: 'Monthly tracker',
+  daily: 'Your trackers',
+  weekly: 'Your trackers this week',
+  monthly: 'Your trackers this month',
+};
+
+/** Headline per tab; the second half is the accented phrase. */
+const PAGE_TITLE: Record<SummaryPeriod, [string, string]> = {
+  daily: ['Your wellness,', 'at a glance'],
+  weekly: ['Your week', 'in review'],
+  monthly: ['Your month', 'in review'],
 };
 
 const RESET_LABEL: Record<SummaryPeriod, string> = {
@@ -50,96 +61,6 @@ const RESET_LABEL: Record<SummaryPeriod, string> = {
   weekly: 'This week',
   monthly: 'This month',
 };
-
-// ── Rings ────────────────────────────────────────────────────
-
-function ReportRingCard({
-  ring,
-  onSelect,
-}: {
-  ring: ReportRing;
-  onSelect?: (key: ReportRingKey) => void;
-}) {
-  const color = gaugeBandColor(ring.pct);
-  const hasData = ring.pct != null;
-  const label = ringAriaLabel(ring);
-
-  const inner = (
-    <>
-      <MetricRing
-        pct={ring.pct}
-        referenceValue={ring.reference?.value ?? null}
-        ringKey={ring.key}
-        size={88}
-        ariaLabel={onSelect ? undefined : label}
-      />
-      <div className="mt-1 min-w-0 text-center">
-        <p className="truncate text-[11.5px] leading-[1.2] text-on-surface" style={{ fontFamily: MULISH }}>
-          {ring.label}
-        </p>
-        {/* The band word is the whole readout: "Manageable" says what a bare
-            75 on stress cannot, so no number is shown alongside the dial. */}
-        <span
-          className="mt-0.5 block min-h-[13px] text-[10.5px] font-semibold leading-[1.15]"
-          style={{ color: hasData ? color : RING_EMPTY_COLOR, fontFamily: MULISH }}
-        >
-          {hasData ? (ring.band ?? '—') : 'Not logged'}
-        </span>
-        {hasData && (
-          <span
-            className="mt-0.5 block min-h-[22px] text-[9px] font-medium leading-[1.15] tracking-[0.03em]"
-            style={{ color: DELTA_TONE_COLOR[ring.deltaTone], fontFamily: MULISH }}
-          >
-            {ring.delta}
-          </span>
-        )}
-      </div>
-    </>
-  );
-
-  // A single day has one value per metric, so there is nothing to expand there.
-  if (!onSelect) {
-    return (
-      <div className="flex flex-col items-center rounded-starchart-lg bg-surface-bright px-1 py-1.5">
-        {inner}
-      </div>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(ring.key)}
-      aria-label={`${label}. See day by day`}
-      className="flex flex-col items-center rounded-starchart-lg bg-surface-bright px-1 py-1.5 transition-transform active:scale-[0.97]"
-    >
-      {inner}
-    </button>
-  );
-}
-
-function ReportProgressRings({
-  rings,
-  onSelect,
-}: {
-  rings: ReportRing[];
-  onSelect?: (key: ReportRingKey) => void;
-}) {
-  return (
-    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-2">
-      <div className="grid grid-cols-3 gap-1.5">
-        {rings.slice(0, 3).map((ring) => (
-          <ReportRingCard key={ring.key} ring={ring} onSelect={onSelect} />
-        ))}
-      </div>
-      <div className="grid grid-cols-3 gap-1.5">
-        {rings.slice(3).map((ring) => (
-          <ReportRingCard key={ring.key} ring={ring} onSelect={onSelect} />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ── Joints & Stiffness ───────────────────────────────────────
 
@@ -300,98 +221,6 @@ function StatCard({
   );
 }
 
-// ── Week-by-week strip (monthly) ─────────────────────────────
-
-/** Days in a Mon-Sun week, used to size the confidence of its average. */
-const WEEK_DAYS = 7;
-
-/**
- * Wellness per week, as a meter on a fixed 0-100 axis.
- *
- * The axis is deliberately fixed and labelled: the wellness sparkline two cards
- * down uses a zoomed axis, and two charts of the same metric with unlabelled
- * axes of different scales is the fastest way to make a reader distrust both.
- *
- * Weeks are weighted by how many days they were actually built from. A week
- * averaged out of one check-in used to render as solidly as a fully tracked one,
- * which quietly turned the noisiest number on the page into the loudest bar.
- */
-function WeekStrip({ weeks }: { weeks: SummaryWeekBreakdown[] }) {
-  const thin = weeks.some((w) => w.wellness != null && w.daysLogged < 3);
-
-  return (
-    <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
-      <Eyebrow tone="gold">Week by week</Eyebrow>
-      <div className="flex flex-col gap-2.5">
-        {weeks.map((week) => {
-          const sparse = week.wellness != null && week.daysLogged < 3;
-          return (
-            <div key={week.startDate} className="flex items-center gap-3">
-              <span
-                className="w-[76px] shrink-0 text-[11px] leading-none text-on-surface-variant"
-                style={{ fontFamily: MULISH }}
-              >
-                {formatRange(week.startDate, week.endDate)}
-              </span>
-              <div
-                className="relative h-[8px] flex-1 overflow-hidden rounded-full"
-                // The old track was `surface-bright`, which is #FFFFFF — the same
-                // value as the card behind it, so the 0-100 axis was invisible.
-                style={{ backgroundColor: RING_COLORS.sleep.track }}
-                role="img"
-                aria-label={`${formatRange(week.startDate, week.endDate)}: ${
-                  week.wellness == null
-                    ? 'nothing logged'
-                    : `wellness ${week.wellness} out of 100, from ${week.daysLogged} of ${WEEK_DAYS} days`
-                }`}
-              >
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${week.wellness ?? 0}%`,
-                    backgroundColor: '#5E3566',
-                    // Thinly-evidenced weeks read fainter rather than being
-                    // hidden — the average is still theirs, it is just softer.
-                    opacity: sparse ? 0.45 : 1,
-                  }}
-                />
-              </div>
-              <span
-                className="w-[42px] shrink-0 text-right text-[12px] leading-none text-on-surface"
-                style={{ fontFamily: '"Mulish", sans-serif' }}
-              >
-                {week.wellness ?? '—'}
-                {sparse && <span className="text-outline">*</span>}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* The axis both bars are measured against, stated once. */}
-      <div className="mt-2 flex items-center gap-3">
-        <span className="w-[76px] shrink-0" />
-        <div
-          className="flex flex-1 justify-between text-[8.5px] leading-none text-outline"
-          style={{ fontFamily: MULISH }}
-        >
-          <span>0</span>
-          <span>100</span>
-        </div>
-        <span className="w-[42px] shrink-0" />
-      </div>
-
-      <p
-        className="mt-3 text-[11px] leading-[1.35] text-on-surface-variant"
-        style={{ fontFamily: MULISH }}
-      >
-        Wellness per week, so a hard stretch does not disappear into the month&apos;s average.
-        {thin && ' * averaged from fewer than three logged days.'}
-      </p>
-    </article>
-  );
-}
-
 // ── Period navigation ────────────────────────────────────────
 
 function ArrowButton({
@@ -530,21 +359,175 @@ function ReportSkeleton() {
   );
 }
 
-const INSIGHT_STYLES: Record<string, { card: string; tone: 'plum' | 'ember' | 'muted' }> = {
-  positive: { card: 'border-primary/20 bg-primary-container', tone: 'plum' },
-  attention: { card: 'border-error/25 bg-error-container', tone: 'ember' },
-  neutral: { card: 'border-border-default bg-surface-raised', tone: 'muted' },
+const INSIGHT_TONE: Record<ReportInsight['tone'], string> = {
+  positive: DELTA_TONE_COLOR.positive,
+  attention: DELTA_TONE_COLOR.attention,
+  neutral: DELTA_TONE_COLOR.neutral,
 };
 
-function InsightCard({ insight, lead }: { insight: ReportInsight; lead?: boolean }) {
-  const style = INSIGHT_STYLES[insight.tone] ?? INSIGHT_STYLES.attention!;
+/**
+ * ANU's read on the window, and the way through to her.
+ *
+ * One card rather than a stack of tone-coloured insight boxes plus a separate
+ * quote: the insights and the reflection are the same voice saying the same
+ * thing at different lengths, and three cards of it in a row taught the reader
+ * to scroll past all three. Tapping anywhere opens the chat, where the obvious
+ * next question ("why?") can actually be answered.
+ */
+function AnuCard({
+  insights,
+  reflection,
+  onOpen,
+}: {
+  insights: ReportInsight[];
+  reflection: string;
+  onOpen: () => void;
+}) {
   return (
-    <article className={`rounded-[20px] border p-4 ${style.card}`}>
-      <Eyebrow tone={style.tone}>{lead ? `Anuva insight · ${insight.title}` : insight.title}</Eyebrow>
-      <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
-        {insight.body}
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label="ANU's insight. Open the chat with ANU"
+      className="w-full rounded-[20px] border border-border-default bg-primary-container p-[18px] text-left transition-transform active:scale-[0.99]"
+    >
+      <div className="mb-2.5 flex items-center gap-3">
+        <img src="/anu.png" alt="" className="h-[22px] w-[22px] object-contain" />
+        <Eyebrow tone="plum" className="mb-0">
+          ANU&apos;s insight
+        </Eyebrow>
+        <span className="ml-auto text-on-surface-variant" aria-hidden="true">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M9 5l7 7-7 7"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      </div>
+
+      {insights.map((insight) => (
+        <p
+          key={insight.title}
+          className="mb-2 text-[13.5px] leading-[1.45] text-on-surface"
+          style={{ fontFamily: MULISH }}
+        >
+          <span className="font-semibold" style={{ color: INSIGHT_TONE[insight.tone] }}>
+            {insight.title}.{' '}
+          </span>
+          {insight.body}
+        </p>
+      ))}
+
+      <p className="text-[16px] leading-[1.4] text-on-surface" style={{ fontFamily: FRAUNCES }}>
+        &quot;{reflection}&quot;
+      </p>
+    </button>
+  );
+}
+
+/** The one small thing to try today. Daily only — see `summarySuggestionSchema`. */
+function SuggestionCard({ title, body }: { title: string; body: string }) {
+  return (
+    <article className="flex items-start gap-3 rounded-[20px] border border-tertiary/25 bg-tertiary-container px-4 py-3.5">
+      <span aria-hidden="true" className="mt-0.5 text-[17px] leading-none">
+        {SUGGESTION_EMOJI}
+      </span>
+      <div className="min-w-0">
+        <p
+          className="text-[12.5px] font-semibold leading-[1.2] text-on-tertiary-container"
+          style={{ fontFamily: MULISH }}
+        >
+          {title}
+        </p>
+        <p
+          className="mt-1 text-[13px] leading-[1.4] text-on-surface"
+          style={{ fontFamily: MULISH }}
+        >
+          {body}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+/** The six trackers, as rows. See `TrackerRow` for why rows and not dials. */
+function TrackerListCard({
+  report,
+  onSelectRing,
+}: {
+  report: WeeklyReportResponse;
+  onSelectRing: (key: ReportRingKey) => void;
+}) {
+  const isDaily = report.period === 'daily';
+
+  return (
+    <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-3.5">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <Eyebrow className="mb-0">{TRACKER_EYEBROW[report.period]}</Eyebrow>
+        <span
+          className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-[9.5px] uppercase tracking-[0.08em] text-on-surface-variant"
+          style={{ fontFamily: MULISH }}
+        >
+          {report.trackingLabel}
+        </span>
+      </div>
+
+      <div className="divide-y divide-border-default">
+        {report.rings.map((ring) => (
+          <TrackerRow
+            key={ring.key}
+            ring={ring}
+            period={report.period}
+            // A single day holds one value per metric, so there is nothing to
+            // expand into a day-by-day view.
+            onSelect={isDaily ? undefined : onSelectRing}
+          />
+        ))}
+      </div>
+
+      {report.trackingNote && (
+        <p
+          className="mt-1.5 text-[10.5px] leading-[1.35] text-outline"
+          style={{ fontFamily: MULISH }}
+        >
+          {report.trackingNote}
+        </p>
+      )}
+      <p
+        className="mt-2 rounded-starchart-lg bg-surface px-3 py-1.5 text-center text-[10.5px] leading-[1.35] text-on-surface-variant"
+        style={{ fontFamily: MULISH }}
+      >
+        Scored 0–100, higher is always better. {report.referenceNote}
       </p>
     </article>
+  );
+}
+
+/**
+ * "Avg sleep" and "Hot flashes" — the two figures that are counted rather than
+ * scored, so neither the ladder nor a band word can carry them.
+ *
+ * Kept below the fold rather than dropped: hours slept and episodes-per-day are
+ * the only numbers on the page a doctor asks for, and they exist nowhere else in
+ * the app. Wellness is deliberately absent — the big banded chart above is that
+ * series, at a size it can be read at.
+ */
+function ByTheNumbers({ report }: { report: WeeklyReportResponse }) {
+  const stats = report.stats.filter((stat) => stat.key !== 'wellness');
+  if (stats.length === 0) return null;
+
+  return (
+    <section>
+      <Eyebrow tone="gold">By the numbers</Eyebrow>
+      <div className="grid grid-cols-2 gap-2.5">
+        {stats.map((stat, i) => (
+          <StatCard key={stat.key} stat={stat} report={report} first={i === 0} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -557,127 +540,102 @@ function ReportBody({
 }) {
   const navigate = useNavigate();
   const isDaily = report.period === 'daily';
+  const isWeekly = report.period === 'weekly';
   const isMonthly = report.period === 'monthly';
-
-  const wellness = report.stats.find((s) => s.key === 'wellness');
-  const others = report.stats.filter((s) => s.key !== 'wellness');
   const hasAnyData = report.dataState !== 'empty';
 
-  // Six numbers do not tell anyone what changed. The first insight is the
-  // translation, so it sits with the rings rather than below the stat cards.
-  const [leadInsight, ...restInsights] = report.insights;
-
   return (
-    <>
-      <section className="flex flex-col gap-3 px-3 pb-4 pt-2">
-        <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
-          <div className="mb-2.5 flex items-center justify-between gap-2">
-            <Eyebrow className="mb-0">{TRACKER_EYEBROW[report.period]}</Eyebrow>
-            <span
-              className="shrink-0 rounded-full bg-surface-bright px-3 py-1 text-[10px] uppercase tracking-[0.08em] text-on-surface-variant"
-              style={{ fontFamily: '"Mulish", sans-serif' }}
-            >
-              {report.trackingLabel}
-            </span>
-          </div>
-          <ReportProgressRings rings={report.rings} onSelect={isDaily ? undefined : onSelectRing} />
-          {report.trackingNote && (
-            <p
-              className="mt-2 text-center text-[10.5px] leading-[1.35] text-outline"
-              style={{ fontFamily: MULISH }}
-            >
-              {report.trackingNote}
-            </p>
-          )}
-          {!isDaily && (
-            <p
-              className="mt-2 text-center text-[10.5px] leading-none text-outline"
-              style={{ fontFamily: MULISH }}
-            >
-              Tap a ring for the day-by-day breakdown
-            </p>
-          )}
-          <p
-            className="mt-2 rounded-starchart-lg bg-surface-bright px-3 py-1.5 text-center text-[11px] leading-[1.35] text-on-surface-variant"
+    <section className="flex flex-col gap-3 px-3 pb-[22px] pt-2">
+      {/* The window in words, on every tab — the composite used to appear only
+          as a bare number in a small card at the bottom of the page. */}
+      <WellnessHeadlineCard headline={report.headline} period={report.period} />
+
+      {!hasAnyData && (
+        <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
+          <Eyebrow tone="muted">Nothing logged</Eyebrow>
+          <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
+            {isDaily
+              ? 'No check-ins for this day. A couple of answers is all it takes to fill this in.'
+              : `No check-ins in this ${isWeekly ? 'week' : 'month'} yet.`}
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/track')}
+            className="mt-3 min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-medium text-on-secondary"
             style={{ fontFamily: MULISH }}
           >
-            Scored 0–100, higher is always better. {report.referenceNote}
+            Log how you feel
+          </button>
+        </article>
+      )}
+
+      {hasAnyData && (
+        <>
+          {isDaily && (
+            <>
+              <TrackerListCard report={report} onSelectRing={onSelectRing} />
+              {report.suggestion && (
+                <SuggestionCard title={report.suggestion.title} body={report.suggestion.body} />
+              )}
+              <WellnessTrendCard report={report} />
+            </>
+          )}
+
+          {isWeekly && (
+            <>
+              <DayBalanceStrip balance={report.dayBalance} trackingLabel={report.trackingLabel} />
+              <WellnessTrendCard report={report} />
+              <StoodOutCard rings={report.rings} onSelect={onSelectRing} />
+              <TrackerListCard report={report} onSelectRing={onSelectRing} />
+            </>
+          )}
+
+          {isMonthly && (
+            <>
+              {/* The month's own headline device. Its "Tracked days" tile is why
+                  no day-balance strip sits here: the split that matters over a
+                  month is the shape of the weekly chart below. */}
+              <GlanceGrid tiles={report.glance} onSelect={onSelectRing} />
+              {/* Above the chart, where the reader looks for what the tiles
+                  mean. The reflection always exists, so this card always
+                  renders — insights are the optional part of it. */}
+              <AnuCard
+                insights={report.insights}
+                reflection={report.anuReflection}
+                onOpen={() => navigate('/chat')}
+              />
+              {/* Weeks, not days: see WellnessTrendCard. */}
+              <WellnessTrendCard report={report} />
+              <TrackerListCard report={report} onSelectRing={onSelectRing} />
+            </>
+          )}
+
+          {report.joints && <JointsCard joints={report.joints} report={report} />}
+
+          <ByTheNumbers report={report} />
+        </>
+      )}
+
+      {report.calibrating && (
+        <article className="rounded-[20px] border border-tertiary/25 bg-surface-raised p-4">
+          <Eyebrow tone="gold">Still calibrating</Eyebrow>
+          <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
+            Your first week is still filling in. These numbers settle once seven days are logged.
           </p>
         </article>
+      )}
 
-        {leadInsight && <InsightCard insight={leadInsight} lead />}
-      </section>
-
-      <section className="flex flex-col gap-3 px-3 pb-[22px]">
-        {!hasAnyData && (
-          <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
-            <Eyebrow tone="muted">Nothing logged</Eyebrow>
-            <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
-              {isDaily
-                ? 'No check-ins for this day. A couple of answers is all it takes to fill the rings.'
-                : `No check-ins in this ${report.period === 'weekly' ? 'week' : 'month'} yet.`}
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate('/track')}
-              className="mt-3 min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-medium text-on-secondary"
-              style={{ fontFamily: MULISH }}
-            >
-              Log how you feel
-            </button>
-          </article>
-        )}
-
-        {hasAnyData && isMonthly && report.weekBreakdown.length > 0 && (
-          <WeekStrip weeks={report.weekBreakdown} />
-        )}
-
-        {hasAnyData &&
-          (isMonthly ? (
-            // A month's chart needs the full width; the 2-up grid would squeeze
-            // 31 days into a card half this wide.
-            <div className="flex flex-col gap-2.5">
-              {report.stats.map((stat, i) => (
-                <StatCard key={stat.key} stat={stat} report={report} first={i === 0} />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2.5">
-              {others.map((stat, i) => (
-                <StatCard key={stat.key} stat={stat} report={report} first={i === 0} />
-              ))}
-              {wellness && <StatCard stat={wellness} report={report} wide />}
-            </div>
-          ))}
-
-        {report.joints && <JointsCard joints={report.joints} report={report} />}
-
-        {report.calibrating && (
-          <article className="rounded-[20px] border border-tertiary/25 bg-surface-raised p-4">
-            <Eyebrow tone="gold">Still calibrating</Eyebrow>
-            <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
-              Your first week is still filling in. These numbers settle once seven days are logged.
-            </p>
-          </article>
-        )}
-
-        {restInsights.map((insight) => (
-          <InsightCard key={insight.title} insight={insight} />
-        ))}
-
-        <article className="rounded-[20px] border border-border-default bg-primary-container p-[18px]">
-          <div className="mb-2.5 flex items-center gap-3">
-            <img src="/anu.png" alt="" className="h-[22px] w-[22px] object-contain" />
-            <Eyebrow tone="plum" className="mb-0">
-              ANU reflects
-            </Eyebrow>
-          </div>
-          <p className="text-[17px] leading-[1.4] text-on-surface" style={{ fontFamily: FRAUNCES }}>
-            &quot;{report.anuReflection}&quot;
-          </p>
-        </article>
-      </section>
-    </>
+      {/* Monthly puts ANU above its chart, matching where the reader looks for
+          the explanation of the tiles — but an empty month has no tiles to
+          explain, so her card comes back down here. */}
+      {(!isMonthly || !hasAnyData) && (
+        <AnuCard
+          insights={report.insights}
+          reflection={report.anuReflection}
+          onOpen={() => navigate('/chat')}
+        />
+      )}
+    </section>
   );
 }
 
@@ -745,10 +703,10 @@ export default function WeeklyReportRoute() {
           <Eyebrow tone="plum">Your summary</Eyebrow>
           {/* Not "benchmark": nothing on this page compares the user to anyone
               but herself, and the word promised a reference we do not have. */}
-          <h1 className="font-display mb-3 text-[30px] leading-[1.1] text-on-surface">
-            Your{' '}
+          <h1 className="font-display mb-3 text-[26px] leading-[1.15] text-on-surface">
+            {PAGE_TITLE[period][0]}{' '}
             <em className="not-italic text-primary" style={{ fontFamily: FRAUNCES }}>
-              progress
+              {PAGE_TITLE[period][1]}
             </em>
           </h1>
 

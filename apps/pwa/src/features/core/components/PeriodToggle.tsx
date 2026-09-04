@@ -3,10 +3,14 @@ import type { SummaryPeriod } from '@anuva/shared';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
 
+/**
+ * Labelled by the window a tap lands you in, not by the granularity — "Today"
+ * is what the reader is looking for; "Daily" is what the API calls it.
+ */
 const PERIODS: { value: SummaryPeriod; label: string }[] = [
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
+  { value: 'daily', label: 'Today' },
+  { value: 'weekly', label: 'This week' },
+  { value: 'monthly', label: 'This month' },
 ];
 
 export function PeriodToggle({

@@ -48,6 +48,11 @@ export function formatShortDayFrom(startIso: string, offset: number): string {
   });
 }
 
+/** "Mon" — the weekday axis a seven-column chart wants. */
+export function formatWeekdayFrom(startIso: string, offset: number): string {
+  return addDaysIso(startIso, offset).toLocaleDateString(undefined, { weekday: 'short' });
+}
+
 export function formatRange(startIso: string, endIso: string): string {
   if (startIso === endIso) return formatShortDay(startIso);
   const start = parseIso(startIso);

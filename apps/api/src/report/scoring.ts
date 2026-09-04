@@ -132,6 +132,25 @@ export function bandFor(key: string, score: number | null): string | null {
   return RING_BANDS[key]?.find((b) => score >= b.min)?.label ?? null;
 }
 
+/**
+ * Top of a metric's two lowest bands — the line under which a logged day counts
+ * as a day the symptom was actually present.
+ *
+ * Read off `RING_BANDS` rather than written down again, because the whole point
+ * is that "8 days of brain fog" means "8 days whose band word was one of the
+ * bottom two". A separate constant here would eventually disagree with the word
+ * printed next to the score.
+ */
+export function symptomDayFloor(key: string): number {
+  return RING_BANDS[key]?.[1]?.min ?? 0;
+}
+
+/** An unlogged day is never a symptom day — absence of data is not a symptom. */
+export function isSymptomDay(key: string, score: number | null): boolean {
+  if (score == null) return false;
+  return score < symptomDayFloor(key);
+}
+
 /** Manual sleep/mood sheets store a 1-5 rating instead of an option string. */
 export function scoreFromFivePoint(rating: number | null | undefined): number | null {
   if (rating == null || rating < 1 || rating > 5) return null;

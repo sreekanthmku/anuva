@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
+  WELLNESS_BANDS,
   reportInsightSchema,
   reportReferenceSchema,
   reportRingKeySchema,
   reportRingSchema,
   reportStatSchema,
+  summaryDayBalanceSchema,
+  summaryGlanceTileSchema,
+  summaryHeadlineSchema,
   summaryPeriodSchema,
+  summarySuggestionSchema,
   summaryWeekBreakdownSchema,
   weeklyReportQuerySchema,
   weeklyReportResponseSchema,
+  wellnessBandFor,
+  wellnessGroupFor,
 } from '../src/report.js';
 
 describe('summaryPeriodSchema', () => {
@@ -56,8 +63,10 @@ describe('reportRingSchema', () => {
     detail: null,
     delta: '+4 pts · improving',
     deltaTone: 'positive',
+    deltaValue: 4,
     reference: { value: 60, label: 'last week' },
     daysLogged: 5,
+    symptomDays: 2,
     series: [50, null, 70],
   };
 
@@ -92,6 +101,7 @@ describe('reportStatSchema', () => {
     value: '3',
     unit: 'avg/day',
     trend: [1, null, 0],
+    seriesNote: 'Episodes each day. The figure is the total for the week.',
   };
 
   it('accepts nullable value and trend entries', () => {
@@ -143,6 +153,143 @@ describe('summaryWeekBreakdownSchema', () => {
   });
 });
 
+describe('wellness bands', () => {
+  it('names every 20-point step of the ladder', () => {
+    expect(wellnessBandFor(100)).toBe('Great');
+    expect(wellnessBandFor(80)).toBe('Great');
+    expect(wellnessBandFor(79)).toBe('Good');
+    expect(wellnessBandFor(60)).toBe('Good');
+    expect(wellnessBandFor(59)).toBe('Okay');
+    expect(wellnessBandFor(40)).toBe('Okay');
+    expect(wellnessBandFor(39)).toBe('Hard');
+    expect(wellnessBandFor(20)).toBe('Hard');
+    expect(wellnessBandFor(19)).toBe('Very hard');
+    expect(wellnessBandFor(0)).toBe('Very hard');
+  });
+
+  it('leaves an unlogged day unbanded rather than calling it bad', () => {
+    expect(wellnessBandFor(null)).toBeNull();
+    expect(wellnessGroupFor(null)).toBeNull();
+  });
+
+  it('covers the whole 0-100 range with no gap between bands', () => {
+    const mins = WELLNESS_BANDS.map((b) => b.min);
+    expect(mins).toEqual([...mins].sort((a, b) => b - a));
+    expect(mins.at(-1)).toBe(0);
+    for (let score = 0; score <= 100; score += 1) {
+      expect(wellnessBandFor(score)).not.toBeNull();
+    }
+  });
+
+  it('groups days on the ladder’s own edges, not new ones', () => {
+    expect(wellnessGroupFor(60)).toBe('good');
+    expect(wellnessGroupFor(59)).toBe('okay');
+    expect(wellnessGroupFor(40)).toBe('okay');
+    expect(wellnessGroupFor(39)).toBe('hard');
+    // A grouped day is exactly a day the gauge paints the same colour.
+    expect(wellnessGroupFor(80)).toBe('good');
+    expect(wellnessGroupFor(0)).toBe('hard');
+  });
+});
+
+describe('summaryHeadlineSchema', () => {
+  it('accepts a scored headline', () => {
+    expect(
+      summaryHeadlineSchema.parse({
+        score: 72,
+        band: 'Good',
+        headline: 'Doing well',
+        body: 'Energy is strong and stress is manageable.',
+      }),
+    ).toMatchObject({ score: 72, band: 'Good' });
+  });
+
+  it('accepts an unscored window but still requires the copy', () => {
+    expect(
+      summaryHeadlineSchema.parse({
+        score: null,
+        band: null,
+        headline: 'Nothing logged yet',
+        body: 'A couple of check-ins and I can tell you how the day went.',
+      }),
+    ).toMatchObject({ score: null, band: null });
+    expect(
+      summaryHeadlineSchema.safeParse({ score: null, band: null, headline: 'x' }).success,
+    ).toBe(false);
+  });
+});
+
+describe('summaryDayBalanceSchema', () => {
+  it('accepts four integer counts', () => {
+    expect(summaryDayBalanceSchema.parse({ good: 4, okay: 2, hard: 1, untracked: 0 })).toEqual({
+      good: 4,
+      okay: 2,
+      hard: 1,
+      untracked: 0,
+    });
+  });
+
+  it('rejects a fractional day', () => {
+    expect(
+      summaryDayBalanceSchema.safeParse({ good: 4.5, okay: 0, hard: 0, untracked: 0 }).success,
+    ).toBe(false);
+  });
+
+  it('rejects a missing bucket — the client must not infer one', () => {
+    expect(summaryDayBalanceSchema.safeParse({ good: 4, okay: 2, hard: 1 }).success).toBe(false);
+  });
+});
+
+describe('summaryGlanceTileSchema', () => {
+  const tile = {
+    key: 'improvement',
+    eyebrow: 'Biggest improvement',
+    label: 'Mood stability',
+    value: '+18 pts',
+    note: 'vs last month',
+    ringKey: 'mood',
+    tone: 'improving',
+  };
+
+  it('accepts a metric tile', () => {
+    expect(summaryGlanceTileSchema.parse(tile)).toEqual(tile);
+  });
+
+  it('accepts a count tile with no metric behind it', () => {
+    expect(
+      summaryGlanceTileSchema.parse({
+        ...tile,
+        key: 'tracked',
+        eyebrow: 'Tracked days',
+        label: '21 of 30',
+        value: null,
+        note: 'days this month',
+        ringKey: null,
+        tone: 'neutral',
+      }),
+    ).toMatchObject({ ringKey: null, value: null });
+  });
+
+  it('rejects an unknown tone or ring key', () => {
+    expect(summaryGlanceTileSchema.safeParse({ ...tile, tone: 'warning' }).success).toBe(false);
+    expect(summaryGlanceTileSchema.safeParse({ ...tile, ringKey: 'hydration' }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('summarySuggestionSchema', () => {
+  it('accepts a title and body', () => {
+    expect(
+      summarySuggestionSchema.parse({ title: "Today's nudge", body: 'Hydrate well.' }),
+    ).toMatchObject({ title: "Today's nudge" });
+  });
+
+  it('rejects a body-less suggestion', () => {
+    expect(summarySuggestionSchema.safeParse({ title: 'x' }).success).toBe(false);
+  });
+});
+
 describe('weeklyReportQuerySchema', () => {
   it('applies defaults when empty', () => {
     expect(weeklyReportQuerySchema.parse({})).toEqual({ period: 'daily', offset: 0 });
@@ -173,6 +320,7 @@ describe('weeklyReportResponseSchema', () => {
     coverageStart: '2026-08-03',
     coverageEnd: '2026-08-06',
     seriesStart: '2026-08-03',
+    seriesCoverageStart: '2026-08-03',
     canGoBack: true,
     canGoForward: false,
     calibrating: false,
@@ -184,6 +332,15 @@ describe('weeklyReportResponseSchema', () => {
     trackingNote: null,
     dataState: 'ready',
     referenceNote: 'Dots mark last week.',
+    headline: {
+      score: 58,
+      band: 'Okay',
+      headline: 'A mixed week',
+      body: 'Energy is slightly low and stress is manageable.',
+    },
+    dayBalance: { good: 2, okay: 1, hard: 1, untracked: 0 },
+    glance: [],
+    suggestion: null,
     rings: [
       {
         key: 'energy',
@@ -193,8 +350,10 @@ describe('weeklyReportResponseSchema', () => {
         detail: null,
         delta: 'Steady vs last week',
         deltaTone: 'neutral',
+        deltaValue: null,
         reference: { value: 58, label: 'last week' },
         daysLogged: 4,
+        symptomDays: 0,
         series: [50, 55, null, 60],
       },
     ],
@@ -205,9 +364,11 @@ describe('weeklyReportResponseSchema', () => {
         value: '6.5',
         unit: 'hrs',
         trend: [6, 7, null, 6],
+        seriesNote: 'Hours slept each night. The figure is the average of the week.',
       },
     ],
     insights: [{ tone: 'positive', title: 'Steady week', body: 'Energy held.' }],
+    joints: null,
     weekBreakdown: [],
     anuReflection: 'A quiet, steady week.',
   };
