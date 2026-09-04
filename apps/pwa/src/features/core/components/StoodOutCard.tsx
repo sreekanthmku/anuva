@@ -1,13 +1,46 @@
 import type { ReportDeltaTone, ReportRing, ReportRingKey } from '@anuva/shared';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
-import { DELTA_TONE_COLOR } from '../ringDisplay';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
 
-const COLUMNS: { tone: Exclude<ReportDeltaTone, 'none'>; title: string; emoji: string }[] = [
-  { tone: 'positive', title: 'Improving', emoji: '🌱' },
-  { tone: 'neutral', title: 'Steady', emoji: '⚖️' },
-  { tone: 'attention', title: 'Needs attention', emoji: '⚠️' },
+/**
+ * One wash per direction, so the three columns are legible before they are
+ * read — a row of identical white boxes made the reader parse three headings to
+ * find the one that matters.
+ *
+ * The accents are the same green / gold / rose the monthly glance tiles use for
+ * the same three meanings, which is why they are not `DELTA_TONE_COLOR`: that
+ * table paints an *individual* metric's delta, where plum is deliberate. Here
+ * the colour is the grouping itself.
+ */
+const COLUMNS: {
+  tone: Exclude<ReportDeltaTone, 'none'>;
+  title: string;
+  emoji: string;
+  tint: string;
+  accent: string;
+}[] = [
+  {
+    tone: 'positive',
+    title: 'Improving',
+    emoji: '🌱',
+    tint: 'rgba(79, 157, 107, 0.12)',
+    accent: '#3F7F56',
+  },
+  {
+    tone: 'neutral',
+    title: 'Steady',
+    emoji: '🍂',
+    tint: 'rgba(184, 146, 60, 0.13)',
+    accent: '#5A4716',
+  },
+  {
+    tone: 'attention',
+    title: 'Needs attention',
+    emoji: '⚠️',
+    tint: '#F8DCE2',
+    accent: '#C0405A',
+  },
 ];
 
 /**
@@ -48,14 +81,18 @@ export function StoodOutCard({
         style={{ gridTemplateColumns: `repeat(${grouped.length}, minmax(0, 1fr))` }}
       >
         {grouped.map((column) => (
-          <div key={column.tone} className="min-w-0 rounded-starchart-lg bg-surface p-2.5">
+          <div
+            key={column.tone}
+            className="min-w-0 rounded-starchart-lg p-2.5"
+            style={{ backgroundColor: column.tint }}
+          >
             <div className="mb-1.5 flex items-start gap-1.5">
               <span aria-hidden="true" className="mt-px shrink-0 text-[12px] leading-none">
                 {column.emoji}
               </span>
               <span
                 className="min-w-0 text-[10.5px] font-semibold leading-[1.25]"
-                style={{ color: DELTA_TONE_COLOR[column.tone], fontFamily: MULISH }}
+                style={{ color: column.accent, fontFamily: MULISH }}
               >
                 {column.title}
               </span>

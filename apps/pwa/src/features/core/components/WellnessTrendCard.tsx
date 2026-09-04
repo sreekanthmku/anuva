@@ -3,7 +3,7 @@ import type { ReportRingKey, WeeklyReportResponse } from '@anuva/shared';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
 import { type CurvePoint, smoothPath } from '../chartCurve';
 import { outOfCoverage, runsOf } from '../chartScale';
-import { RING_COLORS, RING_EMPTY_COLOR } from '../ringColors';
+import { GAUGE_BANDS, RING_COLORS, RING_EMPTY_COLOR } from '../ringColors';
 import { weekAxisLabels, weeklyMeans } from '../summaryAggregate';
 import { formatRange, formatWeekdayFrom } from '../summaryDates';
 import { WELLNESS_AXIS, wellnessAriaLabel, wellnessColor } from '../wellnessDisplay';
@@ -193,6 +193,24 @@ export function WellnessTrendCard({ report }: { report: WeeklyReportResponse }) 
               />
             ))}
 
+            {/* The five bands, each row washed with its own gauge colour at a
+                twelfth of full strength. The y-axis is a ladder of words, and
+                unlabelled white rows made the reader count gridlines to find
+                which band a point sat in. Faint enough that the line and dots
+                stay the strongest thing in the plot. */}
+            {WELLNESS_AXIS.map((band, i) => (
+              <span
+                key={band.label}
+                className="pointer-events-none absolute inset-x-0"
+                style={{
+                  bottom: `${(i / WELLNESS_AXIS.length) * 100}%`,
+                  height: `${100 / WELLNESS_AXIS.length}%`,
+                  backgroundColor: GAUGE_BANDS[i],
+                  opacity: 0.08,
+                }}
+              />
+            ))}
+
             {[0, 1, 2, 3, 4, 5].map((step) => (
               <span
                 key={step}
@@ -229,14 +247,28 @@ export function WellnessTrendCard({ report }: { report: WeeklyReportResponse }) 
                     />
                   ))}
                 </linearGradient>
+                {/* Vertical fade applied *to* the stroke's own band ramp, so
+                    the fill is a soft echo of the line above it. Filling with
+                    the series colour instead put plum over the green and amber
+                    band washes, which came out muddy. */}
                 <linearGradient id={areaGradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity="0.18" />
-                  <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.1" />
                 </linearGradient>
+                <mask id={`${areaGradientId}-mask`}>
+                  <rect x="0" y="0" width="100" height={PLOT_HEIGHT} fill={`url(#${areaGradientId})`} />
+                </mask>
               </defs>
 
               {segments.map((segment, i) => (
-                <path key={`area-${i}`} d={segment.area} fill={`url(#${areaGradientId})`} stroke="none" />
+                <path
+                  key={`area-${i}`}
+                  d={segment.area}
+                  fill={loggedIndices.length > 1 ? `url(#${strokeGradientId})` : color}
+                  fillOpacity="0.2"
+                  mask={`url(#${areaGradientId}-mask)`}
+                  stroke="none"
+                />
               ))}
 
               {segments.map((segment, i) => (

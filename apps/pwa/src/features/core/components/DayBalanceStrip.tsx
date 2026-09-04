@@ -50,8 +50,15 @@ export function DayBalanceStrip({
   ];
 
   return (
-    <article className="rounded-[20px] border border-border-default bg-surface-raised px-3 py-4">
-      <div className="mb-1 flex items-center justify-between gap-2 px-1">
+    <article
+      className="relative overflow-hidden rounded-[20px] border border-border-default px-3 py-4"
+      // Warm wash rather than flat white: this is the week view's opening card
+      // now that the headline card is hidden there, and it was reading as an
+      // empty box. Same cream-to-rose ramp as the day view's headline card, so
+      // the two tabs feel like one page.
+      style={{ background: 'linear-gradient(103deg, #FFFFFF 0%, #FDF6EF 54%, #F7E9E6 100%)' }}
+    >
+      <div className="relative mb-1 flex items-center justify-between gap-2 px-1">
         <Eyebrow className="mb-0">Day balance</Eyebrow>
         <span
           className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-[9.5px] uppercase tracking-[0.08em] text-on-surface-variant"
@@ -61,7 +68,7 @@ export function DayBalanceStrip({
         </span>
       </div>
 
-      <div className="flex items-stretch">
+      <div className="relative flex items-stretch">
         {columns.map((column, i) => (
           <div
             key={column.key}
@@ -69,7 +76,13 @@ export function DayBalanceStrip({
               i > 0 ? 'border-l border-border-default' : ''
             }`}
           >
-            <span aria-hidden="true" className="text-[17px] leading-none">
+            {/* The face sits in a disc of its own band colour, the same way the
+                tracker rows carry their metric colour. */}
+            <span
+              aria-hidden="true"
+              className="flex h-[30px] w-[30px] items-center justify-center rounded-full text-[15px] leading-none"
+              style={{ backgroundColor: `${column.color}20` }}
+            >
               {BALANCE_EMOJI[column.key]}
             </span>
             <span
