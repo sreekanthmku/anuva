@@ -1,7 +1,7 @@
 import type { SummaryHeadline, SummaryPeriod } from '@anuva/shared';
-import { Eyebrow } from '../../../shared/components/Eyebrow';
 import { RING_EMPTY_COLOR } from '../ringColors';
 import { wellnessColor } from '../wellnessDisplay';
+import { WellnessScene } from './WellnessScene';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
 const FRAUNCES = '"Fraunces", sans-serif';
@@ -13,14 +13,33 @@ const EYEBROW: Record<SummaryPeriod, string> = {
 };
 
 /**
+ * The card's own wash, one per band.
+ *
+ * Warm and light at the top of the ladder, cooler and plummier at the bottom,
+ * so the card reads before a word of it is. It is a *wash*, not a status
+ * colour: the strongest tint here is still soft enough that plum body text
+ * clears AA on it, which is why none of these go anywhere near the saturated
+ * red and green of the gauge bands.
+ */
+const CARD_WASH: Record<string, string> = {
+  Great: 'linear-gradient(103deg, #FFFFFF 0%, #FDF1E6 46%, #FBE3DC 100%)',
+  Good: 'linear-gradient(103deg, #FFFFFF 0%, #FCF0E8 46%, #F8E1DC 100%)',
+  Okay: 'linear-gradient(103deg, #FFFFFF 0%, #FBEFEA 46%, #F4DDE0 100%)',
+  Hard: 'linear-gradient(103deg, #FFFFFF 0%, #F9EDEA 46%, #EDDCE3 100%)',
+  'Very hard': 'linear-gradient(103deg, #FFFFFF 0%, #F6EFF2 46%, #E5DAEA 100%)',
+};
+
+const EMPTY_WASH = 'linear-gradient(103deg, #FFFFFF 0%, #F9F5F1 50%, #F2EBE6 100%)';
+
+/**
  * The window in one line, opening the page.
  *
  * The score is shown *and* named. A day's wellness has existed since the
  * calendar dots did, but it used to appear only as a bare number over a zoomed
  * sparkline at the bottom of the page — where a 58 says nothing, because the
  * reader has no reason to know which way the scale runs or what a normal one
- * looks like. Here it travels with its band word and the sentence that explains
- * which metrics produced it.
+ * looks like. Here it travels with its band word, the sentence naming which
+ * metrics produced it, and a scene that carries the same reading at a glance.
  */
 export function WellnessHeadlineCard({
   headline,
@@ -30,47 +49,71 @@ export function WellnessHeadlineCard({
   period: SummaryPeriod;
 }) {
   const color = wellnessColor(headline.score);
+  const hasScore = headline.score != null;
 
   return (
-    <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <Eyebrow className="mb-1.5">{EYEBROW[period]}</Eyebrow>
-          <h2 className="text-[24px] leading-[1.15] text-on-surface" style={{ fontFamily: FRAUNCES }}>
-            {headline.headline}
-          </h2>
-          <p
-            className="mt-2 text-[13.5px] leading-[1.45] text-on-surface-variant"
-            style={{ fontFamily: MULISH }}
-          >
-            {headline.body}
-          </p>
-        </div>
+    <article
+      className="relative overflow-hidden rounded-[20px] border border-border-default"
+      style={{ background: (headline.band && CARD_WASH[headline.band]) || EMPTY_WASH }}
+    >
+      {/* Bleeds to the card's edges and feathers out on its left, so the text
+          sits on flat colour rather than on a picture. */}
+      <div
+        className="pointer-events-none absolute inset-y-0 right-0 w-[54%] max-w-[220px]"
+        aria-hidden="true"
+      >
+        <WellnessScene band={headline.band} />
+      </div>
 
-        {/* The composite, with the word that gives it a direction. Aria carries
-            the scale, which the two stacked lines cannot say out loud. */}
+      <div className="relative px-4 py-4">
+        <p
+          className="text-[10.5px] font-semibold uppercase leading-none tracking-[0.12em] text-on-surface-variant"
+          style={{ fontFamily: MULISH }}
+        >
+          {EYEBROW[period]}
+        </p>
+
+        <h2
+          className="mt-2 max-w-[60%] text-[25px] leading-[1.1] text-on-surface"
+          style={{ fontFamily: FRAUNCES }}
+        >
+          {headline.headline}
+        </h2>
+
+        {/* Held clear of the illustration. The scene is decoration; the sentence
+            is the content, and it never wraps around a hill. */}
+        <p
+          className="mt-2 max-w-[58%] text-[12.5px] leading-[1.45] text-on-surface-variant"
+          style={{ fontFamily: MULISH }}
+        >
+          {headline.body}
+        </p>
+
         <div
-          className="flex h-[64px] w-[64px] shrink-0 flex-col items-center justify-center rounded-full"
-          style={{ backgroundColor: `${color}1F` }}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-surface-bright/80 px-2.5 py-1"
           role="img"
           aria-label={
-            headline.score == null
-              ? 'No wellness score for this window yet'
-              : `Wellness ${headline.score} out of 100 — ${headline.band}`
+            hasScore
+              ? `Wellness ${headline.score} out of 100 — ${headline.band}`
+              : 'No wellness score for this window yet'
           }
         >
           <span
-            className="text-[22px] leading-none"
-            style={{ fontFamily: FRAUNCES, color: headline.score == null ? RING_EMPTY_COLOR : color }}
-          >
-            {headline.score ?? '—'}
-          </span>
+            aria-hidden="true"
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: hasScore ? color : RING_EMPTY_COLOR }}
+          />
           <span
-            className="mt-1 text-[8px] uppercase tracking-[0.14em] text-outline"
+            className="text-[11px] font-semibold leading-none text-on-surface"
             style={{ fontFamily: MULISH }}
           >
-            of 100
+            {hasScore ? `${headline.score}/100` : '—'}
           </span>
+          {headline.band && (
+            <span className="text-[11px] leading-none text-on-surface-variant" style={{ fontFamily: MULISH }}>
+              · {headline.band}
+            </span>
+          )}
         </div>
       </div>
     </article>

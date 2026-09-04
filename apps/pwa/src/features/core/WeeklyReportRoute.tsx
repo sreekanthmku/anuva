@@ -611,9 +611,12 @@ function ReportBody({
 
   return (
     <section className="flex flex-col gap-3 px-3 pb-[22px] pt-2">
-      {/* The window in words, on every tab — the composite used to appear only
-          as a bare number in a small card at the bottom of the page. */}
-      <WellnessHeadlineCard headline={report.headline} period={report.period} />
+      {/* The day view opens with this; the week view does not have it in the
+          reference — "Day balance" below is that tab's opening summary. Hidden,
+          not removed; drop the guard to bring it back on every tab.
+            <WellnessHeadlineCard headline={report.headline} period={report.period} />
+      */}
+      {!isWeekly && <WellnessHeadlineCard headline={report.headline} period={report.period} />}
 
       {!hasAnyData && (
         <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
