@@ -56,6 +56,17 @@ const PAGE_TITLE: Record<SummaryPeriod, [string, string]> = {
   monthly: ['Your month', 'in review'],
 };
 
+/**
+ * "See last month" only reads correctly from the current period. Stepped back
+ * three months, the month before this one is not "last month", so the wording
+ * follows the offset rather than assuming the reader is at the front.
+ */
+const PREVIOUS_LABEL: Record<SummaryPeriod, [current: string, earlier: string]> = {
+  daily: ['yesterday', 'the day before'],
+  weekly: ['last week', 'the week before'],
+  monthly: ['last month', 'the month before'],
+};
+
 const RESET_LABEL: Record<SummaryPeriod, string> = {
   daily: 'Today',
   weekly: 'This week',
@@ -534,9 +545,12 @@ function ByTheNumbers({ report }: { report: WeeklyReportResponse }) {
 function ReportBody({
   report,
   onSelectRing,
+  onStepBack,
 }: {
   report: WeeklyReportResponse;
   onSelectRing: (key: ReportRingKey) => void;
+  /** Steps one period back — the way out of an empty window. */
+  onStepBack: () => void;
 }) {
   const navigate = useNavigate();
   const isDaily = report.period === 'daily';
@@ -558,14 +572,31 @@ function ReportBody({
               ? 'No check-ins for this day. A couple of answers is all it takes to fill this in.'
               : `No check-ins in this ${isWeekly ? 'week' : 'month'} yet.`}
           </p>
-          <button
-            type="button"
-            onClick={() => navigate('/track')}
-            className="mt-3 min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-medium text-on-secondary"
-            style={{ fontFamily: MULISH }}
-          >
-            Log how you feel
-          </button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/track')}
+              className="min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-medium text-on-secondary"
+              style={{ fontFamily: MULISH }}
+            >
+              Log how you feel
+            </button>
+            {/* Without this, a month whose first days are unlogged is a dead
+                end: the previous month can be full and the only way to it is an
+                arrow the reader has no reason to think holds anything. The
+                window stays honest about being empty — it just stops being the
+                end of the road. */}
+            {report.canGoBack && (
+              <button
+                type="button"
+                onClick={onStepBack}
+                className="min-h-[44px] rounded-full bg-surface-bright px-5 text-[13px] font-medium text-primary"
+                style={{ fontFamily: MULISH }}
+              >
+                See {PREVIOUS_LABEL[report.period][report.offset === 0 ? 0 : 1]}
+              </button>
+            )}
+          </div>
         </article>
       )}
 
@@ -612,7 +643,14 @@ function ReportBody({
 
           {report.joints && <JointsCard joints={report.joints} report={report} />}
 
-          <ByTheNumbers report={report} />
+          {/* Hidden on This week / This month: the sleep-hours and hot-flash
+              charts are day-level detail and belong to the day view and the
+              per-metric pages, not to a window summary. Nothing is removed —
+              `ByTheNumbers` and its data are intact, and dropping this guard
+              brings them back on every tab.
+                <ByTheNumbers report={report} />
+          */}
+          {isDaily && <ByTheNumbers report={report} />}
         </>
       )}
 
@@ -741,7 +779,9 @@ export default function WeeklyReportRoute() {
         </section>
       )}
 
-      {!loading && !error && data && <ReportBody report={data} onSelectRing={openMetric} />}
+      {!loading && !error && data && (
+        <ReportBody report={data} onSelectRing={openMetric} onStepBack={() => step(1)} />
+      )}
 
       {pickerOpen && (
         <SummaryDatePickerSheet
