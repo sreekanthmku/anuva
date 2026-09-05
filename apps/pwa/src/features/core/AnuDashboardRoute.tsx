@@ -39,13 +39,13 @@ import { usePeriodFlowPrompt } from './hooks/usePeriodFlowPrompt';
 import {
   getCalibrationProgress,
   getJourneyDay,
-  getTrialStartDate,
+  getCalibrationAnchor,
   isWellnessCalibrating,
 } from './wellnessCalibration';
+import { useDailySummary } from './hooks/useDailySummary';
+import { WellnessHeadlineCard } from './components/WellnessHeadlineCard';
 
-const score = 72;
 const circumference = 2 * Math.PI * 42;
-const scoreDash = (score / 100) * circumference;
 
 type QuickLogAction = 'mood' | 'sleep';
 
@@ -236,15 +236,18 @@ export default function AnuDashboardRoute() {
   };
   const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
   const profileInitial = firstName.charAt(0).toUpperCase() || 'U';
-  const trialStartedAt = getTrialStartDate(user);
-  const isCalibrating = isWellnessCalibrating(trialStartedAt);
-  const calibration = trialStartedAt ? getCalibrationProgress(trialStartedAt) : null;
-  const memberDay = trialStartedAt ? getJourneyDay(trialStartedAt) : null;
+  const journeyAnchor = getCalibrationAnchor(user);
+  const isCalibrating = isWellnessCalibrating(journeyAnchor);
+  const calibration = journeyAnchor ? getCalibrationProgress(journeyAnchor) : null;
+  const memberDay = journeyAnchor ? getJourneyDay(journeyAnchor) : null;
   const memberWeek = memberDay !== null ? Math.floor(memberDay / 7) + 1 : null;
   const calibrationArc =
     calibration && circumference > 0
       ? (calibration.day / calibration.totalDays) * circumference
       : 0;
+
+  // Only fetched once the countdown is over — see `useDailySummary`.
+  const dailySummary = useDailySummary(!isCalibrating);
 
   useEffect(() => {
     const tick = () => {
@@ -371,109 +374,98 @@ export default function AnuDashboardRoute() {
         </div>
       </section>
 
+      {/* Two weeks of countdown, then the real thing.
+          After calibration this is the *same* card the summary page opens
+          with — same component, same daily window — so the number she sees on
+          home and the number she sees on the summary cannot disagree. */}
       <section className="px-3">
-        <article className="flex items-center gap-4 rounded-[20px] bg-primary-container px-4 py-4">
-          <div className="relative h-24 w-24 shrink-0">
-            <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
-              <circle
-                cx="48"
-                cy="48"
-                r="42"
-                fill="none"
-                stroke="rgba(94,53,102,0.16)"
-                strokeWidth="6"
-              />
-              <circle
-                cx="48"
-                cy="48"
-                r="42"
-                fill="none"
-                stroke="#5E3566"
-                strokeWidth="6"
-                strokeDasharray={`${isCalibrating ? calibrationArc : scoreDash} ${circumference}`}
-                strokeLinecap="round"
-                transform="rotate(-90 48 48)"
-                opacity={isCalibrating ? 0.6 : 1}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              {isCalibrating ? (
-                <>
-                  <span
-                    className="text-[22px] leading-none text-on-surface"
-                    style={{ fontFamily: '"Mulish", sans-serif' }}
-                  >
-                    {calibration ? `${calibration.day}/${calibration.totalDays}` : '—'}
-                  </span>
-                  <span
-                    className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline"
-                    style={{ fontFamily: '"Mulish", sans-serif' }}
-                  >
-                    calibrating
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="text-[30px] leading-none text-on-surface">{score}</span>
-                  <span
-                    className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline"
-                    style={{ fontFamily: '"Mulish", sans-serif' }}
-                  >
-                    balance
-                  </span>
-                </>
+        {isCalibrating ? (
+          <article className="flex items-center gap-4 rounded-[20px] bg-primary-container px-4 py-4">
+            <div className="relative h-24 w-24 shrink-0">
+              <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="42"
+                  fill="none"
+                  stroke="rgba(94,53,102,0.16)"
+                  strokeWidth="6"
+                />
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="42"
+                  fill="none"
+                  stroke="#5E3566"
+                  strokeWidth="6"
+                  strokeDasharray={`${calibrationArc} ${circumference}`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 48 48)"
+                  opacity={0.6}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span
+                  className="text-[22px] leading-none text-on-surface"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
+                  {calibration ? `${calibration.day}/${calibration.totalDays}` : '—'}
+                </span>
+                <span
+                  className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
+                  calibrating
+                </span>
+              </div>
+            </div>
+
+            <div className="flex-1">
+              <Eyebrow>Your first two weeks</Eyebrow>
+              <p
+                className="mb-2.5 text-[20px] leading-[1.25] text-on-surface"
+                style={{ fontFamily: SERIF }}
+              >
+                We&apos;re learning your rhythm.
+              </p>
+              {calibration && (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full bg-surface-bright px-3 py-1.5 text-[12px] font-medium text-on-surface-variant"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
+                  Day {calibration.day} of {calibration.totalDays}
+                  {calibration.daysRemaining > 0 ? ` · ${calibration.daysRemaining}d left` : ''}
+                </span>
               )}
             </div>
-          </div>
-
-          <div className="flex-1">
-            <Eyebrow>{isCalibrating ? 'Your first week' : "Today's wellness"}</Eyebrow>
-            {isCalibrating ? (
-              <>
-                <p
-                  className="mb-2.5 text-[20px] leading-[1.25] text-on-surface"
-                  style={{ fontFamily: SERIF }}
-                >
-                  We&apos;re learning your rhythm.
-                </p>
-                {calibration && (
-                  <span
-                    className="inline-flex items-center gap-1.5 rounded-full bg-surface-bright px-3 py-1.5 text-[12px] font-medium text-on-surface-variant"
-                    style={{ fontFamily: '"Mulish", sans-serif' }}
-                  >
-                    Day {calibration.day} of {calibration.totalDays}
-                    {calibration.daysRemaining > 0 ? ` · ${calibration.daysRemaining}d left` : ''}
-                  </span>
-                )}
-              </>
-            ) : (
-              <>
-                <p
-                  className="mb-2.5 text-[20px] leading-[1.25] text-on-surface"
-                  style={{ fontFamily: SERIF }}
-                >
-                  Steady, with gentle friction.
-                </p>
-                <div className="flex flex-wrap gap-2.5">
-                  <span
-                    className="inline-flex items-center gap-1.5 text-[11px] text-primary"
-                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                    Sleep +12%
-                  </span>
-                  <span
-                    className="inline-flex items-center gap-1.5 text-[11px] text-error"
-                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-error" />
-                    Hot flashes ↑
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-        </article>
+          </article>
+        ) : dailySummary.data ? (
+          <WellnessHeadlineCard headline={dailySummary.data.headline} period="daily" />
+        ) : dailySummary.loading ? (
+          <div
+            className="h-[168px] animate-pulse rounded-[20px] bg-surface-raised"
+            aria-busy="true"
+            aria-label="Loading today's wellness"
+          />
+        ) : (
+          <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
+            <Eyebrow>Today&apos;s wellness</Eyebrow>
+            <p
+              className="text-[14px] leading-[1.4] text-on-surface-variant"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
+              {dailySummary.error}
+            </p>
+            <button
+              type="button"
+              onClick={dailySummary.refresh}
+              className="mt-3 min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-medium text-on-secondary"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
+              Try again
+            </button>
+          </article>
+        )}
       </section>
 
       {anuCard.card && (

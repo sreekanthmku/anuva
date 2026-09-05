@@ -3710,7 +3710,7 @@ app.post('/subscription/activate-one-day', async (req, res, next) => {
     }
 
     const now = new Date();
-    const trialEndsAt = addDays(now, 1);
+    const trialEndsAt = addDays(now, FREE_TRIAL_DAYS);
 
     await prisma.subscription.upsert({
       where: { userId: user.id },
@@ -3720,9 +3720,13 @@ app.post('/subscription/activate-one-day', async (req, res, next) => {
         startedAt: now,
         trialEndsAt,
       },
+      // `startedAt` is deliberately absent. It is the anchor the whole
+      // journey counts from — calibration, "Day N · Week N", the summary's
+      // coverage window — so a re-activation must extend access without
+      // rewinding the clock. Writing `now` here sent everyone back to day 1
+      // every time their access lapsed and they tapped the button again.
       update: {
         status: 'trialing',
-        startedAt: now,
         trialEndsAt,
       },
     });

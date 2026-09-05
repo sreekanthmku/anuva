@@ -305,7 +305,7 @@ export default function SubscriptionRoute() {
             ? 'Continue to Anuva Wellness'
             : isSubmitting
               ? 'Activating...'
-              : 'Activate 1-Day Access'}
+              : `Activate ${trialDays}-Day Access`}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M5 12h14M13 6l6 6-6 6"
@@ -322,7 +322,7 @@ export default function SubscriptionRoute() {
         >
           {user?.hasActiveAccess
             ? 'Your access is already active.'
-            : 'This button activates 1 day of access and then takes you into the app.'}
+            : `This button activates ${trialDays} days of access and then takes you into the app.`}
         </p>
       </section>
     </main>

@@ -4,6 +4,15 @@ import { Eyebrow } from '../../../shared/components/Eyebrow';
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
 
 /**
+ * Whether a metric name taps through to its own day-by-day page.
+ *
+ * Off for now — the tap-through is only *not offered*, not removed: `onSelect`
+ * is still passed in from the summary route and `/report/:metric` still exists,
+ * so flipping this to `true` brings the whole thing back.
+ */
+const TAP_THROUGH = false;
+
+/**
  * One wash per direction, so the three columns are legible before they are
  * read — a row of identical white boxes made the reader parse three headings to
  * find the one that matters.
@@ -51,8 +60,9 @@ const COLUMNS: {
  * comparable history yet — appear in no column at all: a first week has nothing
  * to say here, and filing it under "steady" would be a claim we cannot make.
  *
- * Each name taps through to its own day-by-day view, which is where the six
- * metrics live now that the window views lead with the shape of the window.
+ * Each name can tap through to its own day-by-day view, which is where the six
+ * metrics live now that the window views lead with the shape of the window —
+ * currently switched off, see `TAP_THROUGH`.
  */
 export function StoodOutCard({
   rings,
@@ -99,15 +109,9 @@ export function StoodOutCard({
             </div>
 
             <ul className="flex flex-col gap-1">
-              {column.rings.map((ring) => (
-                <li key={ring.key}>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(ring.key)}
-                    aria-label={`${ring.label}, ${column.title.toLowerCase()}. See day by day`}
-                    className="flex w-full items-start gap-1.5 py-0.5 text-left text-[11.5px] leading-[1.3] text-on-surface transition-opacity active:opacity-60"
-                    style={{ fontFamily: MULISH }}
-                  >
+              {column.rings.map((ring) => {
+                const body = (
+                  <>
                     {/* A bullet, not the metric's emoji: six emoji stacked in a
                         column this narrow read as a legend rather than a list,
                         and they pushed the labels into an ellipsis. */}
@@ -118,9 +122,32 @@ export function StoodOutCard({
                     {/* Wraps. "Cognitive focus" does not fit a third of a phone
                         on one line, and truncating it hid which metric it was. */}
                     <span className="min-w-0 flex-1 break-words">{ring.label}</span>
-                  </button>
-                </li>
-              ))}
+                  </>
+                );
+
+                const shell =
+                  'flex w-full items-start gap-1.5 py-0.5 text-left text-[11.5px] leading-[1.3] text-on-surface';
+
+                return (
+                  <li key={ring.key}>
+                    {TAP_THROUGH ? (
+                      <button
+                        type="button"
+                        onClick={() => onSelect(ring.key)}
+                        aria-label={`${ring.label}, ${column.title.toLowerCase()}. See day by day`}
+                        className={`${shell} transition-opacity active:opacity-60`}
+                        style={{ fontFamily: MULISH }}
+                      >
+                        {body}
+                      </button>
+                    ) : (
+                      <div className={shell} style={{ fontFamily: MULISH }}>
+                        {body}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}

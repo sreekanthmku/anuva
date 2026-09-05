@@ -382,25 +382,26 @@ function AnuShell({
   eyebrow,
   ariaLabel,
   onOpen,
+  /** When false the card is a plain block: no tap, and no chevron promising one. */
+  interactive = true,
   children,
 }: {
   eyebrow: string;
   ariaLabel: string;
   onOpen: () => void;
+  interactive?: boolean;
   children: ReactNode;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={ariaLabel}
-      className="w-full rounded-[20px] border border-border-default bg-primary-container p-[18px] text-left transition-transform active:scale-[0.99]"
-    >
-      <div className="mb-2 flex items-center gap-3">
-        <img src="/anu.png" alt="" className="h-[22px] w-[22px] object-contain" />
-        <Eyebrow tone="plum" className="mb-0">
-          {eyebrow}
-        </Eyebrow>
+  const shell =
+    'w-full rounded-[20px] border border-border-default bg-primary-container p-[18px] text-left';
+
+  const head = (
+    <div className="mb-2 flex items-center gap-3">
+      <img src="/anu.png" alt="" className="h-[22px] w-[22px] object-contain" />
+      <Eyebrow tone="plum" className="mb-0">
+        {eyebrow}
+      </Eyebrow>
+      {interactive && (
         <span className="ml-auto text-on-surface-variant" aria-hidden="true">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
             <path
@@ -412,7 +413,27 @@ function AnuShell({
             />
           </svg>
         </span>
-      </div>
+      )}
+    </div>
+  );
+
+  if (!interactive) {
+    return (
+      <article className={shell}>
+        {head}
+        {children}
+      </article>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={ariaLabel}
+      className={`${shell} transition-transform active:scale-[0.99]`}
+    >
+      {head}
       {children}
     </button>
   );
@@ -436,6 +457,14 @@ function AnuTalkCard({ onOpen }: { onOpen: () => void }) {
     </AnuShell>
   );
 }
+
+/**
+ * Whether ANU's read on a week or a month opens the chat when tapped.
+ *
+ * Off for now — the card still receives `onOpen` and the daily "Talk to Anu"
+ * card is untouched, so flipping this to `true` restores the tap-through.
+ */
+const ANU_INSIGHT_TAP_THROUGH = false;
 
 /**
  * ANU's read on a week or a month — one block of prose, in one voice.
@@ -462,6 +491,7 @@ function AnuInsightCard({
       eyebrow="Anu's insight"
       ariaLabel="ANU's insight. Open the chat with ANU"
       onOpen={onOpen}
+      interactive={ANU_INSIGHT_TAP_THROUGH}
     >
       {lines.map((line) => (
         <p
@@ -719,7 +749,8 @@ function ReportBody({
         <article className="rounded-[20px] border border-tertiary/25 bg-surface-raised p-4">
           <Eyebrow tone="gold">Still calibrating</Eyebrow>
           <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
-            Your first week is still filling in. These numbers settle once seven days are logged.
+            Your first two weeks are still filling in. These numbers settle once fourteen days are
+            logged.
           </p>
         </article>
       )}

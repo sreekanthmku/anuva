@@ -4,6 +4,16 @@ import { GLANCE_EMOJI, RING_EMOJI } from '../summaryEmoji';
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
 const FRAUNCES = '"Fraunces", sans-serif';
 
+/**
+ * Whether a tile that names a metric taps through to that metric's day-by-day
+ * page.
+ *
+ * Off for now — only the affordance is gone. `onSelect` still arrives from the
+ * summary route, the API still sends each tile's `ringKey`, and
+ * `/report/:metric` still exists, so flipping this to `true` restores it.
+ */
+const TAP_THROUGH = false;
+
 /** Tint and eyebrow colour per tone, all off the Anuva token palette. */
 const TONE_STYLE: Record<SummaryGlanceTone, { background: string; accent: string }> = {
   positive: { background: 'rgba(79, 157, 107, 0.12)', accent: '#4F9D6B' },
@@ -29,7 +39,8 @@ function emojiFor(tile: SummaryGlanceTile): string {
  * dashes costs a whole screen and says nothing — so this renders whatever
  * arrived and lets the grid reflow.
  *
- * Tiles that name a metric tap through to that metric's day-by-day view.
+ * Tiles that name a metric can tap through to that metric's day-by-day view —
+ * currently switched off, see `TAP_THROUGH`.
  */
 export function GlanceGrid({
   tiles,
@@ -86,14 +97,17 @@ export function GlanceGrid({
         );
 
         const shell = 'rounded-[18px] p-3 text-left';
+        // A metric tile keeps its taller box whether or not it is tappable, so
+        // turning the tap-through off does not reflow the grid.
+        const tall = tile.ringKey ? ' min-h-[92px]' : '';
 
-        return tile.ringKey ? (
+        return TAP_THROUGH && tile.ringKey ? (
           <button
             key={tile.key}
             type="button"
             onClick={() => onSelect(tile.ringKey as ReportRingKey)}
             aria-label={`${tile.eyebrow}: ${tile.label}${tile.value ? `, ${tile.value}` : ''} ${tile.note}. See day by day`}
-            className={`${shell} min-h-[92px] transition-transform active:scale-[0.98]`}
+            className={`${shell}${tall} transition-transform active:scale-[0.98]`}
             style={{ backgroundColor: style.background }}
           >
             {body}
@@ -101,7 +115,7 @@ export function GlanceGrid({
         ) : (
           <div
             key={tile.key}
-            className={shell}
+            className={`${shell}${tall}`}
             style={{ backgroundColor: style.background }}
           >
             {body}

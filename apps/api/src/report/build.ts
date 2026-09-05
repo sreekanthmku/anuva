@@ -36,6 +36,16 @@ import { buildJointsSummary } from './joints.js';
 
 export const WEEK_DAYS = 7;
 
+/**
+ * How long the numbers are treated as unsettled.
+ *
+ * Two weeks, matching the free trial, because that is the window the home
+ * page counts down as "calibrating" — one user-visible promise, one constant.
+ * Longer than a week on purpose: a single week of a cycling symptom is one
+ * phase of it, not a baseline.
+ */
+export const CALIBRATION_DAYS = 14;
+
 /** Trailing window the daily view compares against; also the daily sparkline's span. */
 const DAILY_BASELINE_DAYS = 7;
 /** Trailing window the per-user "typical" band is sized from. */
@@ -1176,7 +1186,7 @@ function buildReflection(
   }
 
   if (calibrating) {
-    return `You're ${daysOnApp} ${daysOnApp === 1 ? 'day' : 'days'} in. I'm still learning your baseline, so these numbers will settle once we have a full week.`;
+    return `You're ${daysOnApp} ${daysOnApp === 1 ? 'day' : 'days'} in. I'm still learning your baseline, so these numbers will settle once we have a couple of weeks.`;
   }
 
   // Ranked on the scores themselves. Ranking by distance from a reference line
@@ -1454,7 +1464,7 @@ export async function buildSummary(
   const weekBreakdown = buildWeekBreakdown(wellnessDaily, w);
 
   const daysOnApp = dayOffset(startOfLocalDay(anchor), startOfLocalDay(now)) + 1;
-  const calibrating = daysOnApp < WEEK_DAYS;
+  const calibrating = daysOnApp < CALIBRATION_DAYS;
 
   // Daily always has enough to describe the day itself — it never claims a
   // trend, so there is nothing to withhold. Weekly and monthly do claim one.

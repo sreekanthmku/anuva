@@ -325,7 +325,7 @@ export const weeklyReportResponseSchema = z.object({
   seriesCoverageStart: z.string(),
   canGoBack: z.boolean(),
   canGoForward: z.boolean(),
-  /** True while the user has fewer than 7 days on the app — numbers are not stable yet. */
+  /** True while the user has fewer than 14 days on the app — numbers are not stable yet. */
   calibrating: z.boolean(),
   /** Distinct days in the coverage range with at least one log. */
   daysLogged: z.number().int(),

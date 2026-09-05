@@ -291,6 +291,18 @@ describe('buildSummary — empty / sparse', () => {
     expect(report.anuReflection).toMatch(/1 day in|still learning/i);
   });
 
+  it('is still calibrating on day 10 and settled on day 14', async () => {
+    // The window is two weeks, not one: a user ten days in used to fall out of
+    // calibration on the home card while the numbers were still moving.
+    installFixture([dayBundle(2024, 5, 20)]);
+
+    const dayTen = await buildSummary(USER_ID, localDay(2024, 5, 11), 'daily', 0, now);
+    expect(dayTen.calibrating).toBe(true);
+
+    const dayFourteen = await buildSummary(USER_ID, localDay(2024, 5, 7), 'daily', 0, now);
+    expect(dayFourteen.calibrating).toBe(false);
+  });
+
   it('clamps oversized daily offset and still queries every log model', async () => {
     const report = await buildSummary(USER_ID, anchor, 'daily', 999, now);
 

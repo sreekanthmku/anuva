@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTrialStartDate } from '../core/wellnessCalibration';
+import { getCalibrationAnchor } from '../core/wellnessCalibration';
 import { useAuth } from '../auth/auth-context';
 import { assessmentPath } from './config/assessmentView';
 
@@ -52,7 +52,7 @@ export default function AnuGreetingRoute() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [pulse, setPulse] = useState(0);
-  const sevenDayPlan = useMemo(() => buildSevenDayPlan(getTrialStartDate(user)), [user]);
+  const sevenDayPlan = useMemo(() => buildSevenDayPlan(getCalibrationAnchor(user)), [user]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
