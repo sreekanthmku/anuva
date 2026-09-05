@@ -19,7 +19,7 @@ describe('tracedChain', () => {
   it('prints the whole chain from her own answers', () => {
     expect(tracedChain('Joint pain', FULL)).toBe(
       "Here's the thread we pulled together: joint pain, worst in the mornings, " +
-        "alongside broken sleep, with more stress in the mix — and it's landing on everyday things.",
+        "alongside broken sleep, with more stress in the mix, and it's landing on everyday things.",
     );
   });
 

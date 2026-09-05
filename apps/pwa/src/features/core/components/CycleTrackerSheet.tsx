@@ -1061,7 +1061,7 @@ export function CycleTrackerSheet({
             >
               {getCycleLengthSourceLabel(cycleData)}
               {cycleData?.cycleLengthSource === 'learned'
-                ? ' — your setting is a starting point until enough cycles are logged.'
+                ? '. Your setting is a starting point until enough cycles are logged.'
                 : ''}
             </p>
 

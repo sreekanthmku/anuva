@@ -279,12 +279,12 @@ describe('renderReportPdf', () => {
   });
 
   it('preserves typographic punctuation rather than dropping it', async () => {
-    // Em dashes and middots are all over the copy. WinAnsi carries them; a
-    // mis-set encoding would silently drop every one.
+    // Middots, en dashes, degree signs and plus-minus are all over the copy.
+    // WinAnsi carries them; a mis-set encoding would silently drop every one.
     const doc = buildDocument(classificationFor(1, 'A', []), 'Punctuation');
     const text = extractText((await renderReportPdf(doc)).bytes);
-    expect(text).toContain('—'); // em dash
     expect(text).toContain('·'); // middot
+    expect(text).toContain('±'); // plus-minus
     // The vasomotor module carries a degree sign and an en dash range.
     expect(text).toContain('18–19°C');
   });

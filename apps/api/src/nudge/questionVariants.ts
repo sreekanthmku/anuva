@@ -14,10 +14,10 @@ export const NUDGE_QUESTION_VARIANTS: Record<string, string[]> = {
   'L1-001': [
     'Good morning, {{firstName}} 🌷 Before we start today, how did you sleep last night?',
     'Morning, {{firstName}}. How restful did your sleep feel overnight?',
-    'Hi {{firstName}}, how was your sleep last night — did you wake feeling rested?',
+    'Hi {{firstName}}, how was your sleep last night? Did you wake feeling rested?',
     'Before the day gets busy, {{firstName}}, how did you sleep through the night?',
     'Good morning 🌸 How would you describe your sleep last night, {{firstName}}?',
-    '{{firstName}}, take a gentle moment to check in with yourself — how was your sleep overnight?',
+    '{{firstName}}, take a gentle moment to check in with yourself. How was your sleep overnight?',
     'Morning, {{firstName}} ☀️ Did you sleep comfortably last night?',
     'Hi {{firstName}}, how well did your body and mind get to rest last night?',
     'As you begin this new day, {{firstName}}, what was your sleep like last night?',
@@ -54,7 +54,7 @@ export const NUDGE_QUESTION_VARIANTS: Record<string, string[]> = {
 
   // Stress level
   'L1-004': [
-    '{{firstName}}, how has today been feeling for you so far — calm, manageable, or stressful?',
+    '{{firstName}}, how has today been feeling for you so far: calm, manageable, or stressful?',
     'Hi {{firstName}} 🌸 How much stress have you been carrying today up to now?',
     'As you pause for a moment, {{firstName}}, how stressful has your day felt so far?',
     '{{firstName}}, what best describes your stress level right now?',

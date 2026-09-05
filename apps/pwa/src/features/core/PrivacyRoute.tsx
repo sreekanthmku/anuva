@@ -116,7 +116,7 @@ export default function PrivacyRoute() {
     const deleted = totalDeleted(response.request.itemCounts);
     setNotice(
       deleted > 0
-        ? `Deleted ${deleted} ${deleted === 1 ? 'item' : 'items'}. ${erasureScopeLabel(scope)} — done.`
+        ? `Deleted ${deleted} ${deleted === 1 ? 'item' : 'items'}. ${erasureScopeLabel(scope)}: done.`
         : 'There was nothing left to delete in that category.',
     );
   }

@@ -129,8 +129,8 @@ export default function LoginRoute() {
               aria-hidden
             />
             <img
-              src="/anu.png"
-              alt="Anuva logo"
+              src="/anuva-logo-icon.png"
+              alt="Anuva Wellness logo"
               className="relative z-10 h-20 w-20 object-contain"
             />
           </div>
@@ -162,7 +162,7 @@ export default function LoginRoute() {
       </section>
 
       <section
-        className="relative z-10 mt-6 flex min-h-[calc(100svh-220px)] flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-3 pb-[22px] pt-[26px]"
+        className="relative z-10 mt-6 flex min-h-[calc(100svh-220px)] flex-col rounded-t-[32px] bg-surface px-3 pb-[22px] pt-[26px]"
         style={{ minHeight: 'calc(100dvh - 220px)' }}
       >
         {!inOtpStep && (

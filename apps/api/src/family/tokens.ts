@@ -66,7 +66,7 @@ export function buildShareMessage(firstName: string | null, shareUrl: string): s
   const opener =
     name === 'I'
       ? 'I have started using Anuva to understand what my body is going through.'
-      : `${name} here — I have started using Anuva to understand what my body is going through.`;
+      : `${name} here. I have started using Anuva to understand what my body is going through.`;
 
   return [
     opener,

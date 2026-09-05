@@ -127,14 +127,14 @@ describe('a vague opener', () => {
 
     expect(res.source).toBe('probe');
     expect(res.reply).toContain('Where does it sit most?');
-    expect(res.suggestions).toContain('Joints — knees, fingers, wrists');
+    expect(res.suggestions).toContain('Joints (knees, fingers, wrists)');
     expect(mocks.generateReply).not.toHaveBeenCalled();
     expect(lastTurn()).toMatchObject({ mode: 'probe', probeAxis: 'location', probeDepth: 0 });
   });
 
   it('locks the symptom from her answer and asks the next rung, still without explaining', async () => {
     await answer(USER, 'feeling body pain');
-    const res = await answer(USER, 'Joints — knees, fingers, wrists');
+    const res = await answer(USER, 'Joints (knees, fingers, wrists)');
 
     // Authored ack plus the next question. No model call: the whole descent of
     // a vague ladder is free.
@@ -221,7 +221,7 @@ describe('depth follows what she has already said', () => {
 
   it('absorbs extra answers she volunteers mid-ladder', async () => {
     await answer(USER, 'feeling body pain');
-    await answer(USER, 'Joints — knees, fingers, wrists');
+    await answer(USER, 'Joints (knees, fingers, wrists)');
     mocks.generateReply.mockClear();
 
     // Answers the timing rung AND the cluster rung in one sentence.
@@ -254,8 +254,8 @@ describe('depth follows what she has already said', () => {
 
 describe('the reason lands once, at the end', () => {
   const TAPS = [
-    'Joints — knees, fingers, wrists',
-    'Mornings — stiff for a while',
+    'Joints (knees, fingers, wrists)',
+    'Mornings, stiff for a while',
     'Sleep is broken',
     'More stress than usual',
     'Stairs, chores, everyday things',
@@ -277,7 +277,7 @@ describe('the reason lands once, at the end', () => {
 
     expect(res.reply).toContain(
       "Here's the thread we pulled together: joint pain, worst in the mornings, " +
-        "alongside broken sleep, with more stress in the mix — and it's landing on everyday things.",
+        "alongside broken sleep, with more stress in the mix, and it's landing on everyday things.",
     );
     expect(res.reply).toContain('<<generated>>');
     expect(res.suggestions.at(-1)).toBe('Log joint pain');
@@ -341,7 +341,7 @@ describe('answering in her own words', () => {
 describe('leaving the ladder', () => {
   it('answers an aside and keeps the rung on screen', async () => {
     await answer(USER, 'feeling body pain');
-    await answer(USER, 'Joints — knees, fingers, wrists');
+    await answer(USER, 'Joints (knees, fingers, wrists)');
     mocks.generateReply.mockClear();
 
     const res = await answer(USER, 'is this going to be permanent?');
@@ -352,13 +352,13 @@ describe('leaving the ladder', () => {
     expect(lastTurn()).toMatchObject({ probeAxis: 'timing', probeHandbacks: 1 });
 
     // And the ladder still works afterwards.
-    const resumed = await answer(USER, 'Mornings — stiff for a while');
+    const resumed = await answer(USER, 'Mornings, stiff for a while');
     expect(resumed.source).toBe('probe');
   });
 
   it('gives up after a second aside rather than badgering her', async () => {
     await answer(USER, 'feeling body pain');
-    await answer(USER, 'Joints — knees, fingers, wrists');
+    await answer(USER, 'Joints (knees, fingers, wrists)');
     await answer(USER, 'is this going to be permanent?');
     mocks.generateReply.mockClear();
 
@@ -384,7 +384,7 @@ describe('leaving the ladder', () => {
 describe('safety', () => {
   it('escalates mid-ladder instead of finishing its questions', async () => {
     await answer(USER, 'feeling body pain');
-    await answer(USER, 'Joints — knees, fingers, wrists');
+    await answer(USER, 'Joints (knees, fingers, wrists)');
     mocks.generateReply.mockClear();
 
     const res = await answer(USER, 'honestly I feel hopeless');

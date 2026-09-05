@@ -50,7 +50,7 @@ export function NotificationsRoute() {
         eyebrow="Activity"
         title="Your"
         accent="notifications"
-        description="Bookings, cancellations, and new questions in the shared queue — newest first."
+        description="Bookings, cancellations, and new questions in the shared queue, newest first."
       />
 
       <div className="flex flex-col gap-2.5">
@@ -73,7 +73,7 @@ export function NotificationsRoute() {
         {!loading && notifications.length === 0 && !error ? (
           <EmptyState
             title="Nothing yet"
-            body="New bookings, cancellations, and questions will show up here — and on your phone once notifications are switched on in Profile."
+            body="New bookings, cancellations, and questions will show up here, and on your phone once notifications are switched on in Profile."
           />
         ) : null}
 

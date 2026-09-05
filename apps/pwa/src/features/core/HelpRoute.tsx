@@ -251,7 +251,7 @@ export default function HelpRoute() {
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value.slice(0, MAX_SUBJECT_LENGTH))}
-            placeholder="Subject — one line"
+            placeholder="Subject (one line)"
             disabled={outOfQuota}
             className="mt-3.5 w-full border-0 border-b border-border-default bg-transparent pb-2 text-[14px] text-on-surface outline-none placeholder:text-outline disabled:opacity-60"
             style={{ fontFamily: MULISH }}

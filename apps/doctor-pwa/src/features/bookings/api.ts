@@ -102,7 +102,7 @@ export function uploadConsultationDocument(args: {
       reject(new ApiError(request.status, message));
     };
 
-    request.onerror = () => reject(new ApiError(0, 'Upload failed — check the connection.'));
+    request.onerror = () => reject(new ApiError(0, 'Upload failed. Check the connection.'));
     request.onabort = () => reject(new ApiError(0, 'Upload cancelled.'));
 
     request.send(body);

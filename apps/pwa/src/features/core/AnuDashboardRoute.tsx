@@ -81,10 +81,10 @@ const SLEEP_QUALITY_LABELS: Record<number, string> = {
 };
 
 const QUICK_SYMPTOM_RESPONSE: Record<QuickSymptom, { emoji: string; caption: string }> = {
-  hot_flash: { emoji: '🌬️', caption: 'Cool down — this passes' },
-  anxiety: { emoji: '🫂', caption: "You're held — breathe" },
-  chills: { emoji: '🍵', caption: "Warm up — you're okay" },
-  irritability: { emoji: '😮‍💨', caption: 'Exhale — let the tension out' },
+  hot_flash: { emoji: '🌬️', caption: 'Cool down. This passes.' },
+  anxiety: { emoji: '🫂', caption: "You're held. Breathe." },
+  chills: { emoji: '🍵', caption: "Warm up. You're okay." },
+  irritability: { emoji: '😮‍💨', caption: 'Exhale. Let the tension out.' },
 };
 
 function getTimeGreeting(date = new Date()) {
@@ -203,14 +203,14 @@ export default function AnuDashboardRoute() {
   const handleQuickLog = (action?: QuickLogAction) => {
     if (action === 'mood') {
       if (todayMood) {
-        showToast('Mood already logged today — come back tomorrow.');
+        showToast('Mood already logged today. Come back tomorrow.');
         return;
       }
       setMoodOpen(true);
     }
     if (action === 'sleep') {
       if (todaySleep) {
-        showToast('Sleep already logged today — come back tomorrow.');
+        showToast('Sleep already logged today. Come back tomorrow.');
         return;
       }
       setSleepOpen(true);

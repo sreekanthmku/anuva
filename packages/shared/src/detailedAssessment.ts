@@ -414,15 +414,15 @@ export const detailedAssessmentSections: DetailedAssessmentSection[] = [
       { key: 'heart-disease', prompt: 'Heart disease or cardiovascular condition', inputType: 'yesno' },
       { key: 'diabetes', prompt: 'Type 1 or Type 2 Diabetes', inputType: 'yesno' },
       { key: 'thyroid-disorder', prompt: 'Thyroid disorder (hypo or hyperthyroid)', inputType: 'yesno' },
-      { key: 'breast-cancer', prompt: 'Breast cancer — personal history', inputType: 'yesno' },
+      { key: 'breast-cancer', prompt: 'Breast cancer (personal history)', inputType: 'yesno' },
       {
         key: 'breast-cancer-family',
-        prompt: 'Breast cancer — family history (mother, sister)',
+        prompt: 'Breast cancer (family history: mother, sister)',
         inputType: 'yesno',
       },
       {
         key: 'ovarian-cancer',
-        prompt: 'Ovarian or uterine cancer — personal or family history',
+        prompt: 'Ovarian or uterine cancer (personal or family history)',
         inputType: 'yesno',
       },
       { key: 'blood-clots', prompt: 'History of blood clots (DVT / PE)', inputType: 'yesno' },

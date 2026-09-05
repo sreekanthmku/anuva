@@ -51,7 +51,7 @@ export function tracedChain(symptomLabel: string, answers: Answers): string {
     if (clause) head.push(clause);
   }
   const impact = answers.impact;
-  const tail = impact && !EMPTY_TAGS.has(impact) ? ` — and it's landing on ${impact}.` : '.';
+  const tail = impact && !EMPTY_TAGS.has(impact) ? `, and it's landing on ${impact}.` : '.';
   return `Here's the thread we pulled together: ${head.join(', ')}${tail}`;
 }
 
@@ -68,12 +68,12 @@ export function tracedChain(symptomLabel: string, answers: Answers): string {
 /// sections teaching — so the ban is stated four ways rather than once.
 export function openDirective(): string {
   return (
-    `PROBE LADDER — the OPENING turn. The app is about to ask her a short series of questions to ` +
+    `PROBE LADDER: the OPENING turn. The app is about to ask her a short series of questions to ` +
     `work out what is going on, and the reason comes at the END of that, not now.\n` +
-    `So: acknowledge what she has just told you, in one or two sentences, in her words — and STOP. ` +
+    `So: acknowledge what she has just told you, in one or two sentences, in her words, and STOP. ` +
     `Do NOT explain why it happens. Do NOT name a cause, a hormone or a mechanism. Do NOT give ` +
     `advice, a suggestion or a thing to try. Do NOT offer to track or log anything. Do NOT ask her ` +
-    `anything and do NOT end on a question — the app asks its own question immediately below your ` +
+    `anything and do NOT end on a question. The app asks its own question immediately below your ` +
     `reply.\n` +
     `If her message describes ANY symptom, physical or emotional, set "symptom" to the matching ` +
     `label from the list. If it is a greeting, small talk, or something you decline, answer it as ` +
@@ -88,7 +88,7 @@ export function openDirective(): string {
 export function asideDirective(question: string): string {
   return (
     `PROBE LADDER: she has typed something of her own in the middle of a short set of questions ` +
-    `the app is asking her. Answer HER message, fully and in your own voice — it is what she ` +
+    `the app is asking her. Answer HER message, fully and in your own voice; it is what she ` +
     `actually wants right now. Do NOT ask her anything and do NOT end on a question: the app ` +
     `repeats its own question ("${question}") immediately below your reply, and two questions in a ` +
     `row is an interrogation.`
@@ -114,17 +114,17 @@ export function convergeDirective(symptomLabel: string, answers: Answers): strin
     (axis) => `- ${AXIS_PROSE[axis]}: ${answers[axis]}`,
   );
   return (
-    `PROBE LADDER — the CLOSING turn, and the only turn in this flow where you explain anything. ` +
+    `PROBE LADDER: the CLOSING turn, and the only turn in this flow where you explain anything. ` +
     `The app has been asking her short questions and holding the reason back for this reply.\n` +
     `Everything she told it:\n${lines.join('\n')}\n` +
     `Anything not listed there she was never asked, or chose not to answer. Work with what is ` +
     `there and do NOT ask for the rest.\n` +
     `Her symptom is ${symptomLabel}. Give her the answer now, in your own voice: the hormonal ` +
     `reason in one sentence, the two or three other causes that genuinely fit, and at most TWO ` +
-    `concrete things to do — drawn from HER OWN answers above and tied to how ${symptomLabel} ` +
+    `concrete things to do, drawn from HER OWN answers above and tied to how ${symptomLabel} ` +
     `actually behaves, never generic advice that would fit any woman with any symptom. ` +
     `Do NOT list her answers back to her: the app prints them directly above your reply. ` +
-    `Do not diagnose and do not claim the pattern is proven — "these usually travel together" is ` +
+    `Do not diagnose and do not claim the pattern is proven. "these usually travel together" is ` +
     `allowed, "this is caused by" is not. This IS the end of the flow, so you may close with the ` +
     `tracking offer or a line about seeing a doctor if one fits. Set "symptom" to "${symptomLabel}".`
   );

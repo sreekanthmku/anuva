@@ -114,7 +114,7 @@ const LOCATION_PAIN: ProbeQuestion = {
   question: 'Where does it sit most?',
   options: [
     {
-      label: 'Joints — knees, fingers, wrists',
+      label: 'Joints (knees, fingers, wrists)',
       tag: 'joints',
       symptomKey: 'S27',
       ack: "Hands and knees are where women notice it first, more often than not.",
@@ -223,7 +223,7 @@ const TIMING_PAIN: ProbeQuestion = {
   question: 'When is it worst?',
   options: [
     {
-      label: 'Mornings — stiff for a while',
+      label: 'Mornings, stiff for a while',
       tag: 'worst in the mornings',
       ack: "Mornings, then. That's a hard way to start a day.",
       match: [/\bmornings?\b/i, /\bwake up\b/i, /\bwaking\b/i, /\bwhen i get up\b/i, /\bstiff/i],
@@ -303,7 +303,7 @@ const CLUSTER: ProbeQuestion = {
     {
       label: 'Sleep is broken',
       tag: 'broken sleep',
-      ack: "Both at once — that's a lot to be handling.",
+      ack: "Both at once. That's a lot to be handling.",
       match: [/\bsleep/i, /\binsomnia\b/i, /\bawake\b/i, /\bwaking\b/i, /\bup at night\b/i],
     },
     {
@@ -321,7 +321,7 @@ const CLUSTER: ProbeQuestion = {
     {
       label: 'My periods have changed',
       tag: 'cycle changes',
-      ack: "Right — that's worth having down.",
+      ack: "Right. That's worth having down.",
       match: [/\bperiods?\b/i, /\bcycle\b/i, /\birregular\b/i, /\bmissed\b/i],
     },
     {
@@ -333,7 +333,7 @@ const CLUSTER: ProbeQuestion = {
     {
       label: 'Nothing else',
       tag: 'nothing else',
-      ack: "Alright — so it's sitting on its own.",
+      ack: "Alright. So it's sitting on its own.",
       match: NOTHING,
     },
   ],
@@ -358,7 +358,7 @@ const CONTEXT: ProbeQuestion = {
     {
       label: 'Moving around less',
       tag: 'less movement',
-      ack: "Right — and that one's more fixable than it probably feels.",
+      ack: "Right. And that one's more fixable than it probably feels.",
       match: [/\bmov(e|ing|ement)\b/i, /\bwalk/i, /\bexercis/i, /\bgym\b/i, /\bsitting\b/i, /\bdesk\b/i, /\bsedentary\b/i],
     },
     {
@@ -370,7 +370,7 @@ const CONTEXT: ProbeQuestion = {
     {
       label: 'Nothing obvious',
       tag: 'nothing obvious',
-      ack: "That's usually how it goes — there isn't always something to point at.",
+      ack: "That's usually how it goes. There isn't always something to point at.",
       match: NOTHING,
     },
   ],
@@ -407,7 +407,7 @@ const IMPACT: ProbeQuestion = {
     {
       label: 'Nothing major yet',
       tag: 'nothing major',
-      ack: "Good — so we've caught it early.",
+      ack: "Good. So we've caught it early.",
       match: NOTHING,
     },
   ],
@@ -472,7 +472,7 @@ export const PROBE_ROOTS: ProbeRoot[] = [
       /\bnot\s+(been\s+)?myself\b/i,
       /\bfalling\s+apart\b/i,
     ],
-    lead: "Not being able to name it doesn't make it less real — it's one of the harder ways to feel unwell. Let me ask you a few things and we'll get to the why.",
+    lead: "Not being able to name it doesn't make it less real. It's one of the harder ways to feel unwell. Let me ask you a few things and we'll get to the why.",
     location: LOCATION_GENERAL,
     timing: TIMING_GENERAL,
   },
@@ -496,7 +496,7 @@ const ALL_ROOTS = [...PROBE_ROOTS, NAMED_ROOT];
 /// of the authored content rather than inside the engine, so everything a woman
 /// reads from the ladder sits in one reviewable file.
 export const HANDBACK_PROMPT =
-  "Then tell me in your own words where it sits and what it feels like — I'll take it from there.";
+  "Then tell me in your own words where it sits and what it feels like, and I'll take it from there.";
 
 /// She has stopped answering and started asking. The ladder stops collecting and
 /// gives her the answer with whatever it has — which is the honest reading of

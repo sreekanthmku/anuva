@@ -53,8 +53,8 @@ export interface ReportDocument {
  * READINESS_FINDINGS §7.10.
  */
 const DISCLAIMER_PLACEHOLDER =
-  'This report is generated from the information you provided and is intended to support — ' +
-  'not replace — a conversation with a qualified clinician. It is not a diagnosis. ' +
+  'This report is generated from the information you provided and is intended to support, ' +
+  'not replace, a conversation with a qualified clinician. It is not a diagnosis. ' +
   'Do not start, stop or change any medication or treatment on the basis of this report. ' +
   'If you have urgent symptoms, contact your doctor or local emergency services.';
 

@@ -248,7 +248,7 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
           doc.title?.trim() || DOCUMENT_KIND_LABEL[doc.kind],
         );
         if (outcome === 'downloaded') {
-          setNotice(`Saved as ${file.name} — attach it from your downloads.`);
+          setNotice(`Saved as ${file.name}. Attach it from your downloads.`);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not share this document.');

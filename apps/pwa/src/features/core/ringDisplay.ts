@@ -25,7 +25,7 @@ export const DELTA_TONE_COLOR: Record<ReportDeltaTone, string> = {
 
 /** Screen-reader sentence for one ring — spells out what the number means. */
 export function ringAriaLabel(ring: ReportRing): string {
-  if (ring.pct == null) return `${ring.label} — not logged`;
+  if (ring.pct == null) return `${ring.label}, not logged`;
 
   const parts = [`${ring.label}: ${ring.band ?? ''}`.trim(), `score ${ring.pct} out of 100`];
   if (ring.detail) parts.push(ring.detail);

@@ -181,8 +181,8 @@ function DetailBody({
         style={{ fontFamily: MULISH }}
       >
         {ring.reference
-          ? `Dot marks ${ring.reference.label} — ${ring.reference.value} out of 100.`
-          : 'No comparison dot yet — not enough history to compare against.'}
+          ? `Dot marks ${ring.reference.label}: ${ring.reference.value} out of 100.`
+          : 'No comparison dot yet. Not enough history to compare against.'}
         {' · '}
         {ring.daysLogged} of {trackingDenominator(report)} days tracked
       </p>

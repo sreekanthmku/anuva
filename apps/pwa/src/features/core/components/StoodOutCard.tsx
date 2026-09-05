@@ -104,7 +104,7 @@ export function StoodOutCard({
                   <button
                     type="button"
                     onClick={() => onSelect(ring.key)}
-                    aria-label={`${ring.label} — ${column.title.toLowerCase()}. See day by day`}
+                    aria-label={`${ring.label}, ${column.title.toLowerCase()}. See day by day`}
                     className="flex w-full items-start gap-1.5 py-0.5 text-left text-[11.5px] leading-[1.3] text-on-surface transition-opacity active:opacity-60"
                     style={{ fontFamily: MULISH }}
                   >

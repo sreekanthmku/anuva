@@ -96,7 +96,7 @@ export function WellnessHeadlineCard({
           role="img"
           aria-label={
             hasScore
-              ? `Wellness ${headline.score} out of 100 — ${headline.band}`
+              ? `Wellness ${headline.score} out of 100, ${headline.band}`
               : 'No wellness score for this window yet'
           }
         >

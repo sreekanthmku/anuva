@@ -75,7 +75,7 @@ export const COHORT_REFERENCES: Record<ReportRingKey, CohortReference> = {
   hotFlashes: {
     value: 80,
     confidence: 'high',
-    basis: 'India: 37.6% any hot flashes — 24.7% mild / 10.8% moderate / 2.2% severe',
+    basis: 'India: 37.6% any hot flashes (24.7% mild / 10.8% moderate / 2.2% severe)',
     source: 'J Midlife Health 2025 (India, clinico-demographic)',
   },
 };

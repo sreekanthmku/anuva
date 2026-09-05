@@ -25,7 +25,7 @@ export const STAGE_BLOCKS: Record<Stage, StageBlock> = {
   1: {
     label: 'Early Perimenopause',
     stageContext:
-      'Cycles still present. Hormonal fluctuation has begun — oestrogen levels are starting to shift.',
+      'Cycles still present. Hormonal fluctuation has begun, so oestrogen levels are starting to shift.',
     menstrualStatus:
       'Periods mostly regular. Cycle may show minor length variation (±3–5 days). Flow changes possible.',
     introLead:
@@ -41,9 +41,9 @@ export const STAGE_BLOCKS: Record<Stage, StageBlock> = {
     stageContext:
       'Cycles increasingly irregular. Oestrogen declining more noticeably. Symptom intensity often peaks at this stage.',
     menstrualStatus:
-      'Periods irregular — skipping cycles, variable flow, unpredictable timing. Spotting between periods possible.',
+      'Periods irregular: skipping cycles, variable flow, unpredictable timing. Spotting between periods possible.',
     introLead:
-      'You are in mid perimenopause — the most hormonally active phase of the transition. Symptoms are often most pronounced at this stage. Your report reflects your current symptom profile and gives you a clear action plan.',
+      'You are in mid perimenopause, the most hormonally active phase of the transition. Symptoms are often most pronounced at this stage. Your report reflects your current symptom profile and gives you a clear action plan.',
     medicalFlags: [
       'Bone density check recommended if not done in last 2 years',
       'Cardiovascular risk baseline advisable',
@@ -58,7 +58,7 @@ export const STAGE_BLOCKS: Record<Stage, StageBlock> = {
     menstrualStatus:
       '9–12 months without a period, or approaching this threshold. Any spotting should be discussed with your doctor.',
     introLead:
-      'You are in late perimenopause — approaching the menopause threshold. This is a significant milestone in your health journey. Your report focuses on protecting your long-term health while managing current symptoms effectively.',
+      'You are in late perimenopause, approaching the menopause threshold. This is a significant milestone in your health journey. Your report focuses on protecting your long-term health while managing current symptoms effectively.',
     medicalFlags: [
       'Bone density DXA scan strongly recommended',
       'Cardiovascular risk assessment',

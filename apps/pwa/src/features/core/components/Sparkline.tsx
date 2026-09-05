@@ -128,7 +128,7 @@ export function Sparkline({
   const logged = values.filter((v): v is number => v != null);
   const ariaLabel = (() => {
     const span = `${formatShortDay(seriesStart)} to ${formatShortDayFrom(seriesStart, count - 1)}`;
-    if (logged.length === 0) return `${label} — nothing logged between ${span}.`;
+    if (logged.length === 0) return `${label}: nothing logged between ${span}.`;
     const lo = domain.formatValue(Math.min(...logged));
     const hi = domain.formatValue(Math.max(...logged));
     const latest = domain.formatValue(logged[logged.length - 1]!);

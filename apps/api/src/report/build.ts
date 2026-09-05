@@ -595,7 +595,7 @@ function fill(template: string, period: SummaryPeriod): string {
 /** Weekly and monthly claim a trend, so their copy names the direction. */
 const TREND_COPY: Record<ReportRingKey, { up: string; down: string }> = {
   sleep: {
-    up: 'Your sleep steadied {this} — whatever your evenings look like right now, keep it.',
+    up: 'Your sleep steadied {this}. Whatever your evenings look like right now, keep it.',
     down: 'Sleep slipped {this}. Worth looking at what changed after 8pm.',
   },
   energy: {
@@ -607,7 +607,7 @@ const TREND_COPY: Record<ReportRingKey, { up: string; down: string }> = {
     down: 'Stress ran higher {this}. Worth naming what is driving it.',
   },
   mood: {
-    up: 'Fewer sudden mood shifts than {last} — that is real progress.',
+    up: 'Fewer sudden mood shifts than {last}. That is real progress.',
     down: 'More mood swings {this} than {last}. Common when sleep is broken.',
   },
   focus: {
@@ -772,7 +772,7 @@ const SHORT_NOUN: Record<ReportRingKey, string> = {
  * lives behind ANU and the consultation flow.
  */
 const SUGGESTION_COPY: Record<ReportRingKey, string> = {
-  sleep: 'Start winding down half an hour earlier tonight — screens down, lights low.',
+  sleep: 'Start winding down half an hour earlier tonight. Screens down, lights low.',
   energy: 'A short walk after lunch tends to do more for energy than another coffee.',
   stress: 'Take five slow breaths before the next thing you have to do.',
   mood: 'Name the feeling once, out loud or on paper. It usually takes the edge off.',
@@ -781,7 +781,7 @@ const SUGGESTION_COPY: Record<ReportRingKey, string> = {
 };
 
 const STEADY_SUGGESTION =
-  'Nothing needs fixing today — keep whatever routine got you here.';
+  'Nothing needs fixing today. Keep whatever routine got you here.';
 
 /** Edges are the wellness ladder's own — see `WELLNESS_BANDS`. */
 function strongestNote(score: number): string {
@@ -814,7 +814,7 @@ function buildHeadlineBody(rings: RingDraft[], period: SummaryPeriod): string {
   if (scored.length === 0) {
     return period === 'daily'
       ? 'A couple of check-ins and I can tell you how the day actually went.'
-      : `Nothing logged ${PERIOD_WORDS[period].this} yet — a few check-ins and this fills in.`;
+      : `Nothing logged ${PERIOD_WORDS[period].this} yet. A few check-ins and this fills in.`;
   }
 
   const weakest = scored[scored.length - 1]!;
@@ -1018,7 +1018,7 @@ const DAILY_PAIRS: { keys: [ReportRingKey, ReportRingKey]; body: string }[] = [
   },
   {
     keys: ['sleep', 'energy'],
-    body: 'Sleep and energy both sat below your usual today — they almost always move together.',
+    body: 'Sleep and energy both sat below your usual today. They almost always move together.',
   },
   {
     keys: ['stress', 'mood'],
@@ -1172,11 +1172,11 @@ function buildReflection(
 
   if (dataState === 'insufficient') {
     const need = MIN_DAYS_FOR_TREND[period];
-    return `${daysLogged} ${daysLogged === 1 ? 'day' : 'days'} logged so far. Keep tracking — at ${need} days I can tell you what's actually moving, and I'd rather say nothing than guess.`;
+    return `${daysLogged} ${daysLogged === 1 ? 'day' : 'days'} logged so far. Keep tracking. At ${need} days I can tell you what's actually moving, and I'd rather say nothing than guess.`;
   }
 
   if (calibrating) {
-    return `You're ${daysOnApp} ${daysOnApp === 1 ? 'day' : 'days'} in. I'm still learning your baseline — these numbers will settle once we have a full week.`;
+    return `You're ${daysOnApp} ${daysOnApp === 1 ? 'day' : 'days'} in. I'm still learning your baseline, so these numbers will settle once we have a full week.`;
   }
 
   // Ranked on the scores themselves. Ranking by distance from a reference line
@@ -1195,7 +1195,7 @@ function buildReflection(
     if (strongest.key === weakest.key) {
       return `${strongest.label} is the only thing I have for today. A couple more check-ins and I can give you the shape of the day.`;
     }
-    return `Today your ${strongest.label.toLowerCase()} held up, while ${weakest.label.toLowerCase()} is where the strain showed. One day is one day — the weekly view will tell you whether it's a pattern.`;
+    return `Today your ${strongest.label.toLowerCase()} held up, while ${weakest.label.toLowerCase()} is where the strain showed. One day is one day. The weekly view will tell you whether it's a pattern.`;
   }
 
   if (strongest.key === weakest.key) {
@@ -1502,7 +1502,7 @@ export async function buildSummary(
   const withReference = rings.filter((r) => r.reference != null);
   const referenceNote =
     withReference.length > 0
-      ? `Dots mark ${withReference[0]!.reference!.label} — the same comparison on every tab, and only ever with yourself.`
+      ? `Dots mark ${withReference[0]!.reference!.label}: the same comparison on every tab, and only ever with yourself.`
       : `No comparison dots yet. They appear once you have ${trendFloor} days of history to compare against.`;
 
   return {

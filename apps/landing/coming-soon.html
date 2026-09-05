@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ANUVA Wellness — Arriving soon</title>
-<meta name="description" content="Research-backed perimenopause care, personalized for you. Nutrition, expert consultations, daily tracking and someone to ask any hour — in one plan. Arriving soon.">
+<title>ANUVA Wellness: Arriving soon</title>
+<meta name="description" content="Research-backed perimenopause care, personalized for you. Nutrition, expert consultations, daily tracking and someone to ask any hour, all in one plan. Arriving soon.">
 <meta name="theme-color" content="#FAF6F3">
 <link rel="icon" type="image/png" href="/anuva-logo-icon.png">
 <link rel="apple-touch-icon" href="/anuva-logo-icon.png">
-<meta property="og:title" content="ANUVA Wellness — Arriving soon">
+<meta property="og:title" content="ANUVA Wellness: Arriving soon">
 <meta property="og:description" content="Research-backed perimenopause care, personalized for you. Arriving soon.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -437,7 +437,7 @@
     if (!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY.indexOf('__') === 0) {
       field.disabled = true;
       button.disabled = true;
-      say('The waitlist opens shortly — check back in a few days.');
+      say('The waitlist opens shortly. Check back in a few days.');
       return;
     }
 
@@ -446,7 +446,7 @@
 
       var email = field.value.trim();
       if (!email || !field.checkValidity()) {
-        say('That email does not look right — mind checking it?', true);
+        say('That email does not look right. Mind checking it?', true);
         field.focus();
         return;
       }
@@ -462,7 +462,7 @@
           email: email,
           botcheck: honeypot.checked,
           subject: 'New Anuva waitlist signup',
-          from_name: 'Anuva — coming soon page'
+          from_name: 'Anuva: coming soon page'
         })
       })
         .then(function (response) {

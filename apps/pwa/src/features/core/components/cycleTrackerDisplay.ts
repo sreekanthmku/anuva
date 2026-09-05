@@ -20,7 +20,7 @@ export const CYCLE_PHASE_CONFIG: Record<
     color: '#5E3566',
     bg: 'rgba(94, 53, 102,0.15)',
     border: 'rgba(94, 53, 102,0.3)',
-    insight: 'Oestrogen is climbing — energy and focus usually rise. Good window for harder workouts.',
+    insight: 'Oestrogen is climbing. Energy and focus usually rise, so it is a good window for harder workouts.',
   },
   ovulatory: {
     label: 'Ovulatory',
@@ -129,7 +129,7 @@ export function getCycleSubline(data: CycleStateResponse | null | undefined): st
   if (!data) return null;
   if (data.status === 'stale') return 'Log your recent period to refresh predictions.';
   if (data.status === 'late') return 'Did your period start? Log it to update your cycle.';
-  if (data.isIrregular) return 'Your cycles vary — predictions are approximate.';
+  if (data.isIrregular) return 'Your cycles vary, so predictions are approximate.';
   if (data.cycleLengthSource === 'learned') return 'Predicted from your logged cycles.';
   return null;
 }

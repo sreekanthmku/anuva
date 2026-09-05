@@ -241,7 +241,7 @@ export function DoctorBookingsRoute() {
         accent="schedule"
         description={
           isAdmin
-            ? 'Signed in with an admin login — every doctor’s bookings are listed here.'
+            ? 'Signed in with an admin login. Every doctor’s bookings are listed here.'
             : `Bookings for ${identity.specialistName ?? 'you'}. No other doctor’s bookings are shown.`
         }
       />

@@ -40,17 +40,17 @@ type Reference =
  * references: 2, 9" is a footnote in a Word file; in an app it is a citation nobody can follow.
  */
 const REFERENCES: Record<Reference, string> = {
-  'who-menopause': 'WHO — Menopause',
-  'nhs-symptoms': 'NHS — Symptoms of menopause and perimenopause',
-  'nhs-self-help': 'NHS — Things you can do to help menopause symptoms',
-  'nhs-tiredness': 'NHS — Tiredness and fatigue',
-  'nhs-joint-pain': 'NHS — Joint pain',
-  'nhs-heavy-periods': 'NHS — Heavy periods',
-  'nhs-postmenopausal-bleeding': 'NHS — Postmenopausal bleeding',
-  'nhs-vaginal-dryness': 'NHS — Vaginal dryness',
-  'nhs-stroke': 'NHS — Symptoms of a stroke',
-  'nhs-urgent-mental-health': 'NHS — Where to get urgent help for mental health',
-  'mha-erss': 'Ministry of Home Affairs — ERSS (112)',
+  'who-menopause': 'WHO: Menopause',
+  'nhs-symptoms': 'NHS: Symptoms of menopause and perimenopause',
+  'nhs-self-help': 'NHS: Things you can do to help menopause symptoms',
+  'nhs-tiredness': 'NHS: Tiredness and fatigue',
+  'nhs-joint-pain': 'NHS: Joint pain',
+  'nhs-heavy-periods': 'NHS: Heavy periods',
+  'nhs-postmenopausal-bleeding': 'NHS: Postmenopausal bleeding',
+  'nhs-vaginal-dryness': 'NHS: Vaginal dryness',
+  'nhs-stroke': 'NHS: Symptoms of a stroke',
+  'nhs-urgent-mental-health': 'NHS: Where to get urgent help for mental health',
+  'mha-erss': 'Ministry of Home Affairs: ERSS (112)',
 };
 
 /** What an article with no clinical claim says instead of a citation. Never left blank. */

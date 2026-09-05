@@ -91,7 +91,7 @@ export const SUPPORT_BY_METRIC: Record<FamilyMetricKey, { headline: string; body
   },
   mood: {
     headline: 'Ask, then listen',
-    body: 'Mood shifts are hormonal, not personal. Asking how she is doing — and not trying to fix it — helps more than advice.',
+    body: 'Mood shifts are hormonal, not personal. Asking how she is doing, and not trying to fix it, helps more than advice.',
   },
   stress: {
     headline: 'Take something off her list',
@@ -205,9 +205,9 @@ export const CONSULTATION_LABEL_FALLBACK = 'Wellness consultation';
 export const FAMILY_SHARED_SCOPES: string[] = [
   // Says "in words" rather than "direction only": a single logged day has no direction yet and is
   // shown as its band ("Stressful", "Tired"), so promising direction alone would be inaccurate.
-  `${FAMILY_METRIC_KEYS.map((key) => METRIC_NOUNS[key].toLowerCase()).join(', ')} — in words only ("sleeping less", "manageable"), never scores`,
+  `${FAMILY_METRIC_KEYS.map((key) => METRIC_NOUNS[key].toLowerCase()).join(', ')}: in words only ("sleeping less", "manageable"), never scores`,
   'How many days this week she has tracked',
-  'That a consultation is booked, and when — never which specialist or why',
+  'That a consultation is booked, and when. Never which specialist or why.',
 ];
 
 export const FAMILY_PRIVATE_ITEMS: string[] = [

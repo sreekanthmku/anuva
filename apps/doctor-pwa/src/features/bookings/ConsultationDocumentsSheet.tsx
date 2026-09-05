@@ -184,7 +184,7 @@ export function ConsultationDocumentsSheet({
         const file = await fileFor(doc);
         const outcome = await shareOrDownloadFile(file, doc.title?.trim() || KIND_LABEL[doc.kind]);
         if (outcome === 'downloaded') {
-          setStatus(`Saved as ${file.name} — attach it from your downloads.`);
+          setStatus(`Saved as ${file.name}. Attach it from your downloads.`);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not share this document.');
@@ -203,7 +203,7 @@ export function ConsultationDocumentsSheet({
         await deleteConsultationDocument(consultationId, doc.id);
         await load();
         onChanged();
-        setStatus('Document withdrawn — the patient can no longer see it.');
+        setStatus('Document withdrawn. The patient can no longer see it.');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not withdraw this document.');
       } finally {

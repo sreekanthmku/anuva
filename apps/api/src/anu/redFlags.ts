@@ -35,7 +35,7 @@ export const RED_FLAG_RULES: RedFlagRule[] = [
     urgency: 'Urgent',
     recommendedSpecialist: 'Emergency care / Psychiatrist',
     response:
-      'You deserve immediate support, and you should not have to sit with this alone. Please reach out right now to someone who can help — Tele-MANAS on 14416 is free and available 24x7, and iCall (9152987821) and AASRA (9820466726) are there too. If you feel unsafe at this moment, please contact a trusted person near you or go to the nearest emergency department.',
+      'You deserve immediate support, and you should not have to sit with this alone. Please reach out right now to someone who can help. Tele-MANAS on 14416 is free and available 24x7, and iCall (9152987821) and AASRA (9820466726) are there too. If you feel unsafe at this moment, please contact a trusted person near you or go to the nearest emergency department.',
     isCrisis: true,
     patterns: [
       /\b(kill|harm|hurt|cut)(ing)?\s+(myself|my ?self)\b/i,

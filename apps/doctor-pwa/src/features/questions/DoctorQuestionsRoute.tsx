@@ -179,7 +179,7 @@ export function DoctorQuestionsRoute() {
         eyebrow="Shared queue"
         title="Anonymous"
         accent="questions"
-        description="Any specialist can pick one up. Askers are anonymous — no name, phone, or profile is ever attached."
+        description="Any specialist can pick one up. Askers are anonymous: no name, phone, or profile is ever attached."
       />
 
       <div className="grid grid-cols-2 gap-2.5">

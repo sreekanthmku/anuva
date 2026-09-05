@@ -38,7 +38,7 @@ function formatQuestion(row: Record<string, unknown> | null): string | null {
   const body = pickString(row.body);
   const key = pickString(row.key);
   if (topic && body) return `${topic}: ${body.slice(0, 80)}${body.length > 80 ? '…' : ''}`;
-  if (prompt) return key ? `${key} — ${prompt}` : prompt;
+  if (prompt) return key ? `${key} · ${prompt}` : prompt;
   return topic ?? body ?? key;
 }
 

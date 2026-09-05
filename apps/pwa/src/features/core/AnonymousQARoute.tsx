@@ -317,7 +317,7 @@ export default function AnonymousQARoute() {
           style={{ fontFamily: MULISH }}
         >
           {scope === 'mine'
-            ? 'Only you can see this list. Yours also appear in Everyone once answered — unsigned, like every other question.'
+            ? 'Only you can see this list. Yours also appear in Everyone once answered, unsigned, like every other question.'
             : 'Every answered question, from everyone. No asker is named, including you.'}
         </p>
 

@@ -106,7 +106,7 @@ export function resolveWindow(input: WindowInput): WindowResult {
       end,
       daysCovered: Math.max(0, Math.min(windowDays, elapsed)),
       reason:
-        'No period start available to anchor to — using the first logged day. ' +
+        'No period start available to anchor to; using the first logged day. ' +
         'Log scores from this window are not directly comparable with cycle-anchored ones.',
     };
   }
@@ -118,6 +118,6 @@ export function resolveWindow(input: WindowInput): WindowResult {
     start: null,
     end: null,
     daysCovered: 0,
-    reason: 'No cycle anchor and no logs — classified from the assessment alone.',
+    reason: 'No cycle anchor and no logs; classified from the assessment alone.',
   };
 }

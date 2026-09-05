@@ -226,7 +226,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     export: {
       generatedAt: generatedAt.toISOString(),
       format: 'anuva-data-export/1',
-      note: 'Everything Anuva holds about you, as of the date above. Recording audio and document files are not included in this file — download those from Your consultations in the app.',
+      note: 'Everything Anuva holds about you, as of the date above. Recording audio and document files are not included in this file. Download those from Your consultations in the app.',
       rowLimitPerCollection: MAX_ROWS_PER_COLLECTION,
     },
     /**

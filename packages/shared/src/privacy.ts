@@ -183,7 +183,7 @@ export const ERASURE_SCOPES: {
     label: 'Delete call recordings',
     description: 'Every audio recording of your consultations, and the files behind them.',
     collateral:
-      'Your prescriptions, diet plans and the record that the consultation happened are kept — a doctor is required to hold those for three years.',
+      'Your prescriptions, diet plans and the record that the consultation happened are kept. A doctor is required to hold those for three years.',
     requiresOtp: false,
     immediate: true,
   },

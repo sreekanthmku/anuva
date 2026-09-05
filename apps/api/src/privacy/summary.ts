@@ -91,7 +91,7 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
       label: 'Consultation records',
       count: consultations,
       purpose: 'The record of each consultation: when it happened and which doctor you saw.',
-      retention: `Kept ${CLINICAL_RECORD_RETENTION_YEARS} years — a doctor is required to hold consultation records for that long.`,
+      retention: `Kept ${CLINICAL_RECORD_RETENTION_YEARS} years, because a doctor is required to hold consultation records for that long.`,
     },
     {
       key: 'documents',

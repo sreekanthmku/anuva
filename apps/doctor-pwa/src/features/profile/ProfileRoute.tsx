@@ -178,7 +178,7 @@ export function ProfileRoute() {
           <div className="rounded-[14px] bg-surface-container-low px-3 py-2.5">
             <dt className="text-[10.5px] uppercase tracking-[0.12em] text-outline">Access</dt>
             <dd className="mt-1 font-semibold text-on-surface">
-              {isAdmin ? 'Admin — all doctors' : 'Doctor — own bookings'}
+              {isAdmin ? 'Admin: all doctors' : 'Doctor: own bookings'}
             </dd>
           </div>
           <div className="rounded-[14px] bg-surface-container-low px-3 py-2.5">

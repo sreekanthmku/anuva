@@ -99,7 +99,7 @@ const SIGNALS: HomeCardSignal[] = [
     },
     variants: [
       'You logged {count} hot flash {episodes} today. Want me to talk you through a cooling routine for tonight?',
-      "That's {count} hot flash {episodes} today, {{firstName}} — shall we plan something for this evening?",
+      "That's {count} hot flash {episodes} today, {{firstName}}. Shall we plan something for this evening?",
       '{count} heat {episodes} in one day is a lot to carry. Want a few things that help before bed?',
       'I noticed {count} hot flash {episodes} today. Let me suggest what can take the edge off tonight.',
       "{{firstName}}, {count} {episodes} today. Want to look at what's setting them off?",
@@ -141,9 +141,9 @@ const SIGNALS: HomeCardSignal[] = [
       return { sinceAt: ctx.sleep.loggedAt ?? ctx.mood.loggedAt };
     },
     variants: [
-      'Your sleep and your mood both sat below your usual today. They almost always move together — want to look at the sleep side first?',
+      'Your sleep and your mood both sat below your usual today. They almost always move together. Want to look at the sleep side first?',
       '{{firstName}}, a harder night and a heavier day landed together. Shall we start with what happened overnight?',
-      'Both your rest and your mood are under your own average today. That pairing is the most common one there is — want to talk it through?',
+      'Both your rest and your mood are under your own average today. That pairing is the most common one there is. Want to talk it through?',
     ],
     primary: {
       label: 'Talk it through',
@@ -159,7 +159,7 @@ const SIGNALS: HomeCardSignal[] = [
       'Last night came in below your usual sleep. Want a few things to try tonight?',
       '{{firstName}}, your rest dipped under your own average. Shall we look at what might be waking you?',
       'That was a harder night than most of your nights. Want me to suggest a wind-down?',
-      'Your sleep sat below your usual last night — worth a look at what changed?',
+      'Your sleep sat below your usual last night. Worth a look at what changed?',
     ],
     primary: {
       label: 'Yes, show me',
@@ -192,7 +192,7 @@ const SIGNALS: HomeCardSignal[] = [
     },
     variants: [
       'Your period is {days} {dayWord} later than your usual cycle. Want to know whether that is expected right now?',
-      '{{firstName}}, you are {days} {dayWord} past your predicted date. Cycles stretch in perimenopause — shall I explain what is normal?',
+      '{{firstName}}, you are {days} {dayWord} past your predicted date. Cycles stretch in perimenopause. Shall I explain what is normal?',
       '{days} {dayWord} late, going by your own cycle length. Want to talk about what that can mean?',
     ],
     primary: {
@@ -212,7 +212,7 @@ const SIGNALS: HomeCardSignal[] = [
     variants: [
       'Going by your cycle, your period is due {when}. Want to log how you are feeling in the run-up?',
       '{{firstName}}, your next period should arrive {when}. Shall we track the days before it?',
-      'Your period is expected {when}. The days before it are often the heaviest for symptoms — want to keep an eye on them?',
+      'Your period is expected {when}. The days before it are often the heaviest for symptoms. Want to keep an eye on them?',
     ],
     primary: { label: 'Open my cycle', path: '/home?cycle=1' },
   },
@@ -223,8 +223,8 @@ const SIGNALS: HomeCardSignal[] = [
     match: (ctx) =>
       ctx.loggingStreakDays >= STREAK_MIN ? { vars: { days: ctx.loggingStreakDays } } : null,
     variants: [
-      "{days} days logged in a row, {{firstName}}. That's enough history for your report to mean something — want to see it?",
-      "You've checked in {days} days running. Your patterns are starting to show — shall we look?",
+      "{days} days logged in a row, {{firstName}}. That's enough history for your report to mean something. Want to see it?",
+      "You've checked in {days} days running. Your patterns are starting to show. Shall we look?",
       '{days} days straight. This is exactly what makes the weekly report worth reading.',
     ],
     primary: { label: 'See my report', path: '/report' },
@@ -239,7 +239,7 @@ const SIGNALS: HomeCardSignal[] = [
       return {};
     },
     variants: [
-      "I haven't heard from you today, {{firstName}}. One tap is enough — how has the day been?",
+      "I haven't heard from you today, {{firstName}}. One tap is enough. How has the day been?",
       'Nothing logged today. Even a single check-in keeps your week readable.',
       'No entries yet today. Want to take thirty seconds before the day closes?',
     ],
@@ -253,9 +253,9 @@ const SIGNALS: HomeCardSignal[] = [
     cooldownHours: 0,
     match: () => ({}),
     variants: [
-      'Nothing is standing out in what you logged today, {{firstName}} — steady days are what good weeks are made of. Anything you want to ask me?',
+      'Nothing is standing out in what you logged today, {{firstName}}. Steady days are what good weeks are made of. Anything you want to ask me?',
       'Everything you logged today sits inside your usual range. I am here if something is on your mind.',
-      'A steady day so far. Ask me anything — no question is too small.',
+      'A steady day so far. Ask me anything, no question is too small.',
       '{{firstName}}, your numbers look like your normal today. Want to ask me something?',
     ],
     primary: {

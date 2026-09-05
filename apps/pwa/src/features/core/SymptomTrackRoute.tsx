@@ -151,11 +151,11 @@ export default function SymptomTrackRoute() {
       const entry = await jointLog.logJoints(body);
       showToast(
         entry.severity === 'none'
-          ? 'No joint discomfort today — good to know.'
+          ? 'No joint discomfort today. Good to know.'
           : "Logged. I'll watch how this moves with your cycle.",
       );
     } catch {
-      showToast("Couldn't save that — we'll retry later.");
+      showToast("Couldn't save. We'll retry later.");
     } finally {
       setJointsSaving(false);
     }
@@ -200,7 +200,7 @@ export default function SymptomTrackRoute() {
       const res = await respond({ nudgeId: t.nudgeId, answer });
       showToast(res.message);
     } catch {
-      showToast("Couldn't save that — we'll retry later.");
+      showToast("Couldn't save. We'll retry later.");
     } finally {
       setSaving(null);
     }

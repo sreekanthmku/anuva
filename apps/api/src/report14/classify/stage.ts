@@ -102,7 +102,7 @@ export function classifyStage(input: StageInput): StageResult {
     return {
       stage: 3,
       rule: 'S1',
-      reason: 'Oophorectomy reported — surgical menopause.',
+      reason: 'Oophorectomy reported; surgical menopause.',
       flags: [...flags, 'surgicalMenopause'],
     };
   }
@@ -117,7 +117,7 @@ export function classifyStage(input: StageInput): StageResult {
     return {
       stage: 2,
       rule: 'S2',
-      reason: 'Hysterectomy with ovaries retained — cannot stage by bleeding criteria.',
+      reason: 'Hysterectomy with ovaries retained; cannot stage by bleeding criteria.',
       flags: [...flags, 'cannotStageByBleeding'],
     };
   }
@@ -129,7 +129,7 @@ export function classifyStage(input: StageInput): StageResult {
     return {
       stage: 2,
       rule: 'S0',
-      reason: 'No menstrual history and no cycle logs — cannot determine stage.',
+      reason: 'No menstrual history and no cycle logs; cannot determine stage.',
       flags: [...flags, 'stageAmbiguous'],
     };
   }
@@ -192,7 +192,7 @@ export function classifyStage(input: StageInput): StageResult {
   return {
     stage: 2,
     rule: 'S7',
-    reason: 'Menstrual pattern inconclusive — defaulting to the safest stage.',
+    reason: 'Menstrual pattern inconclusive; defaulting to the safest stage.',
     flags: [...flags, 'stageAmbiguous'],
   };
 }

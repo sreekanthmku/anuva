@@ -44,7 +44,7 @@ export default defineConfig({
       manifest: {
         name: 'Anuva Wellness',
         short_name: 'Anuva Wellness',
-        description: 'Anuva Wellness — your daily bloom',
+        description: 'Anuva Wellness: your daily bloom',
         theme_color: '#141136',
         background_color: '#141136',
         display: 'standalone',
