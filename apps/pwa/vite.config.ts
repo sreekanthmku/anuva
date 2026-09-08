@@ -70,6 +70,15 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        // Lets navigator.getInstalledRelatedApps() report this app as installed,
+        // so the install gate can point an already-installed visitor at the app
+        // instead of showing them a button that can never fire (once installed,
+        // beforeinstallprompt stops firing). The URL has to be absolute and
+        // match the served manifest, so it only resolves on production —
+        // previews fall through to the normal per-platform screen.
+        related_applications: [
+          { platform: 'webapp', url: 'https://app.anuvawellness.com/manifest.webmanifest' },
+        ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],

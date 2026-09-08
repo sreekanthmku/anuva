@@ -26,6 +26,7 @@ import HelpRoute from '../features/core/HelpRoute';
 import LoginRoute from '../features/auth/LoginRoute';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import SplashRoute from '../features/auth/SplashRoute';
+import { InstallGuard } from '../features/install/InstallGuard';
 
 // Routes notification clicks when the service worker can't navigate the client
 // itself (e.g. iOS) and posts a `nudge-navigate` message instead.
@@ -49,167 +50,169 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <ServiceWorkerNavListener />
-      <Routes>
-        <Route path="/" element={<SplashRoute />} />
-        <Route path="/login" element={<LoginRoute />} />
-        <Route path="/assessment" element={<AssessmentRoute />} />
-        <Route path="/assessment-paired" element={<AssessmentPairedRoute />} />
-        <Route path="/assessment-result" element={<AssessmentResultRoute />} />
-        <Route path="/subscription" element={<SubscriptionRoute />} />
-        <Route path="/anu-greeting" element={<AnuGreetingRoute />} />
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <AnuDashboardRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/nudge/:slot"
-          element={
-            <ProtectedRoute>
-              <NudgeCardRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/nudge"
-          element={
-            <ProtectedRoute>
-              <NudgeCardRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/detailed-assessment"
-          element={
-            <ProtectedRoute>
-              <DetailedAssessmentRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <AnuChatRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/track"
-          element={
-            <ProtectedRoute>
-              <SymptomTrackRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/report"
-          element={
-            <ProtectedRoute>
-              <WeeklyReportRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/report/:metric"
-          element={
-            <ProtectedRoute>
-              <MetricDetailRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/care"
-          element={
-            <ProtectedRoute>
-              <CareDirectionRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/library"
-          element={
-            <ProtectedRoute>
-              <LibraryRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/library/:slug"
-          element={
-            <ProtectedRoute>
-              <LibraryArticleRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/qa"
-          element={
-            <ProtectedRoute>
-              <AnonymousQARoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/booking"
-          element={
-            <ProtectedRoute>
-              <ConsultationBookingRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/my-bookings"
-          element={
-            <ProtectedRoute>
-              <MyBookingsRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/consultations/:id/call"
-          element={
-            <ProtectedRoute>
-              <ConsultationCallRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfileRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/assessment-report"
-          element={
-            <ProtectedRoute>
-              <AssessmentReportRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/privacy"
-          element={
-            <ProtectedRoute>
-              <PrivacyRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/help"
-          element={
-            <ProtectedRoute>
-              <HelpRoute />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+      <InstallGuard>
+        <Routes>
+          <Route path="/" element={<SplashRoute />} />
+          <Route path="/login" element={<LoginRoute />} />
+          <Route path="/assessment" element={<AssessmentRoute />} />
+          <Route path="/assessment-paired" element={<AssessmentPairedRoute />} />
+          <Route path="/assessment-result" element={<AssessmentResultRoute />} />
+          <Route path="/subscription" element={<SubscriptionRoute />} />
+          <Route path="/anu-greeting" element={<AnuGreetingRoute />} />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <AnuDashboardRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/nudge/:slot"
+            element={
+              <ProtectedRoute>
+                <NudgeCardRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/nudge"
+            element={
+              <ProtectedRoute>
+                <NudgeCardRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/detailed-assessment"
+            element={
+              <ProtectedRoute>
+                <DetailedAssessmentRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <AnuChatRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/track"
+            element={
+              <ProtectedRoute>
+                <SymptomTrackRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/report"
+            element={
+              <ProtectedRoute>
+                <WeeklyReportRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/report/:metric"
+            element={
+              <ProtectedRoute>
+                <MetricDetailRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/care"
+            element={
+              <ProtectedRoute>
+                <CareDirectionRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/library"
+            element={
+              <ProtectedRoute>
+                <LibraryRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/library/:slug"
+            element={
+              <ProtectedRoute>
+                <LibraryArticleRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/qa"
+            element={
+              <ProtectedRoute>
+                <AnonymousQARoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/booking"
+            element={
+              <ProtectedRoute>
+                <ConsultationBookingRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-bookings"
+            element={
+              <ProtectedRoute>
+                <MyBookingsRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/consultations/:id/call"
+            element={
+              <ProtectedRoute>
+                <ConsultationCallRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfileRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assessment-report"
+            element={
+              <ProtectedRoute>
+                <AssessmentReportRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <ProtectedRoute>
+                <PrivacyRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/help"
+            element={
+              <ProtectedRoute>
+                <HelpRoute />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </InstallGuard>
     </BrowserRouter>
   );
 }

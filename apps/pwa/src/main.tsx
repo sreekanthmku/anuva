@@ -17,6 +17,9 @@ import '@fontsource/dancing-script/700.css';
 import '@fontsource/space-mono/400.css';
 import '@fontsource/space-mono/700.css';
 import App from './App';
+// Imported for its side effect: `beforeinstallprompt` can fire before React
+// mounts, and the event is only usable if it was captured when it fired.
+import './lib/pwa/installPrompt';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
