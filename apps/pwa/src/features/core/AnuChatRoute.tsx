@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { AnuChatHistoryResponse, AnuChatResponse } from '@anuva/shared';
 import { apiFetch } from '../../shared/lib/api';
 import { BottomNav } from './components/BottomNav';
+import { remainingDelay, replyDelay, wait } from './chatPacing';
 
 type ChatMessage = {
   from: 'anu' | 'user';
@@ -72,17 +73,28 @@ export default function AnuChatRoute() {
       // Clear immediately: the old chips belong to the previous answer.
       setSuggestions([]);
 
+      // Paced, not padded — see `chatPacing`. Measured from the moment she
+      // sends rather than from the response, so a slow answer is never made
+      // slower.
+      const startedAt = Date.now();
+      const delay = replyDelay();
+
       try {
         const data = await apiFetch<AnuChatResponse>('/api/anu/chat', {
           method: 'POST',
           body: JSON.stringify({ message: trimmed }),
         });
+
+        await wait(remainingDelay(delay, Date.now() - startedAt));
+
         setMessages((prev) => [
           ...prev,
           { from: 'anu', text: data.reply, isEscalation: data.source === 'red_flag' },
         ]);
         setSuggestions(data.suggestions);
       } catch {
+        // Not paced. A failure is the app speaking, not ANU, and holding it
+        // behind a typing bubble only delays the retry.
         setError('ANU could not reply just now. Please try again.');
       } finally {
         setSending(false);

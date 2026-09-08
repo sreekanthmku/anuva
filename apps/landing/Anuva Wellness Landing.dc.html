@@ -24,14 +24,27 @@
   @keyframes floatSlow{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
   @keyframes pulseGlow{0%,100%{opacity:.55}50%{opacity:.9}}
 
+  /* The hero photo is trimmed to its subjects (1337x1019), so fit="contain"
+     fills the column almost exactly while never cropping either woman. The
+     slot's frame carries a faint grey wash that the slim letterbox would
+     otherwise expose, so repaint it the white of the photo's backdrop. */
+  #hero-image::part(frame){background:#FFFFFF}
+
+  /* image-slot draws a dashed placeholder ring and hides it via
+     :host([data-filled]), but data-filled never lands on these slots even
+     though the photos load, so the ring ships as a visible dashed outline.
+     Both slots have an author src and are never empty, so drop it outright. */
+  #hero-image::part(ring),#meet-anuva-image::part(ring){display:none}
+
   /* Nav needs ~816px. Below 856px the last item was clipped inside an
      overflow-x:auto strip with the scrollbar hidden, so hand off to the
      hamburger at 900 instead of 760 (covers iPad Pro 11 portrait @834). */
   @media (max-width:900px){ .anuva-desktop-nav{display:none !important} .anuva-hamburger{display:flex !important} }
 
-  /* Hero row wraps at 920px (440 + 480 flex bases). The image column's only
-     child is absolutely positioned, so once wrapped it has no content height —
-     the override has to start at the wrap point, not at 900. */
+  /* The columns are flex-grow 42/58 on 0% bases, so they always fill the row
+     and it never wraps on its own - this query is what stacks it. The image
+     column's only child is absolutely positioned, so once stacked it has no
+     content height and needs the explicit height below. */
   @media (max-width:920px){
     .anuva-hero-row{min-height:auto !important}
     .anuva-hero-image-col{flex-basis:100% !important;height:320px !important}
@@ -98,7 +111,7 @@
         <a href="#pricing" style="color:#5B4E68" style-hover="color:#7C5FC0">Pricing</a>
         <a href="#faqs" style="color:#5B4E68" style-hover="color:#7C5FC0">FAQs</a>
       </nav>
-      <a href="#pricing" class="anuva-header-cta" style="flex:none;background:linear-gradient(135deg,#9B6FD6,#E39CC0);color:#fff;padding:11px 20px;border-radius:100px;font-weight:600;font-size:13.5px;white-space:nowrap;box-shadow:0 6px 16px rgba(155,111,214,0.35);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-2px);box-shadow:0 10px 22px rgba(155,111,214,0.45)">Start Free Trial</a>
+      <a href="https://app.anuvawellness.com" class="anuva-header-cta" style="flex:none;background:linear-gradient(135deg,#9B6FD6,#E39CC0);color:#fff;padding:11px 20px;border-radius:100px;font-weight:600;font-size:13.5px;white-space:nowrap;box-shadow:0 6px 16px rgba(155,111,214,0.35);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-2px);box-shadow:0 10px 22px rgba(155,111,214,0.45)">Start Free Trial</a>
       <button class="anuva-hamburger" onClick="{{ toggleMenu }}" aria-label="Navigation menu" aria-controls="anuva-mobile-nav" aria-expanded="{{ menuOpen }}" style="display:none;flex:none;background:none;border:none;font-size:24px;color:#5E3FA3;cursor:pointer;padding:2px 4px">☰</button>
     </div>
     <sc-if value="{{ menuOpen }}">
@@ -114,21 +127,21 @@
 
   <!-- ===== HERO ===== -->
   <section id="hero" style="position:relative;background:radial-gradient(120% 100% at 20% 0%,#F5E4F0 0%,#F9EEF7 35%,#FFFBFC 70%)">
-    <div class="anuva-hero-row" style="max-width:1440px;margin:0 auto;display:flex;flex-wrap:wrap-reverse;align-items:stretch;gap:0;min-height:640px">
-      <div style="flex: 1 1 440px; min-width: 280px; display: flex; flex-direction: column; justify-content: center; padding: 64px clamp(20px,5vw,80px); background-color: #FFFFFF">
+    <div class="anuva-hero-row" style="width:100%;margin:0;display:flex;flex-wrap:wrap-reverse;align-items:stretch;gap:0;min-height:640px">
+      <div style="flex: 42 1 0%; min-width: 280px; display: flex; flex-direction: column; justify-content: center; padding: 64px clamp(20px,3.5vw,64px); background-color: #FFFFFF">
         
         <h1 style="font-family:'Playfair Display',serif;font-weight:600;font-size:clamp(34px,5vw,58px);line-height:1.1;margin:0 0 22px;color:#2D2438"><span style="font-size:clamp(26px,4.2vw,50px)">Your Personalized</span> <span style="color: {{ accentColor }}; font-style: italic; font-family: Times New Roman; font-size:clamp(36.5px,5.2vw,60.5px)">Perimenopause Wellness</span> <span style="color: {{ accentColor }}; font-style: italic; font-family: Times New Roman; font-size:clamp(36.5px,5.2vw,60.5px)">Journey</span> <span style="font-size:clamp(26px,4.2vw,50px)">Starts Here</span></h1>
         <p style="font-size:clamp(16px,2vw,19px);line-height:1.6;color:#6B5D7A;max-width:520px;margin:0 0 32px">Expert care, personalized plans, and daily support to help you feel like yourself again.</p>
         <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:28px">
-          <a href="#pricing" class="anuva-hero-cta" style="background:linear-gradient(135deg,#9B6FD6,#E39CC0);color:#fff;padding:17px 34px;border-radius:100px;font-weight:700;font-size:16px;box-shadow:0 12px 28px rgba(155,111,214,0.4);transition:transform .2s,box-shadow .2s;display:inline-block" style-hover="transform:translateY(-3px) scale(1.02);box-shadow:0 18px 36px rgba(155,111,214,0.5)">Start Your 14-Day Free Trial →</a>
+          <a href="https://app.anuvawellness.com" class="anuva-hero-cta" style="background:linear-gradient(135deg,#9B6FD6,#E39CC0);color:#fff;padding:17px 34px;border-radius:100px;font-weight:700;font-size:16px;box-shadow:0 12px 28px rgba(155,111,214,0.4);transition:transform .2s,box-shadow .2s;display:inline-block" style-hover="transform:translateY(-3px) scale(1.02);box-shadow:0 18px 36px rgba(155,111,214,0.5)">Start Your 14-Day Free Trial →</a>
         </div>
         <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#6B5D7A;font-weight:500">
           <span role="img" aria-label="Rated 5 out of 5" style="color:#E3A6C4;font-size:16px">★★★★★</span>
           <span>Trusted by 2,000+ women · Science-backed</span>
         </div>
       </div>
-      <div class="anuva-hero-image-col" style="flex:1 1 480px;min-width:300px;position:relative">
-        <image-slot id="hero-image" style="position: absolute; inset: 0; width: 100%; height: 100%; background-color: #FFFFFF" fit="cover" placeholder="Drop a photo of a woman feeling confident and calm" src="uploads/hero-woman.webp"></image-slot>
+      <div class="anuva-hero-image-col" style="flex:58 1 0%;min-width:300px;position:relative">
+        <image-slot id="hero-image" style="position: absolute; inset: 0; width: 100%; height: 100%; background-color: #FFFFFF" shape="rounded" radius="0" fit="contain" placeholder="Drop a photo of a woman feeling confident and calm" src="uploads/hero-woman.webp"></image-slot>
       </div>
     </div>
   </section>
@@ -362,7 +375,7 @@
           <div style="display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:#4A3E56"><span aria-hidden="true" style="color:#9B6FD6;font-weight:700">✓</span>Expert-backed care plan &amp; AI support</div>
           <div style="display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:#4A3E56"><span aria-hidden="true" style="color:#9B6FD6;font-weight:700">✓</span>3 FREE consultations (Worth over ₹5,000)</div>
         </div>
-        <a href="#" style="display:block;background:linear-gradient(135deg,#9B6FD6,#E39CC0);color:#fff;padding:17px;border-radius:100px;font-weight:700;font-size:16px;box-shadow:0 12px 28px rgba(155,111,214,0.4);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px) scale(1.02);box-shadow:0 18px 36px rgba(155,111,214,0.5)">Start Your 14-Day Free Trial</a>
+        <a href="https://app.anuvawellness.com" style="display:block;background:linear-gradient(135deg,#9B6FD6,#E39CC0);color:#fff;padding:17px;border-radius:100px;font-weight:700;font-size:16px;box-shadow:0 12px 28px rgba(155,111,214,0.4);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px) scale(1.02);box-shadow:0 18px 36px rgba(155,111,214,0.5)">Start Your 14-Day Free Trial</a>
       </div>
     </div>
   </section>
@@ -395,7 +408,7 @@
     <div style="max-width:640px;margin:0 auto">
       <h2 style="font-family:'Playfair Display',serif;font-weight:600;font-size:clamp(28px,5vw,46px);line-height:1.15;margin:0 0 20px;color:#2D2438">Ready to Take Control of Your Perimenopause Journey?</h2>
       <p style="font-size:17px;color:#5B4E68;margin:0 0 36px">Join thousands of women who've found clarity, relief, and confidence with ANUVA WELLNESS.</p>
-      <a href="#pricing" style="display:inline-block;background:#2D2438;color:#fff;padding:19px 40px;border-radius:100px;font-weight:700;font-size:17px;box-shadow:0 16px 36px rgba(45,36,56,0.25);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px) scale(1.02);box-shadow:0 22px 44px rgba(45,36,56,0.35)">Start Your 14-Day Free Trial →</a>
+      <a href="https://app.anuvawellness.com" style="display:inline-block;background:#2D2438;color:#fff;padding:19px 40px;border-radius:100px;font-weight:700;font-size:17px;box-shadow:0 16px 36px rgba(45,36,56,0.25);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-3px) scale(1.02);box-shadow:0 22px 44px rgba(45,36,56,0.35)">Start Your 14-Day Free Trial →</a>
     </div>
   </section>
 
