@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { FamilyActivityResponse, FamilySupportActionKind } from '@anuva/shared';
 import { twemojiUrl } from '../../shared/lib/twemoji';
+import { sendFamilyThanks } from './api';
 
 /**
  * The check-in card, opened.
@@ -16,7 +17,7 @@ import { twemojiUrl } from '../../shared/lib/twemoji';
 const KIND_EMOJI: Record<FamilySupportActionKind, string> = {
   message: '💌',
   call: '📞',
-  flowers: '💐',
+  flowers: '🌹',
   chocolates: '🍫',
 };
 
@@ -31,6 +32,10 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
 
 const mulish = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' };
 
+function firstNameOf(name: string): string {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
 export function FamilyActivityDialog({
   activity,
   open,
@@ -40,6 +45,8 @@ export function FamilyActivityDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const [thanked, setThanked] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
@@ -52,6 +59,14 @@ export function FamilyActivityDialog({
   if (!open || !activity?.member || !activity.today) return null;
 
   const { member, today, weekLine } = activity;
+
+  // Thanks the whole day at once rather than each row: she is answering "someone showed up", and
+  // making her tap four times to acknowledge four gestures would turn a kindness into an inbox.
+  const thank = () => {
+    if (thanked) return;
+    setThanked(true);
+    void sendFamilyThanks({ memberId: member.id }).catch(() => undefined);
+  };
 
   return (
     <div
@@ -119,8 +134,17 @@ export function FamilyActivityDialog({
 
         <button
           type="button"
+          onClick={thank}
+          disabled={thanked}
+          className="mt-4 min-h-[48px] w-full rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary disabled:opacity-70"
+          style={mulish}
+        >
+          {thanked ? `${firstNameOf(member.name)} has been told 😊` : 'Say thank you 💛'}
+        </button>
+        <button
+          type="button"
           onClick={onClose}
-          className="mt-4 min-h-[48px] w-full rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary"
+          className="mt-1.5 min-h-[44px] w-full rounded-full px-5 text-[13.5px] font-semibold text-on-surface-variant"
           style={mulish}
         >
           Close

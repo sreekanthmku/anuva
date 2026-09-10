@@ -8,6 +8,19 @@ The build publishes **`coming-soon.html` only**, as `dist/index.html`. The full 
 (`Anuva Wellness Landing.dc.html`) is still in the repo but is **not served** — it advertises a
 free trial and pricing, which is wrong before launch.
 
+## Standalone pages
+
+`about.html`, `contact.html`, `privacy.html` and `terms.html` are plain static pages sharing
+`page.css`, and they **do** ship pre-launch — the marketing page is withheld because it
+advertises pricing, which these do not. `cleanUrls` serves them at `/about`, `/contact`,
+`/privacy` and `/terms`.
+
+`contact.html` posts to the same Web3Forms inbox as the waitlist and needs the same build-time
+key substitution, so it goes through `sed` alongside `coming-soon.html` in both build commands.
+
+The legal pages are **unreviewed templates** with bracketed placeholders (entity name, address,
+CIN/GSTIN, Grievance Officer, jurisdiction city). Get them checked and filled in before launch.
+
 ## Waitlist
 
 Signups POST to Web3Forms, which emails each one to the registered inbox. There is no backend
@@ -31,7 +44,7 @@ resets.
 Replace `buildCommand` in `vercel.json` with:
 
 ```
-mkdir -p dist/uploads && cp "Anuva Wellness Landing.dc.html" dist/index.html && sed "s|__WEB3FORMS_ACCESS_KEY__|${WEB3FORMS_ACCESS_KEY}|" coming-soon.html > dist/coming-soon.html && cp support.js image-slot.js dist/ && cp uploads/hero-woman.webp uploads/meet-anuva.webp dist/uploads/
+mkdir -p dist/uploads && cp "Anuva Wellness Landing.dc.html" dist/index.html && for f in coming-soon contact; do sed "s|__WEB3FORMS_ACCESS_KEY__|${WEB3FORMS_ACCESS_KEY}|" "$f.html" > "dist/$f.html"; done && cp about.html privacy.html terms.html page.css support.js image-slot.js anuva-logo-mark.png anuva-logo-icon.png anu-mascot.png dist/ && cp uploads/hero-woman.webp uploads/meet-anuva.webp dist/uploads/
 ```
 
 That serves the marketing page at `/` and keeps the waitlist reachable at `/coming-soon`.

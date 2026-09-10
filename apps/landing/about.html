@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About Us | ANUVA Wellness</title>
+<meta name="description" content="Why we built Anuva Wellness: the story, the mission, and the clinicians, coaches and builders behind India's perimenopause care platform.">
+<meta name="theme-color" content="#F7F0E8">
+<link rel="icon" type="image/png" href="/anuva-logo-icon.png">
+<link rel="apple-touch-icon" href="/anuva-logo-icon.png">
+<meta property="og:title" content="About Us | ANUVA Wellness">
+<meta property="og:description" content="Why we built Anuva Wellness: the story, the mission, and the clinicians, coaches and builders behind India's perimenopause care platform.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Mulish:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/page.css">
+<style>
+  /* ── About: decorative bloom behind the masthead ─────────────────────── */
+  .about-hero{position:relative;overflow:hidden;padding:88px 0 72px;
+    background:radial-gradient(120% 100% at 50% 0%,var(--blush),var(--surface) 62%)}
+  .about-hero .bloom{position:absolute;left:50%;top:-90px;width:760px;max-width:150%;
+    transform:translateX(-50%);opacity:.5;pointer-events:none}
+  .about-hero .wrap{position:relative;text-align:center}
+  .about-hero h1{font-size:clamp(34px,5.6vw,58px);font-weight:600;line-height:1.1;margin:0 0 20px}
+  .about-hero h1 em{font-family:'Times New Roman',serif;font-style:italic;color:var(--plum)}
+  .about-hero p{font-size:18px;line-height:1.65;color:var(--ink-body);max-width:640px;margin:0 auto}
+
+  /* ── story ───────────────────────────────────────────────────────────── */
+  .story{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+  .story h2{font-size:clamp(28px,4vw,40px);font-weight:600;margin:0 0 20px}
+  .story p{font-size:16.5px;line-height:1.75;color:var(--ink-body);margin:0 0 18px}
+  .story-art{background:var(--surface-container);border:1px solid var(--line);
+    border-radius:28px;padding:30px}
+  .story-art svg{display:block;width:100%;height:auto}
+
+  /* ── mission band ────────────────────────────────────────────────────── */
+  .mission{background:var(--plum);color:var(--surface);padding:88px 0;text-align:center;
+    position:relative;overflow:hidden}
+  .mission .mark{position:absolute;right:-60px;bottom:-70px;width:320px;opacity:.12}
+  .mission .wrap{position:relative;max-width:820px}
+  .mission .eyebrow{color:var(--gold-soft)}
+  .mission blockquote{margin:0;font-family:var(--serif);font-weight:500;
+    font-size:clamp(24px,3.6vw,38px);line-height:1.3;color:var(--surface)}
+  .mission blockquote em{font-family:'Times New Roman',serif;font-style:italic;color:var(--blush)}
+
+  /* ── values ──────────────────────────────────────────────────────────── */
+  .values .card{background:var(--surface-low)}
+
+  /* ── team ────────────────────────────────────────────────────────────── */
+  .team{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
+  .member{background:var(--surface-low);border:1px solid var(--line);border-radius:24px;
+    padding:28px 22px;text-align:center;box-shadow:var(--shadow);
+    transition:transform .25s,box-shadow .25s}
+  .member:hover{transform:translateY(-6px);box-shadow:var(--shadow-lift)}
+  .member svg{display:block;margin:0 auto 18px}
+  .member h3{font-family:var(--serif);font-size:19px;font-weight:600;margin:0 0 4px}
+  .member .role{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--gold);margin:0 0 12px}
+  .member p{font-size:14px;line-height:1.6;color:var(--ink-body);margin:0}
+
+  /* ── numbers ─────────────────────────────────────────────────────────── */
+  .numbers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;text-align:center}
+  .numbers .n{font-family:'Times New Roman',serif;font-size:clamp(34px,5vw,46px);
+    font-weight:700;color:var(--plum);line-height:1}
+  .numbers .l{font-size:13.5px;color:var(--ink-body);margin-top:8px}
+
+  /* ── closing CTA ─────────────────────────────────────────────────────── */
+  .closing{text-align:center;padding:96px 0;
+    background:radial-gradient(120% 100% at 50% 0%,var(--blush),var(--lavender) 40%,var(--lavender-dim) 100%)}
+  .closing h2{font-size:clamp(28px,5vw,46px);font-weight:600;line-height:1.15;margin:0 0 20px}
+  .closing p{font-size:17px;color:var(--ink-body);margin:0 0 36px}
+
+  @media (max-width:900px){
+    .story{grid-template-columns:1fr;gap:36px}
+    .story-art{order:-1}
+    .team{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .numbers{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px}
+    .mission{padding:64px 0}
+  }
+  @media (max-width:520px){
+    .team{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="bar">
+    <a class="brand" href="/" aria-label="ANUVA WELLNESS - home">
+      <img src="/anuva-logo-mark.png" width="206" height="144" alt="" decoding="async">
+      <span class="wordmark">ANUVA <span>WELLNESS</span></span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+        <a href="/">Home</a>
+        <a href="/about" aria-current="page">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+    <a class="header-cta" href="https://app.anuvawellness.com">Start Free Trial</a>
+    <details class="menu">
+      <summary aria-label="Navigation menu">&#9776;</summary>
+      <div class="menu-panel">
+          <a href="/">Home</a>
+          <a href="/about" aria-current="page">About</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms &amp; Conditions</a>
+          <a href="https://app.anuvawellness.com">Start Free Trial</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main id="main">
+  <section class="about-hero">
+    <svg class="bloom" viewBox="0 0 760 420" fill="none" aria-hidden="true" focusable="false">
+      <g stroke="#C97E92" stroke-width="1.6" opacity=".55">
+        <path d="M380 60c-46 62-70 110-70 156a70 70 0 10140 0c0-46-24-94-70-156z"/>
+        <path d="M310 118c-64-18-118-14-158 8 26 66 78 112 146 122 44 6 78-4 96-22"/>
+        <path d="M450 118c64-18 118-14 158 8-26 66-78 112-146 122-44 6-78-4-96-22"/>
+      </g>
+      <g stroke="#B8923C" stroke-width="1.4" opacity=".4">
+        <path d="M232 196c-62-6-112 8-146 40 44 54 108 82 178 76 42-4 72-20 86-40"/>
+        <path d="M528 196c62-6 112 8 146 40-44 54-108 82-178 76-42-4-72-20-86-40"/>
+      </g>
+      <circle cx="380" cy="300" r="8" fill="#5E3566" opacity=".18"/>
+    </svg>
+    <div class="wrap">
+      <p class="eyebrow">About Anuva Wellness</p>
+      <h1>The years nobody<br><em>prepared you for</em></h1>
+      <p>Perimenopause lasts up to a decade, touches almost everything, and most women
+         are handed a shrug and a suggestion to wait it out. We are building the
+         alternative: one place where the science, the experts and the day-to-day
+         support finally sit together.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap story">
+      <div>
+        <p class="eyebrow">Our story</p>
+        <h2>It started with a question no one would answer</h2>
+        <p>A founder watched her mother spend two years being told her exhaustion,
+           her sleeplessness and her sudden anxiety were unrelated, ordinary, and
+           probably stress. Four doctors. No one said the word perimenopause.</p>
+        <p>That story turned out to be almost everyone&#39;s story. Symptoms get
+           treated one at a time, by people who never speak to each other, while the
+           thing connecting them goes unnamed for years.</p>
+        <p>So we built Anuva around the connection rather than the symptoms: a single
+           assessment, one plan drawn from it, and a team that actually shares notes.
+           Track what is happening, see the pattern, and get guidance that changes as
+           you do.</p>
+      </div>
+      <div class="story-art">
+        <svg viewBox="0 0 420 340" fill="none" aria-hidden="true" focusable="false">
+        <rect x="0" y="0" width="420" height="340" rx="18" fill="#FBF6F0"/>
+        <!-- the winding path: symptoms in, clarity out -->
+        <path d="M46 292C46 292 96 236 150 244s72 62 128 40 62-96 96-108"
+              stroke="#5E3566" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="1 9"/>
+        <path d="M46 292C46 292 96 236 150 244s72 62 128 40 62-96 96-108"
+              stroke="#C97E92" stroke-width="2.4" stroke-linecap="round" opacity=".28"/>
+        <g fill="#FBF6F0">
+          <circle cx="46" cy="292" r="13" stroke="#C97E92" stroke-width="2.4"/>
+          <circle cx="150" cy="244" r="13" stroke="#C97E92" stroke-width="2.4"/>
+          <circle cx="278" cy="284" r="13" stroke="#B8923C" stroke-width="2.4"/>
+          <circle cx="374" cy="176" r="17" fill="#5E3566" stroke="none"/>
+        </g>
+        <path d="M368 176l5 5 9-10" stroke="#FBF6F0" stroke-width="2.4"
+              stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- rising bars: the weekly report -->
+        <g opacity=".9">
+          <rect x="60" y="120" width="18" height="42" rx="9" fill="#E7DCEC"/>
+          <rect x="90" y="98" width="18" height="64" rx="9" fill="#E7DCEC"/>
+          <rect x="120" y="74" width="18" height="88" rx="9" fill="#CDB9DE"/>
+          <rect x="150" y="52" width="18" height="110" rx="9" fill="#C97E92"/>
+        </g>
+        <g stroke="#B8923C" stroke-width="1.6" opacity=".65">
+          <path d="M300 58c-14 19-22 34-22 48a22 22 0 1044 0c0-14-8-29-22-48z"/>
+          <path d="M278 76c-20-6-36-4-48 3 8 20 24 34 45 37"/>
+          <path d="M322 76c20-6 36-4 48 3-8 20-24 34-45 37"/>
+        </g>
+      </svg>
+      </div>
+    </div>
+  </section>
+
+  <section class="mission">
+    <img class="mark" src="/anuva-logo-mark.png" width="206" height="144" alt="" decoding="async">
+    <div class="wrap">
+      <p class="eyebrow">Our mission</p>
+      <blockquote>To make the second half of a woman&#39;s health story as well understood,
+        as well supported and as <em>unremarkable to talk about</em> as the first.</blockquote>
+    </div>
+  </section>
+
+  <section class="section values">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">What we believe</p>
+        <h2>Three things we will not trade away</h2>
+      </div>
+      <div class="grid g3">
+      <article class="card">
+        <div class="icon-tile"><svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FBF6F0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 015 5c0 3-2 5-5 8-3-3-5-5-5-8a5 5 0 015-5z"></path><path d="M12 22c4-2 8-6 8-11"></path></svg></div>
+        <h3>Evidence over anecdote</h3>
+        <p>Every plan traces back to published research and a named clinician. If we cannot support it, we do not suggest it.</p>
+      </article>
+      <article class="card">
+        <div class="icon-tile"><svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FBF6F0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M5.6 5.6l1.4 1.4M3 12h2M5.6 18.4l1.4-1.4M12 19v2M17 17l1.4 1.4M19 12h2M17 7l1.4-1.4"></path><circle cx="12" cy="12" r="3.5"></circle></svg></div>
+        <h3>Built for Indian bodies</h3>
+        <p>Indian diets, Indian family structures, Indian clinics. Not a Western protocol with the units converted.</p>
+      </article>
+      <article class="card">
+        <div class="icon-tile"><svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FBF6F0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7 3v6c0 5-3 8.5-7 11-4-2.5-7-6-7-11V5z"></path><path d="M9.5 12l1.8 1.8L15 10"></path></svg></div>
+        <h3>Privacy is the product</h3>
+        <p>Health data is encrypted, never sold, and yours to delete at any time. We treat the DPDP Act as a floor, not a ceiling.</p>
+      </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="background:linear-gradient(180deg,var(--surface),var(--surface-container))">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">The people</p>
+        <h2>Clinicians, coaches and builders</h2>
+        <p>A small team of doctors, nutritionists and engineers, most of whom came to
+           this work through someone they love.</p>
+      </div>
+      <div class="team">
+      <article class="member">
+        <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true" focusable="false">
+          <circle cx="48" cy="48" r="47" fill="#5E3566"/>
+          <g stroke="#FBF6F0" stroke-width="1.3" opacity=".28">
+            <path d="M48 14c-10 14-15 24-15 34a15 15 0 0030 0c0-10-5-20-15-34z"/>
+            <path d="M33 27c-14-4-26-3-34 2 6 15 18 25 33 27"/>
+            <path d="M63 27c14-4 26-3 34 2-6 15-18 25-33 27"/>
+          </g>
+          <text x="48" y="60" text-anchor="middle" font-family="'Playfair Display',Georgia,serif"
+                font-size="30" font-weight="600" fill="#FBF6F0">MK</text>
+        </svg>
+        <h3>Meera Kulkarni</h3>
+        <p class="role">Founder &amp; CEO</p>
+        <p>Built Anuva after watching her mother navigate perimenopause with almost no guidance.</p>
+      </article>
+      <article class="member">
+        <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true" focusable="false">
+          <circle cx="48" cy="48" r="47" fill="#C97E92"/>
+          <g stroke="#FBF6F0" stroke-width="1.3" opacity=".28">
+            <path d="M48 14c-10 14-15 24-15 34a15 15 0 0030 0c0-10-5-20-15-34z"/>
+            <path d="M33 27c-14-4-26-3-34 2 6 15 18 25 33 27"/>
+            <path d="M63 27c14-4 26-3 34 2-6 15-18 25-33 27"/>
+          </g>
+          <text x="48" y="60" text-anchor="middle" font-family="'Playfair Display',Georgia,serif"
+                font-size="30" font-weight="600" fill="#FBF6F0">RD</text>
+        </svg>
+        <h3>Dr. Radhika Desai</h3>
+        <p class="role">Consultant Gynaecologist</p>
+        <p>Twenty years in women&#39;s health. Shapes the clinical protocols behind every care plan.</p>
+      </article>
+      <article class="member">
+        <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true" focusable="false">
+          <circle cx="48" cy="48" r="47" fill="#B8923C"/>
+          <g stroke="#FBF6F0" stroke-width="1.3" opacity=".28">
+            <path d="M48 14c-10 14-15 24-15 34a15 15 0 0030 0c0-10-5-20-15-34z"/>
+            <path d="M33 27c-14-4-26-3-34 2 6 15 18 25 33 27"/>
+            <path d="M63 27c14-4 26-3 34 2-6 15-18 25-33 27"/>
+          </g>
+          <text x="48" y="60" text-anchor="middle" font-family="'Playfair Display',Georgia,serif"
+                font-size="30" font-weight="600" fill="#FBF6F0">SN</text>
+        </svg>
+        <h3>Sneha Nair</h3>
+        <p class="role">Head of Nutrition</p>
+        <p>Designs the food plans, built around Indian kitchens rather than imported meal templates.</p>
+      </article>
+      <article class="member">
+        <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true" focusable="false">
+          <circle cx="48" cy="48" r="47" fill="#472852"/>
+          <g stroke="#FBF6F0" stroke-width="1.3" opacity=".28">
+            <path d="M48 14c-10 14-15 24-15 34a15 15 0 0030 0c0-10-5-20-15-34z"/>
+            <path d="M33 27c-14-4-26-3-34 2 6 15 18 25 33 27"/>
+            <path d="M63 27c14-4 26-3 34 2-6 15-18 25-33 27"/>
+          </g>
+          <text x="48" y="60" text-anchor="middle" font-family="'Playfair Display',Georgia,serif"
+                font-size="30" font-weight="600" fill="#FBF6F0">AV</text>
+        </svg>
+        <h3>Aditya Verma</h3>
+        <p class="role">Head of Product</p>
+        <p>Keeps the app quiet and kind: fewer taps, no dashboards that make you feel behind.</p>
+      </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap numbers">
+      <div><div class="n">2,000+</div><div class="l">Women supported</div></div>
+      <div><div class="n">40+</div><div class="l">Symptoms tracked</div></div>
+      <div><div class="n">4</div><div class="l">Expert disciplines</div></div>
+      <div><div class="n">24/7</div><div class="l">Anu AI companion</div></div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <div class="wrap">
+      <h2>Come find out what your body has been trying to tell you</h2>
+      <p>Start with the assessment. Fourteen days free, no card until you decide.</p>
+      <a class="btn btn-plum" href="https://app.anuvawellness.com">Start Your 14-Day Free Trial &rarr;</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="cols">
+    <div class="about">
+      <img src="/anuva-logo-mark.png" width="206" height="144" alt="" decoding="async">
+      <div class="wordmark">ANUVA <span>WELLNESS</span></div>
+      <p>Research-backed perimenopause care, personalized for you. Nutrition, expert
+         consultations, daily tracking and someone to ask at any hour.</p>
+      <div class="socials">
+        <a href="https://www.instagram.com/anuvawellness/" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Instagram"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.5"></rect><circle cx="12" cy="12" r="4.2"></circle><circle cx="17.4" cy="6.6" r="1.15" fill="currentColor" stroke="none"></circle></svg></a>
+        <a href="https://open.spotify.com/show/6mHEkv3QAvV6bsFXPOseb7" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Spotify"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"></circle><path d="M7.1 9.2c3.2-.9 6.8-.5 9.7 1.1"></path><path d="M7.9 12.3c2.7-.7 5.6-.4 8 1"></path><path d="M8.7 15.3c2.1-.5 4.3-.2 6.1.9"></path></svg></a>
+        <a href="https://podcasts.apple.com/in/podcast/unka-safar-hamari-awaaz/id1863621194" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Apple Podcasts"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"></circle><rect x="10.2" y="5.4" width="3.6" height="7.2" rx="1.8"></rect><path d="M8.4 11.7a3.6 3.6 0 007.2 0"></path><path d="M12 15.3v3"></path></svg></a>
+        <a href="https://music.amazon.in/podcasts/754f5095-1b26-4f95-ba18-0bce336f9677/unka-safar-hamari-awaaz" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Amazon Music"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"></circle><path d="M10.3 16.1V8.4l5-1.1v7.6"></path><ellipse cx="8.8" cy="16.2" rx="1.6" ry="1.4"></ellipse><ellipse cx="13.8" cy="15.1" rx="1.6" ry="1.4"></ellipse></svg></a>
+        <a href="https://www.linkedin.com/company/anuva-wellness/" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on LinkedIn"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4.5"></rect><path d="M7.4 10.6v6.2"></path><circle cx="7.4" cy="7.6" r="1.05" fill="currentColor" stroke="none"></circle><path d="M11.5 16.8v-6.2M11.5 13.4c0-1.7 1-2.9 2.6-2.9s2.6 1.2 2.6 2.9v3.4"></path></svg></a>
+        <a href="https://www.facebook.com/people/Anuva-Wellness/61584368121917/" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Facebook"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"></circle><path d="M14.6 8h-1.3a1.8 1.8 0 00-1.8 1.8v7.8"></path><path d="M9.6 12h4.3"></path></svg></a>
+      </div>
+    </div>
+
+    <div>
+      <h2>Explore</h2>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/#symptoms">Symptoms</a></li>
+        <li><a href="/#how-it-works">How It Works</a></li>
+        <li><a href="/#included">What&#39;s Included</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/#faqs">FAQs</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h2>Company</h2>
+      <ul>
+        <li><a href="/about">About Us</a></li>
+        <li><a href="/contact">Contact Us</a></li>
+        <li><a href="https://open.spotify.com/show/6mHEkv3QAvV6bsFXPOseb7" target="_blank" rel="noopener noreferrer">Our Podcast <span class="ext" aria-hidden="true">&#8599;</span></a></li>
+        <li><a href="https://app.anuvawellness.com">Start Free Trial</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h2>Legal</h2>
+      <ul>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms &amp; Conditions</a></li>
+        <li><a href="https://www.meity.gov.in/data-protection-framework" target="_blank" rel="noopener noreferrer">DPDP Act, 2023 <span class="ext" aria-hidden="true">&#8599;</span></a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="base">
+    <span>&copy; 2026 ANUVA Wellness. All rights reserved.</span>
+    <span>Made with care in India &middot; <a href="/contact">Get in touch</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

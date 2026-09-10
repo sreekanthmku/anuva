@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Wordmark } from '../shell/Wordmark';
 
 /**
  * The frame both unauthenticated screens sit in — claiming an invite, and signing back in. Kept in
@@ -6,20 +7,9 @@ import type { ReactNode } from 'react';
  */
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <main className="min-h-mobile bg-surface px-5 pb-10 pt-[max(2rem,env(safe-area-inset-top))]">
+    <main className="min-h-mobile px-5 pb-10 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto w-full max-w-[420px]">
-        <div className="flex items-center gap-2.5">
-          <img src="/anuva-logo-icon.png" alt="" className="h-9 w-9 object-contain" aria-hidden />
-          <div>
-            <div
-              className="text-[15px] tracking-[0.14em] text-on-surface"
-              style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
-            >
-              anuva family
-            </div>
-            <p className="font-script text-[13px] text-secondary">a soft place to land.</p>
-          </div>
-        </div>
+        <Wordmark />
         <div className="mt-7">{children}</div>
       </div>
     </main>

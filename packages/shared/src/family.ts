@@ -415,6 +415,27 @@ export const familyRemindLaterResponseSchema = z.object({
   toast: z.string(),
 });
 
+/**
+ * Her side of the loop, closed: she taps "thank you" on a gesture and the person who made it gets
+ * told, as a smiley on their lock screen.
+ *
+ * Nothing is stored. There is no thank-you thread, no counter, no history — the whole point is that
+ * a gesture was received, and that fact only has to survive as long as the notification does. The
+ * gesture it answers travels along so the push can name it ("your roses", "your note"); when it is
+ * absent the push says the plain thing instead.
+ */
+export const familyThanksBodySchema = z.object({
+  kind: familySupportActionKindSchema.optional(),
+  /** Which family member to thank. Omitted means every member connected to her right now. */
+  memberId: z.string().min(1).optional(),
+});
+
+export const familyThanksResponseSchema = z.object({
+  /** False when nobody on the other side has a device registered. Worth not pretending otherwise. */
+  delivered: z.boolean(),
+  toast: z.string(),
+});
+
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
@@ -464,3 +485,5 @@ export type FamilyMessageResponse = z.infer<typeof familyMessageResponseSchema>;
 export type FamilySupportActionBody = z.infer<typeof familySupportActionBodySchema>;
 export type FamilySupportActionResponse = z.infer<typeof familySupportActionResponseSchema>;
 export type FamilyRemindLaterResponse = z.infer<typeof familyRemindLaterResponseSchema>;
+export type FamilyThanksBody = z.infer<typeof familyThanksBodySchema>;
+export type FamilyThanksResponse = z.infer<typeof familyThanksResponseSchema>;

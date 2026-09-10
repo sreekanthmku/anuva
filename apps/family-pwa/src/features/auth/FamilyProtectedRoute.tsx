@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
+import { Wordmark } from '../shell/Wordmark';
 import { useFamilyAuth } from './family-auth-context';
 
 export function FamilyProtectedRoute({ children }: { children: ReactNode }) {
@@ -7,15 +8,10 @@ export function FamilyProtectedRoute({ children }: { children: ReactNode }) {
 
   if (status === 'loading') {
     return (
-      <main className="flex min-h-mobile items-center justify-center bg-surface px-6 text-center">
-        <div>
-          <p
-            className="text-[15px] tracking-[0.14em] text-on-surface"
-            style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
-          >
-            anuva family
-          </p>
-          <p className="mt-2 text-[13px] text-on-surface-variant">Checking your link…</p>
+      <main className="flex min-h-mobile items-center justify-center px-6">
+        <div className="animate-[anuvaFade_400ms_ease-out] text-center">
+          <Wordmark className="justify-center" />
+          <p className="mt-4 text-[13px] text-on-surface-variant">Checking your link…</p>
         </div>
       </main>
     );

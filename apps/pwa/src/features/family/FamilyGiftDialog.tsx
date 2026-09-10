@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { twemojiUrl } from '../../shared/lib/twemoji';
+import { sendFamilyThanks } from './api';
 import type { FamilyGift, FamilyGiftKind } from './familyMessageLink';
 
 /**
@@ -21,19 +22,23 @@ const GIFT: Record<
     /** Small pieces drifting behind the gift. Two or three, no more — this is a breeze, not confetti. */
     fall: string[];
     eyebrow: (from: string) => string;
-    headline: string;
-    body: (from: string) => string;
+    /**
+     * Null for roses on purpose. Flowers do not need explaining — the picture *is* the message, and
+     * a paragraph underneath turns a gesture into a greeting card. Chocolates keep a line because a
+     * bar of chocolate on its own reads as a snack rather than as somebody thinking of her.
+     */
+    headline: string | null;
+    body: ((from: string) => string) | null;
     /** Warm wash behind the emoji. Kept in the brand's plum/rose/gold family. */
     glow: string;
   }
 > = {
   flowers: {
-    emoji: '💐',
-    fall: ['🌸', '🌷', '🌼'],
-    eyebrow: (from) => `${from} sent you flowers`,
-    headline: 'A little bouquet, just for you.',
-    body: (from) =>
-      `No occasion, nothing to answer. ${from} was thinking of you today and wanted you to know you are not carrying this on your own.`,
+    emoji: '🌹',
+    fall: ['🌹', '🌸', '🌷'],
+    eyebrow: (from) => `${from} sent you roses`,
+    headline: null,
+    body: null,
     glow: 'radial-gradient(circle at 50% 42%, rgba(201,126,146,0.30), rgba(201,126,146,0) 68%)',
   },
   chocolates: {
@@ -63,6 +68,8 @@ export function FamilyGiftDialog({
   gift: FamilyGift | null;
   onDismiss: () => void;
 }) {
+  const [thanking, setThanking] = useState(false);
+
   // Hooks before the early return: the dialog mounts and unmounts as the gift arrives.
   const lanes = useMemo(
     () =>
@@ -79,6 +86,18 @@ export function FamilyGiftDialog({
 
   const copy = GIFT[gift.kind];
   const mulish = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' };
+
+  /**
+   * The close button doubles as the reply. There is nothing else she can do with a gift, and the
+   * one thing the sender wants to know is that it arrived — so the tap that dismisses it is the tap
+   * that tells them. Delivery is fire-and-forget: a failed push must not keep the card on screen.
+   */
+  const thankAndClose = () => {
+    if (thanking) return;
+    setThanking(true);
+    void sendFamilyThanks({ kind: gift.kind }).catch(() => undefined);
+    onDismiss();
+  };
 
   return (
     <div
@@ -124,12 +143,13 @@ export function FamilyGiftDialog({
         />
 
         <div className="relative">
+          {/* Bigger when the picture is carrying the whole card on its own. */}
           <img
             src={twemojiUrl(copy.emoji)}
             alt=""
             aria-hidden
-            width={92}
-            height={92}
+            width={copy.headline ? 92 : 124}
+            height={copy.headline ? 92 : 124}
             className="mx-auto animate-[giftPop_680ms_cubic-bezier(0.16,1,0.3,1)]"
             style={{ filter: 'drop-shadow(0 10px 18px rgba(94,53,102,0.22))' }}
           />
@@ -142,31 +162,35 @@ export function FamilyGiftDialog({
             {copy.eyebrow(gift.from)}
           </p>
 
-          <h2
-            className="mt-2.5 text-[23px] leading-[1.25] text-on-surface"
-            style={{ fontFamily: '"Fraunces", serif', fontWeight: 400 }}
-          >
-            {copy.headline}
-          </h2>
+          {copy.headline ? (
+            <h2
+              className="mt-2.5 text-[23px] leading-[1.25] text-on-surface"
+              style={{ fontFamily: '"Fraunces", serif', fontWeight: 400 }}
+            >
+              {copy.headline}
+            </h2>
+          ) : null}
 
-          <p
-            className="mt-3 text-[14px] leading-[1.6] text-on-surface-variant"
-            style={mulish}
-          >
-            {copy.body(gift.from)}
-          </p>
+          {copy.body ? (
+            <p className="mt-3 text-[14px] leading-[1.6] text-on-surface-variant" style={mulish}>
+              {copy.body(gift.from)}
+            </p>
+          ) : null}
 
           {/* Gold hairline — the same divider the rest of the app uses to mark a warm aside. */}
           <span className="mx-auto mt-5 block h-px w-12 bg-tertiary/50" aria-hidden />
 
           <button
             type="button"
-            onClick={onDismiss}
+            onClick={thankAndClose}
             className="mt-5 min-h-[48px] w-full rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary shadow-[0_10px_24px_rgba(201,126,146,0.32)]"
             style={mulish}
           >
             Thank you 💛
           </button>
+          <p className="mt-2 text-[11px] text-outline" style={mulish}>
+            {gift.from} gets a smiley on their phone.
+          </p>
         </div>
       </div>
 

@@ -11,12 +11,12 @@ import { dayKey } from '../dayKey.js';
 const TOASTS: Record<FamilySupportActionKind, string> = {
   message: '✓ Message sent. She will see that you thought of her.',
   call: '✓ Call logged. A voice helps more than a text on a hard day.',
-  flowers: '✓ Virtual flowers sent. They are on her phone now.',
+  flowers: '✓ Roses sent. They are on her phone now.',
   chocolates: '✓ Virtual chocolates sent. They are on her phone now.',
 };
 
 /**
- * The two gestures that are *delivered* rather than merely recorded. Real flowers and chocolates
+ * The two gestures that are *delivered* rather than merely recorded. Real roses and chocolates
  * are a later phase; until then these arrive as a push and a card in her app, which is a real thing
  * happening on her screen rather than a row only her family can see.
  */
@@ -30,8 +30,8 @@ function isGiftKind(kind: FamilySupportActionKind): kind is FamilyGiftKind {
 /** Phrased for her lock screen. Short — the whole gesture has to survive a notification preview. */
 const GIFT_PUSH: Record<FamilyGiftKind, { title: (first: string) => string; body: string }> = {
   flowers: {
-    title: (first) => `${first} sent you flowers 💐`,
-    body: 'A bouquet, thinking of you today. Tap to open it.',
+    title: (first) => `${first} sent you roses 🌹`,
+    body: 'Thinking of you today. Tap to open them.',
   },
   chocolates: {
     title: (first) => `${first} sent you chocolates 🍫`,
@@ -80,7 +80,7 @@ async function deliverGift(input: {
 
 /**
  * Which actions they have already taken today. Doing one does not use up the day — messaging her and
- * sending flowers are both worth doing — so this returns the set rather than a boolean, and the
+ * sending roses are both worth doing — so this returns the set rather than a boolean, and the
  * client marks what is done instead of disabling the button.
  */
 export async function kindsDoneToday(
@@ -108,7 +108,7 @@ export async function recordSupportAction(input: {
   // unique index on (member, day, kind) is what keeps both true, and caps this at four rows a day.
   //
   // `count` distinguishes the first tap of the day from a re-tap, which the gift kinds need:
-  // recording twice is harmless, but notifying her twice for the same bouquet is not.
+  // recording twice is harmless, but notifying her twice for the same roses is not.
   const { count } = await prisma.familySupportAction.createMany({
     data: [
       {
@@ -132,7 +132,7 @@ export async function recordSupportAction(input: {
       completedToday: true,
       toast:
         input.kind === 'flowers'
-          ? 'Already sent her flowers today. She has them.'
+          ? 'Already sent her roses today. She has them.'
           : 'Already sent her chocolates today. She has them.',
       delivered: true,
     };

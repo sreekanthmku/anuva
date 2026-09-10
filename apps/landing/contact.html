@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact Us | ANUVA Wellness</title>
+<meta name="description" content="Questions about your plan, your subscription or your data? Send the Anuva Wellness team a message and a real person will reply within two working days.">
+<meta name="theme-color" content="#F7F0E8">
+<link rel="icon" type="image/png" href="/anuva-logo-icon.png">
+<link rel="apple-touch-icon" href="/anuva-logo-icon.png">
+<meta property="og:title" content="Contact Us | ANUVA Wellness">
+<meta property="og:description" content="Questions about your plan, your subscription or your data? Send the Anuva Wellness team a message and a real person will reply within two working days.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Mulish:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/page.css">
+<style>
+  .contact{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:start;
+    padding:64px 0 88px}
+  .form-card{background:var(--surface-low);border:1px solid var(--line);border-radius:26px;
+    padding:36px 34px;box-shadow:var(--shadow)}
+  .form-card h2{font-size:26px;font-weight:600;margin:0 0 8px}
+  .form-card .sub{font-size:15px;line-height:1.6;color:var(--ink-body);margin:0 0 28px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .form-card .btn{width:100%;margin-top:8px}
+  .side .card{margin-bottom:20px}
+  .side .card h3{display:flex;align-items:center;gap:10px}
+  .side .card h3 svg{flex:none;color:var(--plum)}
+  .side .card a{font-weight:600;word-break:break-word}
+  .side .hours{display:flex;flex-direction:column;gap:9px;margin:12px 0 0;padding:0;list-style:none}
+  .side .hours li{display:flex;justify-content:space-between;gap:14px;font-size:14px;color:var(--ink-body)}
+  .side .hours b{color:var(--ink);font-weight:700}
+  @media (max-width:900px){
+    .contact{grid-template-columns:1fr;gap:32px;padding:48px 0 64px}
+  }
+  @media (max-width:520px){
+    .row{grid-template-columns:1fr;gap:0}
+    .form-card{padding:28px 22px}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="bar">
+    <a class="brand" href="/" aria-label="ANUVA WELLNESS - home">
+      <img src="/anuva-logo-mark.png" width="206" height="144" alt="" decoding="async">
+      <span class="wordmark">ANUVA <span>WELLNESS</span></span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+        <a href="/contact" aria-current="page">Contact</a>
+    </nav>
+    <a class="header-cta" href="https://app.anuvawellness.com">Start Free Trial</a>
+    <details class="menu">
+      <summary aria-label="Navigation menu">&#9776;</summary>
+      <div class="menu-panel">
+          <a href="/">Home</a>
+          <a href="/about">About</a>
+          <a href="/contact" aria-current="page">Contact</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms &amp; Conditions</a>
+          <a href="https://app.anuvawellness.com">Start Free Trial</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main id="main">
+  <section class="masthead">
+    <div class="wrap">
+      <p class="eyebrow">Contact us</p>
+      <h1>Tell us what you need</h1>
+      <p>Questions about your plan, your subscription or your data, or just want to
+         talk to a human before you start. Write to us and a real person answers.</p>
+    </div>
+  </section>
+
+  <div class="wrap contact">
+    <div class="form-card">
+      <h2>Send us a message</h2>
+      <p class="sub">We reply to everything within two working days, usually sooner.</p>
+
+      <form id="contact-form" novalidate>
+        <div class="row">
+          <div class="field">
+            <label for="name">Your name</label>
+            <input id="name" name="name" type="text" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="email">Email address</label>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="subject">What is this about?</label>
+          <select id="subject" name="subject" required>
+            <option value="General enquiry">General enquiry</option>
+            <option value="My subscription or billing">My subscription or billing</option>
+            <option value="Expert consultations">Expert consultations</option>
+            <option value="Privacy or my data (DPDP request)">Privacy or my data (DPDP request)</option>
+            <option value="Partnerships and press">Partnerships and press</option>
+            <option value="Something went wrong">Something went wrong</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="message">Your message</label>
+          <textarea id="message" name="message" required
+            placeholder="Tell us as much or as little as you like."></textarea>
+          <span class="help">Please do not include passwords or payment details.</span>
+        </div>
+
+        <!-- Web3Forms honeypot: bots fill every field, so a checked box marks the submission spam. -->
+        <input type="checkbox" name="botcheck" id="botcheck" tabindex="-1" aria-hidden="true"
+               style="display:none !important">
+
+        <button class="btn btn-cta" type="submit">Send message</button>
+        <p class="form-note" id="note" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+
+    <div class="side">
+      <article class="card">
+        <h3><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="M3.5 7.5l8.5 6 8.5-6"></path></svg> Email us</h3>
+        <p>Prefer your own inbox? Write to<br><a href="mailto:hello@anuvawellness.com">hello@anuvawellness.com</a></p>
+      </article>
+
+      <article class="card">
+        <h3><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5.2l3.4 2"></path></svg> When we reply</h3>
+        <ul class="hours">
+          <li><span>Monday to Friday</span> <b>Within 1 day</b></li>
+          <li><span>Weekends</span> <b>Within 2 days</b></li>
+          <li><span>Data requests</span> <b>Within 30 days</b></li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h3><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7 3v6c0 5-3 8.5-7 11-4-2.5-7-6-7-11V5z"></path></svg> Privacy &amp; your data</h3>
+        <p>To see, correct or delete what we hold, contact our Grievance Officer at
+           <a href="mailto:privacy@anuvawellness.com">privacy@anuvawellness.com</a>. Your rights are set out in our
+           <a href="/privacy">Privacy Policy</a> and in the
+           <a href="https://www.meity.gov.in/data-protection-framework" target="_blank" rel="noopener noreferrer">DPDP Act, 2023 <span class="ext" aria-hidden="true">&#8599;</span></a>.</p>
+      </article>
+
+      <article class="card">
+        <h3><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4-4-8-7.5-8-12a5 5 0 019-3 5 5 0 019 3c0 4.5-4 8-8 12z"></path></svg> Not for emergencies</h3>
+        <p>Anuva is not an emergency service. If you need urgent medical help, contact your
+           doctor or your nearest emergency department.</p>
+      </article>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="cols">
+    <div class="about">
+      <img src="/anuva-logo-mark.png" width="206" height="144" alt="" decoding="async">
+      <div class="wordmark">ANUVA <span>WELLNESS</span></div>
+      <p>Research-backed perimenopause care, personalized for you. Nutrition, expert
+         consultations, daily tracking and someone to ask at any hour.</p>
+      <div class="socials">
+        <a href="https://www.instagram.com/anuvawellness/" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Instagram"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.5"></rect><circle cx="12" cy="12" r="4.2"></circle><circle cx="17.4" cy="6.6" r="1.15" fill="currentColor" stroke="none"></circle></svg></a>
+        <a href="https://open.spotify.com/show/6mHEkv3QAvV6bsFXPOseb7" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Spotify"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"></circle><path d="M7.1 9.2c3.2-.9 6.8-.5 9.7 1.1"></path><path d="M7.9 12.3c2.7-.7 5.6-.4 8 1"></path><path d="M8.7 15.3c2.1-.5 4.3-.2 6.1.9"></path></svg></a>
+        <a href="https://podcasts.apple.com/in/podcast/unka-safar-hamari-awaaz/id1863621194" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Apple Podcasts"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"></circle><rect x="10.2" y="5.4" width="3.6" height="7.2" rx="1.8"></rect><path d="M8.4 11.7a3.6 3.6 0 007.2 0"></path><path d="M12 15.3v3"></path></svg></a>
+        <a href="https://music.amazon.in/podcasts/754f5095-1b26-4f95-ba18-0bce336f9677/unka-safar-hamari-awaaz" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Amazon Music"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"></circle><path d="M10.3 16.1V8.4l5-1.1v7.6"></path><ellipse cx="8.8" cy="16.2" rx="1.6" ry="1.4"></ellipse><ellipse cx="13.8" cy="15.1" rx="1.6" ry="1.4"></ellipse></svg></a>
+        <a href="https://www.linkedin.com/company/anuva-wellness/" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on LinkedIn"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4.5"></rect><path d="M7.4 10.6v6.2"></path><circle cx="7.4" cy="7.6" r="1.05" fill="currentColor" stroke="none"></circle><path d="M11.5 16.8v-6.2M11.5 13.4c0-1.7 1-2.9 2.6-2.9s2.6 1.2 2.6 2.9v3.4"></path></svg></a>
+        <a href="https://www.facebook.com/people/Anuva-Wellness/61584368121917/" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Facebook"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"></circle><path d="M14.6 8h-1.3a1.8 1.8 0 00-1.8 1.8v7.8"></path><path d="M9.6 12h4.3"></path></svg></a>
+      </div>
+    </div>
+
+    <div>
+      <h2>Explore</h2>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/#symptoms">Symptoms</a></li>
+        <li><a href="/#how-it-works">How It Works</a></li>
+        <li><a href="/#included">What&#39;s Included</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/#faqs">FAQs</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h2>Company</h2>
+      <ul>
+        <li><a href="/about">About Us</a></li>
+        <li><a href="/contact">Contact Us</a></li>
+        <li><a href="https://open.spotify.com/show/6mHEkv3QAvV6bsFXPOseb7" target="_blank" rel="noopener noreferrer">Our Podcast <span class="ext" aria-hidden="true">&#8599;</span></a></li>
+        <li><a href="https://app.anuvawellness.com">Start Free Trial</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h2>Legal</h2>
+      <ul>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms &amp; Conditions</a></li>
+        <li><a href="https://www.meity.gov.in/data-protection-framework" target="_blank" rel="noopener noreferrer">DPDP Act, 2023 <span class="ext" aria-hidden="true">&#8599;</span></a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="base">
+    <span>&copy; 2026 ANUVA Wellness. All rights reserved.</span>
+    <span>Made with care in India &middot; <a href="/contact">Get in touch</a></span>
+  </div>
+</footer>
+
+<script>
+  // ── Web3Forms. The key is substituted at build time from the WEB3FORMS_ACCESS_KEY
+  //    environment variable (see buildCommand in vercel.json), exactly as on
+  //    coming-soon.html, so both forms land in the same inbox and neither commits
+  //    the key. It still ships in the served HTML — it has to reach the browser —
+  //    which Web3Forms considers fine: the key is a public alias for the
+  //    destination inbox, not a secret. Opening this file without a build leaves
+  //    the placeholder, and the form disables itself rather than accepting
+  //    messages it has nowhere to put.
+  var WEB3FORMS_ACCESS_KEY = '__WEB3FORMS_ACCESS_KEY__';
+  var WEB3FORMS_URL = 'https://api.web3forms.com/submit';
+
+  (function () {
+    var form = document.getElementById('contact-form');
+    var name = document.getElementById('name');
+    var email = document.getElementById('email');
+    var subject = document.getElementById('subject');
+    var message = document.getElementById('message');
+    var honeypot = document.getElementById('botcheck');
+    var button = form.querySelector('button');
+    var note = document.getElementById('note');
+
+    function say(text, isError) {
+      note.textContent = text;
+      note.className = isError ? 'form-note err' : 'form-note';
+    }
+
+    // Empty means the env var was unset at build time; a leading "__" means no build ran.
+    if (!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY.indexOf('__') === 0) {
+      [name, email, subject, message, button].forEach(function (el) { el.disabled = true; });
+      say('The contact form is not available just now. Please email hello@anuvawellness.com.');
+      return;
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      if (!name.value.trim()) { say('Please tell us your name.', true); name.focus(); return; }
+      if (!email.value.trim() || !email.checkValidity()) {
+        say('That email does not look right. Mind checking it?', true); email.focus(); return;
+      }
+      if (message.value.trim().length < 10) {
+        say('Please add a little more detail so we can help.', true); message.focus(); return;
+      }
+
+      button.disabled = true;
+      say('Sending\u2026');
+
+      fetch(WEB3FORMS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_ACCESS_KEY,
+          name: name.value.trim(),
+          email: email.value.trim(),
+          message: message.value.trim(),
+          botcheck: honeypot.checked,
+          subject: 'Anuva contact: ' + subject.value,
+          from_name: 'Anuva: contact page'
+        })
+      })
+        .then(function (response) {
+          return response.json().catch(function () { return { success: response.ok }; });
+        })
+        .then(function (data) {
+          // Web3Forms answers 200 with {success:false} on a rejected key or spam hit,
+          // so the body decides, not the status.
+          if (!data || data.success !== true) throw new Error(data && data.message);
+          form.hidden = true;
+          say('Thank you \u2014 your message is in. We will reply within two working days.');
+        })
+        .catch(function () {
+          button.disabled = false;
+          say('That did not go through. Please try again, or email hello@anuvawellness.com.', true);
+        });
+    });
+  })();
+</script>
+</body>
+</html>

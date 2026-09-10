@@ -12,6 +12,7 @@
  *   POST   /family/invites/:id/shared     record that she sent it — the only thing that closes the gate
  *   POST   /family/invites/:id/revoke     kill a pending link
  *   GET    /family/activity               what her family actually did — her side of the loop
+ *   POST   /family/thanks                 she says thank you; a smiley lands on their phone
  *   DELETE /family/members/:id            disconnect the family member, freeing the slot
  *
  * Public (guarded by the invite token alone):
@@ -57,6 +58,8 @@ import {
   familyRemindLaterResponseSchema,
   familySupportActionBodySchema,
   familySupportActionResponseSchema,
+  familyThanksBodySchema,
+  familyThanksResponseSchema,
   familyTodayResponseSchema,
   familySignInRequestOtpBodySchema,
   familySignInRequestOtpResponseSchema,
@@ -87,6 +90,7 @@ import { buildFamilyLearn, buildFamilyPrivacy, buildFamilyToday } from './digest
 import { familyArticle } from './articles.js';
 import { familyMeBody, previewInvite, requestJoinOtp, verifyJoinOtp, type OtpDeps } from './join.js';
 import { sendFamilyMessage } from './messages.js';
+import { sendFamilyThanks } from './thanks.js';
 import { requestSignInOtp, verifySignInOtp } from './signin.js';
 import { registerFamilyToken, unregisterFamilyToken } from './push.js';
 import { rateLimit } from './rateLimit.js';
@@ -143,6 +147,23 @@ export function createFamilyRouter({
       noStore(res);
       const userId = await resolveUserId(req);
       res.json(familyActivityResponseSchema.parse(await buildFamilyActivity(userId)));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  /**
+   * The only route that pushes *from* her toward her family. Patient-authenticated, so a family
+   * member cannot fabricate a thank-you from her.
+   */
+  router.post('/thanks', async (req, res, next) => {
+    try {
+      noStore(res);
+      const userId = await resolveUserId(req);
+      const body = familyThanksBodySchema.parse(req.body ?? {});
+      const result = await sendFamilyThanks({ userId, kind: body.kind, memberId: body.memberId });
+      req.log?.info?.({ kind: body.kind, delivered: result.delivered }, 'family: thanks pushed');
+      res.json(familyThanksResponseSchema.parse(result));
     } catch (e) {
       next(e);
     }

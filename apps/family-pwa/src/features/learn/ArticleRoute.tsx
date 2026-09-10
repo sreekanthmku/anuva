@@ -46,9 +46,9 @@ function ArticleView({ slug }: { slug: string }) {
     <article className="space-y-5">
       <BackLink />
 
-      <header>
+      <header className="animate-[anuvaRise_420ms_cubic-bezier(0.16,1,0.3,1)]">
         <Eyebrow>Topic {String(article.number).padStart(2, '0')}</Eyebrow>
-        <h1 className="font-display text-[27px] leading-[1.15] text-on-surface">{article.title}</h1>
+        <h1 className="font-display text-[28px] font-medium leading-[1.14] text-primary">{article.title}</h1>
         <p className="mt-2 text-[15px] leading-[1.5] text-on-surface-variant">{article.teaser}</p>
         <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-outline">
           <span>{article.readingMinutes} min read</span>
@@ -66,15 +66,17 @@ function ArticleView({ slug }: { slug: string }) {
       </div>
 
       {article.action ? (
-        <Card className="px-5 py-5">
-          <SectionLabel>{article.action.label}</SectionLabel>
+        <Card tone="quiet" className="px-5 py-5">
+          <Eyebrow>{article.action.label}</Eyebrow>
           <p className="text-[14.5px] leading-[1.6] text-on-surface">{article.action.text}</p>
         </Card>
       ) : null}
 
-      <Card className="border-secondary/30 bg-secondary/[0.07] px-5 py-5">
-        <SectionLabel>{article.sayingLabel}</SectionLabel>
-        <p className="font-display text-[17px] leading-[1.45] text-on-surface">
+      {/* The line they can actually say out loud gets the rose ground — it is the one thing on the
+          page meant to leave the screen. */}
+      <Card tone="accent" className="px-5 py-5">
+        <Eyebrow>{article.sayingLabel}</Eyebrow>
+        <p className="font-display text-[18px] font-medium italic leading-[1.45] text-primary">
           “{article.saying}”
         </p>
       </Card>
@@ -111,7 +113,7 @@ function BackLink() {
   return (
     <Link
       to="/learn"
-      className="inline-flex min-h-[44px] items-center gap-1.5 text-[13.5px] font-semibold text-primary"
+      className="press inline-flex min-h-[44px] items-center gap-1 rounded-full border border-border-default bg-surface-raised pl-2.5 pr-4 text-[13px] font-semibold text-primary shadow-soft"
     >
       <svg
         width="18"

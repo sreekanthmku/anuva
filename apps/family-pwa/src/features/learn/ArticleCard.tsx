@@ -16,13 +16,13 @@ export function ArticleCard({ article }: { article: FamilyArticleSummary }) {
     <li>
       <Link
         to={`/learn/${article.slug}`}
-        className="flex min-h-[44px] items-start gap-3 rounded-[18px] border border-border-default bg-surface-raised px-4 py-4 transition-colors active:bg-surface-container"
+        className="press flex min-h-[44px] items-start gap-3.5 rounded-[22px] border border-border-default bg-surface-raised px-4 py-4 shadow-soft transition-colors active:bg-surface-container-low"
       >
-        <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-fixed text-[12px] font-semibold tabular-nums text-primary">
+        <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-fixed font-display text-[12.5px] font-semibold tabular-nums text-primary">
           {String(article.number).padStart(2, '0')}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-[16px] leading-snug text-on-surface">
+          <span className="block font-display text-[16px] font-medium leading-snug text-on-surface">
             {article.title}
           </span>
           <span className="mt-1 block text-[13px] leading-[1.5] text-on-surface-variant">

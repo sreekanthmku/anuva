@@ -21,7 +21,7 @@ export function readFamilyMessageFromHash(hash: string): FamilyMessage | null {
 }
 
 /**
- * The gift kinds her family can send today. Virtual only — a real bouquet is a later phase — so
+ * The gift kinds her family can send today. Virtual only — real roses are a later phase — so
  * what arrives is a card, and the card is the gift.
  */
 export type FamilyGiftKind = 'flowers' | 'chocolates';

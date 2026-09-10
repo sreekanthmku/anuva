@@ -234,7 +234,11 @@ export default function AnuDashboardRoute() {
       showToast('Could not log right now. Try again.');
     }
   };
-  const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
+  // Capitalised on the way out rather than trusted from the profile: names arrive from an OTP
+  // sign-up where people type "sneha" as often as "Sneha", and the dashboard heading is the one
+  // place in the app that renders her name at 40px.
+  const rawFirstName = user?.name?.trim().split(/\s+/)[0] || 'there';
+  const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1);
   const profileInitial = firstName.charAt(0).toUpperCase() || 'U';
   const journeyAnchor = getCalibrationAnchor(user);
   const isCalibrating = isWellnessCalibrating(journeyAnchor);

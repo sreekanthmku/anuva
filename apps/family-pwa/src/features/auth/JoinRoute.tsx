@@ -142,8 +142,7 @@ export default function JoinRoute() {
     return (
       <AuthShell>
         <h1
-          className="text-[24px] leading-[1.2] text-on-surface"
-          style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
+          className="font-display text-[26px] font-medium leading-[1.18] text-primary"
         >
           {claimed ? 'Someone already joined' : 'This link is not active'}
         </h1>
@@ -155,7 +154,7 @@ export default function JoinRoute() {
         </p>
         <Link
           to="/signin"
-          className="mt-6 inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary"
+          className="press mt-6 inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-gradient-to-br from-[#D08C9E] via-secondary to-[#B96C84] px-5 text-[15px] font-bold text-on-secondary shadow-[0_10px_24px_-8px_rgba(201,126,146,0.75)]"
           style={mulish}
         >
           Sign in with your phone
@@ -177,10 +176,7 @@ export default function JoinRoute() {
       >
         {step === 'code' ? 'Step 2 of 2' : 'Step 1 of 2'}
       </div>
-      <h1
-        className="mt-2 text-[24px] leading-[1.2] text-on-surface"
-        style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
-      >
+      <h1 className="mt-2 font-display text-[26px] font-medium leading-[1.18] text-primary">
         {step === 'code' ? 'Enter your code' : `${her} asked you to support her`}
       </h1>
 
@@ -209,7 +205,7 @@ export default function JoinRoute() {
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 autoComplete="name"
-                className="mt-1.5 h-12 w-full rounded-[14px] border border-border-default bg-surface-raised px-4 text-[15px] text-on-surface"
+                className="mt-1.5 h-[52px] w-full rounded-[16px] border border-border-default bg-surface-raised px-4 text-[15px] text-on-surface shadow-soft focus:border-secondary focus:ring-2 focus:ring-secondary/25"
                 style={mulish}
               />
             </label>
@@ -221,7 +217,7 @@ export default function JoinRoute() {
               <select
                 value={relationship}
                 onChange={(event) => setRelationship(event.target.value as FamilyRelationship)}
-                className="mt-1.5 h-12 w-full rounded-[14px] border border-border-default bg-surface-raised px-4 text-[15px] text-on-surface"
+                className="mt-1.5 h-[52px] w-full rounded-[16px] border border-border-default bg-surface-raised px-4 text-[15px] text-on-surface shadow-soft focus:border-secondary focus:ring-2 focus:ring-secondary/25"
                 style={mulish}
               >
                 {RELATIONSHIPS.map((option) => (
@@ -244,7 +240,7 @@ export default function JoinRoute() {
                 autoComplete="tel"
                 inputMode="tel"
                 placeholder="+91"
-                className="mt-1.5 h-12 w-full rounded-[14px] border border-border-default bg-surface-raised px-4 text-[15px] text-on-surface"
+                className="mt-1.5 h-[52px] w-full rounded-[16px] border border-border-default bg-surface-raised px-4 text-[15px] text-on-surface shadow-soft focus:border-secondary focus:ring-2 focus:ring-secondary/25"
                 style={mulish}
               />
               <span className="mt-1.5 block text-[11.5px] text-outline" style={mulish}>
@@ -262,7 +258,7 @@ export default function JoinRoute() {
             <button
               type="submit"
               disabled={busy || !name.trim() || !phone.trim()}
-              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary disabled:opacity-60"
+              className="press inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-gradient-to-br from-[#D08C9E] via-secondary to-[#B96C84] px-5 text-[15px] font-bold text-on-secondary shadow-[0_10px_24px_-8px_rgba(201,126,146,0.75)] disabled:opacity-55 disabled:shadow-none"
               style={mulish}
             >
               {busy ? 'Sending code…' : 'Send me a code'}
@@ -293,7 +289,7 @@ export default function JoinRoute() {
               maxLength={8}
               value={code}
               onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
-              className="mt-1.5 h-12 w-full rounded-[14px] border border-border-default bg-surface-raised px-4 font-mono text-[18px] tracking-[0.3em] text-on-surface"
+              className="mt-1.5 h-[52px] w-full rounded-[16px] border border-border-default bg-surface-raised px-4 text-center font-mono text-[20px] tracking-[0.4em] text-on-surface shadow-soft focus:border-secondary focus:ring-2 focus:ring-secondary/25"
             />
           </label>
 
@@ -306,7 +302,7 @@ export default function JoinRoute() {
           <button
             type="submit"
             disabled={busy || code.length < 4}
-            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary disabled:opacity-60"
+            className="press inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-gradient-to-br from-[#D08C9E] via-secondary to-[#B96C84] px-5 text-[15px] font-bold text-on-secondary shadow-[0_10px_24px_-8px_rgba(201,126,146,0.75)] disabled:opacity-55 disabled:shadow-none"
             style={mulish}
           >
             {busy ? 'Checking…' : 'Join'}

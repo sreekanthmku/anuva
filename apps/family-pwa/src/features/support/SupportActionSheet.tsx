@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import type { FamilySupportActionKind } from '@anuva/shared';
 import { GIFT_KINDS, SUPPORT_ACTIONS, supportSheet } from '../data/labels';
 import { twemojiUrl } from '../../shared/lib/twemoji';
+import { PrimaryButton } from '../shell/ui';
 
 const MAX_MESSAGE = 280;
 
@@ -16,6 +17,27 @@ type Props = {
   onDone: (kind: FamilySupportActionKind) => void;
   onRemindLater: () => void;
 };
+
+/** The two that reach her phone as a picture. Both get the same big-preview treatment. */
+function GiftPreview({ emoji, note, coming }: { emoji: string; note: string; coming: string }) {
+  return (
+    <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-secondary/25 bg-secondary/10 px-4 py-4">
+      <img
+        src={twemojiUrl(emoji)}
+        alt=""
+        aria-hidden
+        width={52}
+        height={52}
+        className="shrink-0"
+        style={{ filter: 'drop-shadow(0 6px 12px rgba(94,53,102,0.2))' }}
+      />
+      <div className="min-w-0">
+        <p className="text-[13px] font-semibold leading-snug text-on-surface">{note}</p>
+        <p className="mt-1 text-[11.5px] leading-snug text-outline">{coming}</p>
+      </div>
+    </div>
+  );
+}
 
 export function SupportActionSheet({
   open,
@@ -50,7 +72,7 @@ export function SupportActionSheet({
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
       <button
         type="button"
-        className="absolute inset-0 bg-[#3E2542]/45 backdrop-blur-[2px]"
+        className="absolute inset-0 animate-[anuvaFade_260ms_ease-out] bg-[#3E2542]/50 backdrop-blur-[3px]"
         aria-label="Close"
         onClick={onClose}
       />
@@ -58,13 +80,14 @@ export function SupportActionSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative z-10 w-full max-w-[560px] animate-[sheetUp_280ms_ease-out] rounded-t-[28px] border border-border-default bg-surface-raised px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-16px_40px_rgba(94,53,102,0.12)]"
+        className="relative z-10 max-h-[92svh] w-full max-w-[520px] animate-[anuvaSheetUp_320ms_cubic-bezier(0.16,1,0.3,1)] overflow-y-auto rounded-t-[30px] border-x border-t border-secondary/20 bg-surface-raised px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3.5 shadow-[0_-20px_50px_-20px_rgba(94,53,102,0.4)]"
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline-variant" aria-hidden />
-        <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-tertiary">
+        <div className="mx-auto mb-4 h-1.5 w-11 rounded-full bg-outline-variant" aria-hidden />
+
+        <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-tertiary">
           {supportSheet.label}
         </p>
-        <h2 id={titleId} className="mt-1 font-display text-[22px] leading-tight text-on-surface">
+        <h2 id={titleId} className="mt-1 font-display text-[23px] font-medium leading-tight text-primary">
           {supportSheet.headline}
         </h2>
 
@@ -78,27 +101,27 @@ export function SupportActionSheet({
                 type="button"
                 aria-pressed={pressed}
                 onClick={() => setSelected(action.id)}
-                className={`min-h-[52px] rounded-[18px] border px-3 py-3 text-left text-[14px] font-semibold transition-colors ${
+                className={`press min-h-[58px] rounded-[20px] border px-3.5 py-3 text-left text-[14px] font-semibold transition-colors ${
                   pressed
-                    ? 'border-primary bg-primary-fixed text-primary'
+                    ? 'border-primary/40 bg-primary-fixed text-primary shadow-soft'
                     : 'border-border-default bg-surface-container-low text-on-surface'
                 }`}
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2.5">
                   {action.emoji ? (
                     <img
                       src={twemojiUrl(action.emoji)}
                       alt=""
                       aria-hidden
-                      width={22}
-                      height={22}
+                      width={24}
+                      height={24}
                       className="shrink-0"
                     />
                   ) : null}
                   <span className="leading-snug">{action.label}</span>
                 </span>
                 {done ? (
-                  <span className="mt-0.5 block text-[11px] font-medium text-success">
+                  <span className="mt-1 block text-[11px] font-semibold text-success">
                     ✓ done today
                   </span>
                 ) : null}
@@ -107,23 +130,22 @@ export function SupportActionSheet({
           })}
         </div>
 
-        {/* Composing only appears for a message: the other three are gestures arranged elsewhere,
-            with nothing to type. */}
+        {/* Composing only appears for a message: the other three are gestures, with nothing to type. */}
         {selected === 'message' ? (
           <div className="mt-4">
             <label className="block">
-              <span className="text-[12px] font-semibold text-on-surface">Write her a note</span>
+              <span className="text-[12px] font-bold text-on-surface">Write her a note</span>
               <textarea
                 value={text}
                 onChange={(event) => setText(event.target.value.slice(0, MAX_MESSAGE))}
                 rows={3}
                 placeholder="Thinking of you today."
-                className="mt-1.5 w-full resize-none rounded-[16px] border border-border-default bg-surface-container-low px-3.5 py-3 text-[14px] leading-[1.5] text-on-surface"
+                className="mt-1.5 w-full resize-none rounded-[18px] border border-border-default bg-surface-container-low px-4 py-3 text-[14.5px] leading-[1.55] text-on-surface placeholder:text-outline focus:border-secondary focus:ring-2 focus:ring-secondary/25"
               />
             </label>
             <div className="mt-1 flex items-center justify-between text-[11px] text-outline">
               <span>Arrives as a notification. Not saved anywhere.</span>
-              <span>
+              <span className="tabular-nums">
                 {text.length}/{MAX_MESSAGE}
               </span>
             </div>
@@ -133,28 +155,15 @@ export function SupportActionSheet({
         {/* The gifts are delivered, not just recorded — say what actually reaches her, and say what
             does not reach her yet, before the tap rather than in the toast afterwards. */}
         {isGift ? (
-          <div className="mt-4 flex items-start gap-3 rounded-[18px] border border-secondary/25 bg-secondary/10 px-3.5 py-3">
-            <img
-              src={twemojiUrl(selectedAction?.emoji ?? '💐')}
-              alt=""
-              aria-hidden
-              width={34}
-              height={34}
-              className="mt-0.5 shrink-0"
-            />
-            <div>
-              <p className="text-[13px] font-semibold leading-snug text-on-surface">
-                {supportSheet.giftNote}
-              </p>
-              <p className="mt-1 text-[11.5px] leading-snug text-outline">
-                {supportSheet.giftComingSoon}
-              </p>
-            </div>
-          </div>
+          <GiftPreview
+            emoji={selectedAction?.emoji ?? '🌹'}
+            note={supportSheet.giftNote}
+            coming={supportSheet.giftComingSoon}
+          />
         ) : null}
 
-        <button
-          type="button"
+        <PrimaryButton
+          className="mt-5"
           disabled={sending || (selected === 'message' && text.trim().length === 0)}
           onClick={() => {
             if (selected !== 'message') {
@@ -164,31 +173,22 @@ export function SupportActionSheet({
             setSending(true);
             void onSendMessage(text.trim()).finally(() => setSending(false));
           }}
-          className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[15px] font-semibold text-on-secondary shadow-[0_8px_20px_rgba(201,126,146,0.28)] disabled:opacity-60"
         >
-          {sending
-            ? 'Sending…'
-            : selected === 'message'
-              ? 'Send note'
-              : isGift
-                ? `Send ${selectedAction?.emoji ?? ''}`.trim()
-                : 'Done'}
-        </button>
+          {sending ? 'Sending…' : selected === 'message' ? 'Send note' : isGift ? 'Send it' : 'Done'}
+          {/* The gift travels as its picture, not as its name — same on both phones. */}
+          {!sending && isGift && selectedAction?.emoji ? (
+            <img src={twemojiUrl(selectedAction.emoji)} alt="" aria-hidden width={20} height={20} />
+          ) : null}
+        </PrimaryButton>
+
         <button
           type="button"
           onClick={onRemindLater}
-          className="mt-2 flex min-h-[44px] w-full items-center justify-center rounded-full px-5 text-[14px] font-semibold text-primary"
+          className="mt-1.5 flex min-h-[46px] w-full items-center justify-center rounded-full px-5 text-[14px] font-semibold text-primary"
         >
           {supportSheet.remindLater}
         </button>
       </div>
-
-      <style>{`
-        @keyframes sheetUp {
-          from { transform: translateY(18px); opacity: 0.85; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -199,18 +199,12 @@ export function Toast({ message }: { message: string | null }) {
   return (
     <div
       role="status"
-      className="pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-4"
-      style={{ bottom: 'calc(88px + env(safe-area-inset-bottom, 0px))' }}
+      className="pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-5"
+      style={{ bottom: 'calc(104px + env(safe-area-inset-bottom, 0px))' }}
     >
-      <div className="max-w-[560px] animate-[toastIn_240ms_ease-out] rounded-full bg-inverse-surface px-4 py-3 text-center text-[13px] font-medium leading-snug text-inverse-on-surface shadow-[0_12px_28px_rgba(62,37,66,0.28)]">
+      <div className="max-w-[520px] animate-[anuvaSheetUp_260ms_cubic-bezier(0.16,1,0.3,1)] rounded-[20px] bg-inverse-surface px-4 py-3 text-center text-[13px] font-medium leading-snug text-inverse-on-surface shadow-lift">
         {message}
       </div>
-      <style>{`
-        @keyframes toastIn {
-          from { transform: translateY(8px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }

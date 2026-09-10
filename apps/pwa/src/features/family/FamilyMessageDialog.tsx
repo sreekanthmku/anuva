@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { sendFamilyThanks } from './api';
 import type { FamilyMessage } from './familyMessageLink';
 
 /**
@@ -12,9 +14,20 @@ export function FamilyMessageDialog({
   message: FamilyMessage | null;
   onDismiss: () => void;
 }) {
+  const [thanking, setThanking] = useState(false);
+
   if (!message) return null;
 
   const mulish = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' };
+
+  // A note has no reply box on purpose — answering is a commitment, and this is not correspondence.
+  // What she can do in one tap is let them know it landed, which is the whole thing they wanted.
+  const thankAndClose = () => {
+    if (thanking) return;
+    setThanking(true);
+    void sendFamilyThanks({ kind: 'message' }).catch(() => undefined);
+    onDismiss();
+  };
 
   return (
     <div
@@ -55,8 +68,16 @@ export function FamilyMessageDialog({
 
         <button
           type="button"
-          onClick={onDismiss}
+          onClick={thankAndClose}
           className="mt-6 min-h-[46px] w-full rounded-full bg-secondary px-5 text-[14px] font-semibold text-on-secondary"
+          style={mulish}
+        >
+          Thank you 💛
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="mt-1.5 min-h-[44px] w-full rounded-full px-5 text-[13px] font-semibold text-on-surface-variant"
           style={mulish}
         >
           Close

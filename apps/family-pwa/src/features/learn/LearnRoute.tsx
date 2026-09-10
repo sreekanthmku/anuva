@@ -1,6 +1,6 @@
 import { fetchLearn } from '../../shared/lib/familyApi';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
-import { Card, ErrorCard, PageIntro, SectionLabel, SkeletonCard } from '../shell/ui';
+import { Card, ErrorCard, Eyebrow, PageIntro, SectionLabel, SkeletonCard } from '../shell/ui';
 import { ArticleCard } from './ArticleCard';
 
 /**
@@ -31,20 +31,22 @@ export function LearnRoute() {
     <div className="space-y-4">
       <PageIntro eyebrow={data.eyebrow} title={data.title} subline={data.subline} />
 
-      {[data.nudge, data.tip].map((card) => (
-        <Card key={card.label} className="px-5 py-5">
-          <SectionLabel>{card.label}</SectionLabel>
-          <h2 className="font-display text-[19px] leading-snug text-on-surface">{card.headline}</h2>
-          <p className="mt-2 text-[14px] leading-[1.55] text-on-surface-variant">{card.body}</p>
+      {[data.nudge, data.tip].map((card, index) => (
+        <Card key={card.label} tone={index === 0 ? 'warm' : 'plain'} className="px-5 py-5">
+          <Eyebrow>{card.label}</Eyebrow>
+          <h2 className="font-display text-[19px] font-medium leading-snug text-on-surface">
+            {card.headline}
+          </h2>
+          <p className="mt-2 text-[14px] leading-[1.6] text-on-surface-variant">{card.body}</p>
         </Card>
       ))}
 
       <section className="pt-1">
         <SectionLabel>{data.articlesLabel}</SectionLabel>
-        <div className="space-y-6">
+        <div className="space-y-6 pt-1">
           {data.sections.map((section) => (
             <div key={section.label}>
-              <h2 className="mb-2 font-display text-[15px] text-on-surface-variant">
+              <h2 className="mb-2.5 font-display text-[16px] font-medium text-primary">
                 {section.label}
               </h2>
               <ul className="space-y-2">
