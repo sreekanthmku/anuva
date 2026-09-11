@@ -1,0 +1,108 @@
+/* =========================================================================
+   Anuva Wellness symptom pages (/symptoms/*).
+
+   Layered on top of page.css, which owns the tokens, header, footer and
+   buttons. Only the symptom-page furniture lives here: the masthead badge,
+   the why/research split, the support list and the symptom tile grid.
+   ========================================================================= */
+
+/* ── masthead ──────────────────────────────────────────────────────────── */
+.sym-hero{position:relative;overflow:hidden;padding:56px 0 68px;
+  background:radial-gradient(120% 100% at 50% 0%,var(--blush),var(--surface) 64%)}
+.sym-hero .bloom{position:absolute;left:50%;top:-120px;width:820px;max-width:170%;
+  transform:translateX(-50%);opacity:.4;pointer-events:none}
+.sym-hero .wrap{position:relative;max-width:760px;text-align:center}
+.sym-hero h1{font-size:clamp(31px,5.2vw,52px);font-weight:600;line-height:1.1;margin:0 0 28px}
+.sym-hero .lede{font-size:18px;line-height:1.7;color:var(--ink-body);margin:0}
+
+.crumbs{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;
+  font-size:13px;color:var(--mauve);margin:0 0 30px}
+.crumbs a{color:var(--mauve);font-weight:600}
+.crumbs a:hover{color:var(--plum)}
+.crumbs i{font-style:normal;opacity:.45}
+
+.badge{width:78px;height:78px;border-radius:50%;margin:0 auto 22px;
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-lift)}
+.counter{font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold);margin:0 0 14px}
+.micro{font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--plum);margin:0 0 12px}
+
+/* ── why it happens / research snapshot ────────────────────────────────── */
+.split{display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:start}
+.panel{background:var(--surface-low);border:1px solid var(--line);border-radius:28px;
+  padding:34px 32px;box-shadow:var(--shadow)}
+.panel h2{font-size:clamp(23px,3vw,30px);font-weight:600;margin:0 0 16px}
+.panel p{font-size:16.5px;line-height:1.75;color:var(--ink-body);margin:0}
+
+.stat{position:relative;overflow:hidden;background:var(--plum);border-radius:28px;
+  padding:34px 32px;color:rgba(247,240,232,.82)}
+.stat .mark{position:absolute;right:-48px;bottom:-58px;width:230px;opacity:.12}
+.stat .eyebrow{position:relative;color:var(--gold-soft)}
+.stat .n{position:relative;font-family:'Times New Roman',serif;font-weight:700;line-height:1;
+  font-size:clamp(46px,7vw,62px);color:var(--blush);margin:0 0 14px}
+.stat p{position:relative;font-size:15.5px;line-height:1.7;margin:0}
+.stat a{color:var(--gold-soft);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.stat a:hover{color:var(--surface)}
+
+/* ── support options ───────────────────────────────────────────────────── */
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:20px;
+  grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}
+.steps li{display:flex;gap:16px;background:var(--surface-low);border:1px solid var(--line);
+  border-radius:22px;padding:26px 24px;box-shadow:var(--shadow);
+  transition:transform .25s,box-shadow .25s}
+.steps li:hover{transform:translateY(-5px);box-shadow:var(--shadow-lift)}
+.steps .i{flex:none;width:34px;height:34px;border-radius:50%;background:var(--lavender);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:15px;font-weight:700;color:var(--plum)}
+.steps p{margin:0;font-size:15.5px;line-height:1.65;color:var(--ink-body)}
+
+.checked{display:flex;gap:16px;align-items:flex-start;margin:28px 0 0;
+  background:var(--blush);border:1px solid rgba(201,126,146,.45);border-radius:20px;padding:22px 24px}
+.checked svg{flex:none;margin-top:3px}
+.checked h3{font-family:var(--sans);font-size:12.5px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:#8E3550;margin:0 0 7px}
+.checked p{margin:0;font-size:15.5px;line-height:1.7;color:#6B3346}
+
+.refs{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:32px 0 0}
+.refs .lbl{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--mauve);margin-right:2px}
+.refs a{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9999px;
+  background:var(--surface-low);border:1px solid var(--line);
+  font-size:13.5px;font-weight:600;color:var(--plum);transition:background .2s,transform .2s}
+.refs a:hover{background:var(--lavender);transform:translateY(-2px)}
+
+/* ── conversation band ─────────────────────────────────────────────────── */
+.talk{position:relative;overflow:hidden;background:var(--plum);color:var(--surface);
+  padding:84px 0;text-align:center}
+.talk .mark{position:absolute;right:-60px;bottom:-70px;width:320px;opacity:.12}
+.talk .wrap{position:relative;max-width:780px}
+.talk h2{font-size:clamp(26px,3.8vw,40px);font-weight:600;line-height:1.25;
+  color:var(--surface);margin:0 0 20px}
+.talk h2 em{font-family:'Times New Roman',serif;font-style:italic;color:var(--blush)}
+.talk p{font-size:17px;line-height:1.7;color:rgba(247,240,232,.82);margin:0 0 34px}
+
+/* ── small print ───────────────────────────────────────────────────────── */
+.notes{max-width:760px;margin:0 auto;padding:44px 20px 0}
+.notes p{font-size:13.5px;line-height:1.75;color:var(--mauve);margin:0 0 14px}
+
+/* ── the twelve tiles, as on the home page ─────────────────────────────── */
+.more{padding:64px 0 96px}
+.tiles{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(152px,1fr))}
+.tile{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
+  background:var(--surface-container);border:1px solid transparent;border-radius:20px;
+  padding:26px 14px;transition:transform .25s,box-shadow .25s,background .25s}
+.tile:hover{transform:translateY(-6px);box-shadow:var(--shadow-lift);background:var(--surface-low)}
+.tile .dot{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.tile .nm{font-size:14.5px;font-weight:600;color:var(--ink)}
+.tile[aria-current="page"]{background:var(--lavender);border-color:rgba(94,53,102,.28)}
+
+@media (max-width:900px){
+  .split{grid-template-columns:1fr}
+  .talk{padding:60px 0}
+  .more{padding:48px 0 72px}
+}
+@media (max-width:560px){
+  .sym-hero{padding:40px 0 52px}
+  .panel,.stat{padding:28px 24px}
+}
