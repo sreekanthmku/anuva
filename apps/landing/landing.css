@@ -1,0 +1,421 @@
+/* =========================================================================
+   Anuva Wellness marketing page (/).
+
+   Layered on top of page.css, which owns the tokens, header, footer, buttons
+   and card primitives. Only the marketing furniture lives here.
+
+   Two deliberate departures from page.css:
+
+   1. `--serif` is Fraunces, not Playfair Display. The PWA's design system
+      (apps/pwa/tailwind.config.ts -> fontFamily.h1..h4) is Fraunces, and this
+      page is the last thing a visitor sees before the app. about/contact/
+      privacy/terms and the symptom pages still render Playfair; flipping
+      `--serif` in page.css aligns the whole site in one line when wanted.
+
+   2. Sections are 64px tall rather than page.css's 88px, and section heads sit
+      36px above their content rather than 56px. The marketing page carries far
+      more blocks than a prose page, so the looser rhythm read as dead space.
+   ========================================================================= */
+
+:root{
+  --serif:'Fraunces',Georgia,serif;
+  --script:'Dancing Script',cursive;
+  --mono:'Space Mono',ui-monospace,monospace;
+  /* page.css stops at the tokens the prose pages need; these three are used by
+     the report bars and the Anu can/cannot lists. Values are the PWA's
+     `success`, `surface-variant` and `error` tokens verbatim. */
+  --success:#4F9D6B;
+  --surface-variant:#ECDFD0;
+  --error:#C0405A;
+}
+
+.section{padding:64px 0}
+.section-head{margin-bottom:36px}
+.section-alt{background:var(--surface-container)}
+.wrap-wide{max-width:1180px;margin:0 auto;padding:0 20px}
+.center{text-align:center}
+.lede{font-size:17px;line-height:1.65;color:var(--ink-body);margin:0}
+
+/* Skip link: visually hidden until focused. */
+.skip{position:absolute;left:-9999px;top:0;z-index:200}
+.skip:focus{left:12px;top:12px;background:var(--plum);color:var(--surface);
+  padding:12px 18px;border-radius:9999px;font-weight:700}
+
+/* ── hero ──────────────────────────────────────────────────────────────── */
+.lp-hero{
+  position:relative;overflow:hidden;
+  background:radial-gradient(130% 110% at 78% 0%,var(--blush),var(--surface) 58%)
+}
+.lp-hero .wrap-wide{
+  display:grid;grid-template-columns:1.08fr .92fr;gap:40px;align-items:center;
+  padding-top:44px;padding-bottom:0
+}
+.lp-hero h1{
+  font-size:clamp(34px,4.8vw,58px);font-weight:600;line-height:1.08;
+  letter-spacing:-.015em;margin:0 0 18px
+}
+.lp-hero h1 em{font-family:var(--script);font-style:normal;font-weight:700;
+  color:var(--plum);font-size:1.08em;line-height:1}
+.lp-hero .sub{font-size:17.5px;line-height:1.6;color:var(--ink-body);margin:0 0 26px;max-width:37em}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:20px}
+.btn-ghost{
+  background:transparent;color:var(--plum);border:1.5px solid var(--line);
+  box-shadow:none
+}
+.btn-ghost:hover{background:var(--lavender);border-color:var(--plum);transform:translateY(-2px)}
+
+/* The offer, stated once, immediately under the CTA. */
+.offer-line{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;
+  font-size:14px;font-weight:600;color:var(--ink-body);margin:0 0 18px
+}
+.offer-line b{font-family:var(--mono);font-weight:700;color:var(--plum);font-size:13.5px}
+.offer-line i{font-style:normal;color:var(--gold);font-weight:700}
+
+.hero-proof{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--mauve);font-weight:600}
+.stars{color:var(--rose);font-size:15px;letter-spacing:1px}
+
+/* The photo is a transparent cut-out, so it stands on the gradient with no
+   frame. `align-self:end` keeps the subjects' feet on the section baseline. */
+.hero-art{position:relative;align-self:end;min-width:0}
+/* The halo sits at z-index 0 and the photo at 1 rather than pushing the halo to
+   -1: a negative index would escape .hero-art, which sets no stacking context,
+   and paint behind the section's own gradient. */
+.hero-art img{display:block;width:100%;height:auto;max-height:520px;object-fit:contain;
+  object-position:bottom;position:relative;z-index:1}
+.hero-art .halo{
+  position:absolute;left:50%;bottom:0;transform:translateX(-50%);z-index:0;
+  width:105%;aspect-ratio:1/.78;border-radius:50% 50% 0 0;
+  background:radial-gradient(closest-side,rgba(231,220,236,.85),rgba(231,220,236,0))
+}
+
+/* ── trust strip ───────────────────────────────────────────────────────── */
+.trust-strip{background:var(--plum);color:var(--surface)}
+.trust-strip .wrap-wide{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:10px 34px;
+  padding-top:16px;padding-bottom:16px
+}
+.trust-strip span{
+  display:inline-flex;align-items:center;gap:9px;
+  font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(247,240,232,.9)
+}
+.trust-strip svg{flex:none;color:var(--gold-soft)}
+
+/* ── symptom chips ─────────────────────────────────────────────────────── */
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:940px;margin:0 auto}
+.chip{
+  display:inline-flex;align-items:center;gap:9px;min-height:44px;
+  padding:10px 20px 10px 14px;border-radius:9999px;
+  background:var(--surface-low);border:1px solid var(--line);
+  font-size:14.5px;font-weight:600;color:var(--ink);
+  box-shadow:0 3px 10px rgba(94,53,102,.06);
+  transition:transform .18s,box-shadow .18s,border-color .18s,background .18s
+}
+.chip:hover{transform:translateY(-3px);background:var(--lavender);
+  border-color:var(--plum);color:var(--plum);box-shadow:var(--shadow)}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--rose);flex:none}
+.chip:nth-child(3n) .dot{background:var(--gold)}
+.chip:nth-child(3n+2) .dot{background:var(--plum)}
+.chips-note{
+  text-align:center;line-height:1.5;color:var(--ink);
+  max-width:620px;margin:32px auto 0;font-family:var(--serif);font-weight:500;
+  font-size:clamp(18px,2.4vw,23px)
+}
+
+/* ── pillars ───────────────────────────────────────────────────────────── */
+.pillars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.pillar{
+  background:var(--surface-low);border:1px solid var(--line);border-radius:20px;
+  padding:24px 22px;box-shadow:var(--shadow);
+  transition:transform .25s,box-shadow .25s
+}
+.pillar:hover{transform:translateY(-5px);box-shadow:var(--shadow-lift)}
+.pillar .n{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold);
+  letter-spacing:.12em;margin:0 0 12px}
+.pillar h3{font-family:var(--serif);font-size:19px;font-weight:600;margin:0 0 8px}
+.pillar p{font-size:14.5px;line-height:1.6;color:var(--ink-body);margin:0}
+
+/* ── product mockups ───────────────────────────────────────────────────── */
+.showcase{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:start}
+.shot{
+  margin:0;background:var(--surface-low);border:1px solid var(--line);border-radius:24px;
+  padding:18px 18px 22px;box-shadow:var(--shadow)
+}
+.shot > h3{font-family:var(--serif);font-size:18px;font-weight:600;margin:16px 0 6px}
+.shot > p{font-size:14px;line-height:1.6;color:var(--ink-body);margin:0}
+
+/* The inner frame stands in for an app screen. It is drawn, not screenshotted,
+   so it stays truthful about layout without pretending to be a capture. */
+.screen{
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;
+  padding:16px 15px;font-size:13px
+}
+.screen-top{
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--mauve);margin-bottom:14px
+}
+.screen-top b{color:var(--plum);font-weight:700}
+
+/* weekly report bars */
+.metric{margin-bottom:13px}
+.metric:last-child{margin-bottom:0}
+.metric .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.metric .name{font-size:13px;font-weight:600;color:var(--ink)}
+.metric .band{font-size:11.5px;font-weight:700;color:var(--ink-body)}
+.metric .band.up{color:var(--success)}
+.metric .track{height:8px;border-radius:9999px;background:var(--surface-variant);overflow:hidden}
+.metric .fill{height:100%;border-radius:9999px;background:linear-gradient(90deg,var(--rose),var(--plum))}
+
+/* Anu chat */
+.bubble{padding:11px 14px;border-radius:16px;line-height:1.5;margin:0 0 10px;max-width:92%}
+.bubble.last{margin-bottom:0}
+.bubble.you{background:var(--lavender);color:var(--ink);margin-left:auto;border-bottom-right-radius:5px}
+.bubble.anu{background:var(--surface-low);border:1px solid var(--line);color:var(--ink-body);
+  border-bottom-left-radius:5px}
+.bubble.anu b{color:var(--plum)}
+.anu-tag{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.anu-tag img{width:28px;height:28px;border-radius:50%;object-fit:cover;
+  background:var(--blush);flex:none}
+.anu-tag span{font-size:12px;font-weight:700;color:var(--plum);letter-spacing:.04em}
+
+/* daily check-in */
+.tick{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);
+  font-size:13.5px;color:var(--ink)}
+.tick:last-child{border-bottom:0}
+.tick .box{width:20px;height:20px;border-radius:7px;border:1.5px solid var(--line);flex:none;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+.tick .box.on{background:var(--plum);border-color:var(--plum)}
+.tick .v{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--mauve)}
+
+/* ── how it works ──────────────────────────────────────────────────────── */
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;position:relative}
+.step{
+  background:var(--surface-low);border:1px solid var(--line);border-radius:22px;
+  padding:30px 26px;box-shadow:var(--shadow);position:relative;overflow:hidden
+}
+.step .num{
+  position:absolute;right:14px;top:2px;font-family:var(--serif);font-weight:600;
+  font-size:76px;line-height:1;color:var(--lavender-dim);opacity:.45;pointer-events:none
+}
+.step h3{font-family:var(--serif);font-size:21px;font-weight:600;margin:0 0 10px;position:relative}
+.step p{font-size:14.5px;line-height:1.65;color:var(--ink-body);margin:0 0 12px;position:relative}
+.step .when{
+  display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--plum);
+  background:var(--lavender);padding:5px 11px;border-radius:9999px;position:relative
+}
+
+/* ── included ──────────────────────────────────────────────────────────── */
+.included{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.included .card{padding:24px 22px;border-radius:20px}
+.included .icon-tile{width:42px;height:42px;border-radius:12px;margin-bottom:14px}
+.included .card h3{font-family:var(--serif);font-size:18px;font-weight:600}
+.included .card p{font-size:14px}
+
+/* ── Anu band ──────────────────────────────────────────────────────────── */
+.anu-band{background:var(--surface-container)}
+.anu-band .wrap-wide{display:grid;grid-template-columns:.85fr 1.15fr;gap:48px;align-items:center}
+.anu-art{position:relative;text-align:center}
+.anu-art img{width:100%;max-width:340px;height:auto;display:block;margin:0 auto;position:relative}
+.anu-art::before{
+  content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:88%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(closest-side,var(--blush),rgba(244,220,224,0))
+}
+.anu-copy h2{font-size:clamp(27px,3.6vw,38px);font-weight:600;margin:0 0 14px}
+.anu-copy > p{font-size:16.5px;line-height:1.7;color:var(--ink-body);margin:0 0 22px}
+.can-cant{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.can-cant > div{
+  background:var(--surface-low);border:1px solid var(--line);border-radius:18px;padding:20px
+}
+.can-cant h3{
+  font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;margin:0 0 12px
+}
+.can-cant .yes h3{color:var(--success)}
+.can-cant .no h3{color:var(--rose)}
+.can-cant ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.can-cant li{font-size:14px;line-height:1.5;color:var(--ink-body);padding-left:20px;position:relative}
+.can-cant li::before{position:absolute;left:0;top:0;font-weight:700}
+.can-cant .yes li::before{content:'\2713';color:var(--success)}
+.can-cant .no li::before{content:'\00D7';color:var(--rose);font-size:16px;line-height:1.35}
+
+/* ── care team / trust ─────────────────────────────────────────────────── */
+.disciplines{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-bottom:24px}
+.disc{
+  background:var(--surface-low);border:1px solid var(--line);border-radius:20px;
+  padding:24px 20px;text-align:center;box-shadow:var(--shadow);
+  transition:transform .25s,box-shadow .25s
+}
+.disc:hover{transform:translateY(-5px);box-shadow:var(--shadow-lift)}
+.disc .ring{
+  width:58px;height:58px;border-radius:50%;margin:0 auto 14px;
+  display:flex;align-items:center;justify-content:center;color:var(--surface-low)
+}
+.disc h3{font-family:var(--serif);font-size:17.5px;font-weight:600;margin:0 0 6px}
+.disc p{font-size:13.5px;line-height:1.55;color:var(--ink-body);margin:0}
+
+.assurances{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.assure{
+  display:flex;gap:14px;align-items:flex-start;
+  background:var(--gold-soft);border:1px solid rgba(184,146,60,.3);
+  border-radius:18px;padding:20px 22px
+}
+.assure svg{flex:none;color:var(--plum);margin-top:2px}
+.assure h3{font-family:var(--sans);font-size:15px;font-weight:700;margin:0 0 5px;color:var(--ink)}
+.assure p{font-size:13.5px;line-height:1.55;color:#5A4716;margin:0}
+
+/* ── testimonials ──────────────────────────────────────────────────────── */
+.quotes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.quote{
+  margin:0;background:var(--surface-low);border:1px solid var(--line);border-radius:22px;
+  padding:26px 24px;box-shadow:var(--shadow);display:flex;flex-direction:column
+}
+.quote .stars{margin-bottom:12px}
+.quote blockquote{
+  margin:0 0 18px;font-size:15.5px;line-height:1.65;color:var(--ink);flex:1
+}
+.quote figcaption{display:flex;align-items:center;gap:11px;
+  border-top:1px solid var(--line);padding-top:16px}
+.quote .av{
+  width:38px;height:38px;border-radius:50%;flex:none;background:var(--plum);color:var(--surface-low);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:15px;font-weight:600
+}
+.quote .who{font-size:14px;font-weight:700;color:var(--ink);line-height:1.3}
+.quote .where{font-size:12.5px;color:var(--mauve)}
+
+/* ── pricing ───────────────────────────────────────────────────────────── */
+.pricing-band{background:radial-gradient(120% 100% at 50% 0%,var(--lavender),var(--surface) 70%)}
+.price-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:stretch;
+  max-width:940px;margin:0 auto}
+.price-card{
+  background:var(--surface-low);border:1px solid var(--line);border-radius:26px;
+  padding:32px 30px;box-shadow:var(--shadow-lift)
+}
+.price-card .tag{
+  display:inline-block;background:var(--gold-soft);color:#5A4716;
+  font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  padding:6px 13px;border-radius:9999px;margin-bottom:18px
+}
+.price-card .amount{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.price-card .amount b{font-family:var(--serif);font-size:clamp(38px,5.4vw,52px);
+  font-weight:600;color:var(--ink);line-height:1}
+.price-card .amount span{font-size:15px;color:var(--ink-body);font-weight:600}
+.price-card .per{font-family:var(--mono);font-size:12.5px;color:var(--mauve);margin:0 0 6px}
+.price-card .equiv{font-size:14px;color:var(--plum);font-weight:700;margin:0 0 22px}
+.price-card ul{list-style:none;margin:0 0 24px;padding:0;display:flex;flex-direction:column;gap:11px}
+.price-card li{font-size:14.5px;line-height:1.5;color:var(--ink-body);padding-left:26px;position:relative}
+.price-card li::before{
+  content:'\2713';position:absolute;left:0;top:-1px;
+  width:18px;height:18px;border-radius:50%;background:var(--lavender);color:var(--plum);
+  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center
+}
+.price-card li b{color:var(--ink)}
+.price-card .btn{width:100%}
+.price-card .fineprint{font-size:12.5px;line-height:1.55;color:var(--mauve);margin:14px 0 0;text-align:center}
+
+/* the trial timeline, so "when am I charged" is answered in the section that
+   asks for money rather than four sections later in the FAQ. */
+.timeline{
+  background:var(--plum);color:rgba(247,240,232,.82);border-radius:26px;
+  padding:32px 30px;display:flex;flex-direction:column;justify-content:center
+}
+.timeline h3{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--surface);margin:0 0 22px}
+.timeline ol{list-style:none;margin:0;padding:0}
+.timeline li{position:relative;padding:0 0 22px 34px;border-left:1.5px solid rgba(247,240,232,.22)}
+.timeline li:last-child{padding-bottom:0;border-left-color:transparent}
+.timeline li::before{
+  content:'';position:absolute;left:-6.5px;top:4px;width:11px;height:11px;border-radius:50%;
+  background:var(--gold);box-shadow:0 0 0 4px var(--plum)
+}
+.timeline .d{
+  display:block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gold-soft);margin-bottom:5px
+}
+.timeline strong{display:block;color:var(--surface);font-size:15.5px;font-weight:700;margin-bottom:3px}
+.timeline p{margin:0;font-size:14px;line-height:1.55}
+
+/* ── FAQ ───────────────────────────────────────────────────────────────── */
+/* Native <details>, so the answers are in the HTML a crawler sees and the page
+   needs no JavaScript to open them. */
+.faq{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.faq details{
+  background:var(--surface-low);border:1px solid var(--line);border-radius:16px;
+  padding:0 22px;transition:border-color .2s,box-shadow .2s
+}
+.faq details[open]{border-color:var(--plum);box-shadow:var(--shadow)}
+.faq summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:19px 0;font-size:16px;font-weight:700;color:var(--ink);min-height:44px
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{
+  content:'+';flex:none;font-size:22px;font-weight:400;color:var(--plum);
+  transition:transform .25s;line-height:1
+}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq p{font-size:15px;line-height:1.7;color:var(--ink-body);margin:0 0 19px;max-width:64ch}
+
+/* ── closing CTA ───────────────────────────────────────────────────────── */
+.closing-cta{
+  position:relative;overflow:hidden;text-align:center;padding:76px 0;
+  background:radial-gradient(120% 110% at 50% 0%,var(--blush),var(--lavender) 45%,var(--lavender-dim))
+}
+.closing-cta .lotus{position:absolute;right:-40px;bottom:-40px;width:260px;opacity:.28;
+  pointer-events:none}
+.closing-cta .wrap{position:relative;max-width:720px}
+.closing-cta h2{font-size:clamp(28px,4.6vw,44px);font-weight:600;line-height:1.14;margin:0 0 16px}
+.closing-cta h2 em{font-family:var(--script);font-style:normal;color:var(--plum);font-size:1.06em}
+.closing-cta p{font-size:17px;line-height:1.6;color:var(--ink-body);margin:0 0 30px}
+.closing-cta .fineprint{font-size:13px;color:var(--mauve);margin:20px 0 0}
+
+/* ── mobile sticky CTA ─────────────────────────────────────────────────── */
+/* Hidden by default; only mobile gets it, where the header CTA is dropped at
+   400px and the page is long enough to strand the visitor. */
+.sticky-cta{display:none}
+
+/* ── responsive ────────────────────────────────────────────────────────── */
+@media (max-width:1040px){
+  .pillars{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .disciplines{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .included{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:900px){
+  .section{padding:52px 0}
+  .lp-hero .wrap-wide{grid-template-columns:1fr;gap:8px;padding-top:32px;text-align:center}
+  .lp-hero .sub{margin-left:auto;margin-right:auto}
+  .hero-actions,.offer-line,.hero-proof{justify-content:center}
+  .hero-art{max-width:440px;margin:0 auto}
+  .hero-art img{max-height:400px}
+  .showcase{grid-template-columns:1fr;max-width:460px;margin:0 auto}
+  .steps{grid-template-columns:1fr;max-width:520px;margin:0 auto}
+  .anu-band .wrap-wide{grid-template-columns:1fr;gap:28px}
+  .anu-art img{max-width:230px}
+  .quotes{grid-template-columns:1fr;max-width:520px;margin:0 auto}
+  .price-grid{grid-template-columns:1fr;max-width:520px}
+  .assurances{grid-template-columns:1fr}
+  .closing-cta{padding:60px 0}
+
+  /* Bottom bar, clear of the iOS home indicator. Body gets matching padding
+     so the footer's last row is never trapped underneath it. */
+  .sticky-cta{
+    display:block;position:fixed;left:0;right:0;bottom:0;z-index:120;
+    background:rgba(247,240,232,.94);backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))
+  }
+  .sticky-cta .btn{width:100%;box-shadow:none}
+  body{padding-bottom:76px}
+}
+@media (max-width:620px){
+  .pillars,.included,.disciplines{grid-template-columns:1fr}
+  .can-cant{grid-template-columns:1fr}
+  .price-card,.timeline{padding:26px 22px}
+  .faq details{padding:0 18px}
+  .faq summary{font-size:15px}
+  .trust-strip .wrap-wide{gap:9px 20px}
+  .trust-strip span{font-size:11.5px;letter-spacing:.06em}
+}

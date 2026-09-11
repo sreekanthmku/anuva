@@ -1,0 +1,419 @@
+/* =========================================================================
+   Anuva Wellness campaign landing pages (/lp/*).
+
+   Layered on page.css, which owns the tokens, buttons and the warm overlay.
+   Deliberately NOT sharing landing.css: that file styles the website homepage,
+   which has a nav, a rich footer and outbound links. A campaign page has one
+   goal and no exit paths, so its furniture is different enough to keep apart.
+
+   Same two departures from page.css as landing.css makes:
+     `--serif` is Fraunces, matching the PWA (apps/pwa/tailwind.config.ts).
+     Sections are 60px rather than 88px; these pages are read in one scroll.
+
+   See feature-docs/landing-pages/PLAN.md for which page uses which framework.
+   ========================================================================= */
+
+:root{
+  --serif:'Fraunces',Georgia,serif;
+  --script:'Dancing Script',cursive;
+  --mono:'Space Mono',ui-monospace,monospace;
+  --success:#4F9D6B;
+  --surface-variant:#ECDFD0;
+}
+
+.section{padding:60px 0}
+.section-head{margin-bottom:34px}
+.section-alt{background:var(--surface-container)}
+.wrap-wide{max-width:1120px;margin:0 auto;padding:0 20px}
+.center{text-align:center}
+.lede{font-size:17px;line-height:1.65;color:var(--ink-body);margin:0}
+
+.skip{position:absolute;left:-9999px;top:0;z-index:200}
+.skip:focus{left:12px;top:12px;background:var(--plum);color:var(--surface);
+  padding:12px 18px;border-radius:9999px;font-weight:700}
+
+/* ── header ────────────────────────────────────────────────────────────── */
+/* Logo only. No nav: on a campaign page every link out is a lost conversion,
+   which is the single biggest structural difference from the homepage. */
+.lp-header{background:transparent;padding:18px 0 0}
+.lp-header .bar{max-width:1120px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px}
+.lp-brand{display:flex;align-items:center;gap:10px}
+.lp-brand img{width:36px;height:auto;display:block}
+.lp-brand .wordmark{font-family:var(--serif);font-weight:700;font-size:20px;
+  letter-spacing:.5px;line-height:1;color:var(--ink);white-space:nowrap}
+.lp-brand .wordmark span{font-weight:500;color:var(--rose)}
+.header-note{font-size:13px;font-weight:700;color:var(--plum);white-space:nowrap}
+
+/* ── hero ──────────────────────────────────────────────────────────────── */
+.lp-hero{position:relative;overflow:hidden;
+  background:radial-gradient(130% 110% at 78% 0%,var(--blush),var(--surface) 58%)}
+.lp-hero .wrap-wide{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;
+  align-items:center;padding-top:36px}
+.lp-hero.solo .wrap-wide{grid-template-columns:1fr;max-width:760px;text-align:center;
+  padding-bottom:56px}
+.lp-hero h1{font-size:clamp(33px,4.7vw,56px);font-weight:600;line-height:1.07;
+  letter-spacing:-.015em;margin:0 0 16px}
+.lp-hero h1 em{font-family:var(--script);font-style:normal;font-weight:700;
+  color:var(--plum);font-size:1.06em}
+.lp-hero .sub{font-size:17.5px;line-height:1.6;color:var(--ink-body);margin:0 0 24px;max-width:38em}
+.lp-hero.solo .sub{margin-left:auto;margin-right:auto}
+
+.cta-block{margin-bottom:16px}
+.cta-block .btn{font-size:16px;padding:16px 34px;min-height:52px}
+/* Friction reducer. Sits under every CTA on every page — the skill's
+   "risk reversal near every CTA" rule, and the last objection before the tap. */
+.risk{display:block;font-size:13px;color:var(--mauve);margin:11px 0 0;font-weight:600}
+.lp-hero.solo .cta-block{display:flex;flex-direction:column;align-items:center}
+
+.hero-proof{display:flex;align-items:center;gap:10px;font-size:13.5px;
+  color:var(--mauve);font-weight:600}
+.lp-hero.solo .hero-proof{justify-content:center}
+.stars{color:var(--rose);font-size:15px;letter-spacing:1px}
+
+.hero-art{position:relative;align-self:end;min-width:0}
+.hero-art img{display:block;width:100%;height:auto;max-height:470px;object-fit:contain;
+  object-position:bottom;position:relative;z-index:1}
+.hero-art .halo{position:absolute;left:50%;bottom:0;transform:translateX(-50%);z-index:0;
+  width:105%;aspect-ratio:1/.78;border-radius:50% 50% 0 0;
+  background:radial-gradient(closest-side,rgba(231,220,236,.85),rgba(231,220,236,0))}
+
+/* ── trust bar ─────────────────────────────────────────────────────────── */
+.trust-bar{background:var(--plum);color:var(--surface)}
+.trust-bar .wrap-wide{display:flex;flex-wrap:wrap;justify-content:center;gap:9px 30px;
+  padding-top:15px;padding-bottom:15px}
+.trust-bar span{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;
+  font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(247,240,232,.9)}
+.trust-bar b{font-family:var(--mono);color:var(--gold-soft)}
+
+/* ── problem / agitate ─────────────────────────────────────────────────── */
+/* Unlinked, unlike the homepage's chips. The symptom pages are a fine
+   destination from organic traffic and a leak from paid. */
+.sym-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;max-width:880px;margin:0 auto}
+.sym{display:inline-flex;align-items:center;gap:8px;padding:9px 18px 9px 13px;
+  border-radius:9999px;background:var(--surface-low);border:1px solid var(--line);
+  font-size:14px;font-weight:600;color:var(--ink)}
+.sym .dot{width:8px;height:8px;border-radius:50%;background:var(--rose);flex:none}
+.sym:nth-child(3n) .dot{background:var(--gold)}
+.sym:nth-child(3n+2) .dot{background:var(--plum)}
+
+.agitate{max-width:660px;margin:34px auto 0;text-align:center}
+.agitate p{font-family:var(--serif);font-weight:500;font-size:clamp(19px,2.5vw,25px);
+  line-height:1.42;color:var(--ink);margin:0 0 14px}
+.agitate .cost{font-size:15.5px;line-height:1.65;color:var(--ink-body);margin:0}
+
+/* ── before / after (BAB page) ─────────────────────────────────────────── */
+.bab{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:0 auto}
+.bab > div{border-radius:22px;padding:28px 26px;border:1px solid var(--line)}
+.bab .before{background:var(--surface-container)}
+.bab .after{background:var(--surface-low);box-shadow:var(--shadow)}
+.bab h3{font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase;margin:0 0 16px}
+.bab .before h3{color:var(--mauve)}
+.bab .after h3{color:var(--success)}
+.bab ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.bab li{font-size:15px;line-height:1.55;color:var(--ink-body);padding-left:24px;position:relative}
+.bab li::before{position:absolute;left:0;top:0;font-weight:700}
+.bab .before li::before{content:'\00D7';color:var(--mauve);font-size:17px;line-height:1.3}
+.bab .after li::before{content:'\2713';color:var(--success)}
+
+/* ── benefits ──────────────────────────────────────────────────────────── */
+.benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.benefit{background:var(--surface-low);border:1px solid var(--line);border-radius:20px;
+  padding:26px 24px;box-shadow:var(--shadow);transition:transform .25s,box-shadow .25s}
+.benefit:hover{transform:translateY(-5px);box-shadow:var(--shadow-lift)}
+.benefit .icon-tile{width:42px;height:42px;border-radius:12px;background:var(--plum);
+  display:flex;align-items:center;justify-content:center;margin-bottom:15px}
+.benefit h3{font-family:var(--serif);font-size:18.5px;font-weight:600;margin:0 0 8px}
+.benefit p{font-size:14.5px;line-height:1.6;color:var(--ink-body);margin:0}
+/* The outcome line. A feature without one is the thing the checklist flags. */
+.benefit .out{display:block;margin-top:10px;font-size:13px;font-weight:700;color:var(--plum)}
+
+/* ── steps ─────────────────────────────────────────────────────────────── */
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.step{background:var(--surface-low);border:1px solid var(--line);border-radius:22px;
+  padding:28px 24px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.step .num{position:absolute;right:13px;top:0;font-family:var(--serif);font-weight:600;
+  font-size:70px;line-height:1;color:var(--lavender-dim);opacity:.45;pointer-events:none}
+.step h3{font-family:var(--serif);font-size:20px;font-weight:600;margin:0 0 9px;position:relative}
+.step p{font-size:14.5px;line-height:1.62;color:var(--ink-body);margin:0 0 11px;position:relative}
+.step .when{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--plum);background:var(--lavender);
+  padding:5px 11px;border-radius:9999px;position:relative}
+
+/* ── drawn app screens ─────────────────────────────────────────────────── */
+/* Drawn, not screenshotted. Swap each .screen for an <img> when real captures
+   exist; the card and caption around it stay. */
+.showcase{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
+.shot{margin:0;background:var(--surface-low);border:1px solid var(--line);border-radius:24px;
+  padding:17px 17px 21px;box-shadow:var(--shadow)}
+.shot > h3{font-family:var(--serif);font-size:17.5px;font-weight:600;margin:15px 0 6px}
+.shot > p{font-size:13.5px;line-height:1.6;color:var(--ink-body);margin:0}
+.screen{background:var(--surface);border:1px solid var(--line);border-radius:18px;
+  padding:15px 14px;font-size:13px}
+.screen-top{display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);
+  font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mauve);margin-bottom:13px}
+.screen-top b{color:var(--plum);font-weight:700}
+.metric{margin-bottom:12px}
+.metric:last-child{margin-bottom:0}
+.metric .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.metric .name{font-size:12.5px;font-weight:600;color:var(--ink)}
+.metric .band{font-size:11px;font-weight:700;color:var(--ink-body)}
+.metric .band.up{color:var(--success)}
+.metric .track{height:7px;border-radius:9999px;background:var(--surface-variant);overflow:hidden}
+.metric .fill{height:100%;border-radius:9999px;background:linear-gradient(90deg,var(--rose),var(--plum))}
+.bubble{padding:10px 13px;border-radius:15px;line-height:1.5;margin:0 0 9px;max-width:92%;font-size:12.5px}
+.bubble.last{margin-bottom:0}
+.bubble.you{background:var(--lavender);color:var(--ink);margin-left:auto;border-bottom-right-radius:5px}
+.bubble.anu{background:var(--surface-low);border:1px solid var(--line);color:var(--ink-body);
+  border-bottom-left-radius:5px}
+.bubble.anu b{color:var(--plum)}
+.anu-tag{display:flex;align-items:center;gap:8px;margin-bottom:11px}
+.anu-tag img{width:26px;height:26px;border-radius:50%;object-fit:cover;background:var(--blush);flex:none}
+.anu-tag span{font-size:11.5px;font-weight:700;color:var(--plum);letter-spacing:.04em}
+.tick{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line);
+  font-size:13px;color:var(--ink)}
+.tick:last-child{border-bottom:0}
+.tick .box{width:19px;height:19px;border-radius:6px;border:1.5px solid var(--line);flex:none;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px}
+.tick .box.on{background:var(--plum);border-color:var(--plum)}
+.tick .v{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--mauve)}
+
+/* ── price anchor table (/lp/care) ─────────────────────────────────────── */
+.anchor{max-width:720px;margin:0 auto;background:var(--surface-low);border:1px solid var(--line);
+  border-radius:24px;padding:10px 26px 26px;box-shadow:var(--shadow);overflow-x:auto}
+.anchor table{width:100%;border-collapse:collapse;min-width:420px}
+.anchor th,.anchor td{text-align:left;padding:13px 8px;font-size:14.5px;
+  border-bottom:1px solid var(--line)}
+.anchor th{font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mauve)}
+.anchor td:last-child,.anchor th:last-child{text-align:right}
+.anchor .yes{color:var(--success);font-weight:700}
+.anchor .strike{color:var(--mauve);font-family:var(--mono);font-size:13.5px}
+.anchor tr:last-child td{border-bottom:0;padding-top:18px;font-size:17px;font-weight:700;color:var(--ink)}
+.anchor tr:last-child td:last-child{font-family:var(--serif);font-size:26px;color:var(--plum)}
+.anchor .note{font-size:12.5px;color:var(--mauve);margin:14px 0 0;line-height:1.5}
+
+/* ── testimonials ──────────────────────────────────────────────────────── */
+.quotes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.quote{margin:0;background:var(--surface-low);border:1px solid var(--line);border-radius:22px;
+  padding:24px 22px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.quote .stars{margin-bottom:11px}
+.quote blockquote{margin:0 0 16px;font-size:15px;line-height:1.62;color:var(--ink);flex:1}
+.quote figcaption{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.quote .av{width:36px;height:36px;border-radius:50%;flex:none;background:var(--plum);
+  color:var(--surface-low);display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:14px;font-weight:600}
+.quote .who{font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.3}
+.quote .where{font-size:12px;color:var(--mauve)}
+
+/* ── inline testimonial ────────────────────────────────────────────────── */
+/* Sits directly above the price card. A standalone testimonial section cost
+   most of a phone screen for proof that works harder next to the ask. */
+.inline-quote{max-width:560px;margin:0 auto 18px;text-align:center}
+.inline-quote blockquote{margin:8px 0 8px;font-family:var(--serif);font-weight:500;
+  font-size:17px;line-height:1.45;color:var(--ink)}
+.inline-quote figcaption{font-size:12.5px;color:var(--mauve);font-weight:600}
+
+/* ── the three steps, compressed into the price card ───────────────────── */
+/* "How it works" used to be its own section of three cards, which is close to
+   a full phone screen. The same three beats read fine as one line, placed
+   where the reader is deciding rather than three screens earlier. */
+.mini-steps{font-size:13px;line-height:1.55;color:var(--ink-body);
+  background:var(--surface-container);border-radius:12px;padding:12px 14px;
+  margin:0 0 16px;text-align:left}
+.mini-steps b{color:var(--plum)}
+
+/* ── pricing ───────────────────────────────────────────────────────────── */
+.pricing-band{background:radial-gradient(120% 100% at 50% 0%,var(--lavender),var(--surface) 70%)}
+.price-card{max-width:560px;margin:0 auto;background:var(--surface-low);border:1px solid var(--line);
+  border-radius:26px;padding:34px 32px;box-shadow:var(--shadow-lift);text-align:center}
+.price-card .tag{display:inline-block;background:var(--gold-soft);color:#5A4716;font-size:11.5px;
+  font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:6px 13px;
+  border-radius:9999px;margin-bottom:16px}
+.price-card .amount{display:flex;align-items:baseline;gap:8px;justify-content:center;margin-bottom:4px}
+.price-card .amount b{font-family:var(--serif);font-size:clamp(40px,5.6vw,54px);font-weight:600;
+  color:var(--ink);line-height:1}
+.price-card .amount span{font-size:15px;color:var(--ink-body);font-weight:600}
+.price-card .per{font-family:var(--mono);font-size:12.5px;color:var(--mauve);margin:0 0 20px}
+.price-card ul{list-style:none;margin:0 0 24px;padding:0;display:flex;flex-direction:column;
+  gap:10px;text-align:left}
+.price-card li{font-size:14.5px;line-height:1.5;color:var(--ink-body);padding-left:26px;position:relative}
+.price-card li::before{content:'\2713';position:absolute;left:0;top:-1px;width:18px;height:18px;
+  border-radius:50%;background:var(--lavender);color:var(--plum);font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center}
+.price-card li b{color:var(--ink)}
+.price-card .btn{width:100%}
+
+/* ── FAQ ───────────────────────────────────────────────────────────────── */
+.faq{max-width:740px;margin:0 auto;display:flex;flex-direction:column;gap:9px}
+.faq details{background:var(--surface-low);border:1px solid var(--line);border-radius:16px;
+  padding:0 21px;transition:border-color .2s,box-shadow .2s}
+.faq details[open]{border-color:var(--plum);box-shadow:var(--shadow)}
+.faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;padding:18px 0;font-size:15.5px;font-weight:700;
+  color:var(--ink);min-height:44px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';flex:none;font-size:21px;font-weight:400;color:var(--plum);
+  transition:transform .25s;line-height:1}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq p{font-size:14.5px;line-height:1.7;color:var(--ink-body);margin:0 0 18px;max-width:64ch}
+
+/* ── mid-page CTA band ─────────────────────────────────────────────────── */
+/* The homepage audit found 0 mid-page CTAs. This band is what fixes it. */
+.cta-band{background:var(--plum);color:var(--surface);text-align:center;padding:52px 0}
+.cta-band h2{font-size:clamp(24px,3.4vw,34px);font-weight:600;color:var(--surface);
+  margin:0 0 12px;line-height:1.2}
+.cta-band p{font-size:16px;line-height:1.6;color:rgba(247,240,232,.82);margin:0 0 26px;
+  max-width:520px;margin-left:auto;margin-right:auto}
+.cta-band .risk{color:rgba(247,240,232,.6)}
+
+/* ── closing CTA ───────────────────────────────────────────────────────── */
+.closing-cta{position:relative;overflow:hidden;text-align:center;padding:72px 0;
+  background:radial-gradient(120% 110% at 50% 0%,var(--blush),var(--lavender) 45%,var(--lavender-dim))}
+/* Anu, purely ornamental here. A decorative image belongs in CSS rather than as
+   an <img alt="">: it keeps the markup to images that carry meaning, and it is
+   one fewer render-blocking request in the document. */
+.closing-cta::after{content:'';position:absolute;right:-40px;bottom:-40px;
+  width:250px;height:250px;opacity:.28;pointer-events:none;
+  background:url('/anu-mascot.png') no-repeat center/contain}
+.closing-cta .wrap{position:relative;max-width:700px;margin:0 auto;padding:0 20px}
+.closing-cta h2{font-size:clamp(28px,4.4vw,42px);font-weight:600;line-height:1.14;margin:0 0 14px}
+.closing-cta h2 em{font-family:var(--script);font-style:normal;color:var(--plum);font-size:1.06em}
+.closing-cta p{font-size:17px;line-height:1.6;color:var(--ink-body);margin:0 0 28px}
+
+/* ── minimal legal footer ──────────────────────────────────────────────── */
+/* Privacy and Terms only. A campaign page carries the legal minimum and
+   nothing else; the homepage's four link columns are all exit paths. */
+.lp-footer{background:#3E2542;color:rgba(247,240,232,.6);padding:26px 0;text-align:center}
+.lp-footer .wrap-wide{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 20px;font-size:12.5px}
+.lp-footer a{color:rgba(247,240,232,.72)}
+.lp-footer a:hover{color:var(--blush)}
+
+/* ── mobile sticky CTA ─────────────────────────────────────────────────── */
+.sticky-cta{display:none}
+
+@media (max-width:1000px){
+  .benefits{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* ── mobile ────────────────────────────────────────────────────────────────
+   These pages are read on a phone, and a visitor gives a landing page three
+   or four swipes, not three or four sections. The budget is therefore about
+   2,500px on a 390x844 screen, and everything below is spent buying that:
+
+     hero, including the CTA, inside the first screen with no scroll
+     screen 2: the problem, then what she gets
+     screen 3: how it works, then the price and the ask
+     screen 4 (spillover): proof, FAQ, final CTA, footer
+
+   The cards that read well on a desktop grid become single rows here, because
+   a stack of twelve 200px cards is what turns a three-screen page into eight.
+   ------------------------------------------------------------------------- */
+@media (max-width:880px){
+  .section{padding:26px 0}
+  .section-head{margin-bottom:20px}
+  .section-head h2{font-size:clamp(23px,5.6vw,28px)}
+  .lede{font-size:15.5px;line-height:1.55}
+
+  /* Hero: h1 + sub + CTA + proof must clear 844px with the photo still in it. */
+  .lp-hero .wrap-wide{grid-template-columns:1fr;gap:4px;padding-top:20px;text-align:center}
+  .lp-hero h1{font-size:clamp(29px,7.6vw,34px);line-height:1.1;margin-bottom:12px}
+  .lp-hero .sub{font-size:15.5px;line-height:1.5;margin:0 auto 18px}
+  .cta-block{display:flex;flex-direction:column;align-items:center;margin-bottom:10px}
+  .cta-block .btn{font-size:15.5px;padding:15px 28px;min-height:52px}
+  .risk{margin-top:9px;font-size:12.5px}
+  .hero-proof{justify-content:center;font-size:12.5px}
+  .hero-art{max-width:340px;margin:0 auto}
+  .hero-art img{max-height:250px}
+
+  .trust-bar .wrap-wide{gap:7px 16px;padding-top:12px;padding-bottom:12px}
+  .trust-bar span{font-size:11px;letter-spacing:.04em;gap:6px}
+
+  /* Problem: chips stay, agitate loses a size and its top margin. */
+  .sym-grid{gap:7px}
+  .sym{padding:7px 14px 7px 11px;font-size:13px;gap:7px}
+  .agitate{margin-top:20px}
+  .agitate p{font-size:17.5px;line-height:1.38;margin-bottom:10px}
+  .agitate .cost{font-size:14.5px;line-height:1.55}
+
+  /* Benefit cards -> rows. Icon left, copy right, no hover lift.
+     The card has FOUR children (icon, h3, p, .out), so every one of them needs
+     an explicit column: a bare `grid-template-columns:38px 1fr` auto-flows the
+     third child back into the 38px icon column and laps the fourth over it.
+     The icon spans all three copy rows instead. */
+  .benefits{grid-template-columns:1fr;gap:10px}
+  .benefit{display:grid;grid-template-columns:38px 1fr;column-gap:14px;row-gap:0;
+    padding:16px 16px;border-radius:16px;align-items:start}
+  .benefit:hover{transform:none;box-shadow:var(--shadow)}
+  .benefit .icon-tile{grid-column:1;grid-row:1/span 3;
+    width:38px;height:38px;border-radius:11px;margin:0}
+  .benefit h3{grid-column:2;grid-row:1;font-size:16.5px;margin:0 0 4px}
+  .benefit p{grid-column:2;grid-row:2;font-size:14px;line-height:1.5}
+  .benefit .out{grid-column:2;grid-row:3;margin-top:6px;font-size:12.5px}
+
+  /* Steps -> rows, with the ghost numeral inline instead of a 70px watermark.
+     Four children again (num, h3, p, .when), so each is placed explicitly for
+     the same reason as .benefit above. */
+  .steps{grid-template-columns:1fr;gap:10px;max-width:none}
+  .step{display:grid;grid-template-columns:34px 1fr;column-gap:13px;row-gap:0;
+    padding:16px;border-radius:16px;align-items:start}
+  .step .num{grid-column:1;grid-row:1/span 3;
+    position:static;font-size:30px;line-height:1;opacity:.75;
+    color:var(--lavender-dim);text-align:center}
+  .step h3{grid-column:2;grid-row:1;font-size:16.5px;margin:0 0 4px}
+  .step p{grid-column:2;grid-row:2;font-size:14px;line-height:1.5;margin-bottom:8px}
+  .step .when{grid-column:2;grid-row:3;justify-self:start;font-size:10px;padding:4px 9px}
+
+  .bab{grid-template-columns:1fr;gap:10px;max-width:none}
+  .bab > div{padding:18px 18px;border-radius:16px}
+  .bab h3{margin-bottom:11px}
+  .bab ul{gap:9px}
+  .bab li{font-size:14px;line-height:1.45}
+
+  .anchor{padding:6px 16px 18px}
+  .anchor th,.anchor td{padding:10px 6px;font-size:13.5px}
+  .anchor tr:last-child td{font-size:15px;padding-top:14px}
+  .anchor tr:last-child td:last-child{font-size:22px}
+
+  .quotes{grid-template-columns:1fr;max-width:none}
+  .quote{padding:18px 18px;border-radius:18px}
+  .quote blockquote{font-size:14.5px;line-height:1.55;margin-bottom:13px}
+
+  .inline-quote{margin-bottom:14px}
+  .inline-quote blockquote{font-size:15.5px;line-height:1.4;margin:6px 0}
+  .mini-steps{font-size:12.5px;line-height:1.5;padding:10px 12px;margin-bottom:14px}
+
+  .cta-band{padding:30px 0}
+  .cta-band h2{font-size:clamp(21px,5.4vw,26px);margin-bottom:9px}
+  .cta-band p{font-size:14.5px;line-height:1.5;margin-bottom:18px}
+
+  .price-card{padding:24px 20px;border-radius:22px}
+  .price-card .tag{margin-bottom:12px}
+  .price-card .per{margin-bottom:14px}
+  .price-card ul{gap:8px;margin-bottom:18px}
+  .price-card li{font-size:14px;line-height:1.45}
+
+  .faq{gap:7px}
+  .faq details{padding:0 16px;border-radius:14px}
+  .faq summary{font-size:14.5px;padding:15px 0}
+  .faq p{font-size:14px;line-height:1.6;margin-bottom:15px}
+
+  .closing-cta{padding:34px 0}
+  .closing-cta h2{font-size:clamp(25px,6.4vw,32px);margin-bottom:10px}
+  .closing-cta p{font-size:15.5px;line-height:1.5;margin-bottom:22px}
+  .closing-cta::after{width:160px;height:160px;right:-30px;bottom:-30px}
+
+  .lp-footer{padding:20px 0}
+
+  .sticky-cta{display:block;position:fixed;left:0;right:0;bottom:0;z-index:120;
+    background:rgba(247,240,232,.94);backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+  .sticky-cta .btn{width:100%;box-shadow:none;min-height:50px}
+  body{padding-bottom:76px}
+}
+@media (max-width:620px){
+  .header-note{display:none}
+  .lp-header{padding:14px 0 0}
+}

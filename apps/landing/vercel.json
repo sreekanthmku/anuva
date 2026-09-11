@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "echo \"no dependencies\"",
-  "buildCommand": "mkdir -p dist && for f in coming-soon:index contact:contact; do sed \"s|__WEB3FORMS_ACCESS_KEY__|${WEB3FORMS_ACCESS_KEY}|\" \"${f%%:*}.html\" > \"dist/${f##*:}.html\"; done && cp about.html privacy.html terms.html page.css anuva-logo-mark.png anuva-logo-icon.png anu-mascot.png dist/",
+  "buildCommand": "mkdir -p dist && for f in coming-soon:index contact:contact; do sed \"s|__WEB3FORMS_ACCESS_KEY__|${WEB3FORMS_ACCESS_KEY}|\" \"${f%%:*}.html\" > \"dist/${f##*:}.html\"; done && cp about.html privacy.html terms.html page.css symptom.css anuva-logo-mark.png anuva-logo-icon.png anu-mascot.png dist/ && mkdir -p dist/symptoms && cp symptoms/*.html dist/symptoms/",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "headers": [

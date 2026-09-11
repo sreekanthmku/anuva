@@ -11,6 +11,7 @@ import { Check } from 'lucide-react';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
+import { AmbientWash } from './components/AmbientWash';
 import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
 import { NotificationSyncBanner } from './components/NotificationSyncBanner';
@@ -301,7 +302,10 @@ export default function AnuDashboardRoute() {
   };
 
   return (
-    <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 pt-8 text-on-surface">
+    /* `isolate` is load-bearing: it makes this the stacking context that keeps
+       AmbientWash's `-z-10` above the cream background and below the content. */
+    <main className="isolate h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 pt-8 text-on-surface">
+      <AmbientWash band={dailySummary.data?.headline.band} />
       <NotificationPermissionDialog
         open={notificationPrompt.open}
         isRegistering={notificationPrompt.isRegistering}

@@ -1,0 +1,2936 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet data-dc-atomics="">
+        <link rel="icon" type="image/png" href="anuva-logo-icon.png" />
+        <link rel="apple-touch-icon" href="anuva-logo-icon.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&amp;family=Mulish:wght@300..700&amp;display=swap"
+          rel="stylesheet"
+        />
+        <script src="./image-slot.js"></script>
+        <style>
+          html {
+            scroll-behavior: smooth;
+          }
+          body {
+            margin: 0;
+            background: #f7f0e8;
+            color: #3e2542;
+            font-synthesis: none;
+            text-rendering: geometricPrecision;
+            text-wrap: pretty;
+          }
+          * {
+            box-sizing: border-box;
+          }
+          a {
+            color: #5e3566;
+            text-decoration: none;
+          }
+          a:hover {
+            color: #472852;
+          }
+          ::selection {
+            background: #e7dcec;
+          }
+          :where(a, button, [role='button']):focus-visible {
+            outline: 3px solid #5e3566;
+            outline-offset: 3px;
+            border-radius: 8px;
+          }
+          /* sticky header is ~64px; without this, anchor jumps hide each section heading */
+          section[id] {
+            scroll-margin-top: 88px;
+          }
+          /* Headings render at their pre-theme weight: Playfair with antialiased
+     smoothing, which draws lighter than the platform default. Scoped to headings
+     so body text keeps the PWA's own smoothing (apps/pwa/src/index.css sets none). */
+          h1,
+          h2,
+          h3,
+          .anuva-logo-text,
+          .anuva-footer-wordmark {
+            -webkit-font-smoothing: antialiased;
+          }
+
+          /* Global warmth overlay, copied verbatim from apps/pwa/src/index.css `body::after`.
+     The PWA multiplies a warm amber wash over everything, so its cream canvas
+     renders #F7E8DA rather than the raw #F7F0E8 token. Without this the landing
+     page reads visibly cooler than the app even with identical token values.
+     Scoped to the page wrapper (not `body`) so it cannot tint canvas-editor chrome. */
+          .anuva-page::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: #ff9a3d;
+            mix-blend-mode: multiply;
+            opacity: 0.08;
+            pointer-events: none;
+            z-index: 9999;
+          }
+
+          @keyframes floatSlow {
+            0%,
+            100% {
+              transform: translateY(0);
+            }
+            50% {
+              transform: translateY(-14px);
+            }
+          }
+          @keyframes pulseGlow {
+            0%,
+            100% {
+              opacity: 0.55;
+            }
+            50% {
+              opacity: 0.9;
+            }
+          }
+
+          /* The hero photo is trimmed to its subjects (1337x1019), so fit="contain"
+     fills the column almost exactly while never cropping either woman. The
+     slot's frame carries a faint grey wash that the slim letterbox would
+     otherwise expose, so repaint it the white of the photo's backdrop. */
+          #hero-image::part(frame) {
+            background: #fbf6f0;
+          }
+
+          /* image-slot draws a dashed placeholder ring and hides it via
+     :host([data-filled]), but data-filled never lands on these slots even
+     though the photos load, so the ring ships as a visible dashed outline.
+     Both slots have an author src and are never empty, so drop it outright. */
+          #hero-image::part(ring),
+          #meet-anuva-image::part(ring) {
+            display: none;
+          }
+
+          /* Nav needs ~816px. Below 856px the last item was clipped inside an
+     overflow-x:auto strip with the scrollbar hidden, so hand off to the
+     hamburger at 900 instead of 760 (covers iPad Pro 11 portrait @834). */
+          @media (max-width: 1010px) {
+            .anuva-desktop-nav {
+              display: none !important;
+            }
+            .anuva-hamburger {
+              display: flex !important;
+            }
+          }
+
+          /* The columns are flex-grow 42/58 on 0% bases, so they always fill the row
+     and it never wraps on its own - this query is what stacks it. The image
+     column's only child is absolutely positioned, so once stacked it has no
+     content height and needs the explicit height below. */
+          @media (max-width: 920px) {
+            .anuva-hero-row {
+              min-height: auto !important;
+            }
+            .anuva-hero-image-col {
+              flex-basis: 100% !important;
+              height: 320px !important;
+            }
+            /* aspect-ratio:1/1 made this 62% of an iPad mini screen and 206% of a
+       landscape phone screen once the row stacked. */
+            .anuva-meet-image {
+              max-height: 420px !important;
+            }
+          }
+          @media (max-width: 900px) {
+            .anuva-section-pad {
+              padding-top: 56px !important;
+              padding-bottom: 56px !important;
+            }
+          }
+
+          /* 6-item grids: auto-fit resolves to 4 columns from 1000px up, leaving a
+     2-card orphan row on every laptop and desktop. Lock to 3x2.
+     12 symptom cards resolved to 6 columns only above 1300px; below that they
+     left orphan rows, so lock the 6-per-row desktop layout from 1000px up. */
+          @media (min-width: 1000px) {
+            .anuva-grid-3 {
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+            .anuva-grid-symptoms {
+              grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+              gap: 16px !important;
+            }
+          }
+          /* Tablet: auto-fit resolves to 5 columns, leaving a 2-card orphan row. 12/4 is even. */
+          @media (min-width: 600px) and (max-width: 999px) {
+            .anuva-grid-symptoms {
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            }
+          }
+          /* 4 trust cards resolved to 3 columns on tablet portrait. */
+          @media (min-width: 600px) and (max-width: 900px) {
+            .anuva-grid-trust {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+          }
+
+          /* 6 chips need 324px of row; the footer interior is 280px at 320px wide, so
+     they wrapped 5+1 and left Facebook orphaned. Cap the row to 3 chips instead. */
+          @media (max-width: 400px) {
+            .anuva-social {
+              max-width: 180px !important;
+            }
+          }
+
+          @media (max-width: 480px) {
+            .anuva-hero-image-col {
+              height: 240px !important;
+            }
+            .anuva-section-pad {
+              padding-left: 16px !important;
+              padding-right: 16px !important;
+            }
+            /* Header CTA and hamburger are both flex:none, so the logo was the only
+       shrinkable child and wrapped to two lines on every phone <=412px. */
+            .anuva-header-cta {
+              display: none !important;
+            }
+          }
+
+          /* Hero CTA label measures ~332px; the text column is 320px wide at 360px. */
+          @media (max-width: 390px) {
+            .anuva-hero-cta {
+              padding: 15px 22px !important;
+              font-size: 15px !important;
+            }
+            /* logo mark + wordmark measures ~250px; the header interior is 280px at 320px. */
+            .anuva-logo-text {
+              font-size: 18px !important;
+            }
+            .anuva-logo-img {
+              width: 30px !important;
+            }
+          }
+
+          /* Phone: icon + label side-by-side; card padding 28/16 reduced 30%. */
+          @media (max-width: 599px) {
+            .anuva-grid-symptoms {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 12px !important;
+            }
+            .anuva-grid-symptoms > a {
+              flex-direction: row !important;
+              align-items: center !important;
+              justify-content: flex-start !important;
+              text-align: left !important;
+              padding: 19.6px 11.2px !important;
+              gap: 10px !important;
+            }
+            .anuva-grid-symptoms > a > div {
+              width: 40px !important;
+              height: 40px !important;
+              flex-shrink: 0 !important;
+            }
+            .anuva-grid-symptoms > a > div > svg {
+              width: 20px !important;
+              height: 20px !important;
+            }
+            .anuva-grid-symptoms > a > span {
+              font-size: 13px !important;
+              line-height: 1.25 !important;
+            }
+          }
+
+          /* minmax(140px) needs a 332px viewport for 2 columns; below that all 11
+     symptom cards stacked into a ~1430px wall. */
+          @media (max-width: 355px) {
+            .anuva-grid-symptoms {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 12px !important;
+            }
+            .anuva-grid-symptoms > a {
+              padding: 19.6px 11.2px !important;
+            }
+            .anuva-hero-cta {
+              padding: 14px 18px !important;
+              font-size: 14px !important;
+            }
+            /* 40px price + "+GST" overflowed the 216px card interior at 320px. */
+            .anuva-price-row {
+              flex-wrap: wrap !important;
+            }
+          }
+
+          /* Rich footer. Columns collapse 4 -> 2 -> 1; the social row caps at 3 chips on
+     phones because 6 chips need 324px and a 320px screen leaves 280px. */
+          .anuva-fcols {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 20px 48px;
+            display: grid;
+            gap: 40px;
+            grid-template-columns: 1.6fr 1fr 1fr 1fr;
+          }
+          .anuva-fcols h2 {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #f0e4c8;
+            margin: 0 0 16px;
+          }
+          .anuva-fcols ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+          }
+          .anuva-fcols ul a {
+            font-size: 14px;
+            color: rgba(247, 240, 232, 0.68);
+          }
+          .anuva-fcols ul a:hover {
+            color: #f4dce0;
+          }
+          .anuva-fbase {
+            border-top: 1px solid rgba(247, 240, 232, 0.14);
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 22px 20px 28px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 12.5px;
+          }
+          .anuva-fbase a {
+            color: rgba(247, 240, 232, 0.68);
+          }
+          .anuva-fbase a:hover {
+            color: #f4dce0;
+          }
+          @media (max-width: 900px) {
+            .anuva-fcols {
+              grid-template-columns: 1fr 1fr;
+              gap: 36px;
+            }
+            .anuva-fbrand {
+              grid-column: 1/-1;
+            }
+          }
+          @media (max-width: 560px) {
+            .anuva-fcols {
+              grid-template-columns: 1fr;
+              gap: 32px;
+            }
+            .anuva-fbase {
+              justify-content: center;
+              text-align: center;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            html {
+              scroll-behavior: auto;
+            }
+            *,
+            *::before,
+            *::after {
+              animation-duration: 0.01ms !important;
+              animation-iteration-count: 1 !important;
+              transition-duration: 0.01ms !important;
+            }
+          }
+        </style>
+      </helmet>
+
+      <div
+        class="anuva-page"
+        style="
+          font-family:
+            'Mulish',
+            -apple-system,
+            system-ui,
+            sans-serif;
+          color: #3e2542;
+          background: #f7f0e8;
+          overflow-x: clip;
+        "
+      >
+        <!-- ===== STICKY HEADER ===== -->
+        <header
+          style="
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(247, 240, 232, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(94, 53, 102, 0.15);
+          "
+        >
+          <div
+            style="
+              max-width: 1240px;
+              margin: 0 auto;
+              padding: 16px 20px;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 16px;
+            "
+          >
+            <a
+              href="#hero"
+              aria-label="ANUVA WELLNESS - back to top"
+              style="flex: none; display: flex; align-items: center; gap: 10px"
+            >
+              <img
+                class="anuva-logo-img"
+                src="anuva-logo-mark.png"
+                width="206"
+                height="144"
+                alt=""
+                decoding="async"
+                style="width: 38px; height: auto; display: block"
+              />
+              <span
+                class="anuva-logo-text"
+                style="
+                  font-family: 'Playfair Display', serif;
+                  font-weight: 700;
+                  font-size: 22px;
+                  letter-spacing: 0.5px;
+                  line-height: 1;
+                  color: #3e2542;
+                  white-space: nowrap;
+                "
+                >ANUVA <span style="font-weight: 500; color: #c97e92">WELLNESS</span></span
+              >
+            </a>
+            <nav
+              class="anuva-desktop-nav"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 22px;
+                font-size: 14.5px;
+                font-weight: 500;
+                color: #5c4a66;
+                overflow-x: auto;
+                white-space: nowrap;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+              "
+            >
+              <a href="#symptoms" style="color: #5c4a66" style-hover="color:#5E3566">Symptoms</a>
+              <a href="#how-it-works" style="color: #5c4a66" style-hover="color:#5E3566"
+                >How It Works</a
+              >
+              <a href="#included" style="color: #5c4a66" style-hover="color:#5E3566"
+                >What's Included</a
+              >
+              <a href="#pricing" style="color: #5c4a66" style-hover="color:#5E3566">Pricing</a>
+              <a href="#faqs" style="color: #5c4a66" style-hover="color:#5E3566">FAQs</a>
+              <a href="/about" style="color: #5c4a66" style-hover="color:#5E3566">About</a>
+              <a href="/contact" style="color: #5c4a66" style-hover="color:#5E3566">Contact</a>
+            </nav>
+            <a
+              href="https://app.anuvawellness.com"
+              class="anuva-header-cta"
+              style="
+                flex: none;
+                background: #c97e92;
+                color: #ffffff;
+                padding: 11px 20px;
+                border-radius: 100px;
+                font-weight: 600;
+                font-size: 13.5px;
+                white-space: nowrap;
+                box-shadow: 0 6px 16px rgba(94, 53, 102, 0.35);
+                transition:
+                  transform 0.2s,
+                  box-shadow 0.2s;
+              "
+              style-hover="transform:translateY(-2px);box-shadow:0 10px 22px rgba(94,53,102,0.45)"
+              >Start Free Trial</a
+            >
+            <button
+              class="anuva-hamburger"
+              onClick="{{ toggleMenu }}"
+              aria-label="Navigation menu"
+              aria-controls="anuva-mobile-nav"
+              aria-expanded="{{ menuOpen }}"
+              style="
+                display: none;
+                flex: none;
+                background: none;
+                border: none;
+                font-size: 24px;
+                color: #5e3566;
+                cursor: pointer;
+                padding: 2px 4px;
+              "
+            >
+              ☰
+            </button>
+          </div>
+          <sc-if value="{{ menuOpen }}">
+            <div
+              id="anuva-mobile-nav"
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                padding: 6px 20px 16px;
+                border-top: 1px solid rgba(94, 53, 102, 0.15);
+              "
+            >
+              <a
+                href="#symptoms"
+                onClick="{{ toggleMenu }}"
+                style="padding: 12px 4px; color: #5c4a66; font-weight: 500; font-size: 15px"
+                >Symptoms</a
+              >
+              <a
+                href="#how-it-works"
+                onClick="{{ toggleMenu }}"
+                style="padding: 12px 4px; color: #5c4a66; font-weight: 500; font-size: 15px"
+                >How It Works</a
+              >
+              <a
+                href="#included"
+                onClick="{{ toggleMenu }}"
+                style="padding: 12px 4px; color: #5c4a66; font-weight: 500; font-size: 15px"
+                >What's Included</a
+              >
+              <a
+                href="#pricing"
+                onClick="{{ toggleMenu }}"
+                style="padding: 12px 4px; color: #5c4a66; font-weight: 500; font-size: 15px"
+                >Pricing</a
+              >
+              <a
+                href="#faqs"
+                onClick="{{ toggleMenu }}"
+                style="padding: 12px 4px; color: #5c4a66; font-weight: 500; font-size: 15px"
+                >FAQs</a
+              >
+              <a
+                href="/about"
+                style="padding: 12px 4px; color: #5c4a66; font-weight: 500; font-size: 15px"
+                >About Us</a
+              >
+              <a
+                href="/contact"
+                style="padding: 12px 4px; color: #5c4a66; font-weight: 500; font-size: 15px"
+                >Contact Us</a
+              >
+            </div>
+          </sc-if>
+        </header>
+
+        <!-- ===== HERO ===== -->
+        <section
+          id="hero"
+          style="
+            position: relative;
+            background: radial-gradient(120% 100% at 20% 0%, #f4dce0 0%, #f3e9dd 35%, #f7f0e8 70%);
+          "
+        >
+          <div
+            class="anuva-hero-row"
+            style="
+              width: 100%;
+              margin: 0;
+              display: flex;
+              flex-wrap: wrap-reverse;
+              align-items: stretch;
+              gap: 0;
+              min-height: 640px;
+            "
+          >
+            <div
+              style="
+                flex: 42 1 0%;
+                min-width: 280px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                padding: 64px clamp(20px, 3.5vw, 64px);
+                background-color: #fbf6f0;
+              "
+            >
+              <h1
+                style="
+                  font-family: 'Playfair Display', serif;
+                  font-weight: 600;
+                  font-size: clamp(34px, 5vw, 58px);
+                  line-height: 1.1;
+                  margin: 0 0 22px;
+                  color: #3e2542;
+                "
+              >
+                <span style="font-size: clamp(26px, 4.2vw, 50px)">Your Personalized</span>
+                <span
+                  style="color: {{ accentColor }}; font-style: italic; font-family: Times New Roman; font-size:clamp(36.5px,5.2vw,60.5px)"
+                  >Perimenopause Wellness</span
+                >
+                <span
+                  style="color: {{ accentColor }}; font-style: italic; font-family: Times New Roman; font-size:clamp(36.5px,5.2vw,60.5px)"
+                  >Journey</span
+                >
+                <span style="font-size: clamp(26px, 4.2vw, 50px)">Starts Here</span>
+              </h1>
+              <p
+                style="
+                  font-size: clamp(16px, 2vw, 19px);
+                  line-height: 1.6;
+                  color: #5c4a66;
+                  max-width: 520px;
+                  margin: 0 0 32px;
+                "
+              >
+                Expert care, personalized plans, and daily support to help you feel like yourself
+                again.
+              </p>
+              <div
+                style="
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 16px;
+                  align-items: center;
+                  margin-bottom: 28px;
+                "
+              >
+                <a
+                  href="https://app.anuvawellness.com"
+                  class="anuva-hero-cta"
+                  style="
+                    background: #c97e92;
+                    color: #ffffff;
+                    padding: 17px 34px;
+                    border-radius: 100px;
+                    font-weight: 700;
+                    font-size: 16px;
+                    box-shadow: 0 12px 28px rgba(94, 53, 102, 0.4);
+                    transition:
+                      transform 0.2s,
+                      box-shadow 0.2s;
+                    display: inline-block;
+                  "
+                  style-hover="transform:translateY(-3px) scale(1.02);box-shadow:0 18px 36px rgba(94,53,102,0.5)"
+                  >Start Your 14-Day Free Trial →</a
+                >
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  font-size: 14px;
+                  color: #5c4a66;
+                  font-weight: 500;
+                "
+              >
+                <span
+                  role="img"
+                  aria-label="Rated 5 out of 5"
+                  style="color: #c97e92; font-size: 16px"
+                  >★★★★★</span
+                >
+                <span>Trusted by 2,000+ women · Research-backed</span>
+              </div>
+            </div>
+            <div
+              class="anuva-hero-image-col"
+              style="flex: 58 1 0%; min-width: 300px; position: relative"
+            >
+              <image-slot
+                id="hero-image"
+                style="
+                  position: absolute;
+                  inset: 0;
+                  width: 100%;
+                  height: 100%;
+                  background-color: #fbf6f0;
+                "
+                shape="rounded"
+                radius="0"
+                fit="contain"
+                placeholder="Drop a photo of a woman feeling confident and calm"
+                src="uploads/hero-woman.webp"
+              ></image-slot>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== SYMPTOMS ===== -->
+        <section
+          id="symptoms"
+          class="anuva-section-pad"
+          style="padding: 88px 20px; background: #f7f0e8"
+        >
+          <div style="max-width: 1080px; margin: 0 auto; text-align: center">
+            <div
+              style="
+                font-size: 13px;
+                font-weight: 700;
+                letter-spacing: 1.5px;
+                color: #b8923c;
+                margin-bottom: 14px;
+              "
+            >
+              RECOGNIZE THE SIGNS
+            </div>
+            <h2
+              style="
+                font-family: 'Playfair Display', serif;
+                font-weight: 600;
+                font-size: clamp(28px, 4vw, 42px);
+                margin: 0 0 16px;
+                color: #3e2542;
+              "
+            >
+              Do You Relate To These?
+            </h2>
+            <p style="font-size: 17px; color: #5c4a66; max-width: 560px; margin: 0 auto 20px">
+              You're not alone. These are common signs your body is signaling for support.
+            </p>
+            <p
+              style="
+                font-size: 16px;
+                line-height: 1.7;
+                font-weight: 600;
+                color: #5e3566;
+                max-width: 680px;
+                margin: 0 auto 48px;
+              "
+            >
+              Explore a symptom to learn what it can feel like, why it may happen and what could
+              help.
+            </p>
+            <div
+              class="anuva-grid-symptoms"
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 20px;
+              "
+            >
+              <a
+                href="/symptoms/hot-flashes"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #5e3566;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      d="M12 2C9 6 6 9 6 13a6 6 0 1012 0c0-1.5-.6-2.8-1.5-4 .3 1.5-.3 2.5-1 2.8.6-3-1-6-3.5-9.8z"
+                    ></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542">Hot Flashes</span>
+              </a>
+              <a
+                href="/symptoms/mood-swings"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #c97e92;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M9 10h.01M15 10h.01M8 15c1.5-2 6.5-2 8 0"></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542">Mood Swings</span>
+              </a>
+              <a
+                href="/symptoms/poor-sleep"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #b8923c;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 109.8 9.8z"></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542">Poor Sleep</span>
+              </a>
+              <a
+                href="/symptoms/weight-gain"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #5e3566;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <circle cx="12" cy="12" r="8.5"></circle>
+                    <path d="M9 12h6M12 9v6"></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542">Weight Gain</span>
+              </a>
+              <a
+                href="/symptoms/brain-fog"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #c97e92;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path d="M6 10a6 6 0 1112 0c0 3-2 3.5-2 6H8c0-2.5-2-3-2-6z"></path>
+                    <path d="M9 19h6"></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542">Brain Fog</span>
+              </a>
+              <a
+                href="/symptoms/low-energy"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #b8923c;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542">Low Energy</span>
+              </a>
+              <a
+                href="/symptoms/irregular-periods"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #5e3566;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <rect x="4" y="5" width="16" height="16" rx="2"></rect>
+                    <path d="M4 9h16M8 3v4M16 3v4"></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542"
+                  >Irregular Periods</span
+                >
+              </a>
+              <a
+                href="/symptoms/night-sweats"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #c97e92;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      d="M12 3v2M5.6 5.6l1.4 1.4M3 12h2M5.6 18.4l1.4-1.4M12 19v2M17 17l1.4 1.4M19 12h2M17 7l1.4-1.4"
+                    ></path>
+                    <circle cx="12" cy="12" r="3.5"></circle>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542"
+                  >Night Sweats</span
+                >
+              </a>
+              <a
+                href="/symptoms/anxiety"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #b8923c;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path d="M12 21c-4-4-8-7.5-8-12a5 5 0 019-3 5 5 0 019 3c0 4.5-4 8-8 12z"></path>
+                    <path d="M9 11h2l1-2 2 4 1-2h1"></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542">Anxiety</span>
+              </a>
+              <a
+                href="/symptoms/low-libido"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #5e3566;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      d="M12 20s-7-4.5-9-9.5C1.5 6 4 3 7 3c2 0 4 1 5 3 1-2 3-3 5-3 3 0 5.5 3 4 7.5-2 5-9 9.5-9 9.5z"
+                      opacity="0.35"
+                    ></path>
+                    <path d="M12 4v6M9 7h6"></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542">Low Libido</span>
+              </a>
+              <a
+                href="/symptoms/stiffness-joint-pain"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #c97e92;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path d="M12 3v5.2M12 15.8V21" stroke-linecap="round"></path>
+                    <circle cx="12" cy="12" r="3.6"></circle>
+                    <path
+                      d="M6.3 9.4a5.2 5.2 0 000 5.2M17.7 9.4a5.2 5.2 0 010 5.2"
+                      stroke-linecap="round"
+                    ></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542"
+                  >Stiffness &amp; Joint Pain</span
+                >
+              </a>
+              <a
+                href="/symptoms/urinary-symptoms"
+                style="
+                  text-decoration: none;
+                  color: inherit;
+                  background: #f3e9dd;
+                  border-radius: 20px;
+                  padding: 28px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 14px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s,
+                    background 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 14px 30px rgba(94,53,102,0.18);background:#FBF6F0"
+              >
+                <div
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 50%;
+                    background: #b8923c;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path d="M6 8.6h12v4.8a6 6 0 01-12 0z"></path>
+                    <path
+                      d="M9.1 3.9c1 1.4 1.6 2.4 1.6 3.1a1.6 1.6 0 11-3.2 0c0-.7.6-1.7 1.6-3.1z"
+                    ></path>
+                    <path
+                      d="M14.9 3.9c1 1.4 1.6 2.4 1.6 3.1a1.6 1.6 0 11-3.2 0c0-.7.6-1.7 1.6-3.1z"
+                    ></path>
+                  </svg>
+                </div>
+                <span style="font-size: 14.5px; font-weight: 600; color: #3e2542"
+                  >Urinary Symptoms</span
+                >
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== MEET ANUVA ===== -->
+        <section
+          class="anuva-section-pad"
+          style="
+            padding: 88px 20px;
+            background: linear-gradient(180deg, #f3e9dd, #f7f0e8);
+            overflow: auto;
+          "
+        >
+          <div
+            style="
+              max-width: 1180px;
+              margin: 0 auto;
+              display: flex;
+              flex-wrap: wrap;
+              align-items: center;
+              gap: 56px;
+            "
+          >
+            <div
+              class="anuva-meet-image"
+              style="flex: 1 1 380px; min-width: 280px; aspect-ratio: 1/1; position: relative"
+            >
+              <image-slot
+                id="meet-anuva-image"
+                style="position: absolute; inset: 0; width: 100%; height: 100%"
+                shape="rounded"
+                radius="28"
+                fit="cover"
+                placeholder="Drop a photo of a wellness coach or yoga session"
+                src="uploads/meet-anuva.webp"
+              ></image-slot>
+            </div>
+            <div style="flex: 1 1 440px; min-width: 280px">
+              <div
+                style="
+                  font-size: 13px;
+                  font-weight: 700;
+                  letter-spacing: 1.5px;
+                  color: #b8923c;
+                  margin-bottom: 14px;
+                "
+              >
+                ANUVA WELLNESS FOR YOU
+              </div>
+              <h2
+                style="
+                  font-family: 'Playfair Display', serif;
+                  font-weight: 600;
+                  font-size: clamp(28px, 4vw, 40px);
+                  margin: 0 0 20px;
+                  color: #3e2542;
+                "
+              >
+                One Platform. Every Piece of Your Care.
+              </h2>
+              <p style="font-size: 17px; line-height: 1.7; color: #5c4a66; margin: 0 0 28px">
+                ANUVA WELLNESS brings together personalized nutrition, movement, expert guidance and
+                daily tracking into a single integrated plan, backed by a community of women walking
+                the same path. No more piecing together advice from a dozen sources.
+              </p>
+              <a
+                href="#pricing"
+                style="
+                  display: inline-block;
+                  background: #5e3566;
+                  color: #fbf6f0;
+                  padding: 16px 32px;
+                  border-radius: 100px;
+                  font-weight: 600;
+                  font-size: 15px;
+                  transition:
+                    transform 0.2s,
+                    box-shadow 0.2s;
+                "
+                style-hover="transform:translateY(-3px);box-shadow:0 14px 28px rgba(62,37,66,0.3)"
+                >Discover Your Plan →</a
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== HOW IT WORKS ===== -->
+        <section
+          id="how-it-works"
+          class="anuva-section-pad"
+          style="padding: 88px 20px; background: #f7f0e8"
+        >
+          <div style="max-width: 1180px; margin: 0 auto; text-align: center">
+            <div
+              style="
+                font-size: 13px;
+                font-weight: 700;
+                letter-spacing: 1.5px;
+                color: #b8923c;
+                margin-bottom: 14px;
+              "
+            >
+              SIMPLE, GUIDED, EFFECTIVE
+            </div>
+            <h2
+              style="
+                font-family: 'Playfair Display', serif;
+                font-weight: 600;
+                font-size: clamp(28px, 4vw, 42px);
+                margin: 0 0 56px;
+                color: #3e2542;
+              "
+            >
+              How It Works
+            </h2>
+            <div
+              class="anuva-grid-3"
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 28px;
+                text-align: left;
+                position: relative;
+              "
+            >
+              <div
+                style="
+                  background: #f3e9dd;
+                  border-radius: 24px;
+                  padding: 32px 26px;
+                  position: relative;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 16px 32px rgba(94,53,102,0.16)"
+              >
+                <div
+                  style="
+                    font-family: 'Playfair Display', serif;
+                    font-size: 38px;
+                    font-weight: 700;
+                    color: #cdb9de;
+                    margin-bottom: 14px;
+                  "
+                >
+                  01
+                </div>
+                <h3 style="font-size: 19px; font-weight: 700; margin: 0 0 10px; color: #3e2542">
+                  Assessment
+                </h3>
+                <p style="font-size: 15px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  Take a detailed questionnaire assessment on your symptoms, history, and goals.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #f3e9dd;
+                  border-radius: 24px;
+                  padding: 32px 26px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 16px 32px rgba(94,53,102,0.16)"
+              >
+                <div
+                  style="
+                    font-family: 'Playfair Display', serif;
+                    font-size: 38px;
+                    font-weight: 700;
+                    color: #cdb9de;
+                    margin-bottom: 14px;
+                  "
+                >
+                  02
+                </div>
+                <h3 style="font-size: 19px; font-weight: 700; margin: 0 0 10px; color: #3e2542">
+                  14 Day Trial
+                </h3>
+                <p style="font-size: 15px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  Log your symptoms, understand your patterns, and build healthy habits.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #f3e9dd;
+                  border-radius: 24px;
+                  padding: 32px 26px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 16px 32px rgba(94,53,102,0.16)"
+              >
+                <div
+                  style="
+                    font-family: 'Playfair Display', serif;
+                    font-size: 38px;
+                    font-weight: 700;
+                    color: #cdb9de;
+                    margin-bottom: 14px;
+                  "
+                >
+                  03
+                </div>
+                <h3 style="font-size: 19px; font-weight: 700; margin: 0 0 10px; color: #3e2542">
+                  Pay &amp; Subscribe
+                </h3>
+                <p style="font-size: 15px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  Unlock your personalized report also get a care plan plus 3 FREE expert
+                  consultations.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #f3e9dd;
+                  border-radius: 24px;
+                  padding: 32px 26px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 16px 32px rgba(94,53,102,0.16)"
+              >
+                <div
+                  style="
+                    font-family: 'Playfair Display', serif;
+                    font-size: 38px;
+                    font-weight: 700;
+                    color: #cdb9de;
+                    margin-bottom: 14px;
+                  "
+                >
+                  04
+                </div>
+                <h3 style="font-size: 19px; font-weight: 700; margin: 0 0 10px; color: #3e2542">
+                  Personalized Plan
+                </h3>
+                <p style="font-size: 15px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  Get a nutrition, lifestyle, and care plan built around your body.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #f3e9dd;
+                  border-radius: 24px;
+                  padding: 32px 26px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 16px 32px rgba(94,53,102,0.16)"
+              >
+                <div
+                  style="
+                    font-family: 'Playfair Display', serif;
+                    font-size: 38px;
+                    font-weight: 700;
+                    color: #cdb9de;
+                    margin-bottom: 14px;
+                  "
+                >
+                  05
+                </div>
+                <h3 style="font-size: 19px; font-weight: 700; margin: 0 0 10px; color: #3e2542">
+                  Follow &amp; Engage
+                </h3>
+                <p style="font-size: 15px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  Track daily, connect with experts, and stay supported by community.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #f3e9dd;
+                  border-radius: 24px;
+                  padding: 32px 26px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 16px 32px rgba(94,53,102,0.16)"
+              >
+                <div
+                  style="
+                    font-family: 'Playfair Display', serif;
+                    font-size: 38px;
+                    font-weight: 700;
+                    color: #cdb9de;
+                    margin-bottom: 14px;
+                  "
+                >
+                  06
+                </div>
+                <h3 style="font-size: 19px; font-weight: 700; margin: 0 0 10px; color: #3e2542">
+                  Feel Your Best
+                </h3>
+                <p style="font-size: 15px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  See real progress in symptoms, energy, and confidence.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== WHAT'S INCLUDED ===== -->
+        <section
+          id="included"
+          class="anuva-section-pad"
+          style="padding: 88px 20px; background: linear-gradient(180deg, #f7f0e8, #f3e9dd)"
+        >
+          <div style="max-width: 1180px; margin: 0 auto; text-align: center">
+            <div
+              style="
+                font-size: 13px;
+                font-weight: 700;
+                letter-spacing: 1.5px;
+                color: #b8923c;
+                margin-bottom: 14px;
+              "
+            >
+              EVERYTHING YOU NEED
+            </div>
+            <h2
+              style="
+                font-family: 'Playfair Display', serif;
+                font-weight: 600;
+                font-size: clamp(28px, 4vw, 42px);
+                margin: 0 0 56px;
+                color: #3e2542;
+              "
+            >
+              What's Included
+            </h2>
+            <div
+              class="anuva-grid-3"
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 24px;
+                text-align: left;
+              "
+            >
+              <div
+                style="
+                  background: #fbf6f0;
+                  border: 1px solid rgba(94, 53, 102, 0.15);
+                  border-radius: 22px;
+                  padding: 30px 26px;
+                  box-shadow: 0 8px 24px rgba(94, 53, 102, 0.08);
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-8px);box-shadow:0 20px 40px rgba(94,53,102,0.2)"
+              >
+                <div
+                  style="
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 14px;
+                    background: #5e3566;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 18px;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path d="M12 2a5 5 0 015 5c0 3-2 5-5 8-3-3-5-5-5-8a5 5 0 015-5z"></path>
+                    <path d="M12 22c4-2 8-6 8-11"></path>
+                  </svg>
+                </div>
+                <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 8px; color: #3e2542">
+                  Personalized Nutrition
+                </h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  Meal plans tailored to your symptoms, culture, and preferences.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #fbf6f0;
+                  border: 1px solid rgba(94, 53, 102, 0.15);
+                  border-radius: 22px;
+                  padding: 30px 26px;
+                  box-shadow: 0 8px 24px rgba(94, 53, 102, 0.08);
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-8px);box-shadow:0 20px 40px rgba(94,53,102,0.2)"
+              >
+                <div
+                  style="
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 14px;
+                    background: #5e3566;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 18px;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <circle cx="12" cy="7" r="3.2"></circle>
+                    <path d="M6 21c0-3.5 2.7-6 6-6s6 2.5 6 6"></path>
+                  </svg>
+                </div>
+                <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 8px; color: #3e2542">
+                  Expert Consultations
+                </h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  1:1 access to gynecologists, psycologists, nutritionists and menopause coach.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #fbf6f0;
+                  border: 1px solid rgba(94, 53, 102, 0.15);
+                  border-radius: 22px;
+                  padding: 30px 26px;
+                  box-shadow: 0 8px 24px rgba(94, 53, 102, 0.08);
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-8px);box-shadow:0 20px 40px rgba(94,53,102,0.2)"
+              >
+                <div
+                  style="
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 14px;
+                    background: #5e3566;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 18px;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path d="M3 17l5-6 4 4 5-7 4 5"></path>
+                  </svg>
+                </div>
+                <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 8px; color: #3e2542">
+                  Daily Tracking
+                </h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  Log symptoms, sleep, and mood to see patterns and progress.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #fbf6f0;
+                  border: 1px solid rgba(94, 53, 102, 0.15);
+                  border-radius: 22px;
+                  padding: 30px 26px;
+                  box-shadow: 0 8px 24px rgba(94, 53, 102, 0.08);
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-8px);box-shadow:0 20px 40px rgba(94,53,102,0.2)"
+              >
+                <div
+                  style="
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 14px;
+                    background: #5e3566;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 18px;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      d="M17 20c0-3-2-5-5-5s-5 2-5 5M12 12a3 3 0 100-6 3 3 0 000 6zM21 20c0-2.2-1.3-4-3-4.6M19 12a2.6 2.6 0 100-5.2M3 20c0-2.2 1.3-4 3-4.6M5 12a2.6 2.6 0 110-5.2"
+                    ></path>
+                  </svg>
+                </div>
+                <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 8px; color: #3e2542">
+                  Community Support
+                </h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  Connect with women in the same stage of their journey. Get your questions answered
+                  by an expert panelists.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #fbf6f0;
+                  border: 1px solid rgba(94, 53, 102, 0.15);
+                  border-radius: 22px;
+                  padding: 30px 26px;
+                  box-shadow: 0 8px 24px rgba(94, 53, 102, 0.08);
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-8px);box-shadow:0 20px 40px rgba(94,53,102,0.2)"
+              >
+                <div
+                  style="
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 14px;
+                    background: #5e3566;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 18px;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <rect x="4" y="5" width="16" height="12" rx="3"></rect>
+                    <path d="M9 21h6M12 17v4M8 10h.01M16 10h.01M9 13.5c1.2 1 3.8 1 5 0"></path>
+                  </svg>
+                </div>
+                <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 8px; color: #3e2542">
+                  Anu AI Companion
+                </h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  24/7 support to answer your questions and guide you through every stage of your
+                  journey.
+                </p>
+              </div>
+              <div
+                style="
+                  background: #fbf6f0;
+                  border: 1px solid rgba(94, 53, 102, 0.15);
+                  border-radius: 22px;
+                  padding: 30px 26px;
+                  box-shadow: 0 8px 24px rgba(94, 53, 102, 0.08);
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-8px);box-shadow:0 20px 40px rgba(94,53,102,0.2)"
+              >
+                <div
+                  style="
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 14px;
+                    background: #5e3566;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 18px;
+                  "
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      d="M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"
+                    ></path>
+                    <path d="M9 8h6M9 12h6M9 16h3"></path>
+                  </svg>
+                </div>
+                <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 8px; color: #3e2542">
+                  Progress Tracking
+                </h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #5c4a66; margin: 0">
+                  Weekly and monthly reports that help you understand what’s improving and what
+                  needs attention.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== WHY TRUST ANUVA ===== -->
+        <section
+          class="anuva-section-pad"
+          style="padding: 88px 20px; background: #5e3566; color: #f7f0e8"
+        >
+          <div style="max-width: 1180px; margin: 0 auto">
+            <div style="text-align: center; margin-bottom: 56px">
+              <div
+                style="
+                  font-size: 13px;
+                  font-weight: 700;
+                  letter-spacing: 1.5px;
+                  color: #f0e4c8;
+                  margin-bottom: 14px;
+                "
+              >
+                WHY TRUST ANUVA
+              </div>
+              <h2
+                style="
+                  font-family: 'Playfair Display', serif;
+                  font-weight: 600;
+                  font-size: clamp(28px, 4vw, 42px);
+                  margin: 0;
+                  color: #f7f0e8;
+                "
+              >
+                Care You Can Rely On
+              </h2>
+            </div>
+            <div
+              class="anuva-grid-trust"
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 32px;
+              "
+            >
+              <div style="text-align: center">
+                <div
+                  style="
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    background: rgba(244, 220, 224, 0.16);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 16px;
+                    transition:
+                      transform 0.25s,
+                      background 0.25s;
+                  "
+                  style-hover="transform:scale(1.12);background:rgba(244,220,224,0.30)"
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#F4DCE0"
+                    stroke-width="1.8"
+                  >
+                    <path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"></path>
+                  </svg>
+                </div>
+                <h3 style="font-size: 17px; font-weight: 700; margin: 0 0 8px">Led by Experts</h3>
+                <p
+                  style="
+                    font-size: 14.5px;
+                    line-height: 1.6;
+                    color: rgba(247, 240, 232, 0.72);
+                    margin: 0;
+                  "
+                >
+                  Gynecologists, Psychologists &amp; Menopause coach design every plan.
+                </p>
+              </div>
+              <div style="text-align: center">
+                <div
+                  style="
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    background: rgba(244, 220, 224, 0.16);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 16px;
+                    transition:
+                      transform 0.25s,
+                      background 0.25s;
+                  "
+                  style-hover="transform:scale(1.12);background:rgba(244,220,224,0.30)"
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#F4DCE0"
+                    stroke-width="1.8"
+                  >
+                    <path d="M4 12a8 8 0 1116 0M4 12l3 8h10l3-8"></path>
+                  </svg>
+                </div>
+                <h3 style="font-size: 17px; font-weight: 700; margin: 0 0 8px">Evidence-Based</h3>
+                <p
+                  style="
+                    font-size: 14.5px;
+                    line-height: 1.6;
+                    color: rgba(247, 240, 232, 0.72);
+                    margin: 0;
+                  "
+                >
+                  Protocols grounded in research, not trends.
+                </p>
+              </div>
+              <div style="text-align: center">
+                <div
+                  style="
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    background: rgba(244, 220, 224, 0.16);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 16px;
+                    transition:
+                      transform 0.25s,
+                      background 0.25s;
+                  "
+                  style-hover="transform:scale(1.12);background:rgba(244,220,224,0.30)"
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#F4DCE0"
+                    stroke-width="1.8"
+                  >
+                    <path d="M12 2l7 3v6c0 5-3 8.5-7 11-4-2.5-7-6-7-11V5z"></path>
+                  </svg>
+                </div>
+                <h3 style="font-size: 17px; font-weight: 700; margin: 0 0 8px">Privacy-First</h3>
+                <p
+                  style="
+                    font-size: 14.5px;
+                    line-height: 1.6;
+                    color: rgba(247, 240, 232, 0.72);
+                    margin: 0;
+                  "
+                >
+                  Your health data stays encrypted and confidential. Only you can delete the data
+                  anytime.
+                </p>
+              </div>
+              <div style="text-align: center">
+                <div
+                  style="
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    background: rgba(244, 220, 224, 0.16);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 16px;
+                    transition:
+                      transform 0.25s,
+                      background 0.25s;
+                  "
+                  style-hover="transform:scale(1.12);background:rgba(244,220,224,0.30)"
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#F4DCE0"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M10 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"
+                    ></path>
+                  </svg>
+                </div>
+                <h3 style="font-size: 17px; font-weight: 700; margin: 0 0 8px">Trusted by Women</h3>
+                <p
+                  style="
+                    font-size: 14.5px;
+                    line-height: 1.6;
+                    color: rgba(247, 240, 232, 0.72);
+                    margin: 0;
+                  "
+                >
+                  Over 2,000+ members across every stage of menopause.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== TESTIMONIALS ===== -->
+        <section class="anuva-section-pad" style="padding: 88px 20px; background: #f7f0e8">
+          <div style="max-width: 1180px; margin: 0 auto; text-align: center">
+            <div
+              style="
+                font-size: 13px;
+                font-weight: 700;
+                letter-spacing: 1.5px;
+                color: #b8923c;
+                margin-bottom: 14px;
+              "
+            >
+              REAL STORIES
+            </div>
+            <h2
+              style="
+                font-family: 'Playfair Display', serif;
+                font-weight: 600;
+                font-size: clamp(28px, 4vw, 42px);
+                margin: 0 0 56px;
+                color: #3e2542;
+              "
+            >
+              Real People, Real Experiences...
+            </h2>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 24px;
+                text-align: left;
+              "
+            >
+              <div
+                style="
+                  background: #f3e9dd;
+                  border-radius: 24px;
+                  padding: 32px 28px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 16px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 18px 36px rgba(94,53,102,0.16)"
+              >
+                <span
+                  role="img"
+                  aria-label="Rated 5 out of 5"
+                  style="color: #c97e92; font-size: 16px"
+                  >★★★★★</span
+                >
+                <p
+                  style="
+                    font-size: 15px;
+                    line-height: 1.7;
+                    color: #3e2542;
+                    margin: 0;
+                    font-style: italic;
+                  "
+                >
+                  "The personalized plan finally explained what was happening to my body. My hot
+                  flashes and sleep have improved so much in eight weeks."
+                </p>
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: auto">
+                  <div>
+                    <div style="font-weight: 700; font-size: 14.5px; color: #3e2542">Priya M.</div>
+                    <div style="font-size: 13px; color: #6e5a78">Age 48, Mumbai</div>
+                  </div>
+                </div>
+              </div>
+              <div
+                style="
+                  background: #f3e9dd;
+                  border-radius: 24px;
+                  padding: 32px 28px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 16px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 18px 36px rgba(94,53,102,0.16)"
+              >
+                <span
+                  role="img"
+                  aria-label="Rated 5 out of 5"
+                  style="color: #c97e92; font-size: 16px"
+                  >★★★★★</span
+                >
+                <p
+                  style="
+                    font-size: 15px;
+                    line-height: 1.7;
+                    color: #3e2542;
+                    margin: 0;
+                    font-style: italic;
+                  "
+                >
+                  "Having ANU to actually chat to, instead of googling symptoms at 2am, changed
+                  everything. I feel supported and in control again."
+                </p>
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: auto">
+                  <div>
+                    <div style="font-weight: 700; font-size: 14.5px; color: #3e2542">Anjali R.</div>
+                    <div style="font-size: 13px; color: #6e5a78">Age 51, Mumbai</div>
+                  </div>
+                </div>
+              </div>
+              <div
+                style="
+                  background: #f3e9dd;
+                  border-radius: 24px;
+                  padding: 32px 28px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 16px;
+                  transition:
+                    transform 0.25s,
+                    box-shadow 0.25s;
+                "
+                style-hover="transform:translateY(-6px);box-shadow:0 18px 36px rgba(94,53,102,0.16)"
+              >
+                <span
+                  role="img"
+                  aria-label="Rated 5 out of 5"
+                  style="color: #c97e92; font-size: 16px"
+                  >★★★★★</span
+                >
+                <p
+                  style="
+                    font-size: 15px;
+                    line-height: 1.7;
+                    color: #3e2542;
+                    margin: 0;
+                    font-style: italic;
+                  "
+                >
+                  "The daily tracking made me realize how much my mood and energy were connected to
+                  what I was eating. Small changes, make the difference."
+                </p>
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: auto">
+                  <div>
+                    <div style="font-weight: 700; font-size: 14.5px; color: #3e2542">Sunita K.</div>
+                    <div style="font-size: 13px; color: #6e5a78">Age 46, Delhi</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== PRICING ===== -->
+        <section
+          id="pricing"
+          class="anuva-section-pad"
+          style="padding: 88px 20px; background: linear-gradient(135deg, #f4dce0, #e7dcec)"
+        >
+          <div style="max-width: 520px; margin: 0 auto; text-align: center">
+            <div
+              style="
+                font-size: 13px;
+                font-weight: 700;
+                letter-spacing: 1.5px;
+                color: #b8923c;
+                margin-bottom: 14px;
+              "
+            >
+              SIMPLE PRICING
+            </div>
+            <h2
+              style="
+                font-family: 'Playfair Display', serif;
+                font-weight: 600;
+                font-size: clamp(28px, 4vw, 40px);
+                margin: 0 0 40px;
+                color: #3e2542;
+              "
+            >
+              Start Free, Stay for the Results
+            </h2>
+            <div
+              style="
+                background: #fbf6f0;
+                border-radius: 28px;
+                padding: 44px 36px;
+                box-shadow: 0 24px 60px rgba(94, 53, 102, 0.18);
+              "
+            >
+              <div
+                style="
+                  display: inline-block;
+                  background: #e7dcec;
+                  color: #5e3566;
+                  padding: 6px 16px;
+                  border-radius: 100px;
+                  font-size: 13px;
+                  font-weight: 700;
+                  margin-bottom: 20px;
+                "
+              >
+                14-DAY FREE TRIAL
+              </div>
+              <div
+                class="anuva-price-row"
+                style="
+                  display: flex;
+                  align-items: baseline;
+                  justify-content: center;
+                  gap: 8px;
+                  margin-bottom: 10px;
+                "
+              >
+                <span style="font-size: 17px; font-weight: 600; color: #6e5a78">then</span>
+                <span
+                  style="
+                    font-family: Times New Roman;
+                    font-size: clamp(30px, 8vw, 40px);
+                    font-weight: 700;
+                    color: #3e2542;
+                  "
+                  >₹1,499/year</span
+                >
+                <span style="font-size: 16px; color: #6e5a78">+GST</span>
+              </div>
+              <p style="font-size: 15px; font-weight: 600; color: #5e3566; margin: 0 0 6px">
+                You only pay after the free trial
+              </p>
+              <p style="font-size: 14.5px; color: #6e5a78; margin: 0 0 26px">
+                Everything you need to navigate perimenopause.
+              </p>
+              <div style="height: 1px; background: rgba(94, 53, 102, 0.15); margin: 0 0 26px"></div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  text-align: left;
+                  margin-bottom: 32px;
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    align-items: flex-start;
+                    font-size: 14.5px;
+                    color: #3e2542;
+                  "
+                >
+                  <span aria-hidden="true" style="color: #5e3566; font-weight: 700">✓</span>Health
+                  report tailored to you
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    align-items: flex-start;
+                    font-size: 14.5px;
+                    color: #3e2542;
+                  "
+                >
+                  <span aria-hidden="true" style="color: #5e3566; font-weight: 700">✓</span
+                  >Expert-backed care plan &amp; AI support
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    align-items: flex-start;
+                    font-size: 14.5px;
+                    color: #3e2542;
+                  "
+                >
+                  <span aria-hidden="true" style="color: #5e3566; font-weight: 700">✓</span>3 FREE
+                  consultations (Worth over ₹5,000)
+                </div>
+              </div>
+              <a
+                href="https://app.anuvawellness.com"
+                style="
+                  display: block;
+                  background: #c97e92;
+                  color: #ffffff;
+                  padding: 17px;
+                  border-radius: 100px;
+                  font-weight: 700;
+                  font-size: 16px;
+                  box-shadow: 0 12px 28px rgba(94, 53, 102, 0.4);
+                  transition:
+                    transform 0.2s,
+                    box-shadow 0.2s;
+                "
+                style-hover="transform:translateY(-3px) scale(1.02);box-shadow:0 18px 36px rgba(94,53,102,0.5)"
+                >Start Your 14-Day Free Trial</a
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== FAQ ===== -->
+        <section
+          id="faqs"
+          class="anuva-section-pad"
+          style="padding: 88px 20px; background: #f7f0e8"
+        >
+          <div style="max-width: 760px; margin: 0 auto">
+            <div style="text-align: center; margin-bottom: 48px">
+              <div
+                style="
+                  font-size: 13px;
+                  font-weight: 700;
+                  letter-spacing: 1.5px;
+                  color: #b8923c;
+                  margin-bottom: 14px;
+                "
+              >
+                QUESTIONS
+              </div>
+              <h2
+                style="
+                  font-family: 'Playfair Display', serif;
+                  font-weight: 600;
+                  font-size: clamp(28px, 4vw, 42px);
+                  margin: 0;
+                  color: #3e2542;
+                "
+              >
+                Frequently Asked Questions
+              </h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px">
+              <sc-for list="{{ faqs }}" as="faq" hint-placeholder-count="5">
+                <div style="background: #f3e9dd; border-radius: 16px; overflow: hidden">
+                  <button
+                    onClick="{{ faq.toggle }}"
+                    aria-expanded="{{ faq.isOpen }}"
+                    style="
+                      width: 100%;
+                      background: none;
+                      border: none;
+                      padding: 20px 24px;
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      text-align: left;
+                      cursor: pointer;
+                      font-size: 16px;
+                      font-weight: 600;
+                      color: #3e2542;
+                      font-family: inherit;
+                      transition: background 0.2s;
+                    "
+                    style-hover="background:rgba(94,53,102,0.06)"
+                  >
+                    <span>{{ faq.q }}</span>
+                    <span
+                      style="flex:none;margin-left:16px;font-size:20px;color:#5E3566;transform:{{ faq.rotate }}"
+                      >+</span
+                    >
+                  </button>
+                  <sc-if value="{{ faq.isOpen }}">
+                    <p
+                      style="
+                        margin: 0;
+                        padding: 0 24px 22px;
+                        font-size: 15px;
+                        line-height: 1.7;
+                        color: #5c4a66;
+                      "
+                    >
+                      {{ faq.a }}
+                    </p>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== FINAL CTA ===== -->
+        <section
+          class="anuva-section-pad"
+          style="
+            padding: 96px 20px;
+            background: radial-gradient(120% 100% at 50% 0%, #f4dce0, #e7dcec 40%, #cdb9de 100%);
+            text-align: center;
+          "
+        >
+          <div style="max-width: 640px; margin: 0 auto">
+            <h2
+              style="
+                font-family: 'Playfair Display', serif;
+                font-weight: 600;
+                font-size: clamp(28px, 5vw, 46px);
+                line-height: 1.15;
+                margin: 0 0 20px;
+                color: #3e2542;
+              "
+            >
+              Ready to Take Control of Your Perimenopause Journey?
+            </h2>
+            <p style="font-size: 17px; color: #5c4a66; margin: 0 0 36px">
+              Join thousands of women who've found clarity, relief, and confidence with ANUVA
+              WELLNESS.
+            </p>
+            <a
+              href="https://app.anuvawellness.com"
+              style="
+                display: inline-block;
+                background: #5e3566;
+                color: #fbf6f0;
+                padding: 19px 40px;
+                border-radius: 100px;
+                font-weight: 700;
+                font-size: 17px;
+                box-shadow: 0 16px 36px rgba(62, 37, 66, 0.25);
+                transition:
+                  transform 0.2s,
+                  box-shadow 0.2s;
+              "
+              style-hover="transform:translateY(-3px) scale(1.02);box-shadow:0 22px 44px rgba(62,37,66,0.35)"
+              >Start Your 14-Day Free Trial →</a
+            >
+          </div>
+        </section>
+
+        <!-- ===== FOOTER ===== -->
+        <footer style="background: #3e2542; color: rgba(247, 240, 232, 0.68); padding: 64px 0 0">
+          <div class="anuva-fcols">
+            <div class="anuva-fbrand">
+              <img
+                src="anuva-logo-mark.png"
+                width="206"
+                height="144"
+                alt=""
+                decoding="async"
+                style="width: 52px; height: auto; display: block; margin: 0 0 12px"
+              />
+              <div
+                class="anuva-footer-wordmark"
+                style="
+                  font-family: 'Playfair Display', serif;
+                  font-weight: 700;
+                  font-size: 18px;
+                  letter-spacing: 0.5px;
+                  color: #f7f0e8;
+                  margin-bottom: 10px;
+                "
+              >
+                ANUVA <span style="font-weight: 500; color: #c97e92">WELLNESS</span>
+              </div>
+              <p style="font-size: 13.5px; line-height: 1.65; margin: 0 0 20px; max-width: 300px">
+                Research-backed perimenopause care, personalized for you. Nutrition, expert
+                consultations, daily tracking and someone to ask at any hour.
+              </p>
+              <nav
+                class="anuva-social"
+                aria-label="ANUVA WELLNESS on social media"
+                style="display: flex; flex-wrap: wrap; gap: 12px; margin: 0"
+              >
+                <a
+                  href="https://www.instagram.com/anuvawellness/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="ANUVA WELLNESS on Instagram"
+                  style="
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(247, 240, 232, 0.08);
+                    border: 1px solid rgba(247, 240, 232, 0.22);
+                    color: rgba(247, 240, 232, 0.8);
+                    transition:
+                      transform 0.2s,
+                      background 0.2s,
+                      color 0.2s,
+                      border-color 0.2s;
+                  "
+                  style-hover="transform:translateY(-3px);background:rgba(201,126,146,0.30);border-color:rgba(244,220,224,0.55);color:#F4DCE0"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5.5"></rect>
+                    <circle cx="12" cy="12" r="4.2"></circle>
+                    <circle
+                      cx="17.4"
+                      cy="6.6"
+                      r="1.15"
+                      fill="currentColor"
+                      stroke="none"
+                    ></circle></svg
+                ></a>
+                <a
+                  href="https://open.spotify.com/show/6mHEkv3QAvV6bsFXPOseb7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="ANUVA WELLNESS on Spotify"
+                  style="
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(247, 240, 232, 0.08);
+                    border: 1px solid rgba(247, 240, 232, 0.22);
+                    color: rgba(247, 240, 232, 0.8);
+                    transition:
+                      transform 0.2s,
+                      background 0.2s,
+                      color 0.2s,
+                      border-color 0.2s;
+                  "
+                  style-hover="transform:translateY(-3px);background:rgba(201,126,146,0.30);border-color:rgba(244,220,224,0.55);color:#F4DCE0"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="9.3"></circle>
+                    <path d="M7.1 9.2c3.2-.9 6.8-.5 9.7 1.1"></path>
+                    <path d="M7.9 12.3c2.7-.7 5.6-.4 8 1"></path>
+                    <path d="M8.7 15.3c2.1-.5 4.3-.2 6.1.9"></path></svg
+                ></a>
+                <a
+                  href="https://podcasts.apple.com/in/podcast/unka-safar-hamari-awaaz/id1863621194"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="ANUVA WELLNESS on Apple Podcasts"
+                  style="
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(247, 240, 232, 0.08);
+                    border: 1px solid rgba(247, 240, 232, 0.22);
+                    color: rgba(247, 240, 232, 0.8);
+                    transition:
+                      transform 0.2s,
+                      background 0.2s,
+                      color 0.2s,
+                      border-color 0.2s;
+                  "
+                  style-hover="transform:translateY(-3px);background:rgba(201,126,146,0.30);border-color:rgba(244,220,224,0.55);color:#F4DCE0"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="9.3"></circle>
+                    <rect x="10.2" y="5.4" width="3.6" height="7.2" rx="1.8"></rect>
+                    <path d="M8.4 11.7a3.6 3.6 0 007.2 0"></path>
+                    <path d="M12 15.3v3"></path></svg
+                ></a>
+                <a
+                  href="https://music.amazon.in/podcasts/754f5095-1b26-4f95-ba18-0bce336f9677/unka-safar-hamari-awaaz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="ANUVA WELLNESS on Amazon Music"
+                  style="
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(247, 240, 232, 0.08);
+                    border: 1px solid rgba(247, 240, 232, 0.22);
+                    color: rgba(247, 240, 232, 0.8);
+                    transition:
+                      transform 0.2s,
+                      background 0.2s,
+                      color 0.2s,
+                      border-color 0.2s;
+                  "
+                  style-hover="transform:translateY(-3px);background:rgba(201,126,146,0.30);border-color:rgba(244,220,224,0.55);color:#F4DCE0"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="9.3"></circle>
+                    <path d="M10.3 16.1V8.4l5-1.1v7.6"></path>
+                    <ellipse cx="8.8" cy="16.2" rx="1.6" ry="1.4"></ellipse>
+                    <ellipse cx="13.8" cy="15.1" rx="1.6" ry="1.4"></ellipse></svg
+                ></a>
+                <a
+                  href="https://www.linkedin.com/company/anuva-wellness/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="ANUVA WELLNESS on LinkedIn"
+                  style="
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(247, 240, 232, 0.08);
+                    border: 1px solid rgba(247, 240, 232, 0.22);
+                    color: rgba(247, 240, 232, 0.8);
+                    transition:
+                      transform 0.2s,
+                      background 0.2s,
+                      color 0.2s,
+                      border-color 0.2s;
+                  "
+                  style-hover="transform:translateY(-3px);background:rgba(201,126,146,0.30);border-color:rgba(244,220,224,0.55);color:#F4DCE0"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="4.5"></rect>
+                    <path d="M7.4 10.6v6.2"></path>
+                    <circle cx="7.4" cy="7.6" r="1.05" fill="currentColor" stroke="none"></circle>
+                    <path
+                      d="M11.5 16.8v-6.2M11.5 13.4c0-1.7 1-2.9 2.6-2.9s2.6 1.2 2.6 2.9v3.4"
+                    ></path></svg
+                ></a>
+                <a
+                  href="https://www.facebook.com/people/Anuva-Wellness/61584368121917/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="ANUVA WELLNESS on Facebook"
+                  style="
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(247, 240, 232, 0.08);
+                    border: 1px solid rgba(247, 240, 232, 0.22);
+                    color: rgba(247, 240, 232, 0.8);
+                    transition:
+                      transform 0.2s,
+                      background 0.2s,
+                      color 0.2s,
+                      border-color 0.2s;
+                  "
+                  style-hover="transform:translateY(-3px);background:rgba(201,126,146,0.30);border-color:rgba(244,220,224,0.55);color:#F4DCE0"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="9.3"></circle>
+                    <path d="M14.6 8h-1.3a1.8 1.8 0 00-1.8 1.8v7.8"></path>
+                    <path d="M9.6 12h4.3"></path></svg
+                ></a>
+              </nav>
+            </div>
+
+            <div>
+              <h2>Explore</h2>
+              <ul>
+                <li><a href="#hero">Home</a></li>
+                <li><a href="#symptoms">Symptoms</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#included">What's Included</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#faqs">FAQs</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h2>Company</h2>
+              <ul>
+                <li><a href="/about">About Us</a></li>
+                <li><a href="/contact">Contact Us</a></li>
+                <li>
+                  <a
+                    href="https://open.spotify.com/show/6mHEkv3QAvV6bsFXPOseb7"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Our Podcast
+                    <span aria-hidden="true" style="font-size: 11px; opacity: 0.75"
+                      >&#8599;</span
+                    ></a
+                  >
+                </li>
+                <li><a href="https://app.anuvawellness.com">Start Free Trial</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h2>Legal</h2>
+              <ul>
+                <li><a href="/privacy">Privacy Policy</a></li>
+                <li><a href="/terms">Terms &amp; Conditions</a></li>
+                <li>
+                  <a
+                    href="https://www.meity.gov.in/data-protection-framework"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >DPDP Act, 2023
+                    <span aria-hidden="true" style="font-size: 11px; opacity: 0.75"
+                      >&#8599;</span
+                    ></a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="anuva-fbase">
+            <span>&copy; 2026 ANUVA Wellness. All rights reserved.</span>
+            <span>Made with care in India &middot; <a href="/contact">Get in touch</a></span>
+          </div>
+        </footer>
+      </div>
+    </x-dc>
+    <script
+      type="text/x-dc"
+      data-dc-script
+      data-props='{"accentColor":{"editor":"color","default":"#5E3566","options":["#5E3566","#C97E92","#B8923C","#3E2542"],"tsType":"string","section":"Hero"}}'
+    >
+      class Component extends DCLogic {
+        state = {
+          menuOpen: false,
+          openFaq: 0,
+          faqData: [
+            {q:'Is ANUVA WELLNESS right for me?', a:'Yes, if you’re experiencing symptoms like irregular periods, hot flashes, mood changes, poor sleep, fatigue, or brain fog. Whether you’re just starting perimenopause or already navigating menopause, ANUVA WELLNESS helps you understand your symptoms and supports you with personalized guidance.'},
+            {q:'How does the 14-day free trial work?', a:'Start your 14-day free trial with full access to symptom tracking, personalized insights, and AI guidance. At the end of your trial, you can subscribe for ₹1,499/year + GST or cancel anytime, with no hidden charges or commitments.'},
+            {q:'What do I get with my subscription?', a:'Your subscription includes a personalized health report, one week free tailored care plan, daily symptom tracking, weekly and monthly progress reports, unlimited access to ANU AI, and 3 FREE consultations with a gynecologist, psychologist, nutritionist and menopause coach.'},
+            {q:'Is my health data safe and private?', a:'Absolutely. Your health information is encrypted and securely stored. Your privacy is our priority.'},
+            {q:'When will I start seeing results?', a:'Many women begin noticing patterns and gaining clarity within the first two weeks. As you continue tracking and following your personalized care plan, you’ll receive ongoing insights to help you better understand and manage your symptoms over time.'}
+          ]
+        };
+        toggleFaq = (i) => this.setState(s => ({ openFaq: s.openFaq === i ? -1 : i }));
+        toggleMenu = () => this.setState(s => ({ menuOpen: !s.menuOpen }));
+        renderVals() {
+          const faqs = this.state.faqData.map((f, i) => ({
+            q: f.q, a: f.a,
+            isOpen: this.state.openFaq === i,
+            rotate: this.state.openFaq === i ? 'rotate(45deg)' : 'rotate(0deg)',
+            toggle: () => this.toggleFaq(i)
+          }));
+          return { faqs, accentColor: this.props.accentColor ?? '#5E3566', menuOpen: this.state.menuOpen, toggleMenu: this.toggleMenu };
+        }
+      }
+    </script>
+  </body>
+</html>
