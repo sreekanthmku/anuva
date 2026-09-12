@@ -183,3 +183,63 @@ describe('buildMessages', () => {
     expect(messages).toHaveLength(1 + FEW_SHOT.length * 2 + 1);
   });
 });
+
+// Every few-shot reply is a worked example of the turn shape it demonstrates, so
+// the model copies its habits as readily as its content. These assert the v21
+// rules over the examples themselves: a ban the examples break is a ban the
+// model will break too.
+describe('the few-shot examples obey the rules they teach', () => {
+  it('never announces what ANU is or does', () => {
+    const SELF_ANNOUNCEMENT = [
+      /\bi'?m here (to|for)\b/i,
+      /\bi am here (to|for)\b/i,
+      /\bhere to (listen|support|help)\b/i,
+      /\bfeel free to (tell|share|ask)\b/i,
+    ];
+    for (const shot of FEW_SHOT) {
+      for (const pattern of SELF_ANNOUNCEMENT) {
+        expect(shot.reply, `"${shot.user}"`).not.toMatch(pattern);
+      }
+    }
+  });
+
+  it('keeps her as the subject, not ANU', () => {
+    // At most one sentence per reply may open with "I". Two is the register that
+    // produced "I'm glad to hear that! I'm here to listen and support you."
+    for (const shot of FEW_SHOT) {
+      const iOpeners = shot.reply
+        .split(/(?<=[.?])\s+/)
+        .filter((sentence) => /^i['’m ]/i.test(sentence.trim()));
+      expect(iOpeners.length, `"${shot.user}": ${iOpeners.join(' | ')}`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('never uses an exclamation mark', () => {
+    for (const shot of FEW_SHOT) {
+      expect(shot.reply, `"${shot.user}"`).not.toContain('!');
+    }
+  });
+
+  it('never opens with a line that would fit any message', () => {
+    const STOCK_OPENERS = [
+      /^i'?m glad to hear/i,
+      /^thanks for sharing/i,
+      /^thank you for sharing/i,
+      /^that'?s a (great|good) question/i,
+      /^i understand how you feel/i,
+    ];
+    for (const shot of FEW_SHOT) {
+      for (const pattern of STOCK_OPENERS) {
+        expect(shot.reply.trim(), `"${shot.user}"`).not.toMatch(pattern);
+      }
+    }
+  });
+
+  it('demonstrates the greeting shape, which instructions alone never carried', () => {
+    const greeting = FEW_SHOT.find((shot) => /^hi\b/i.test(shot.user));
+    expect(greeting, 'no greeting example in FEW_SHOT').toBeDefined();
+    expect(greeting?.symptom).toBeNull();
+    // Nothing to validate on a greeting, so it must not reach for reassurance.
+    expect(greeting?.reply).not.toMatch(/not imagining|you'?re not alone|that sounds/i);
+  });
+});
