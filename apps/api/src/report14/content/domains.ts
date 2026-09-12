@@ -47,7 +47,7 @@ export const DOMAIN_BLOCKS: Record<Domain, DomainBlock> = {
       {
         title: 'Lifestyle interventions',
         bullets: [
-          'Identify and reduce personal triggers: spicy food, alcohol, caffeine, and hot drinks are the most common',
+          'Identify and reduce personal triggers: spicy food, alcohol if you use it, caffeine, and hot drinks are the most common',
           'Regular moderate exercise reduces hot flash frequency within 8–12 weeks of consistent practice',
           'Stress management is non-negotiable. Cortisol amplifies vasomotor symptoms significantly',
           'Maintain a healthy weight; adipose tissue produces oestrone, and body weight affects symptom severity',
@@ -81,7 +81,7 @@ export const DOMAIN_BLOCKS: Record<Domain, DomainBlock> = {
         bullets: [
           'Identify mood triggers: hormonal dips often follow cycle patterns even when cycles are irregular',
           'Mindfulness and breathwork: just 10 minutes daily has measurable, peer-reviewed effect on perimenopausal anxiety',
-          'Reduce alcohol significantly. It is a central nervous system depressant and worsens perimenopausal mood',
+          'If you use alcohol, reduce it significantly. It is a central nervous system depressant and worsens perimenopausal mood',
           'Communicate your experience to your partner or family; isolation amplifies mood symptoms',
         ],
       },
@@ -122,7 +122,7 @@ export const DOMAIN_BLOCKS: Record<Domain, DomainBlock> = {
         bullets: [
           'Non-prescription vaginal moisturisers (non-hormonal): use regularly 2–3 times per week, not only during discomfort',
           'Topical vaginal oestrogen is highly effective, has minimal systemic absorption, and is safe for most women. Ask your doctor',
-          'Stay well-hydrated and reduce caffeine and alcohol, which both worsen urinary urgency and frequency',
+          'Stay well-hydrated and reduce caffeine and alcohol if you use it, which both worsen urinary urgency and frequency',
           'Pelvic floor exercises (Kegels): 3 sets of 10 daily significantly improve urinary incontinence within 6–8 weeks',
         ],
       },
@@ -173,7 +173,7 @@ export const DOMAIN_BLOCKS: Record<Domain, DomainBlock> = {
           'Sleep quality is the single lever that affects all symptom domains. Prioritise this above all other interventions',
           'Regular exercise: aerobic + strength combined reduces vasomotor, psychological, and physical symptoms in parallel',
           'Stress reduction: elevated cortisol dysregulates the HPA axis and worsens all three symptom clusters',
-          'Nutrition audit: reduce alcohol, refined sugar, and ultra-processed food. Each worsens symptoms across domains',
+          'Nutrition audit: reduce alcohol if you use it, refined sugar, and ultra-processed food. Each worsens symptoms across domains',
         ],
       },
       {
