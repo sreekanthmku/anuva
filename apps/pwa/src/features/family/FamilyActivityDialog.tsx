@@ -17,7 +17,7 @@ import { sendFamilyThanks } from './api';
 const KIND_EMOJI: Record<FamilySupportActionKind, string> = {
   message: '💌',
   call: '📞',
-  flowers: '🌹',
+  flowers: '🌻',
   chocolates: '🍫',
 };
 

@@ -421,7 +421,7 @@ export const familyRemindLaterResponseSchema = z.object({
  *
  * Nothing is stored. There is no thank-you thread, no counter, no history — the whole point is that
  * a gesture was received, and that fact only has to survive as long as the notification does. The
- * gesture it answers travels along so the push can name it ("your roses", "your note"); when it is
+ * gesture it answers travels along so the push can name it ("the flowers", "your note"); when it is
  * absent the push says the plain thing instead.
  */
 export const familyThanksBodySchema = z.object({

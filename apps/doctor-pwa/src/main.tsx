@@ -1,5 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+// First, and before anything that can throw.
+import { initSentry } from './lib/sentry';
 import '@fontsource/mulish/300.css';
 import '@fontsource/mulish/400.css';
 import '@fontsource/mulish/500.css';
@@ -15,6 +17,8 @@ import '@fontsource/dancing-script/600.css';
 import '@fontsource/dancing-script/700.css';
 import App from './App';
 import './index.css';
+
+initSentry();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

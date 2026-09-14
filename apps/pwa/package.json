@@ -18,15 +18,18 @@
     "@fontsource/geist-mono": "^5.2.7",
     "@fontsource/mulish": "^5.2.8",
     "@fontsource/space-mono": "^5.2.9",
+    "@sentry/react": "^10.74.0",
     "firebase": "^12.13.0",
     "jotai": "^2.11.0",
     "livekit-client": "^2.20.1",
     "lucide-react": "^1.17.0",
+    "modern-screenshot": "^4.7.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.14.2"
   },
   "devDependencies": {
+    "@sentry/vite-plugin": "^5.4.0",
     "@tailwindcss/forms": "^0.5.11",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",

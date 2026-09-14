@@ -1,5 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+// First, and before anything that can throw: an error during font loading or the install-prompt
+// side effect below should still be reported.
+import { initSentry } from './lib/sentry';
 // Anuva brand fonts: Mulish (body), Fraunces (headings/serif), Dancing Script (accent)
 import '@fontsource/mulish/300.css';
 import '@fontsource/mulish/400.css';
@@ -21,6 +24,8 @@ import App from './App';
 // mounts, and the event is only usable if it was captured when it fired.
 import './lib/pwa/installPrompt';
 import './index.css';
+
+initSentry();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

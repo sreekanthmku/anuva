@@ -23,7 +23,7 @@ const GIFT: Record<
     fall: string[];
     eyebrow: (from: string) => string;
     /**
-     * Null for roses on purpose. Flowers do not need explaining — the picture *is* the message, and
+     * Null for flowers on purpose. They do not need explaining — the picture *is* the message, and
      * a paragraph underneath turns a gesture into a greeting card. Chocolates keep a line because a
      * bar of chocolate on its own reads as a snack rather than as somebody thinking of her.
      */
@@ -34,9 +34,9 @@ const GIFT: Record<
   }
 > = {
   flowers: {
-    emoji: '🌹',
-    fall: ['🌹', '🌸', '🌷'],
-    eyebrow: (from) => `${from} sent you roses`,
+    emoji: '🌻',
+    fall: ['🌻', '🌼', '🌸'],
+    eyebrow: (from) => `${from} sent you flowers`,
     headline: null,
     body: null,
     glow: 'radial-gradient(circle at 50% 42%, rgba(201,126,146,0.30), rgba(201,126,146,0) 68%)',

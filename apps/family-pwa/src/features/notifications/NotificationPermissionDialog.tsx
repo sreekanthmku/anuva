@@ -56,7 +56,7 @@ export function NotificationPermissionDialog({
             Know when it lands
           </h2>
           <p className="mt-2.5 text-[13.5px] leading-[1.6] text-on-surface-variant">
-            When she opens your roses or your note and taps thank you, we will send you a smiley.
+            When she opens your flowers or your note and taps thank you, we will send you a smiley.
             That, and a gentle nudge if you asked to be reminded this evening. Nothing else.
           </p>
 

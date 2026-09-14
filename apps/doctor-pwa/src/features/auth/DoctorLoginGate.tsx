@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import type { DoctorIdentityResponse } from '@anuva/shared';
 import { disableDoctorPush } from '../../lib/push';
 import { doctorLogin, doctorLogout, fetchDoctorIdentity } from './api';
+import { setSentryUser } from '../../lib/sentry';
 import { DoctorIdentityProvider } from './identity';
 
 type GateState = 'checking' | 'unauthenticated' | 'authenticated';
@@ -31,6 +32,7 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
         void doctorLogout().catch(() => undefined);
       });
     setIdentity(null);
+    setSentryUser(null);
     setUsername('');
     setPassword('');
     setError(null);
@@ -50,6 +52,9 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
         const resolved = await fetchDoctorIdentity();
         if (cancelled) return;
         setIdentity(resolved);
+        // A clinician's login name, not a patient's. It answers "which of our doctors is hitting
+        // this", which is the only identity question worth asking of the portal.
+        setSentryUser(resolved.username);
         setState('authenticated');
       } catch {
         if (cancelled) return;
@@ -74,6 +79,7 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
     try {
       const resolved = await doctorLogin(username.trim(), password);
       setIdentity(resolved);
+      setSentryUser(resolved.username);
       setPassword('');
       setState('authenticated');
     } catch (err) {

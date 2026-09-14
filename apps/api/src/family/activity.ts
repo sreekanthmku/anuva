@@ -15,7 +15,7 @@ import { dayKey } from '../dayKey.js';
 const ACTION_PHRASES: Record<FamilySupportActionKind, string> = {
   message: 'messaged you',
   call: 'called you',
-  flowers: 'sent you roses 🌹',
+  flowers: 'sent you flowers 🌻',
   chocolates: 'sent you chocolates 🍫',
 };
 
@@ -27,7 +27,7 @@ const ACTION_PHRASES: Record<FamilySupportActionKind, string> = {
 const ACTION_LINES: Record<FamilySupportActionKind, string> = {
   message: 'Sent you a message',
   call: 'Called you',
-  flowers: 'Sent you roses',
+  flowers: 'Sent you flowers',
   chocolates: 'Sent you chocolates',
 };
 

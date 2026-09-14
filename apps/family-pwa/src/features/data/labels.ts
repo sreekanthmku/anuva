@@ -14,7 +14,7 @@ export const SUPPORT_ACTIONS: {
 }[] = [
   { id: 'message', label: 'Message her' },
   { id: 'call', label: 'Call her' },
-  { id: 'flowers', label: 'Send roses', emoji: '🌹' },
+  { id: 'flowers', label: 'Send flowers', emoji: '🌻' },
   { id: 'chocolates', label: 'Send chocolates', emoji: '🍫' },
 ];
 
@@ -28,13 +28,13 @@ export const supportSheet = {
   remindLater: 'Remind me later',
   /** Set expectations before they tap, not in the toast afterwards. */
   giftNote: 'Arrives on her phone right away as a card she can open.',
-  giftComingSoon: 'Real roses and chocolates, delivered to her door, are coming soon.',
+  giftComingSoon: 'Real flowers and chocolates, delivered to her door, are coming soon.',
 } as const;
 
 /** For confirming what has already been done today, without restating the full action name. */
 export const ACTION_LABELS: Record<FamilySupportActionKind, string> = {
   message: 'messaged her',
   call: 'called her',
-  flowers: 'sent roses',
+  flowers: 'sent flowers',
   chocolates: 'sent chocolates',
 };

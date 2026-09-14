@@ -11,6 +11,14 @@ const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 config({ path: path.join(__dirname, '../../../.env') });
 
+// Ahead of every import below, and deliberately so: the Sentry SDK instruments `http`, Express and
+// Prisma as those modules load, so it has to be evaluated first or it has nothing to patch. ESM
+// evaluates imports in source order, which is what makes this position meaningful rather than
+// cosmetic. It loads its own `.env` for the same reason — the `config()` call above does not run
+// until every import here has already been evaluated. See `instrument.ts`.
+import { sentryEnabled } from './instrument.js';
+import * as Sentry from '@sentry/node';
+
 import cors from 'cors';
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
@@ -6044,6 +6052,42 @@ function isPayloadTooLarge(err: unknown): boolean {
     err !== null &&
     (err as { type?: unknown }).type === 'entity.too.large'
   );
+}
+
+/**
+ * Reports a failed request, then hands it straight on to the handler below, which is what actually
+ * answers the client.
+ *
+ * Mounted here rather than at the end because an error handler only sees what reaches it: after
+ * every route, so it catches all of them, and before ours, which terminates the chain.
+ *
+ * It reports more than we want. Sentry's Express handler captures any error with a 5xx-ish shape,
+ * which here includes `ZodError` and the `HttpError`/`AdminError`/`FamilyError` family — a 400 for
+ * a malformed body is a client mistake, not a bug, and a project full of them is a project nobody
+ * reads. `shouldHandleError` narrows it to genuine faults: the ones our own handler is about to
+ * turn into a 500.
+ */
+if (sentryEnabled) {
+  Sentry.setupExpressErrorHandler(app, {
+    shouldHandleError(error) {
+      const status = (error as { status?: unknown; statusCode?: unknown }).status
+        ?? (error as { statusCode?: unknown }).statusCode;
+
+      // A deliberate, classified rejection carries a status. Anything with a 4xx on it was the
+      // client being told no, which is the system working.
+      if (typeof status === 'number') {
+        return status >= 500;
+      }
+
+      // Validation and over-large bodies are both client faults that arrive without a status.
+      if (error instanceof ZodError || isPayloadTooLarge(error)) {
+        return false;
+      }
+
+      // Everything else is unclassified, which is the definition of a bug worth seeing.
+      return true;
+    },
+  });
 }
 
 app.use(

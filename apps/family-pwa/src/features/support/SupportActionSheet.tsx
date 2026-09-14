@@ -156,7 +156,7 @@ export function SupportActionSheet({
             does not reach her yet, before the tap rather than in the toast afterwards. */}
         {isGift ? (
           <GiftPreview
-            emoji={selectedAction?.emoji ?? '🌹'}
+            emoji={selectedAction?.emoji ?? '🌻'}
             note={supportSheet.giftNote}
             coming={supportSheet.giftComingSoon}
           />

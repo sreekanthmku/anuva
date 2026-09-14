@@ -612,3 +612,14 @@ export {
   type RemoveFamilyMemberResponse,
   type RevokeFamilyInviteResponse,
 } from './family.js';
+
+export {
+  REDACTED,
+  redactDeep,
+  scrubBreadcrumb,
+  scrubEvent,
+  scrubUrl,
+  sentrySampleRates,
+  type ScrubbableBreadcrumb,
+  type ScrubbableEvent,
+} from './observability.js';

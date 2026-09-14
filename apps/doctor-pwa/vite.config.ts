@@ -1,64 +1,133 @@
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
 
-export default defineConfig({
-  root: __dirname,
-  envDir: repoRoot,
-  publicDir: path.resolve(repoRoot, 'apps/pwa/public'),
-  plugins: [
-    react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
-      manifest: {
-        name: 'Anuva Specialist Portal',
-        short_name: 'Anuva Specialist Portal',
-        description: 'Consultations, anonymous questions, and alerts for Anuva specialists',
-        theme_color: '#F7F0E8',
-        background_color: '#F7F0E8',
-        display: 'standalone',
-        start_url: '/',
-        scope: '/',
-        icons: [
-          {
-            src: 'pwa-192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any',
-          },
-          {
-            src: 'pwa-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any',
-          },
-          {
-            src: 'maskable-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-        ],
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-      },
+/**
+ * Source map upload.
+ *
+ * Without it a production stack trace points into a minified bundle and is close to unreadable —
+ * `a.b is not a function` at column 4821 of `index-Bp1TPtNV.js`. With it, Sentry shows the original
+ * TypeScript.
+ *
+ * Gated on the three env vars so a local `pnpm build` still works for anyone without a token: no
+ * token, no plugin, and — importantly — no source maps emitted either. Maps are only generated when
+ * they are going to be uploaded and then deleted from the bundle, because a `.map` left in `dist/`
+ * is served to the browser and hands anyone the unminified app.
+ */
+function sentrySourcemapPlugins(env: Record<string, string>) {
+  const { SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT } = env;
+
+  if (!SENTRY_AUTH_TOKEN || !SENTRY_ORG || !SENTRY_PROJECT) {
+    return [];
+  }
+
+  return [
+    sentryVitePlugin({
+      authToken: SENTRY_AUTH_TOKEN,
+      org: SENTRY_ORG,
+      project: SENTRY_PROJECT,
+      sourcemaps: { filesToDeleteAfterUpload: ['**/*.js.map'] },
     }),
-  ],
-  server: {
-    port: 5174,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        rewrite: (urlPath) => urlPath.replace(/^\/api/, ''),
+  ];
+}
+
+/**
+ * The build stamp, injected at compile time.
+ *
+ * The single most useful thing on a bug report during beta. A tester whose service worker is still
+ * serving last week's bundle reports a bug that was fixed on Tuesday, and without a build id there
+ * is no way to tell that from a real regression — you go looking for a fault that is not there.
+ *
+ * The git SHA when it is available, `dev` when the build is not in a checkout, and the wall-clock
+ * time either way so two builds of the same commit are still distinguishable.
+ */
+function buildStamp(): string {
+  let sha = 'dev';
+  try {
+    sha = execSync('git rev-parse --short HEAD', { cwd: repoRoot, stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    // Not a git checkout — a CI tarball or a Docker context. The timestamp alone still identifies it.
+  }
+
+  return `${sha}-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '')}`;
+}
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, repoRoot, '');
+  const sentry = sentrySourcemapPlugins(env);
+
+  return {
+    root: __dirname,
+    envDir: repoRoot,
+    publicDir: path.resolve(repoRoot, 'apps/pwa/public'),
+    plugins: [
+      react(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+        manifest: {
+          name: 'Anuva Specialist Portal',
+          short_name: 'Anuva Specialist Portal',
+          description: 'Consultations, anonymous questions, and alerts for Anuva specialists',
+          theme_color: '#F7F0E8',
+          background_color: '#F7F0E8',
+          display: 'standalone',
+          start_url: '/',
+          scope: '/',
+          icons: [
+            {
+              src: 'pwa-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: 'pwa-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: 'maskable-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+          ],
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        },
+      }),
+      ...sentry,
+    ],
+    server: {
+      port: 5174,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+          rewrite: (urlPath) => urlPath.replace(/^\/api/, ''),
+        },
       },
     },
-  },
+    define: {
+      __BUILD_ID__: JSON.stringify(buildStamp()),
+      // Compiled away entirely when off, so a production bundle does not ship the reporter at all.
+      __BETA_MODE__: JSON.stringify(env.VITE_BETA_MODE === 'true'),
+    },
+    build: {
+      // Only when they will be uploaded and then removed. See sentrySourcemapPlugins.
+      sourcemap: sentry.length > 0,
+    },
+  };
 });

@@ -24,7 +24,7 @@ const THANKS_WINDOW_MS = 60 * 60 * 1000;
 const FOR_GESTURE: Record<FamilySupportActionKind, string> = {
   message: 'your note',
   call: 'your call',
-  flowers: 'the roses',
+  flowers: 'the flowers',
   chocolates: 'the chocolates',
 };
 

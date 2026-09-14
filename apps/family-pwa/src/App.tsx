@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+import { AppErrorBoundary } from './lib/AppErrorBoundary';
+import { BetaReporter } from './features/beta/BetaReporter';
 import { AppShell } from './features/shell/AppShell';
 import { TodayRoute } from './features/today/TodayRoute';
 import { LearnRoute } from './features/learn/LearnRoute';
@@ -45,6 +47,8 @@ function ShellLayout() {
 
 export default function App() {
   return (
+    // Outside the router and the auth provider: a crash in either is what this exists to catch.
+    <AppErrorBoundary>
     <BrowserRouter>
       <ServiceWorkerNavListener />
       <FamilyAuthProvider>
@@ -63,6 +67,9 @@ export default function App() {
           </Route>
         </Routes>
       </FamilyAuthProvider>
+      {/* Outside the auth provider: the join and sign-in screens need reporting too. */}
+      <BetaReporter app="family-pwa" />
     </BrowserRouter>
+    </AppErrorBoundary>
   );
 }

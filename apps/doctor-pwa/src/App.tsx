@@ -8,6 +8,8 @@ import { NotificationsProvider } from './features/notifications/store';
 import { ProfileRoute } from './features/profile/ProfileRoute';
 import { DoctorQuestionsRoute } from './features/questions/DoctorQuestionsRoute';
 import { AppShell } from './features/shell/AppShell';
+import { AppErrorBoundary } from './lib/AppErrorBoundary';
+import { BetaReporter } from './features/beta/BetaReporter';
 
 /**
  * A tapped push is handled by the shared FCM service worker. When the portal is already open it
@@ -46,6 +48,8 @@ function ShellLayout() {
 
 export default function App() {
   return (
+    // Outside the router and the login gate: a crash in either is what this exists to catch.
+    <AppErrorBoundary>
     <BrowserRouter>
       <DoctorLoginGate>
         <NotificationsProvider>
@@ -64,6 +68,9 @@ export default function App() {
           </Routes>
         </NotificationsProvider>
       </DoctorLoginGate>
+      {/* Outside the login gate, so the sign-in screen is reportable too. */}
+      <BetaReporter app="doctor-pwa" />
     </BrowserRouter>
+    </AppErrorBoundary>
   );
 }
