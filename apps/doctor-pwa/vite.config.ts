@@ -34,6 +34,12 @@ function sentrySourcemapPlugins(env: Record<string, string>) {
       org: SENTRY_ORG,
       project: SENTRY_PROJECT,
       sourcemaps: { filesToDeleteAfterUpload: ['**/*.js.map'] },
+      // A failed upload must not fail the deploy. By default this plugin throws — so a wrong org, a
+      // rotated token or a Sentry outage would turn a routine release into a red build, for the
+      // sake of a debugging convenience. Warn loudly in the log and ship the app.
+      errorHandler: (error) => {
+        console.warn('[sentry] source map upload failed; shipping without them:', error.message);
+      },
     }),
   ];
 }

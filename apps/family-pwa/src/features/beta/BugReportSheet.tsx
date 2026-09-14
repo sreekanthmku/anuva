@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { captureScreenshot, sendReport } from './sendReport';
+import { useEffect, useState } from 'react';
+import { captureScreenshot, sendReport, type Capture } from './sendReport';
 
 /**
  * The report sheet.
@@ -9,8 +9,13 @@ import { captureScreenshot, sendReport } from './sendReport';
  * and the text is a bonus. A tester who has to fill a form will close it and the bug is lost.
  *
  * The screenshot is taken of the screen *behind* this sheet, and it is taken on open rather than on
- * send: the capture takes a few hundred milliseconds, and starting it while they are still reading
- * the prompt means Send is instant.
+ * send: embedding webfonts takes a moment, and starting it while they are still reading the prompt
+ * means Send is instant.
+ *
+ * **It is shown to them, and it can be dropped.** Beta mode records unmasked, so that picture is
+ * her real symptom log or her chat. Saying "a picture was taken" without showing it is the kind of
+ * thing that costs you the trust of exactly the people whose reports you need. The thumbnail
+ * appears when the capture finishes rather than blocking on it, so nothing about Send gets slower.
  */
 
 const mulish = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' };
@@ -27,31 +32,67 @@ type Props = {
 export function BugReportSheet({ open, app, prompt, onClose }: Props) {
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [sending, setSending] = useState(false);
-  const screenshot = useRef<Promise<Uint8Array | null> | null>(null);
+  const [capture, setCapture] = useState<Capture | null>(null);
+  const [attach, setAttach] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (!open) return;
 
     setMessage('');
     setSent(false);
-    // Started immediately, awaited only on send. `data-beta-reporter` on the sheet keeps it out of
-    // the frame, so what is captured is the screen they were complaining about.
-    screenshot.current = captureScreenshot();
+    setFailed(false);
+    setCapture(null);
+    setAttach(true);
+    setExpanded(false);
+
+    let cancelled = false;
+    let url: string | null = null;
+
+    // `data-beta-reporter` on this sheet keeps it out of the frame, so what is captured is the
+    // screen they were complaining about rather than the thing they are complaining through.
+    void captureScreenshot().then((result) => {
+      url = result.previewUrl;
+      if (cancelled) {
+        if (url) URL.revokeObjectURL(url);
+        return;
+      }
+      setCapture(result);
+    });
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+
+    return () => {
+      cancelled = true;
+      // The blob would otherwise be held for the life of the page, and the sheet can be reopened
+      // many times in a testing session.
+      if (url) URL.revokeObjectURL(url);
+      window.removeEventListener('keydown', onKey);
+    };
   }, [open, onClose]);
 
   if (!open) return null;
 
-  const send = async () => {
+  const send = () => {
     setSending(true);
     try {
-      sendReport({ message, screenshot: await (screenshot.current ?? Promise.resolve(null)), app });
+      const ok = sendReport({
+        message,
+        screenshot: attach ? (capture?.data ?? null) : null,
+        screenshotOutcome: attach ? (capture?.outcome ?? 'timeout') : 'declined',
+        app,
+      });
+
+      if (!ok) {
+        setFailed(true);
+        return;
+      }
+
       setSent(true);
       window.setTimeout(onClose, 1400);
     } finally {
@@ -73,6 +114,23 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
         aria-label="Close"
         onClick={onClose}
       />
+
+      {/* Tapping the thumbnail shows the picture at full size, because a 56px preview is proof that
+          something was captured, not a chance to actually check what is in it. */}
+      {expanded && capture?.previewUrl ? (
+        <button
+          type="button"
+          className="absolute inset-0 z-10 flex items-center justify-center bg-[#3E2542]/90 p-4"
+          onClick={() => setExpanded(false)}
+          aria-label="Close preview"
+        >
+          <img
+            src={capture.previewUrl}
+            alt="What will be sent with this report"
+            className="max-h-full max-w-full rounded-[14px] object-contain"
+          />
+        </button>
+      ) : null}
 
       <div className="relative w-full max-w-[420px] rounded-t-[28px] border border-secondary/25 bg-surface-raised px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-16px_44px_rgba(94,53,102,0.22)] sm:rounded-[28px] sm:pb-6">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline-variant sm:hidden" aria-hidden />
@@ -121,13 +179,71 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
               style={mulish}
             />
 
-            <p className="mt-1.5 text-[11.5px] leading-snug text-outline" style={mulish}>
-              A picture of this screen and what you just tapped are attached automatically.
-            </p>
+            {failed ? (
+              <p
+                role="alert"
+                className="mt-2 rounded-[14px] bg-error-container px-3 py-2 text-[12px] leading-snug text-on-error-container"
+                style={mulish}
+              >
+                This build has no reporting configured, so nothing was sent. Please pass this on to
+                the team directly.
+              </p>
+            ) : (
+              <div className="mt-3 flex items-center gap-3 rounded-[16px] border border-border-default bg-surface-container-low px-3 py-2.5">
+                {capture?.previewUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(true)}
+                    className={`h-14 w-11 shrink-0 overflow-hidden rounded-[8px] border border-outline-variant transition-opacity ${
+                      attach ? '' : 'opacity-35'
+                    }`}
+                    aria-label="View the picture that will be sent"
+                  >
+                    <img
+                      src={capture.previewUrl}
+                      alt=""
+                      className="h-full w-full object-cover object-top"
+                    />
+                  </button>
+                ) : (
+                  <div
+                    className="h-14 w-11 shrink-0 animate-pulse rounded-[8px] bg-surface-container"
+                    aria-hidden
+                  />
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12.5px] font-semibold leading-snug text-on-surface" style={mulish}>
+                    {capture && !capture.data
+                      ? 'No picture this time'
+                      : attach
+                        ? 'This picture will be sent'
+                        : 'Picture will not be sent'}
+                  </p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-outline" style={mulish}>
+                    {capture && !capture.data
+                      ? 'The report still helps — we can replay what happened.'
+                      : 'Tap it to see it full size.'}
+                  </p>
+                </div>
+
+                {capture?.data ? (
+                  <button
+                    type="button"
+                    onClick={() => setAttach((current) => !current)}
+                    aria-pressed={!attach}
+                    className="shrink-0 rounded-full px-2.5 py-1.5 text-[11.5px] font-semibold text-secondary underline underline-offset-2"
+                    style={mulish}
+                  >
+                    {attach ? 'Remove' : 'Add back'}
+                  </button>
+                ) : null}
+              </div>
+            )}
 
             <button
               type="button"
-              onClick={() => void send()}
+              onClick={send}
               disabled={sending}
               className="mt-4 min-h-[48px] w-full rounded-full bg-secondary px-5 text-[15px] font-semibold text-on-secondary disabled:opacity-60"
               style={mulish}

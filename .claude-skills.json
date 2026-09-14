@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "installed": {
+    "landing-page-generator": {
+      "version": "1.0.0",
+      "domain": "marketing",
+      "target": "claude",
+      "path": ".claude/skills/landing-page-generator",
+      "files": [
+        "SKILL.md",
+        "scripts/conversion_checklist.py",
+        "scripts/cta_analyzer.py",
+        "scripts/page_speed_estimator.py"
+      ],
+      "installed_at": "2026-09-11T16:50:55.110Z"
+    }
+  }
+}
