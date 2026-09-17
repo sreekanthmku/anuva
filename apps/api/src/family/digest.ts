@@ -1,6 +1,7 @@
 import { prisma } from '@anuva/database';
 import type {
   FamilyLearnResponse,
+  FamilyNudgeCard,
   FamilyRelationship,
   FamilySupportActionKind,
   FamilyMetric,
@@ -22,14 +23,18 @@ import {
   FAMILY_SHARED_SCOPES,
   LEARN_NUDGES,
   LEARN_TIPS,
+  ACTION_COMPLETION_PROMPT,
   METRIC_NOUNS,
+  NUDGE_LAYER_LABELS,
   SUPPORT_BY_METRIC,
   SUPPORT_STEADY,
   SUPPORT_UNKNOWN,
   arrowFor,
   metricValue,
 } from './content.js';
-import { familyArticleSections } from './articles.js';
+import { familyArticleSections, readerFor } from './articles.js';
+import type { FamilyNudgeSignalMoment } from './nudges.js';
+import { markNudgeSeen, resolveTodayNudge } from './nudgeLog.js';
 import { FamilyError } from './errors.js';
 
 /**
@@ -145,6 +150,58 @@ function weakestMetric(summary: SummaryResult): FamilyMetricKey | null {
 /** Below this, a metric is having a hard enough week to say so out loud. */
 const NEEDS_SUPPORT_BELOW = 60;
 
+/**
+ * Which report ring feeds which nudge moment.
+ *
+ * `hotFlashes` is here and deliberately *not* in `FAMILY_METRIC_KEYS`: it selects a nudge but never
+ * gets a tile. The distinction is the whole disclosure argument for it — "keep things cool and
+ * judgment-free" is advice a family member can act on without being handed a symptom log, whereas a
+ * fifth tile reading "Hot flushes ↑" is a symptom readout, which is what `FAMILY_PRIVATE_ITEMS`
+ * promises never to show. Anything added here needs the same argument made for it.
+ *
+ * `energy` becomes `fatigue` because that is what the copy calls it; the ring keeps its own name.
+ */
+const SIGNAL_BY_RING: Record<string, FamilyNudgeSignalMoment> = {
+  sleep: 'sleep',
+  mood: 'mood',
+  stress: 'stress',
+  energy: 'fatigue',
+  hotFlashes: 'hotFlashes',
+};
+
+/**
+ * Her week, ranked by what needs attention most — the input that stops a nudge being a form letter.
+ *
+ * Lowest score first, and only metrics she actually logged, so a week with nothing in it produces an
+ * empty list and the selector falls through to evergreen copy rather than inventing a hard week.
+ *
+ * `emotional` is appended behind `mood` rather than derived from a ring of its own. It is the
+ * sharper register of the same signal — "Don't fix it, just sit beside her and listen" is for a mood
+ * that is actively difficult, not merely the lowest of four — so it only enters the ranking when
+ * mood is trending badly, and it sits behind mood so the gentler line is preferred when both exist.
+ */
+export function familySignals(summary: SummaryResult): FamilyNudgeSignalMoment[] {
+  const scored: { moment: FamilyNudgeSignalMoment; pct: number; attention: boolean }[] = [];
+
+  for (const ring of summary.rings) {
+    const moment = SIGNAL_BY_RING[ring.key];
+    if (!moment || !hasReading(ring)) continue;
+    scored.push({ moment, pct: ring.pct!, attention: ring.deltaTone === 'attention' });
+  }
+
+  scored.sort((a, b) => a.pct - b.pct);
+
+  const signals: FamilyNudgeSignalMoment[] = [];
+  for (const entry of scored) {
+    signals.push(entry.moment);
+    if (entry.moment === 'mood' && (entry.attention || entry.pct < NEEDS_SUPPORT_BELOW)) {
+      signals.push('emotional');
+    }
+  }
+
+  return signals;
+}
+
 function buildStatus(summary: SummaryResult, weakest: FamilyMetricKey | null) {
   const label = 'Overall status';
 
@@ -253,14 +310,72 @@ function greetingFor(firstName: string, now: Date): string {
   return `Good ${part}, ${firstName}`;
 }
 
+/**
+ * Her signals alone, for the cadence jobs.
+ *
+ * Exported from this file rather than reimplemented in `jobs.ts` because `loadSummary` is where the
+ * redaction boundary and the five-minute cache both live. A job that built its own summary would be
+ * a second path from her logs to a family member's phone, and the point of this module is that there
+ * is exactly one.
+ */
+export async function buildSummaryForSignals(userId: string): Promise<FamilyNudgeSignalMoment[]> {
+  return familySignals(await loadSummary(userId));
+}
+
+/**
+ * Today's nudge, chosen from her week and recorded.
+ *
+ * Marked seen here rather than on a separate client call: the card is rendered by the response this
+ * builds, so returning it *is* the impression. A client-reported view would be both an extra round
+ * trip and a number the client could get wrong.
+ */
+async function buildNudge(input: {
+  familyMemberId: string;
+  relationship: FamilyRelationship;
+  signals: FamilyNudgeSignalMoment[];
+  now: Date;
+}): Promise<FamilyNudgeCard | null> {
+  const resolved = await resolveTodayNudge({
+    familyMemberId: input.familyMemberId,
+    reader: readerFor(input.relationship),
+    signals: input.signals,
+    channel: 'app',
+    now: input.now,
+  });
+
+  if (!resolved) return null;
+
+  await markNudgeSeen(resolved.logId, input.now);
+
+  return {
+    id: resolved.nudge.id,
+    layer: resolved.nudge.layer,
+    label: NUDGE_LAYER_LABELS[resolved.nudge.layer],
+    text: resolved.nudge.text,
+  };
+}
+
 export async function buildFamilyToday(input: {
   userId: string;
+  familyMemberId: string;
+  relationship: FamilyRelationship;
   memberFirstName: string;
   patientFirstName: string;
   completedKinds: FamilySupportActionKind[];
+  /** An action selected but not yet confirmed. Only ever `call`. */
+  pendingKind: FamilySupportActionKind | null;
 }): Promise<FamilyTodayResponse> {
   const now = new Date();
   const [summary, upcoming] = await Promise.all([loadSummary(input.userId), buildUpcoming(input.userId)]);
+
+  // After the summary, because the nudge is chosen from it — and deliberately not in the Promise.all
+  // above for that reason.
+  const nudge = await buildNudge({
+    familyMemberId: input.familyMemberId,
+    relationship: input.relationship,
+    signals: familySignals(summary),
+    now,
+  });
 
   const weakest = weakestMetric(summary);
   const support = weakest
@@ -280,6 +395,7 @@ export async function buildFamilyToday(input: {
       timeZone: 'Asia/Kolkata',
     }),
     status: buildStatus(summary, weakest),
+    nudge,
     support: {
       label: 'How you can support her',
       headline: support.headline,
@@ -288,6 +404,8 @@ export async function buildFamilyToday(input: {
       completedCta: '✓ Support action completed',
       completedToday: input.completedKinds.length > 0,
       completedKinds: input.completedKinds,
+      pendingKind: input.pendingKind,
+      pendingPrompt: input.pendingKind ? ACTION_COMPLETION_PROMPT : null,
     },
     metricsLabel: 'This week · shared with you',
     metrics: buildMetrics(summary),

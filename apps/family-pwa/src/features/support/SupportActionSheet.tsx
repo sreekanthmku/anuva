@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import type { FamilySupportActionKind } from '@anuva/shared';
-import { GIFT_KINDS, SUPPORT_ACTIONS, supportSheet } from '../data/labels';
+import { CONFIRMED_KINDS, GIFT_KINDS, SUPPORT_ACTIONS, supportSheet } from '../data/labels';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { PrimaryButton } from '../shell/ui';
 
@@ -67,6 +67,9 @@ export function SupportActionSheet({
 
   const selectedAction = SUPPORT_ACTIONS.find((action) => action.id === selected);
   const isGift = GIFT_KINDS.includes(selected);
+  // A call happens on a phone this app cannot see, so the button promises to make it rather than
+  // claiming it is already done — and the card on Today asks for the ✓ afterwards.
+  const needsConfirm = CONFIRMED_KINDS.includes(selected);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
@@ -162,6 +165,14 @@ export function SupportActionSheet({
           />
         ) : null}
 
+        {/* Said before the tap, for the same reason as the gift note: what happens next should not
+            be a surprise in the toast. */}
+        {needsConfirm ? (
+          <p className="mt-4 rounded-[18px] border border-border-default bg-surface-container-low px-4 py-3 text-[12.5px] leading-snug text-on-surface-variant">
+            {supportSheet.callNote}
+          </p>
+        ) : null}
+
         <PrimaryButton
           className="mt-5"
           disabled={sending || (selected === 'message' && text.trim().length === 0)}
@@ -174,7 +185,15 @@ export function SupportActionSheet({
             void onSendMessage(text.trim()).finally(() => setSending(false));
           }}
         >
-          {sending ? 'Sending…' : selected === 'message' ? 'Send note' : isGift ? 'Send it' : 'Done'}
+          {sending
+            ? 'Sending…'
+            : selected === 'message'
+              ? 'Send note'
+              : isGift
+                ? 'Send it'
+                : needsConfirm
+                  ? supportSheet.callSelect
+                  : 'Done'}
           {/* The gift travels as its picture, not as its name — same on both phones. */}
           {!sending && isGift && selectedAction?.emoji ? (
             <img src={twemojiUrl(selectedAction.emoji)} alt="" aria-hidden width={20} height={20} />

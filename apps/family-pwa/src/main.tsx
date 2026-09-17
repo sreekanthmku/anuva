@@ -16,6 +16,9 @@ import '@fontsource/dancing-script/500.css';
 import '@fontsource/dancing-script/600.css';
 import '@fontsource/dancing-script/700.css';
 import App from './App';
+// Registers the beforeinstallprompt listener at import time: the event can fire before React mounts
+// and is only usable if it was captured when it fired.
+import './lib/pwa/installPrompt';
 import './index.css';
 
 initSentry();

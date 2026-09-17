@@ -144,6 +144,12 @@ export default defineConfig(({ mode }) => {
               purpose: 'maskable',
             },
           ],
+          // Lets `getInstalledRelatedApps` answer "they already have it", so the gate can point an
+          // already-installed member at their home screen instead of at a button that does nothing:
+          // `beforeinstallprompt` never fires a second time.
+          related_applications: [
+            { platform: 'webapp', url: 'https://family.anuvawellness.com/manifest.webmanifest' },
+          ],
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],

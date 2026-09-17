@@ -11,6 +11,8 @@
     "seed:logs": "node scripts/seed-user-logs.mjs",
     "db:generate": "pnpm --filter @anuva/database db:generate",
     "db:migrate": "pnpm --filter @anuva/database db:migrate",
+    "db:deploy": "pnpm --filter @anuva/database db:deploy",
+    "db:status": "pnpm --filter @anuva/database db:status",
     "db:push": "pnpm --filter @anuva/database db:push && pnpm db:indexes",
     "db:indexes": "pnpm --filter @anuva/database db:indexes"
   },

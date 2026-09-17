@@ -4,6 +4,7 @@ import type { FamilyGate, FamilyInvite, FamilyStatusResponse } from '@anuva/shar
 import {
   FAMILY_CONSENT_VERSION,
   FAMILY_INVITE_TTL_DAYS,
+  FAMILY_MAX_MEMBERS,
   FAMILY_REPROMPT_MINUTES,
 } from './config.js';
 import { FamilyError } from './errors.js';
@@ -133,10 +134,21 @@ async function loadUser(userId: string) {
   return user;
 }
 
-function activeMember(userId: string) {
-  return prisma.familyMember.findFirst({
+/**
+ * Everyone currently connected, newest first.
+ *
+ * Was a single `findFirst`. The nudge corpus is written for a partner, a teen and a caregiver, and
+ * one slot meant only one of the three could ever receive it — so the cap moved to
+ * `FAMILY_MAX_MEMBERS` and this returns a list. Newest first because the most recent joiner is the
+ * one she is most likely to be looking for, and because the patient PWA's single-slot `member` field
+ * is served from the head of it.
+ */
+function activeMembers(userId: string) {
+  return prisma.familyMember.findMany({
     where: { userId, status: 'active' },
     select: MEMBER_SELECT,
+    orderBy: { createdAt: 'desc' },
+    take: FAMILY_MAX_MEMBERS,
   });
 }
 
@@ -219,44 +231,53 @@ function isUniqueViolation(error: unknown): boolean {
 export async function getFamilyStatus(userId: string): Promise<FamilyStatusResponse> {
   const now = new Date();
   const user = await loadUser(userId);
-  const member = await activeMember(userId);
+  const members = await activeMembers(userId);
 
-  // Nothing to invite anyone to while she has a member, and nothing to show if she opted out —
+  // Nothing to invite anyone to once every slot is taken, and nothing to show if she opted out —
   // in both cases minting a link would be pointless work and a pointless secret.
-  const invite = member || user.familyFeatureOptOut ? null : await ensurePendingInvite(userId, now);
+  const full = members.length >= FAMILY_MAX_MEMBERS;
+  const invite = full || user.familyFeatureOptOut ? null : await ensurePendingInvite(userId, now);
 
-  return buildStatus(user, member, invite, now);
+  return buildStatus(user, members, invite, now);
+}
+
+function serializeMember(member: MemberRow) {
+  return {
+    id: member.id,
+    name: member.name,
+    relationship: member.relationship,
+    maskedPhone: maskPhone(member.phone),
+    joinedAt: member.createdAt.toISOString(),
+    lastSeenAt: member.lastSeenAt.toISOString(),
+  };
 }
 
 function buildStatus(
   user: { name: string | null; onboardingCompleted: boolean; familyFeatureOptOut: boolean },
-  member: MemberRow | null,
+  members: MemberRow[],
   invite: InviteRow | null,
   now: Date,
 ): FamilyStatusResponse {
   const firstName = firstNameOf(user.name);
+  const serialized = members.map(serializeMember);
 
   return {
+    // One joiner closes the gate for good, not a full roster. The gate exists to get her past the
+    // first share, and re-opening it to chase a second and third person would turn a one-time ask
+    // into a standing one — which is the behaviour `familyFeatureOptOut` exists to relieve.
     gate: computeGate(
       {
         optedOut: user.familyFeatureOptOut,
         onboardingCompleted: user.onboardingCompleted,
-        hasMember: Boolean(member),
+        hasMember: members.length > 0,
         sharedAt: invite?.sharedAt ?? null,
       },
       now,
     ),
     invite: invite ? withShareMessage(serializeInvite(invite), firstName) : null,
-    member: member
-      ? {
-          id: member.id,
-          name: member.name,
-          relationship: member.relationship,
-          maskedPhone: maskPhone(member.phone),
-          joinedAt: member.createdAt.toISOString(),
-          lastSeenAt: member.lastSeenAt.toISOString(),
-        }
-      : null,
+    member: serialized[0] ?? null,
+    members: serialized,
+    slotsRemaining: Math.max(0, FAMILY_MAX_MEMBERS - members.length),
     optedOut: user.familyFeatureOptOut,
   };
 }
@@ -269,11 +290,12 @@ export async function rotateInvite(userId: string): Promise<FamilyInvite> {
   const now = new Date();
   const user = await loadUser(userId);
 
-  if (await activeMember(userId)) {
+  const members = await activeMembers(userId);
+  if (members.length >= FAMILY_MAX_MEMBERS) {
     throw new FamilyError(
       409,
-      'member_exists',
-      'Someone has already joined. Remove them first to invite someone else.',
+      'member_slots_full',
+      `You can have ${FAMILY_MAX_MEMBERS} people connected at a time. Remove someone first to invite anyone else.`,
     );
   }
 
@@ -334,14 +356,14 @@ export async function markInviteShared(
     select: INVITE_SELECT,
   });
 
-  const member = await activeMember(userId);
+  const members = await activeMembers(userId);
 
   return {
     gate: computeGate(
       {
         optedOut: user.familyFeatureOptOut,
         onboardingCompleted: user.onboardingCompleted,
-        hasMember: Boolean(member),
+        hasMember: members.length > 0,
         sharedAt: updated.sharedAt,
       },
       now,

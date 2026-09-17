@@ -11,11 +11,15 @@ import {
 } from '../../lib/notifications/notificationPrompt';
 
 /**
- * Asks once, after the screen has settled.
+ * Asks on every visit that still has nothing granted, after the screen has settled.
  *
  * The delay is not decoration. A permission dialog thrown up on first paint is the one most people
  * reflexively decline, and the browser gives no second chance — so our own card explaining what the
  * notification is *for* goes first, and only a tap on it triggers the real prompt.
+ *
+ * "Not now" only quiets it for this sitting; `notificationPrompt.ts` has the reasoning. Here that
+ * means re-evaluating on every return to the screen — a remount, the window regaining focus, the
+ * app coming back from the background, or the permission itself being reset in site settings.
  */
 const PROMPT_DELAY_MS = 2000;
 
@@ -47,9 +51,35 @@ export function useNotificationPrompt(ready: boolean) {
 
   useEffect(() => {
     evaluate();
+
     const onFocus = () => evaluate();
+    // A standalone PWA resumed from the background often does not fire `focus`, and that is the
+    // single most common way this app is opened.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') evaluate();
+    };
     window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+
+    // Turning the permission back to "ask" in site settings is a request to be asked again, and it
+    // happens outside the app, so nothing else would notice.
+    let status: PermissionStatus | null = null;
+    void navigator.permissions
+      ?.query({ name: 'notifications' as PermissionName })
+      .then((result) => {
+        status = result;
+        result.onchange = () => {
+          scheduled.current = false;
+          evaluate();
+        };
+      })
+      .catch(() => undefined);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+      if (status) status.onchange = null;
+    };
   }, [evaluate]);
 
   const accept = useCallback(async () => {

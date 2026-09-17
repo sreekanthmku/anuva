@@ -297,8 +297,10 @@ export async function verifyJoinOtp(
       return created;
     });
   } catch (error) {
-    // The partial unique index on one-active-member fires here when a second person claims a link
-    // in the same instant.
+    // A unique violation here means a second person claimed the same link in the same instant.
+    // This used to be `FamilyMember_single_active`, which was dropped when the cap moved to
+    // `FAMILY_MAX_MEMBERS`; the guarded `updateMany` above and `FamilyInvite_single_pending` are
+    // what close the race now, and both surface the same way.
     if (typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 'P2002') {
       throw new FamilyError(409, 'invite_claimed', 'Someone has already joined with this link.');
     }

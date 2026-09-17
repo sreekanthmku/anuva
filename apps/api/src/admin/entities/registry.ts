@@ -1441,6 +1441,19 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     sortableFields: ['date', 'createdAt'],
     defaultSort: 'date',
   }),
+  // The nudge ledger. `layer` and `actedKind` are the two filters worth having: together they
+  // answer whether a Connect nudge on Wednesday produces an Act at the weekend, which is the only
+  // reason the Understand/Connect/Act framework is worth its complexity.
+  def({
+    resource: 'family-nudge-logs',
+    label: 'Family Nudge Logs',
+    prismaModel: 'familyNudgeLog',
+    group: 'Family',
+    searchFields: ['familyMemberId', 'nudgeId', 'id'],
+    filterFields: ['familyMemberId', 'nudgeId', 'layer', 'moment', 'weight', 'channel', 'actedKind'],
+    sortableFields: ['sentAt', 'seenAt', 'actedAt', 'date'],
+    defaultSort: 'sentAt',
+  }),
 
   // ── Nudge governor ───────────────────────────────────────
   def({

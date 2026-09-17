@@ -22,7 +22,17 @@ export const FAMILY_SESSION_COOKIE_NAME =
  * Stamped onto every invite. Bump it whenever the gate's wording about what family members can see
  * changes materially — the stored value is the record of what she actually agreed to.
  */
-export const FAMILY_CONSENT_VERSION = '2026-08-27.1';
+export const FAMILY_CONSENT_VERSION = '2026-09-17.1';
+
+/**
+ * How many family members may be connected at once.
+ *
+ * Was implicitly one. The nudge corpus is written for three different readers — a partner, a teen
+ * and a caregiver — and a single slot meant only one of them could ever receive it. Each member
+ * already holds their own session, push tokens and now their own nudge ledger, so the cap is a
+ * product limit rather than a structural one: raising it changes nothing downstream.
+ */
+export const FAMILY_MAX_MEMBERS = Number(process.env.FAMILY_MAX_MEMBERS || 3);
 
 /**
  * Signs invite tokens. Kept out of the database entirely: an invite token is derived from its row

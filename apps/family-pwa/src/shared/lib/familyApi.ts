@@ -1,5 +1,6 @@
 import type {
   FamilyArticleResponse,
+  FamilyConfirmActionResponse,
   FamilyLearnResponse,
   FamilyMessageResponse,
   FamilyPrivacyResponse,
@@ -29,12 +30,27 @@ export function fetchPrivacy(): Promise<FamilyPrivacyResponse> {
   return apiFetch<FamilyPrivacyResponse>('/api/family/privacy', { cache: 'no-store' });
 }
 
+/**
+ * Record a supportive action, or select one.
+ *
+ * `intent` is only honoured server-side for a call — the one gesture the app cannot watch happen —
+ * so the client passes it and lets the server decide rather than keeping its own list of which kinds
+ * need confirming.
+ */
 export function postSupportAction(
   kind: FamilySupportActionKind,
+  intent?: boolean,
 ): Promise<FamilySupportActionResponse> {
   return apiFetch<FamilySupportActionResponse>('/api/family/support-actions', {
     method: 'POST',
-    body: JSON.stringify({ kind }),
+    body: JSON.stringify({ kind, intent }),
+  });
+}
+
+/** The ✓ tap. No body — the server knows which action is outstanding. */
+export function postConfirmAction(): Promise<FamilyConfirmActionResponse> {
+  return apiFetch<FamilyConfirmActionResponse>('/api/family/support-actions/confirm', {
+    method: 'POST',
   });
 }
 

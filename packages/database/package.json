@@ -13,9 +13,11 @@
     "build": "prisma generate && tsc -p tsconfig.build.json",
     "prisma": "prisma",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-  "db:indexes": "prisma db execute --file prisma/sql/partial-indexes.sql --schema prisma/schema.prisma",
+    "db:migrate": "node scripts/prisma-with-root-env.mjs migrate dev",
+    "db:deploy": "node scripts/prisma-with-root-env.mjs migrate deploy",
+    "db:status": "node scripts/prisma-with-root-env.mjs migrate status",
+    "db:push": "node scripts/prisma-with-root-env.mjs db push",
+    "db:indexes": "node scripts/prisma-with-root-env.mjs db execute --file prisma/sql/partial-indexes.sql --schema prisma/schema.prisma",
     "lint": "echo \"no lint\""
   },
   "dependencies": {

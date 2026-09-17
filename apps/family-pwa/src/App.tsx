@@ -9,6 +9,7 @@ import { ArticleRoute } from './features/learn/ArticleRoute';
 import { PrivacyRoute } from './features/privacy/PrivacyRoute';
 import { FamilyAuthProvider } from './features/auth/FamilyAuthProvider';
 import { FamilyProtectedRoute } from './features/auth/FamilyProtectedRoute';
+import { InstallGuard } from './features/install/InstallGuard';
 import JoinRoute from './features/auth/JoinRoute';
 import SignInRoute from './features/auth/SignInRoute';
 
@@ -35,12 +36,19 @@ function ServiceWorkerNavListener() {
   return null;
 }
 
+/**
+ * Auth first, then the install gate: someone who has not joined yet needs the sign-in screen, not
+ * an instruction to install an app they have no account on. See InstallGuard for why the gate sits
+ * here rather than above the router.
+ */
 function ShellLayout() {
   return (
     <FamilyProtectedRoute>
-      <AppShell>
-        <Outlet />
-      </AppShell>
+      <InstallGuard>
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      </InstallGuard>
     </FamilyProtectedRoute>
   );
 }

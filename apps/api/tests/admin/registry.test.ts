@@ -80,6 +80,8 @@ const PRISMA_MODELS = [
   'familySupportAction',
   'familySession',
   'familyFcmToken',
+  // The nudge ledger: the only place that records whether a nudge led to anything.
+  'familyNudgeLog',
 ] as const;
 
 describe('ADMIN_ENTITIES registry', () => {

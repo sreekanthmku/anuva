@@ -2,11 +2,12 @@ import { useCallback, useState } from 'react';
 import type { FamilyMetricKey, FamilySupportActionKind } from '@anuva/shared';
 import {
   fetchToday,
+  postConfirmAction,
   postFamilyMessage,
   postRemindLater,
   postSupportAction,
 } from '../../shared/lib/familyApi';
-import { ACTION_LABELS } from '../data/labels';
+import { ACTION_LABELS, CONFIRMED_KINDS, NUDGE_LAYER_TINT, supportSheet } from '../data/labels';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
 import { NotificationPermissionDialog } from '../notifications/NotificationPermissionDialog';
 import { useNotificationPrompt } from '../notifications/useNotificationPrompt';
@@ -45,7 +46,9 @@ export function TodayRoute() {
     async (kind: FamilySupportActionKind) => {
       setSheetOpen(false);
       try {
-        const result = await postSupportAction(kind);
+        // `intent` is a hint, not a decision: the server honours it only for the kinds it cannot
+        // observe, so a client that got this wrong would still record the right thing.
+        const result = await postSupportAction(kind, CONFIRMED_KINDS.includes(kind));
         showToast(result.toast);
         await reload();
       } catch (e) {
@@ -54,6 +57,16 @@ export function TodayRoute() {
     },
     [showToast, reload],
   );
+
+  const confirmAction = useCallback(async () => {
+    try {
+      const result = await postConfirmAction();
+      showToast(result.toast);
+      await reload();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not confirm that.');
+    }
+  }, [showToast, reload]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -93,7 +106,7 @@ export function TodayRoute() {
     return <ErrorCard message={error ?? 'Could not load her week.'} onRetry={() => void reload()} />;
   }
 
-  const { status, support, education, progress, upcoming } = data;
+  const { status, nudge, support, education, progress, upcoming } = data;
   const progressPercent = progress
     ? Math.min(100, Math.round((progress.loggedDays / progress.totalDays) * 100))
     : 0;
@@ -130,6 +143,24 @@ export function TodayRoute() {
         </div>
       </Card>
 
+      {/* Today's nudge. Between how she is and what to do about it, because that is exactly what it
+          is: one line turning the status above into something the reader can act on.
+
+          Flat rather than raised — it is a suggestion, and a second gradient card directly under the
+          status card would compete with the thing it exists to serve. */}
+      {nudge ? (
+        <Card className="px-5 py-5">
+          <span
+            className={`inline-block rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.1em] ${NUDGE_LAYER_TINT[nudge.layer]}`}
+          >
+            {nudge.label}
+          </span>
+          <p className="mt-3 font-display text-[19px] font-medium leading-[1.35] text-on-surface">
+            {nudge.text}
+          </p>
+        </Card>
+      ) : null}
+
       {/* What they can do about it. Rose, raised, and always live — doing one thing today does not
           use the day up. */}
       <Card tone="warm" className="px-5 py-5">
@@ -148,9 +179,35 @@ export function TodayRoute() {
           </p>
         ) : null}
 
-        <PrimaryButton onClick={() => setSheetOpen(true)} className="mt-4">
-          {support.completedToday ? 'Do something else too' : support.cta}
-        </PrimaryButton>
+        {/* Something chosen but not yet done. The confirm is the primary action while it stands —
+            finishing what they started matters more than starting something else. */}
+        {support.pendingKind && support.pendingPrompt ? (
+          <div className="mt-4 rounded-[18px] border border-secondary/30 bg-secondary/10 px-4 py-3.5">
+            <p className="text-[13px] font-semibold leading-snug text-on-surface">
+              {support.pendingPrompt}
+            </p>
+            <PrimaryButton className="mt-3" onClick={() => void confirmAction()}>
+              {supportSheet.confirmCta}
+            </PrimaryButton>
+          </div>
+        ) : null}
+
+        {/* Demoted to a text button while something is pending, so the card has one primary action
+            rather than two competing ones. Still reachable — choosing a second gesture is allowed,
+            it just is not what the card is asking for. */}
+        {support.pendingKind ? (
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            className="press mt-2 flex min-h-[46px] w-full items-center justify-center rounded-full px-5 text-[14px] font-semibold text-primary"
+          >
+            Do something else too
+          </button>
+        ) : (
+          <PrimaryButton onClick={() => setSheetOpen(true)} className="mt-4">
+            {support.completedToday ? 'Do something else too' : support.cta}
+          </PrimaryButton>
+        )}
       </Card>
 
       <section>

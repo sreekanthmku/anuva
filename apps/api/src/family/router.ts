@@ -30,6 +30,7 @@
  *   GET    /family/privacy
  *   POST   /family/messages                a short note, pushed to her and stored nowhere
  *   POST   /family/support-actions     records the gesture; flowers/chocolates also push to her
+ *   POST   /family/support-actions/confirm  the ✓ tap for an action the app cannot observe (call)
  *   POST   /family/messages                a short note, pushed to her and stored nowhere
  *   POST   /family/support-actions/remind-later
  *   POST   /family/push/register           device registration for the family app
@@ -44,6 +45,7 @@ import {
   familyActivityResponseSchema,
   familyArticleParamsSchema,
   familyArticleResponseSchema,
+  familyConfirmActionResponseSchema,
   familyJoinPreviewResponseSchema,
   familyJoinRequestOtpBodySchema,
   familyJoinRequestOtpResponseSchema,
@@ -94,7 +96,13 @@ import { sendFamilyThanks } from './thanks.js';
 import { requestSignInOtp, verifySignInOtp } from './signin.js';
 import { registerFamilyToken, unregisterFamilyToken } from './push.js';
 import { rateLimit } from './rateLimit.js';
-import { kindsDoneToday, recordSupportAction, scheduleSupportReminder } from './supportActions.js';
+import {
+  confirmPendingAction,
+  kindsDoneToday,
+  pendingActionFor,
+  recordSupportAction,
+  scheduleSupportReminder,
+} from './supportActions.js';
 
 export interface FamilyRouterDeps {
   /** Resolves the signed-in patient, or throws. Supplied by the host app. */
@@ -338,11 +346,18 @@ export function createFamilyRouter({
     try {
       noStore(res);
       const identity = await requireFamilyMember(req);
+      const [completedKinds, pendingKind] = await Promise.all([
+        kindsDoneToday(identity.memberId),
+        pendingActionFor(identity.memberId),
+      ]);
       const body = await buildFamilyToday({
         userId: identity.userId,
+        familyMemberId: identity.memberId,
+        relationship: identity.relationship,
         memberFirstName: identity.name.trim().split(/\s+/)[0] || 'there',
         patientFirstName: identity.patientName?.trim().split(/\s+/)[0] || 'She',
-        completedKinds: await kindsDoneToday(identity.memberId),
+        completedKinds,
+        pendingKind,
       });
       res.json(familyTodayResponseSchema.parse(body));
     } catch (e) {
@@ -416,15 +431,38 @@ export function createFamilyRouter({
     try {
       noStore(res);
       const identity = await requireFamilyMember(req);
-      const { kind } = familySupportActionBodySchema.parse(req.body);
+      const { kind, intent } = familySupportActionBodySchema.parse(req.body);
       const result = await recordSupportAction({
         familyMemberId: identity.memberId,
         userId: identity.userId,
         memberName: identity.name,
         kind,
+        intent,
       });
-      req.log?.info?.({ kind, delivered: result.delivered }, 'family: support action recorded');
+      req.log?.info?.(
+        { kind, pending: result.pending, delivered: result.delivered },
+        'family: support action recorded',
+      );
       res.json(familySupportActionResponseSchema.parse(result));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  /**
+   * The ✓ tap. Completes whichever action is outstanding — there is only ever one, so the body is
+   * empty and the client cannot confirm an action it did not select.
+   */
+  router.post('/support-actions/confirm', async (req, res, next) => {
+    try {
+      noStore(res);
+      const identity = await requireFamilyMember(req);
+      const result = await confirmPendingAction({
+        familyMemberId: identity.memberId,
+        userId: identity.userId,
+      });
+      req.log?.info?.({ kind: result.kind }, 'family: support action confirmed');
+      res.json(familyConfirmActionResponseSchema.parse(result));
     } catch (e) {
       next(e);
     }

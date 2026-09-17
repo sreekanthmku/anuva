@@ -335,15 +335,79 @@ model FamilyMember {
   /// Set by "Remind me later" on the support sheet; read by the reminder job.
   supportRemindAt DateTime?
 
+  /// An action they selected but have not confirmed doing — today, only `call`, which happens
+  /// outside the app and so cannot be observed. Two columns rather than a row of its own for the
+  /// same reason as `supportRemindAt`: there is only ever one outstanding intent, and selecting a
+  /// second action should move it rather than queue behind it.
+  pendingActionKind FamilySupportActionKind?
+  pendingActionAt   DateTime?
+
   createdAt DateTime @default(now())
 
   invite         FamilyInvite?
   sessions       FamilySession[]
   supportActions FamilySupportAction[]
   fcmTokens      FamilyFcmToken[]
+  nudgeLogs      FamilyNudgeLog[]
 
   @@index([userId, status])
   @@index([phone])
+  @@index([status, pendingActionAt])
+}
+
+enum FamilyNudgeLayer {
+  understand
+  connect
+  act
+}
+
+enum FamilyNudgeWeight {
+  standard
+  occasional
+}
+
+/// Which writer claimed the day. `push` means a cadence cron chose it and sent a notification;
+/// `app` means the member opened Today before any cron ran that day.
+enum FamilyNudgeChannel {
+  push
+  app
+}
+
+/// One nudge per family member per day — what was chosen, whether it was seen, and whether a
+/// supportive action followed it. The unique index on (member, day) is load-bearing: it is what lets
+/// the cadence cron and the Today card both write without ever producing two nudges for one day.
+///
+/// No `userId`. The row belongs to the family member and dies with them by cascade, the same as
+/// `FamilyFcmToken` and `FamilySession` — which is also why `check:erasure` does not flag it.
+model FamilyNudgeLog {
+  id             String       @id @default(cuid())
+  familyMemberId String
+  member         FamilyMember @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+
+  /// The authored nudge's stable id, e.g. `partner-stress-01`. Not a foreign key — the corpus lives
+  /// in `apps/api/src/family/nudges.ts`, and a retired line must not take its own history with it.
+  nudgeId String
+  layer   FamilyNudgeLayer
+  /// Free text rather than an enum: moments are editorial tags on the corpus and are expected to
+  /// grow, and a migration per new tag would buy nothing a string does not already give.
+  moment  String
+  weight  FamilyNudgeWeight @default(standard)
+  channel FamilyNudgeChannel
+
+  /// `dayKey()` — UTC midnight of the local calendar day, the same convention as every log table.
+  date DateTime @db.Date
+
+  sentAt DateTime  @default(now())
+  seenAt DateTime?
+
+  /// Set when a support action lands inside the attribution window. The pair is what answers
+  /// "does a Connect nudge on Wednesday produce an Act at the weekend?".
+  actedAt   DateTime?
+  actedKind FamilySupportActionKind?
+
+  @@unique([familyMemberId, date])
+  @@index([familyMemberId, sentAt])
+  @@index([nudgeId, sentAt])
 }
 
 /// Push tokens for the family app. Mirrors `FcmToken` and reuses its platform and status enums, so

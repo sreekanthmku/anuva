@@ -2,6 +2,9 @@ import { prisma } from '@anuva/database';
 import type { FamilySupportActionKind } from '@anuva/shared';
 import { sendPushToAllTokens } from '../fcm.js';
 import { dayKey } from '../dayKey.js';
+import { ACTION_COMPLETION_MESSAGE, ACTION_COMPLETION_PROMPT } from './content.js';
+import { attributeSupportAction } from './nudgeLog.js';
+import { FamilyError } from './errors.js';
 
 /**
  * One recorded supportive action per member per day. What turns the Today CTA into
@@ -95,13 +98,113 @@ export async function kindsDoneToday(
   return rows.map((row) => row.kind);
 }
 
+/**
+ * The one kind the app cannot see happen.
+ *
+ * Message, flowers and chocolates are performed or delivered by the app, so recording them on the
+ * tap is simply true. A call happens on a phone we have no visibility into, and recording it as done
+ * the moment someone taps "Call her" makes the completion number — the thing the whole Act layer is
+ * measured by — a record of intentions rather than actions.
+ */
+const CONFIRMED_KINDS: readonly FamilySupportActionKind[] = ['call'];
+
+export function needsConfirmation(kind: FamilySupportActionKind): boolean {
+  return CONFIRMED_KINDS.includes(kind);
+}
+
+/** What the member has selected but not yet confirmed. Null once confirmed or reminded away. */
+export async function pendingActionFor(
+  familyMemberId: string,
+): Promise<FamilySupportActionKind | null> {
+  const member = await prisma.familyMember.findUnique({
+    where: { id: familyMemberId },
+    select: { pendingActionKind: true },
+  });
+  return member?.pendingActionKind ?? null;
+}
+
+/**
+ * Select an action without completing it. Stored on the member, so a second selection replaces the
+ * first rather than queueing — there is only ever one thing on their list.
+ */
+async function selectAction(input: {
+  familyMemberId: string;
+  kind: FamilySupportActionKind;
+  now: Date;
+}): Promise<{ completedToday: false; pending: true; prompt: string; toast: string }> {
+  await prisma.familyMember.update({
+    where: { id: input.familyMemberId },
+    data: { pendingActionKind: input.kind, pendingActionAt: input.now },
+  });
+
+  return {
+    completedToday: false,
+    pending: true,
+    prompt: ACTION_COMPLETION_PROMPT,
+    toast: ACTION_COMPLETION_PROMPT,
+  };
+}
+
+/**
+ * Confirm the selected action — the ✓ tap.
+ *
+ * Idempotent through the same unique index everything else leans on, so a double tap on a slow
+ * connection records one call rather than two. Clearing the intent is unconditional: whether the row
+ * was new or already there, nothing is outstanding afterwards.
+ */
+export async function confirmPendingAction(input: {
+  familyMemberId: string;
+  userId: string;
+}): Promise<{ completedToday: true; kind: FamilySupportActionKind; toast: string }> {
+  const now = new Date();
+
+  const member = await prisma.familyMember.findUnique({
+    where: { id: input.familyMemberId },
+    select: { pendingActionKind: true },
+  });
+
+  const kind = member?.pendingActionKind;
+  if (!kind) {
+    throw new FamilyError(409, 'no_pending_action', 'Nothing is waiting to be confirmed.');
+  }
+
+  await prisma.familySupportAction.createMany({
+    data: [{ familyMemberId: input.familyMemberId, userId: input.userId, kind, date: dayKey(now) }],
+    skipDuplicates: true,
+  });
+
+  await prisma.familyMember.update({
+    where: { id: input.familyMemberId },
+    data: { pendingActionKind: null, pendingActionAt: null },
+  });
+
+  await attributeSupportAction({ familyMemberId: input.familyMemberId, kind, now });
+
+  return { completedToday: true, kind, toast: ACTION_COMPLETION_MESSAGE };
+}
+
 export async function recordSupportAction(input: {
   familyMemberId: string;
   userId: string;
   memberName: string;
   kind: FamilySupportActionKind;
-}): Promise<{ completedToday: true; toast: string; delivered?: boolean }> {
+  /** True when they are choosing the action rather than reporting it done. */
+  intent?: boolean;
+}): Promise<{
+  completedToday: boolean;
+  pending: boolean;
+  prompt: string | null;
+  toast: string;
+  delivered?: boolean;
+}> {
   const now = new Date();
+
+  // A call is only ever recorded through the confirm step, whether or not the client remembered to
+  // ask for it. Honouring `intent` for the other kinds would let a client park a message as
+  // "pending" that it has not sent, which the message route would then contradict.
+  if (needsConfirmation(input.kind)) {
+    return selectAction({ familyMemberId: input.familyMemberId, kind: input.kind, now });
+  }
 
   // Upsert per *kind*: tapping the same action twice in a day is a re-affirmation rather than an
   // error, but a different action is a genuinely new one and must not overwrite the first. The
@@ -122,14 +225,26 @@ export async function recordSupportAction(input: {
   });
   const firstTapToday = count > 0;
 
+  // Attributed on the first tap only. A re-tap is the same gesture reported twice, and counting it
+  // again would inflate the one number the nudge ledger exists to produce.
+  if (firstTapToday) {
+    await attributeSupportAction({
+      familyMemberId: input.familyMemberId,
+      kind: input.kind,
+      now,
+    });
+  }
+
   if (!isGiftKind(input.kind)) {
-    return { completedToday: true, toast: TOASTS[input.kind] };
+    return { completedToday: true, pending: false, prompt: null, toast: TOASTS[input.kind] };
   }
 
   if (!firstTapToday) {
     // Already sent today. Say so rather than silently doing nothing, and do not push again.
     return {
       completedToday: true,
+      pending: false,
+      prompt: null,
       toast:
         input.kind === 'flowers'
           ? 'Already sent her flowers today. She has them.'
@@ -148,6 +263,8 @@ export async function recordSupportAction(input: {
 
   return {
     completedToday: true,
+    pending: false,
+    prompt: null,
     toast: delivered ? TOASTS[input.kind] : GIFT_UNDELIVERED_TOAST[input.kind],
     delivered,
   };

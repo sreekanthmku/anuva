@@ -6,7 +6,16 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/.turbo/**'] },
+  {
+    // `public/firebase-config.js` is generated at build time by each PWA's vite config and is
+    // gitignored — a service-worker script, not source.
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/.turbo/**',
+      '**/public/firebase-config.js',
+    ],
+  },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -33,6 +33,16 @@ export const familySupportActionKindSchema = z.enum(['message', 'call', 'flowers
 /** Which of the four tiles a metric line belongs to. Fixed set — the family app shows these four. */
 export const familyMetricKeySchema = z.enum(['sleep', 'mood', 'stress', 'energy']);
 
+/**
+ * The nudge framework: understand what she may be experiencing, connect with her, then do something
+ * measurable.
+ *
+ * The client switches presentation on this and on nothing else. It is never told which signal chose
+ * the nudge — a `moment` on the wire would let a client infer "hot flushes" from a line that only
+ * alludes to them, which is a wider disclosure than the sentence itself makes.
+ */
+export const familyNudgeLayerSchema = z.enum(['understand', 'connect', 'act']);
+
 /** How she shared the link. Recorded for support, and to know which channel actually gets used. */
 export const familyShareChannelSchema = z.enum(['whatsapp', 'native', 'copy', 'sms']);
 
@@ -78,7 +88,16 @@ export const familyMemberSummarySchema = z.object({
 export const familyStatusResponseSchema = z.object({
   gate: familyGateSchema,
   invite: familyInviteSchema.nullable(),
+  /**
+   * The most recently active member. Kept alongside `members` because the patient PWA's gate was
+   * written against a single slot, and widening the cap should not require the two to ship together.
+   * New code reads `members`.
+   */
   member: familyMemberSummarySchema.nullable(),
+  /** Everyone currently connected, newest first. Capped server-side by `FAMILY_MAX_MEMBERS`. */
+  members: z.array(familyMemberSummarySchema),
+  /** How many more she may invite. Zero means the gate offers no new link. */
+  slotsRemaining: z.number().int().nonnegative(),
   /**
    * `User.familyFeatureOptOut`. Not settable from the gate — it is an ops and support relief valve
    * for a woman with nobody to invite, and the gate honours it so that relief actually works.
@@ -100,7 +119,9 @@ export const createFamilyInviteResponseSchema = z.object({
  */
 export const familyActivityResponseSchema = z.object({
   member: familyMemberSummarySchema.nullable(),
-  /** Null when they have not done anything today. */
+  /** Everyone connected, newest first. `member` is the first of these. */
+  members: z.array(familyMemberSummarySchema),
+  /** Null when nobody has done anything today. Aggregated across everyone connected. */
   today: z
     .object({
       /**
@@ -113,6 +134,11 @@ export const familyActivityResponseSchema = z.object({
           kind: familySupportActionKindSchema,
           /** Phrased from her side, sentence-shaped: "Sent you flowers." */
           label: z.string(),
+          /**
+           * Who did it. Always present, and always their first name — with two people connected,
+           * "Called you" without a name is a question rather than a reassurance.
+           */
+          memberFirstName: z.string(),
         }),
       ),
       headline: z.string(),
@@ -252,6 +278,29 @@ export const familySupportCardSchema = familyCardSchema.extend({
    * message her and send flowers — so the client marks what is done rather than locking the button.
    */
   completedKinds: z.array(familySupportActionKindSchema),
+  /**
+   * An action they chose but have not confirmed doing. Only ever `call`: everything else either
+   * happens inside the app or is delivered by it, so the app already knows. A call happens on a
+   * phone we cannot see, which is the whole reason the confirm step exists.
+   */
+  pendingKind: familySupportActionKindSchema.nullable(),
+  /** Server-worded confirm line for the pending action. Null when nothing is pending. */
+  pendingPrompt: z.string().nullable(),
+});
+
+/**
+ * The daily nudge.
+ *
+ * One line, already chosen and already worded. `layer` drives presentation; `id` travels so that the
+ * client can report a view against the right ledger row without the server re-deriving which nudge
+ * it served.
+ */
+export const familyNudgeCardSchema = z.object({
+  id: z.string(),
+  layer: familyNudgeLayerSchema,
+  /** "Understand her week" / "Connect with her" / "One thing you can do" — server-owned. */
+  label: z.string(),
+  text: z.string(),
 });
 
 export const familyProgressCardSchema = familyCardSchema.extend({
@@ -271,6 +320,11 @@ export const familyTodayResponseSchema = z.object({
   greeting: z.string(),
   dateLine: z.string(),
   status: familyCardSchema,
+  /**
+   * Null when the corpus has nothing for this reader and layer, which should not happen but is not
+   * worth a 500 if it does — a missing nudge costs a card, a thrown error costs the whole screen.
+   */
+  nudge: familyNudgeCardSchema.nullable(),
   support: familySupportCardSchema,
   metricsLabel: z.string(),
   metrics: z.array(familyMetricSchema),
@@ -397,10 +451,21 @@ export const familyMessageResponseSchema = z.object({
 
 export const familySupportActionBodySchema = z.object({
   kind: familySupportActionKindSchema,
+  /**
+   * True when they are *choosing* the action rather than reporting it done. Only honoured for
+   * `call`; every other kind completes on the spot because the app either performs it or delivers
+   * it, and asking someone to confirm something they just watched happen is noise.
+   */
+  intent: z.boolean().optional(),
 });
 
 export const familySupportActionResponseSchema = z.object({
-  completedToday: z.literal(true),
+  /** False only while an action is selected and awaiting its confirm tap. */
+  completedToday: z.boolean(),
+  /** True when the action is now pending confirmation rather than recorded. */
+  pending: z.boolean(),
+  /** The confirm line, shown while `pending`. Null otherwise. */
+  prompt: z.string().nullable(),
   toast: z.string(),
   /**
    * Only meaningful for the gift kinds (`flowers`, `chocolates`), which are pushed to her phone the
@@ -408,6 +473,13 @@ export const familySupportActionResponseSchema = z.object({
    * is a self-report about something that happened outside the app.
    */
   delivered: z.boolean().optional(),
+});
+
+/** Confirming the pending action. No body: there is only ever one outstanding. */
+export const familyConfirmActionResponseSchema = z.object({
+  completedToday: z.literal(true),
+  kind: familySupportActionKindSchema,
+  toast: z.string(),
 });
 
 export const familyRemindLaterResponseSchema = z.object({
@@ -467,6 +539,8 @@ export type FamilySignInVerifyResponse = z.infer<typeof familySignInVerifyRespon
 export type FamilyLogoutResponse = z.infer<typeof familyLogoutResponseSchema>;
 export type FamilyMetric = z.infer<typeof familyMetricSchema>;
 export type FamilyCard = z.infer<typeof familyCardSchema>;
+export type FamilyNudgeLayer = z.infer<typeof familyNudgeLayerSchema>;
+export type FamilyNudgeCard = z.infer<typeof familyNudgeCardSchema>;
 export type FamilySupportCard = z.infer<typeof familySupportCardSchema>;
 export type FamilyProgressCard = z.infer<typeof familyProgressCardSchema>;
 export type FamilyTodayResponse = z.infer<typeof familyTodayResponseSchema>;
@@ -484,6 +558,7 @@ export type FamilyMessageBody = z.infer<typeof familyMessageBodySchema>;
 export type FamilyMessageResponse = z.infer<typeof familyMessageResponseSchema>;
 export type FamilySupportActionBody = z.infer<typeof familySupportActionBodySchema>;
 export type FamilySupportActionResponse = z.infer<typeof familySupportActionResponseSchema>;
+export type FamilyConfirmActionResponse = z.infer<typeof familyConfirmActionResponseSchema>;
 export type FamilyRemindLaterResponse = z.infer<typeof familyRemindLaterResponseSchema>;
 export type FamilyThanksBody = z.infer<typeof familyThanksBodySchema>;
 export type FamilyThanksResponse = z.infer<typeof familyThanksResponseSchema>;

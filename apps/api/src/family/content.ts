@@ -139,6 +139,36 @@ export const EDUCATION_GENERAL = {
 };
 
 /**
+ * The daily nudge's own label, by layer.
+ *
+ * Worded as what the reader is being asked for, not as the framework's internal name. "Connect" is a
+ * product concept; "A moment with her" is an instruction. The layer name never reaches a screen.
+ */
+export const NUDGE_LAYER_LABELS: Record<'understand' | 'connect' | 'act', string> = {
+  understand: 'Worth knowing today',
+  connect: 'A moment with her',
+  act: 'One thing you can do',
+};
+
+/**
+ * The action flow's confirm step, from the workbook's "Action Nudges" sheet.
+ *
+ * Only shown for an action the app cannot observe — a phone call. Everything else either happens in
+ * the app or is delivered by it, and asking someone to confirm something they just watched happen
+ * reads as distrust.
+ */
+export const ACTION_COMPLETION_PROMPT = 'Done? Tap ✓ when you’ve made her smile.';
+
+export const ACTION_COMPLETION_MESSAGE =
+  'Beautiful. ❤️ Sometimes the smallest actions are the ones she remembers.';
+
+/** Pushed when a selected action is still unconfirmed hours later. */
+export const ACTION_PENDING_REMINDER = {
+  title: 'Still on your list?',
+  body: 'A small gesture can still make today better.',
+};
+
+/**
  * Two nudges a week, rotated by week number so they change without needing a schedule or any stored
  * state. Deterministic: everyone sees the same pair in the same week.
  */
@@ -206,6 +236,10 @@ export const FAMILY_SHARED_SCOPES: string[] = [
   // Says "in words" rather than "direction only": a single logged day has no direction yet and is
   // shown as its band ("Stressful", "Tired"), so promising direction alone would be inaccurate.
   `${FAMILY_METRIC_KEYS.map((key) => METRIC_NOUNS[key].toLowerCase()).join(', ')}: in words only ("sleeping less", "manageable"), never scores`,
+  // The daily nudge is chosen from her week, so the choice itself carries information even though
+  // the sentence names no measurement. Saying so is the price of using her data to pick it — and
+  // the reason `SIGNAL_BY_RING` in digest.ts is a short, argued list rather than every tracker.
+  'A daily suggestion, chosen from how her week is going — including whether she has been having heat episodes. It never shows a symptom, a count or a score.',
   'How many days this week she has tracked',
   'That a consultation is booked, and when. Never which specialist or why.',
 ];
@@ -213,7 +247,10 @@ export const FAMILY_SHARED_SCOPES: string[] = [
 export const FAMILY_PRIVATE_ITEMS: string[] = [
   'Medical records, notes and prescriptions',
   'Her conversations with Anu',
-  'Individual symptoms and their severity',
+  // Qualified rather than dropped. A nudge may allude to a rough patch; what stays private is the
+  // log behind it — which symptom, how often, how badly. The distinction is the one the whole
+  // nudge design rests on, so the privacy tab states it in her words rather than glossing it.
+  'Her symptom logs — which symptoms, how often, and how severe',
   'Anything she writes in the app',
   'Which specialist she is seeing, and why',
 ];

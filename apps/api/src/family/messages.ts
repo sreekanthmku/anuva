@@ -3,6 +3,7 @@ import type { FamilyMessageResponse } from '@anuva/shared';
 import { sendPushToAllTokens } from '../fcm.js';
 import { dayKey } from '../dayKey.js';
 import { FamilyError } from './errors.js';
+import { attributeSupportAction } from './nudgeLog.js';
 import { rateLimit } from './rateLimit.js';
 
 /**
@@ -72,6 +73,11 @@ export async function sendFamilyMessage(input: {
     },
     update: {},
   });
+
+  // A note is a supportive action like any other, so it answers the day's nudge like any other.
+  // Attribution is idempotent on the ledger row, so an upsert that changed nothing cannot double
+  // count — which is why this sits outside the first-tap check the gift kinds need.
+  await attributeSupportAction({ familyMemberId: input.familyMemberId, kind: 'message' });
 
   if (tokens.length === 0) {
     return {
