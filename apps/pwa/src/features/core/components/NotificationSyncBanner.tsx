@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 type NotificationSyncBannerProps = {
   message: string;
   onRetry: () => void;
@@ -9,6 +11,8 @@ export function NotificationSyncBanner({
   onRetry,
   onDismiss,
 }: NotificationSyncBannerProps) {
+  const { t } = useTranslation();
+
   return (
     <div
       className="mb-4 rounded-[16px] border border-tertiary/35 bg-tertiary-container px-4 py-3"
@@ -27,7 +31,7 @@ export function NotificationSyncBanner({
           className="rounded-full bg-secondary px-4 py-2 text-[12px] font-semibold text-on-secondary"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
-          Retry registration
+          {t('notificationPrompt.retryRegistration')}
         </button>
         {onDismiss && (
           <button
@@ -36,7 +40,7 @@ export function NotificationSyncBanner({
             className="rounded-full px-4 py-2 text-[12px] font-medium text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            Dismiss
+            {t('notificationPrompt.dismissBanner')}
           </button>
         )}
       </div>

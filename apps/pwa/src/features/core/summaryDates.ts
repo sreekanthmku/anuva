@@ -1,8 +1,12 @@
 import type { WeeklyReportResponse } from '@anuva/shared';
+// The instance rather than the hook: these are pure helpers, not components.
+import i18n from '../../i18n';
 
 /**
  * The API returns plain ISO days. Formatting lives on the client so it follows
- * the device locale and timezone rather than the server's.
+ * the *chosen language* and the device timezone rather than the server's. The
+ * language, not the device locale: a Telugu screen with English month names reads
+ * as half-translated.
  */
 
 export function parseIso(iso: string): Date {
@@ -25,7 +29,7 @@ export function daysBetweenIso(startIso: string, endIso: string): number {
 }
 
 export function formatDay(iso: string): string {
-  return parseIso(iso).toLocaleDateString(undefined, {
+  return parseIso(iso).toLocaleDateString(i18n.language, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -33,7 +37,7 @@ export function formatDay(iso: string): string {
 }
 
 export function formatShortDay(iso: string): string {
-  return parseIso(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return parseIso(iso).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
 }
 
 /**
@@ -42,7 +46,7 @@ export function formatShortDay(iso: string): string {
  * through `toISOString()`, which shifts the day for any timezone ahead of UTC.
  */
 export function formatShortDayFrom(startIso: string, offset: number): string {
-  return addDaysIso(startIso, offset).toLocaleDateString(undefined, {
+  return addDaysIso(startIso, offset).toLocaleDateString(i18n.language, {
     month: 'short',
     day: 'numeric',
   });
@@ -50,36 +54,45 @@ export function formatShortDayFrom(startIso: string, offset: number): string {
 
 /** "Mon" — the weekday axis a seven-column chart wants. */
 export function formatWeekdayFrom(startIso: string, offset: number): string {
-  return addDaysIso(startIso, offset).toLocaleDateString(undefined, { weekday: 'short' });
+  return addDaysIso(startIso, offset).toLocaleDateString(i18n.language, { weekday: 'short' });
 }
 
 export function formatRange(startIso: string, endIso: string): string {
   if (startIso === endIso) return formatShortDay(startIso);
   const start = parseIso(startIso);
   const end = parseIso(endIso);
-  const month = (d: Date) => d.toLocaleDateString(undefined, { month: 'short' });
+  const month = (d: Date) => d.toLocaleDateString(i18n.language, { month: 'short' });
   return start.getMonth() === end.getMonth()
-    ? `${month(start)} ${start.getDate()} – ${end.getDate()}`
-    : `${month(start)} ${start.getDate()} – ${month(end)} ${end.getDate()}`;
+    ? i18n.t('summary.rangeSameMonth', {
+        month: month(start),
+        from: start.getDate(),
+        to: end.getDate(),
+      })
+    : i18n.t('summary.rangeCrossMonth', {
+        fromMonth: month(start),
+        from: start.getDate(),
+        toMonth: month(end),
+        to: end.getDate(),
+      });
 }
 
 export function formatMonth(iso: string): string {
-  return parseIso(iso).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return parseIso(iso).toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' });
 }
 
 /** Headline for the window — relative wording where it reads better than a date. */
 export function periodHeadline(data: WeeklyReportResponse): string {
   if (data.period === 'daily') {
-    if (data.offset === 0) return 'Today';
-    if (data.offset === 1) return 'Yesterday';
+    if (data.offset === 0) return i18n.t('summary.today');
+    if (data.offset === 1) return i18n.t('summary.yesterday');
     return formatDay(data.periodStart);
   }
   if (data.period === 'weekly') {
-    if (data.offset === 0) return 'This week';
-    if (data.offset === 1) return 'Last week';
+    if (data.offset === 0) return i18n.t('summary.thisWeek');
+    if (data.offset === 1) return i18n.t('summary.lastWeek');
     return formatRange(data.periodStart, data.periodEnd);
   }
-  return data.offset === 0 ? 'This month' : formatMonth(data.periodStart);
+  return data.offset === 0 ? i18n.t('summary.thisMonth') : formatMonth(data.periodStart);
 }
 
 /** The concrete dates behind the headline, plus a note when the user joined mid-period. */
@@ -92,12 +105,14 @@ export function periodDetail(data: WeeklyReportResponse): string {
         : formatMonth(data.periodStart);
 
   return data.coverageStart !== data.periodStart
-    ? `${base} · your data from ${formatShortDay(data.coverageStart)}`
+    ? i18n.t('summary.detailWithCoverage', {
+        base,
+        from: formatShortDay(data.coverageStart),
+      })
     : base;
 }
 
-export const PERIOD_NOUN: Record<WeeklyReportResponse['period'], string> = {
-  daily: 'day',
-  weekly: 'week',
-  monthly: 'month',
-};
+/** "day" / "week" / "month" — the noun the report drops into its own sentences. */
+export function periodNoun(period: WeeklyReportResponse['period']): string {
+  return i18n.t(`summary.periodNoun.${period}`);
+}

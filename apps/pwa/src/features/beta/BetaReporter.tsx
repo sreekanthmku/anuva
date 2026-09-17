@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BugReportSheet } from './BugReportSheet';
 import { useShakeToReport } from './useShakeToReport';
 
@@ -14,6 +15,7 @@ import { useShakeToReport } from './useShakeToReport';
  * screen of the app, so it has to be findable without being the most prominent thing in the room.
  */
 export function BetaReporter({ app }: { app: string }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const openSheet = useCallback(() => setOpen(true), []);
 
@@ -28,7 +30,7 @@ export function BetaReporter({ app }: { app: string }) {
           type="button"
           data-beta-reporter
           onClick={openSheet}
-          aria-label="Report a problem"
+          aria-label={t('beta.reportProblem')}
           className="fixed right-3 z-[90] flex h-11 items-center gap-1.5 rounded-full border border-secondary/30 bg-surface-raised/95 pl-3 pr-3.5 text-[12px] font-semibold text-secondary shadow-[0_8px_20px_rgba(94,53,102,0.18)] backdrop-blur"
           style={{
             fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
@@ -45,7 +47,7 @@ export function BetaReporter({ app }: { app: string }) {
               strokeLinejoin="round"
             />
           </svg>
-          Report
+          {t('beta.report')}
         </button>
       ) : null}
 

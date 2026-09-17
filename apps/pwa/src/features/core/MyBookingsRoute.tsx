@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+// The instance for the module-level helpers and the catch blocks; `t` inside the components.
+import i18n from '../../i18n';
 import { Link, useNavigate } from 'react-router-dom';
 import type {
   ConsultationDocument,
@@ -31,22 +34,25 @@ type Tab = 'upcoming' | 'past';
 
 function formatWhen(iso: string, endsAt: string | null): string {
   const start = new Date(iso);
-  const day = start.toLocaleDateString(undefined, {
+  // The active language, not the device's — this line sits between translated ones.
+  const day = start.toLocaleDateString(i18n.language, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
   });
   const time = formatBookingTimeLabel(iso);
-  return endsAt ? `${day} · ${time} – ${formatBookingTimeLabel(endsAt)}` : `${day} · ${time}`;
+  return endsAt
+    ? i18n.t('bookings.whenWithEnd', { day, start: time, end: formatBookingTimeLabel(endsAt) })
+    : i18n.t('bookings.when', { day, time });
 }
 
 function statusLabel(booking: MyConsultation): string {
-  if (booking.status === 'cancelled') return 'Cancelled';
-  if (booking.status === 'completed') return 'Completed';
-  if (booking.callStatus === 'ended') return 'Call ended';
-  if (booking.callStatus === 'active') return 'In progress';
-  if (booking.status === 'confirmed') return 'Confirmed';
-  return 'Pending';
+  if (booking.status === 'cancelled') return i18n.t('bookings.status.cancelled');
+  if (booking.status === 'completed') return i18n.t('bookings.status.completed');
+  if (booking.callStatus === 'ended') return i18n.t('bookings.status.callEnded');
+  if (booking.callStatus === 'active') return i18n.t('bookings.status.inProgress');
+  if (booking.status === 'confirmed') return i18n.t('bookings.status.confirmed');
+  return i18n.t('bookings.status.pending');
 }
 
 /**
@@ -54,6 +60,7 @@ function statusLabel(booking: MyConsultation): string {
  * so it is fetched as a blob on demand rather than being given to the <audio> tag as a URL.
  */
 function RecordingPlayer({ consultationId }: { consultationId: string }) {
+  const { t } = useTranslation();
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,31 +87,28 @@ function RecordingPlayer({ consultationId }: { consultationId: string }) {
           try {
             setSrc(await fetchConsultationRecordingUrl(consultationId));
           } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not load the recording.');
+            setError(err instanceof Error ? err.message : i18n.t('bookings.recordingFailed'));
           } finally {
             setLoading(false);
           }
         }}
         className="rounded-full border border-border-default bg-surface-raised px-4 py-2 text-[13px] font-semibold disabled:opacity-45"
       >
-        {loading ? 'Loading…' : 'Play recording'}
+        {loading ? t('bookings.loading') : t('bookings.playRecording')}
       </button>
       {error ? <p className="mt-2 text-[12px] text-error">{error}</p> : null}
     </div>
   );
 }
 
-const DOCUMENT_KIND_LABEL: Record<ConsultationDocumentKind, string> = {
-  prescription: 'Prescription',
-  diet_plan: 'Diet plan',
-  care_plan: 'Care plan',
-  suggestion: 'Suggestion',
-};
+function documentKindLabel(kind: ConsultationDocumentKind): string {
+  return i18n.t(`bookings.documentKinds.${kind}`);
+}
 
 function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024) return i18n.t('bookings.bytes', { value: bytes });
+  if (bytes < 1024 * 1024) return i18n.t('bookings.kilobytes', { value: Math.round(bytes / 1024) });
+  return i18n.t('bookings.megabytes', { value: (bytes / (1024 * 1024)).toFixed(1) });
 }
 
 /**
@@ -118,27 +122,27 @@ function documentUploadedAt(iso: string): string {
     return '';
   }
 
-  const time = uploaded.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  const time = uploaded.toLocaleTimeString(i18n.language, { hour: 'numeric', minute: '2-digit' });
 
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const dayDiff = Math.floor((startOfToday.getTime() - uploaded.getTime()) / 86_400_000);
 
   if (uploaded.getTime() >= startOfToday.getTime()) {
-    return `Today at ${time}`;
+    return i18n.t('bookings.todayAt', { time });
   }
   if (dayDiff < 1) {
-    return `Yesterday at ${time}`;
+    return i18n.t('bookings.yesterdayAt', { time });
   }
 
   const sameYear = uploaded.getFullYear() === new Date().getFullYear();
-  const date = uploaded.toLocaleDateString(undefined, {
+  const date = uploaded.toLocaleDateString(i18n.language, {
     day: 'numeric',
     month: 'short',
     ...(sameYear ? {} : { year: 'numeric' }),
   });
 
-  return `${date} at ${time}`;
+  return i18n.t('bookings.dateAt', { date, time });
 }
 
 /**
@@ -147,6 +151,7 @@ function documentUploadedAt(iso: string): string {
  * new tab. Only rendered when the booking already reports a document, so no wasted request.
  */
 function ConsultationDocuments({ consultationId }: { consultationId: string }) {
+  const { t } = useTranslation();
   const [documents, setDocuments] = useState<ConsultationDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -177,7 +182,8 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
         if (!cancelled) setDocuments(newestFirst);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load documents.');
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : i18n.t('bookings.documentsFailed'));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -223,7 +229,7 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
           window.open(url, '_blank', 'noopener');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not open this document.');
+        setError(err instanceof Error ? err.message : i18n.t('bookings.openFailed'));
       } finally {
         setOpeningId(null);
       }
@@ -245,13 +251,13 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
         const file = await fileFor(doc);
         const outcome = await shareOrDownloadFile(
           file,
-          doc.title?.trim() || DOCUMENT_KIND_LABEL[doc.kind],
+          doc.title?.trim() || documentKindLabel(doc.kind),
         );
         if (outcome === 'downloaded') {
-          setNotice(`Saved as ${file.name}. Attach it from your downloads.`);
+          setNotice(i18n.t('bookings.savedAs', { name: file.name }));
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not share this document.');
+        setError(err instanceof Error ? err.message : i18n.t('bookings.shareFailed'));
       } finally {
         setSharingId(null);
       }
@@ -260,7 +266,9 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
   );
 
   if (loading) {
-    return <p className="mt-3 text-[12px] text-on-surface-variant">Loading documents…</p>;
+    return (
+      <p className="mt-3 text-[12px] text-on-surface-variant">{t('bookings.loadingDocuments')}</p>
+    );
   }
 
   if (documents.length === 0 && !error) {
@@ -270,7 +278,7 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
   return (
     <div className="mt-3 rounded-[16px] border border-border-default bg-surface-container-low px-3 py-3">
       <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-tertiary">
-        Prescription &amp; plans
+        {t('bookings.documents')}
       </div>
 
       <ul className="mt-2 flex flex-col gap-2">
@@ -290,14 +298,14 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px] font-semibold">
-                  {doc.title?.trim() || DOCUMENT_KIND_LABEL[doc.kind]}
+                  {doc.title?.trim() || documentKindLabel(doc.kind)}
                 </span>
                 {/* Wraps instead of truncating: on a narrow phone one line cannot hold the kind,
                     the upload date and the size, and the date is the part people look for. The
                     kind is dropped when it is already the title, so it is never printed twice. */}
                 <span className="mt-0.5 block text-[11px] leading-[1.35] text-on-surface-variant">
                   {[
-                    doc.title?.trim() ? DOCUMENT_KIND_LABEL[doc.kind] : null,
+                    doc.title?.trim() ? documentKindLabel(doc.kind) : null,
                     documentUploadedAt(doc.createdAt),
                     formatFileSize(doc.sizeBytes),
                   ]
@@ -306,17 +314,19 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
                 </span>
               </span>
               <span className="shrink-0 text-[12px] font-semibold text-primary">
-                {openingId === doc.id ? 'Opening…' : 'View'}
+                {openingId === doc.id ? t('bookings.opening') : t('bookings.view')}
               </span>
             </button>
             <button
               type="button"
               disabled={sharingId === doc.id}
               onClick={() => void share(doc)}
-              aria-label={`Share ${doc.title?.trim() || DOCUMENT_KIND_LABEL[doc.kind]}`}
+              aria-label={t('bookings.shareLabel', {
+                name: doc.title?.trim() || documentKindLabel(doc.kind),
+              })}
               className="grid min-h-[44px] shrink-0 place-items-center rounded-full border border-border-default px-3 text-[12px] font-semibold text-primary disabled:opacity-45"
             >
-              {sharingId === doc.id ? 'Sharing…' : 'Share'}
+              {sharingId === doc.id ? t('bookings.sharing') : t('bookings.share')}
             </button>
           </li>
         ))}
@@ -332,7 +342,7 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
         >
           <div className="flex items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
             <span className="truncate text-[13px] font-semibold text-white">
-              {viewing.doc.title?.trim() || DOCUMENT_KIND_LABEL[viewing.doc.kind]}
+              {viewing.doc.title?.trim() || documentKindLabel(viewing.doc.kind)}
             </span>
             <div className="flex shrink-0 items-center gap-3">
               <button
@@ -344,7 +354,7 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
                 }}
                 className="text-[12px] font-semibold text-white/80 disabled:opacity-45"
               >
-                {sharingId === viewing.doc.id ? 'Sharing…' : 'Share'}
+                {sharingId === viewing.doc.id ? t('bookings.sharing') : t('bookings.share')}
               </button>
               <a
                 href={viewing.url}
@@ -352,20 +362,20 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
                 onClick={(event) => event.stopPropagation()}
                 className="text-[12px] font-semibold text-white/80"
               >
-                Save
+                {t('bookings.save')}
               </a>
               <button
                 type="button"
                 onClick={() => setViewing(null)}
                 className="text-[12px] font-semibold text-white"
               >
-                Close
+                {t('bookings.close')}
               </button>
             </div>
           </div>
           <img
             src={viewing.url}
-            alt={viewing.doc.title?.trim() || DOCUMENT_KIND_LABEL[viewing.doc.kind]}
+            alt={viewing.doc.title?.trim() || documentKindLabel(viewing.doc.kind)}
             className="min-h-0 flex-1 object-contain"
             onClick={(event) => event.stopPropagation()}
           />
@@ -383,6 +393,7 @@ type RescheduleSheetProps = {
 };
 
 function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSheetProps) {
+  const { t } = useTranslation();
   const [specialistKey, setSpecialistKey] = useState(booking.specialistKey);
   const [dates, setDates] = useState<{ date: string; slots: { id: string; startsAt: string }[] }[]>(
     [],
@@ -409,7 +420,8 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
         setPickedDate(response.dates[0]?.date ?? null);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load slots.');
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : i18n.t('bookings.slotsFailed'));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -435,14 +447,12 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-[22px]">Reschedule</h2>
+          <h2 className="font-display text-[22px]">{t('bookings.rescheduleTitle')}</h2>
           <button type="button" onClick={onClose} className="text-[13px] font-semibold text-primary">
-            Close
+            {t('bookings.close')}
           </button>
         </div>
-        <p className="mt-1 text-[13px] text-on-surface-variant">
-          Pick a new time, or choose a different specialist.
-        </p>
+        <p className="mt-1 text-[13px] text-on-surface-variant">{t('bookings.rescheduleBody')}</p>
 
         <div className="mt-4">
           <SpecialistPicker
@@ -453,7 +463,9 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
         </div>
 
         {loading ? (
-          <p className="mt-4 px-3 text-[13px] text-on-surface-variant">Loading available times…</p>
+          <p className="mt-4 px-3 text-[13px] text-on-surface-variant">
+            {t('bookings.loadingTimes')}
+          </p>
         ) : (
           <div className="mt-4 px-3">
             <div className="flex gap-2 overflow-x-auto pb-1">
@@ -487,9 +499,7 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
               pickedTimeId={pickedSlot}
               onSelectTime={setPickedSlot}
               emptyMessage={
-                dates.length === 0
-                  ? 'No open slots for this specialist right now.'
-                  : 'No times left on this day.'
+                dates.length === 0 ? t('bookings.noOpenSlots') : t('bookings.noTimesLeft')
               }
             />
           </div>
@@ -508,14 +518,14 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
               await rescheduleConsultation(booking.consultationId, pickedSlot);
               onDone();
             } catch (err) {
-              setError(err instanceof Error ? err.message : 'Could not reschedule.');
+              setError(err instanceof Error ? err.message : i18n.t('bookings.rescheduleFailed'));
             } finally {
               setSaving(false);
             }
           }}
           className="mt-5 w-full rounded-full bg-secondary px-4 py-3 text-[14px] font-semibold text-on-secondary disabled:opacity-45"
         >
-          {saving ? 'Saving…' : 'Confirm new time'}
+          {saving ? t('common.saving') : t('bookings.confirmNewTime')}
         </button>
       </div>
     </div>
@@ -523,6 +533,7 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
 }
 
 export default function MyBookingsRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('upcoming');
   const [upcoming, setUpcoming] = useState<MyConsultation[]>([]);
@@ -539,7 +550,7 @@ export default function MyBookingsRoute() {
       setUpcoming(response.upcoming);
       setPast(response.past);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load your bookings.');
+      setError(err instanceof Error ? err.message : i18n.t('bookings.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -562,7 +573,7 @@ export default function MyBookingsRoute() {
         await cancelConsultation(booking.consultationId);
         await load();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not cancel this booking.');
+        setError(err instanceof Error ? err.message : i18n.t('bookings.cancelFailed'));
       } finally {
         setBusyId(null);
       }
@@ -580,16 +591,16 @@ export default function MyBookingsRoute() {
             to="/home"
             className="rounded-full border border-border-default px-3 py-1.5 text-[12px] font-semibold"
           >
-            Home
+            {t('bookings.home')}
           </Link>
           <Link
             to="/booking"
             className="rounded-full bg-secondary px-3 py-1.5 text-[12px] font-semibold text-on-secondary"
           >
-            Book new
+            {t('bookings.bookNew')}
           </Link>
         </div>
-        <h1 className="mt-4 font-display text-[29px] leading-[1.08]">Your consultations</h1>
+        <h1 className="mt-4 font-display text-[29px] leading-[1.08]">{t('bookings.title')}</h1>
 
         <div className="mt-4 flex gap-2">
           {(['upcoming', 'past'] as Tab[]).map((value) => (
@@ -603,7 +614,10 @@ export default function MyBookingsRoute() {
                   : 'border border-border-default bg-surface-raised'
               }`}
             >
-              {value} ({value === 'upcoming' ? upcoming.length : past.length})
+              {t('bookings.tabWithCount', {
+                label: t(`bookings.tabs.${value}`),
+                count: value === 'upcoming' ? upcoming.length : past.length,
+              })}
             </button>
           ))}
         </div>
@@ -611,7 +625,7 @@ export default function MyBookingsRoute() {
 
       <section className="px-4 py-4">
         {loading ? (
-          <p className="text-[13px] text-on-surface-variant">Loading your bookings…</p>
+          <p className="text-[13px] text-on-surface-variant">{t('bookings.loadingBookings')}</p>
         ) : null}
 
         {error ? (
@@ -623,14 +637,14 @@ export default function MyBookingsRoute() {
         {!loading && list.length === 0 ? (
           <div className="rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-8 text-center">
             <p className="text-[13px] text-on-surface-variant">
-              {tab === 'upcoming' ? 'No upcoming consultations.' : 'No past consultations yet.'}
+              {tab === 'upcoming' ? t('bookings.emptyUpcoming') : t('bookings.emptyPast')}
             </p>
             {tab === 'upcoming' ? (
               <Link
                 to="/booking"
                 className="mt-4 inline-flex rounded-full bg-secondary px-4 py-2 text-[13px] font-semibold text-on-secondary"
               >
-                Book a consultation
+                {t('bookings.bookCta')}
               </Link>
             ) : null}
           </div>
@@ -672,7 +686,7 @@ export default function MyBookingsRoute() {
                   onClick={() => navigate(`/consultations/${booking.consultationId}/call`)}
                   className="mt-3 w-full rounded-full bg-secondary px-4 py-2.5 text-[13px] font-semibold text-on-secondary"
                 >
-                  Join call
+                  {t('bookings.joinCall')}
                 </button>
               ) : null}
 
@@ -684,7 +698,7 @@ export default function MyBookingsRoute() {
                       onClick={() => setRescheduling(booking)}
                       className="flex-1 rounded-full border border-border-default px-3 py-2.5 text-[13px] font-semibold"
                     >
-                      Reschedule
+                      {t('bookings.reschedule')}
                     </button>
                   ) : null}
                   {booking.canCancel ? (
@@ -694,7 +708,9 @@ export default function MyBookingsRoute() {
                       onClick={() => onCancel(booking)}
                       className="flex-1 rounded-full border border-error/40 px-3 py-2.5 text-[13px] font-semibold text-error disabled:opacity-45"
                     >
-                      {busyId === booking.consultationId ? 'Cancelling…' : 'Cancel'}
+                      {busyId === booking.consultationId
+                        ? t('bookings.cancelling')
+                        : t('bookings.cancel')}
                     </button>
                   ) : null}
                 </div>
@@ -713,7 +729,7 @@ export default function MyBookingsRoute() {
               booking.recordingStatus &&
               booking.recordingStatus !== 'failed' ? (
                 <p className="mt-3 text-[12px] text-on-surface-variant">
-                  Recording is still processing.
+                  {t('bookings.recordingProcessing')}
                 </p>
               ) : null}
             </article>

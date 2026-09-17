@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { PeriodFlow } from '@anuva/shared';
+import { useTranslation } from 'react-i18next';
 import { formatCycleDateLong, todayISO } from './cycleTrackerDisplay';
 
 type PeriodFlowSheetProps = {
@@ -13,11 +14,8 @@ type PeriodFlowSheetProps = {
   onSave: (flow: PeriodFlow) => void | Promise<void>;
 };
 
-const FLOWS: { value: PeriodFlow; label: string; hint: string }[] = [
-  { value: 'light', label: 'Light', hint: 'Spotting, or a liner is enough' },
-  { value: 'regular', label: 'Regular', hint: 'Your usual flow' },
-  { value: 'heavy', label: 'Heavy', hint: 'Changing more often than usual' },
-];
+/** Stored values, in display order. Label and hint: `periodSheet.flows.<value>`. */
+const FLOWS: PeriodFlow[] = ['light', 'regular', 'heavy'];
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 const FONT_MONO = '"Mulish", sans-serif';
@@ -31,6 +29,8 @@ export function PeriodFlowSheet({
   onClose,
   onSave,
 }: PeriodFlowSheetProps) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -55,7 +55,7 @@ export function PeriodFlowSheet({
         type="button"
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
-        aria-label="Close period check-in"
+        aria-label={t('periodSheet.close')}
       />
       <div
         role="dialog"
@@ -68,38 +68,40 @@ export function PeriodFlowSheet({
           style={{ fontFamily: FONT_MONO }}
         >
           <span className="h-px w-3 bg-primary/60" />
-          Period check-in
+          {t('periodSheet.eyebrow')}
         </div>
         <h2
           className="mb-1.5 text-[20px] leading-snug text-on-surface"
           style={{ fontFamily: SERIF, fontWeight: 300 }}
         >
-          How is your period feeling?
+          {t('periodSheet.title')}
         </h2>
         {/* Named day when backfilling, so an answer is never given about the wrong day. */}
         <p className="mb-5 text-[12.5px] text-on-surface-variant">
-          {isToday ? 'Today' : formatCycleDateLong(date)}
+          {isToday ? t('periodSheet.today') : formatCycleDateLong(date)}
         </p>
 
         <div className="flex flex-col gap-2.5">
-          {FLOWS.map((f) => {
-            const selected = initialFlow === f.value;
+          {FLOWS.map((flow) => {
+            const selected = initialFlow === flow;
             return (
               <button
-                key={f.value}
+                key={flow}
                 type="button"
                 disabled={saving}
                 aria-pressed={selected}
-                onClick={() => handleSelect(f.value)}
+                onClick={() => handleSelect(flow)}
                 className="w-full rounded-[16px] border px-4 py-3 text-left transition-colors disabled:opacity-50"
                 style={{
                   borderColor: selected ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
                   backgroundColor: selected ? 'rgba(94, 53, 102, 0.10)' : 'transparent',
                 }}
               >
-                <span className="block text-[14.5px] font-medium text-on-surface">{f.label}</span>
+                <span className="block text-[14.5px] font-medium text-on-surface">
+                  {t(`periodSheet.flows.${flow}.label`)}
+                </span>
                 <span className="mt-0.5 block text-[11.5px] leading-snug text-on-surface-variant">
-                  {f.hint}
+                  {t(`periodSheet.flows.${flow}.hint`)}
                 </span>
               </button>
             );
@@ -112,7 +114,7 @@ export function PeriodFlowSheet({
           disabled={saving}
           className="mt-5 w-full py-2 text-[13px] text-on-surface-variant underline decoration-transparent disabled:opacity-50"
         >
-          {saving ? 'Saving…' : 'Not now'}
+          {saving ? t('common.saving') : t('periodSheet.notNow')}
         </button>
       </div>
     </div>

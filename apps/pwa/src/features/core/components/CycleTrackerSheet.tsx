@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CycleStateResponse, PeriodFlow } from '@anuva/shared';
 import { CycleCalendar } from './CycleCalendar';
 import { CyclePhaseBadge, CycleTrackerSummary } from './CycleTrackerSummary';
@@ -6,7 +7,6 @@ import {
   buildCycleDayMarks,
   correctionRange,
   CYCLE_LENGTH_DEFAULT,
-  CYCLE_PHASE_CONFIG,
   formatCycleDate,
   formatCycleDateLong,
   getCycleLengthSourceLabel,
@@ -15,7 +15,8 @@ import {
   isCycleTrackerReady,
   isEditablePeriod,
   periodLogForDate,
-  PREGNANCY_CHANCE_LABEL,
+  cyclePhaseInsight,
+  pregnancyChanceLabel,
   todayISO,
 } from './cycleTrackerDisplay';
 
@@ -29,11 +30,7 @@ const PERIOD_DEFAULT = 5;
 const BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 
 /** Same three answers the home prompt offers, so a correction matches the question. */
-const FLOW_OPTIONS: { value: PeriodFlow; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'regular', label: 'Regular' },
-  { value: 'heavy', label: 'Heavy' },
-];
+const FLOW_OPTIONS: PeriodFlow[] = ['light', 'regular', 'heavy'];
 
 function RangeSlider({
   value,
@@ -146,6 +143,7 @@ export function CycleTrackerSheet({
   onRestorePeriod,
   onUpdateSettings,
 }: Props) {
+  const { t } = useTranslation();
   const [view, setView] = useState<View>(() =>
     isCycleTrackerReady(cycleData) ? 'main' : 'setup-date'
   );
@@ -230,15 +228,16 @@ export function CycleTrackerSheet({
     const range =
       end === period.startDate
         ? formatCycleDate(period.startDate)
-        : `${formatCycleDate(period.startDate)} – ${formatCycleDate(end)}`;
+        : t('cycleSheet.dateRange', {
+            from: formatCycleDate(period.startDate),
+            to: formatCycleDate(end),
+          });
     const flowCount = cycleData.flowLogs.filter(
       (f) => f.date >= period.startDate && f.date <= end,
     ).length;
-    if (flowCount === 0) return `${range} will be removed from your history.`;
-    return `${range} will be removed from your history, along with your flow entries for ${flowCount} ${
-      flowCount === 1 ? 'day' : 'days'
-    }. You can undo this.`;
-  }, [cycleData, confirmRemoveId]);
+    if (flowCount === 0) return t('cycleSheet.removeSummary', { range });
+    return t('cycleSheet.removeSummaryWithFlow', { range, count: flowCount });
+  }, [cycleData, confirmRemoveId, t]);
 
   /** Only her current period can be corrected or removed. */
   const selectedIsEditable =
@@ -299,7 +298,7 @@ export function CycleTrackerSheet({
       await action();
       return true;
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'That did not work. Try again.');
+      setActionError(e instanceof Error ? e.message : t('cycleSheet.actionFailed'));
       return false;
     } finally {
       setSaving(false);
@@ -351,7 +350,7 @@ export function CycleTrackerSheet({
         type="button"
         className="fixed inset-0 z-[60] cursor-default border-none bg-black/60 p-0"
         onClick={onClose}
-        aria-label="Close cycle tracker"
+        aria-label={t('cycleSheet.close')}
       />
       <div
         className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-5"
@@ -369,19 +368,19 @@ export function CycleTrackerSheet({
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
               <span className="h-px w-3 bg-primary/60" />
-              Cycle setup · Step 1 of {totalSetupSteps}
+              {t('cycleSheet.setupStep', { step: 1, total: totalSetupSteps })}
             </div>
             <h2
               className="mb-1 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
-              When did your last period start?
+              {t('cycleSheet.setupDateTitle')}
             </h2>
             <p
               className="mb-5 text-[12px] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              Pick the date your most recent period began.
+              {t('cycleSheet.setupDateBody')}
             </p>
 
             <div className="mb-4">
@@ -399,9 +398,9 @@ export function CycleTrackerSheet({
               className="mb-5 text-center text-[12px] text-on-surface-variant"
               style={{ fontFamily: BODY }}
             >
-              Selected{' '}
+              {t('cycleSheet.selected')}{' '}
               <span className="text-on-surface">
-                {selectedDate === today ? 'Today' : formatCycleDateLong(selectedDate)}
+                {selectedDate === today ? t('cycleSheet.today') : formatCycleDateLong(selectedDate)}
               </span>
             </p>
 
@@ -411,7 +410,7 @@ export function CycleTrackerSheet({
               className="w-full rounded-full bg-primary py-[14px] text-[14px] font-semibold text-on-secondary"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              Next →
+              {t('cycleSheet.next')}
             </button>
           </div>
         )}
@@ -424,19 +423,19 @@ export function CycleTrackerSheet({
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
               <span className="h-px w-3 bg-primary/60" />
-              Cycle setup · Step 2 of {totalSetupSteps}
+              {t('cycleSheet.setupStep', { step: 2, total: totalSetupSteps })}
             </div>
             <h2
               className="mb-1 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
-              How long is your cycle?
+              {t('cycleSheet.cycleLengthTitle')}
             </h2>
             <p
               className="mb-6 text-[12px] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              Days from period start to next period start.
+              {t('cycleSheet.cycleLengthBody')}
             </p>
 
             <RangeSlider
@@ -444,8 +443,8 @@ export function CycleTrackerSheet({
               min={CYCLE_MIN}
               max={CYCLE_MAX}
               defaultValue={CYCLE_DEFAULT}
-              unit="d"
-              defaultLabel="Average cycle length"
+              unit={t('cycleSheet.dayUnit')}
+              defaultLabel={t('cycleSheet.averageCycleLength')}
               onChange={setSelectedCycleLength}
             />
 
@@ -456,7 +455,7 @@ export function CycleTrackerSheet({
                 className="flex-1 rounded-full border border-border-default py-[14px] text-[14px] text-on-surface-variant"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                ← Back
+                {t('common.backArrow')}
               </button>
               <button
                 type="button"
@@ -464,7 +463,7 @@ export function CycleTrackerSheet({
                 className="flex-[2] rounded-full bg-primary py-[14px] text-[14px] font-semibold text-on-secondary"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                Next →
+                {t('cycleSheet.next')}
               </button>
             </div>
           </div>
@@ -478,19 +477,19 @@ export function CycleTrackerSheet({
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
               <span className="h-px w-3 bg-primary/60" />
-              Cycle setup · Step 3 of {totalSetupSteps}
+              {t('cycleSheet.setupStep', { step: 3, total: totalSetupSteps })}
             </div>
             <h2
               className="mb-1 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
-              How long does your period last?
+              {t('cycleSheet.periodLengthTitle')}
             </h2>
             <p
               className="mb-6 text-[12px] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              Typical number of days you bleed. We'll refine this from your logs over time.
+              {t('cycleSheet.periodLengthBody')}
             </p>
 
             <RangeSlider
@@ -498,8 +497,8 @@ export function CycleTrackerSheet({
               min={PERIOD_MIN}
               max={PERIOD_MAX}
               defaultValue={PERIOD_DEFAULT}
-              unit="d"
-              defaultLabel="Average period length"
+              unit={t('cycleSheet.dayUnit')}
+              defaultLabel={t('cycleSheet.averagePeriodLength')}
               onChange={setSelectedPeriodLength}
             />
 
@@ -510,7 +509,7 @@ export function CycleTrackerSheet({
                 className="flex-1 rounded-full border border-border-default py-[14px] text-[14px] text-on-surface-variant"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                ← Back
+                {t('common.backArrow')}
               </button>
               <button
                 type="button"
@@ -519,7 +518,7 @@ export function CycleTrackerSheet({
                 className="flex-[2] rounded-full bg-primary py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-50"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                {saving ? 'Saving…' : 'Save cycle'}
+                {saving ? t('common.saving') : t('cycleSheet.saveCycle')}
               </button>
             </div>
           </div>
@@ -534,7 +533,7 @@ export function CycleTrackerSheet({
                   className="text-[12px] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  Loading…
+                  {t('cycleSheet.loading')}
                 </span>
               </div>
             ) : (
@@ -545,7 +544,7 @@ export function CycleTrackerSheet({
                     style={{ fontFamily: '"Mulish", sans-serif' }}
                   >
                     <span className="h-px w-3 bg-primary/60" />
-                    Cycle tracker
+                    {t('cycleSheet.eyebrow')}
                   </div>
                   {cycleData?.phase ? (
                     <CyclePhaseBadge phase={cycleData.phase} size="sheet" />
@@ -568,12 +567,14 @@ export function CycleTrackerSheet({
                       className="text-[14px] text-on-surface"
                       style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
                     >
-                      Did your period start?
+                      {t('cycleSheet.didPeriodStart')}
                     </p>
                     <p className="mt-1 text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
                       {cycleData.nextPeriodDate
-                        ? `We expected it around ${formatCycleDate(cycleData.nextPeriodDate)}. Confirming keeps your predictions accurate.`
-                        : 'Confirming keeps your predictions accurate.'}
+                        ? t('cycleSheet.expectedAround', {
+                            date: formatCycleDate(cycleData.nextPeriodDate),
+                          })
+                        : t('cycleSheet.confirmKeepsAccurate')}
                     </p>
                     <div className="mt-3 flex gap-2.5">
                       <button
@@ -583,7 +584,7 @@ export function CycleTrackerSheet({
                         className="flex-1 rounded-full py-[11px] text-[13px] font-semibold text-on-secondary disabled:opacity-50"
                         style={{ background: '#C0405A', fontFamily: BODY }}
                       >
-                        {saving ? 'Saving…' : 'Yes, today'}
+                        {saving ? t('common.saving') : t('cycleSheet.yesToday')}
                       </button>
                       <button
                         type="button"
@@ -591,7 +592,7 @@ export function CycleTrackerSheet({
                         className="flex-1 rounded-full border border-border-default py-[11px] text-[13px] text-on-surface-variant"
                         style={{ fontFamily: BODY }}
                       >
-                        Another day
+                        {t('cycleSheet.anotherDay')}
                       </button>
                     </div>
                   </div>
@@ -628,7 +629,7 @@ export function CycleTrackerSheet({
                     className="mb-4 text-[12px] leading-[1.5] text-on-surface-variant"
                     style={{ fontFamily: BODY }}
                   >
-                    {CYCLE_PHASE_CONFIG[cycleData.phase].insight}
+                    {cyclePhaseInsight(cycleData.phase)}
                   </p>
                 )}
 
@@ -639,7 +640,7 @@ export function CycleTrackerSheet({
                     className="w-full rounded-full bg-primary py-[13px] text-[14px] font-semibold text-on-secondary"
                     style={{ fontFamily: BODY }}
                   >
-                    Open calendar
+                    {t('cycleSheet.openCalendar')}
                   </button>
 
                   {ongoingPeriod ? (
@@ -655,7 +656,7 @@ export function CycleTrackerSheet({
                         fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
                       }}
                     >
-                      {saving ? 'Saving…' : 'Period ended today'}
+                      {saving ? t('common.saving') : t('cycleSheet.periodEndedToday')}
                     </button>
                   ) : (
                     <button
@@ -670,7 +671,7 @@ export function CycleTrackerSheet({
                         fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
                       }}
                     >
-                      {saving ? 'Saving…' : 'Period started today'}
+                      {saving ? t('common.saving') : t('cycleSheet.periodStartedToday')}
                     </button>
                   )}
 
@@ -684,7 +685,7 @@ export function CycleTrackerSheet({
                     className="w-full rounded-full border border-border-default py-[13px] text-[13px] text-on-surface-variant"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
-                    Edit cycle settings
+                    {t('cycleSheet.editSettings')}
                   </button>
                 </div>
               </>
@@ -701,7 +702,7 @@ export function CycleTrackerSheet({
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
                 <span className="h-px w-3 bg-primary/60" />
-                Cycle calendar
+                {t('cycleSheet.calendarEyebrow')}
               </div>
               <button
                 type="button"
@@ -709,7 +710,7 @@ export function CycleTrackerSheet({
                 className="rounded-full border border-border-default px-4 py-2 text-[12px] text-on-surface-variant"
                 style={{ fontFamily: BODY }}
               >
-                Done
+                {t('common.done')}
               </button>
             </div>
 
@@ -745,7 +746,7 @@ export function CycleTrackerSheet({
                   className="text-[14px] text-on-surface"
                   style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
                 >
-                  Remove this period?
+                  {t('cycleSheet.removeTitle')}
                 </p>
                 <p
                   className="mt-1 text-[12px] leading-[1.5] text-on-surface-variant"
@@ -761,7 +762,7 @@ export function CycleTrackerSheet({
                     className="flex-1 rounded-full py-[11px] text-[13px] font-semibold text-on-secondary disabled:opacity-50"
                     style={{ background: '#C0405A', fontFamily: BODY }}
                   >
-                    {saving ? 'Removing…' : 'Remove'}
+                    {saving ? t('cycleSheet.removing') : t('cycleSheet.remove')}
                   </button>
                   <button
                     type="button"
@@ -770,7 +771,7 @@ export function CycleTrackerSheet({
                     className="flex-1 rounded-full border border-border-default py-[11px] text-[13px] text-on-surface-variant disabled:opacity-50"
                     style={{ fontFamily: BODY }}
                   >
-                    Keep it
+                    {t('cycleSheet.keepIt')}
                   </button>
                 </div>
               </div>
@@ -779,7 +780,7 @@ export function CycleTrackerSheet({
             {undoRemovedId && !confirmRemoveId && (
               <div className="mt-4 flex items-center justify-between gap-3 rounded-[14px] border border-border-default p-3">
                 <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
-                  Period removed.
+                  {t('cycleSheet.periodRemoved')}
                 </p>
                 <button
                   type="button"
@@ -788,7 +789,7 @@ export function CycleTrackerSheet({
                   className="rounded-full border border-border-default px-4 py-2 text-[12px] font-medium text-primary disabled:opacity-50"
                   style={{ fontFamily: BODY }}
                 >
-                  {saving ? 'Undoing…' : 'Undo'}
+                  {saving ? t('cycleSheet.undoing') : t('cycleSheet.undo')}
                 </button>
               </div>
             )}
@@ -800,12 +801,14 @@ export function CycleTrackerSheet({
                     className="text-[14px] text-on-surface"
                     style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
                   >
-                    {selectedDate === today ? 'Today' : formatCycleDateLong(selectedDate)}
+                    {selectedDate === today
+                      ? t('cycleSheet.today')
+                      : formatCycleDateLong(selectedDate)}
                   </p>
                   {selectedMark?.cycleDay != null && selectedMark.cycleDay >= 1 && (
                     <p className="mt-0.5 text-[11px] text-outline" style={{ fontFamily: BODY }}>
-                      Cycle day {selectedMark.cycleDay}
-                      {selectedMark.isFuture ? ' · predicted' : ''}
+                      {t('cycleSheet.cycleDay', { day: selectedMark.cycleDay })}
+                      {selectedMark.isFuture ? t('cycleSheet.predictedSuffix') : ''}
                     </p>
                   )}
                 </div>
@@ -814,7 +817,7 @@ export function CycleTrackerSheet({
 
               {selectedMark && (
                 <p className="mt-3 text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
-                  {PREGNANCY_CHANCE_LABEL[selectedMark.pregnancyChance]}
+                  {pregnancyChanceLabel(selectedMark.pregnancyChance)}
                 </p>
               )}
               {selectedMark?.phase && (
@@ -822,7 +825,7 @@ export function CycleTrackerSheet({
                   className="mt-1.5 text-[12px] leading-[1.5] text-on-surface-variant"
                   style={{ fontFamily: BODY }}
                 >
-                  {CYCLE_PHASE_CONFIG[selectedMark.phase].insight}
+                  {cyclePhaseInsight(selectedMark.phase)}
                 </p>
               )}
 
@@ -833,18 +836,18 @@ export function CycleTrackerSheet({
                     className="mb-2 text-[11px] uppercase tracking-[0.12em] text-outline"
                     style={{ fontFamily: BODY }}
                   >
-                    Flow
+                    {t('cycleSheet.flow')}
                   </p>
                   <div className="flex gap-2">
                     {FLOW_OPTIONS.map((option) => {
-                      const active = selectedFlow === option.value;
+                      const active = selectedFlow === option;
                       return (
                         <button
-                          key={option.value}
+                          key={option}
                           type="button"
                           disabled={saving}
                           aria-pressed={active}
-                          onClick={() => handleLogFlow(option.value)}
+                          onClick={() => handleLogFlow(option)}
                           className="flex-1 rounded-full border py-[10px] text-[12.5px] font-medium disabled:opacity-50"
                           style={{
                             background: active ? 'rgba(192, 64, 90,0.12)' : 'transparent',
@@ -855,7 +858,7 @@ export function CycleTrackerSheet({
                             fontFamily: BODY,
                           }}
                         >
-                          {option.label}
+                          {t(`cycleSheet.flows.${option}`)}
                         </button>
                       );
                     })}
@@ -866,7 +869,7 @@ export function CycleTrackerSheet({
               <div className="mt-4 flex flex-col gap-2.5">
                 {selectedMark?.isFuture ? (
                   <p className="text-[11px] text-outline" style={{ fontFamily: BODY }}>
-                    Predicted day — you can log it once it arrives.
+                    {t('cycleSheet.predictedDay')}
                   </p>
                 ) : selectedPeriodLog ? (
                   <>
@@ -883,15 +886,19 @@ export function CycleTrackerSheet({
                           fontFamily: BODY,
                         }}
                       >
-                        {saving ? 'Saving…' : 'Period ended this day'}
+                        {saving ? t('common.saving') : t('cycleSheet.periodEndedThisDay')}
                       </button>
                     )}
 
                     {hasAssumedEnd(selectedPeriodLog) && (
                       <p className="text-[11px] text-outline" style={{ fontFamily: BODY }}>
                         {selectedPeriodLog.endDate! > today
-                          ? `We expect this period to end ${formatCycleDate(selectedPeriodLog.endDate!)}.`
-                          : `We estimated this period ended ${formatCycleDate(selectedPeriodLog.endDate!)}.`}
+                          ? t('cycleSheet.expectToEnd', {
+                              date: formatCycleDate(selectedPeriodLog.endDate!),
+                            })
+                          : t('cycleSheet.estimatedEnded', {
+                              date: formatCycleDate(selectedPeriodLog.endDate!),
+                            })}
                       </p>
                     )}
 
@@ -907,7 +914,7 @@ export function CycleTrackerSheet({
                           className="w-full rounded-full border border-border-default py-[12px] text-[13px] text-on-surface disabled:opacity-50"
                           style={{ fontFamily: BODY }}
                         >
-                          Change start date
+                          {t('cycleSheet.changeStartDate')}
                         </button>
                         <button
                           type="button"
@@ -916,17 +923,26 @@ export function CycleTrackerSheet({
                           className="w-full py-[10px] text-[12px] text-outline underline decoration-border-default underline-offset-4 disabled:opacity-50"
                           style={{ fontFamily: BODY }}
                         >
-                          This wasn&rsquo;t a period
+                          {t('cycleSheet.notAPeriod')}
                         </button>
                       </>
                     ) : (
                       <p className="text-[11px] leading-[1.5] text-outline" style={{ fontFamily: BODY }}>
-                        Started {formatCycleDate(selectedPeriodLog.startDate)}
+                        {/* One whole sentence per case rather than glued fragments: where the
+                            dates and the clause about editing fall is different per language. */}
                         {selectedPeriodLog.endDate
-                          ? `, ${hasAssumedEnd(selectedPeriodLog) ? 'estimated to have ended' : 'ended'} ${formatCycleDate(selectedPeriodLog.endDate)}`
-                          : ''}
-                        . Only your latest period can be changed — you can still update the flow
-                        for any day.
+                          ? t(
+                              hasAssumedEnd(selectedPeriodLog)
+                                ? 'cycleSheet.startedAndEstimatedEnded'
+                                : 'cycleSheet.startedAndEnded',
+                              {
+                                start: formatCycleDate(selectedPeriodLog.startDate),
+                                end: formatCycleDate(selectedPeriodLog.endDate),
+                              },
+                            )
+                          : t('cycleSheet.startedOnly', {
+                              start: formatCycleDate(selectedPeriodLog.startDate),
+                            })}
                       </p>
                     )}
                   </>
@@ -943,7 +959,7 @@ export function CycleTrackerSheet({
                       fontFamily: BODY,
                     }}
                   >
-                    {saving ? 'Saving…' : 'Period started this day'}
+                    {saving ? t('common.saving') : t('cycleSheet.periodStartedThisDay')}
                   </button>
                 )}
               </div>
@@ -961,13 +977,13 @@ export function CycleTrackerSheet({
                   style={{ fontFamily: BODY }}
                 >
                   <span className="h-px w-3 bg-primary/60" />
-                  Change start date
+                  {t('cycleSheet.changeStartDate')}
                 </div>
                 <h2
                   className="text-[20px] text-on-surface"
                   style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
                 >
-                  When did it start?
+                  {t('cycleSheet.whenDidItStart')}
                 </h2>
               </div>
               <button
@@ -976,7 +992,7 @@ export function CycleTrackerSheet({
                 className="rounded-full border border-border-default px-4 py-2 text-[12px] text-on-surface-variant"
                 style={{ fontFamily: BODY }}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
 
@@ -984,12 +1000,13 @@ export function CycleTrackerSheet({
               className="mb-4 text-[12px] leading-[1.5] text-on-surface-variant"
               style={{ fontFamily: BODY }}
             >
-              Currently {formatCycleDateLong(editablePeriod.startDate)}. Pick the day it really
-              began — your flow entries stay on the days you recorded them.
+              {t('cycleSheet.currentlyStart', {
+                date: formatCycleDateLong(editablePeriod.startDate),
+              })}
               {editablePeriod.endDate && hasAssumedEnd(editablePeriod)
-                ? ' The expected end date moves with it.'
+                ? t('cycleSheet.endMovesWithIt')
                 : editablePeriod.endDate
-                  ? ` It still ends ${formatCycleDate(editablePeriod.endDate)}.`
+                  ? t('cycleSheet.stillEnds', { date: formatCycleDate(editablePeriod.endDate) })
                   : ''}
             </p>
 
@@ -1006,8 +1023,10 @@ export function CycleTrackerSheet({
 
             {correctionBounds && (
               <p className="mt-3 text-[11px] text-outline" style={{ fontFamily: BODY }}>
-                Choose between {formatCycleDate(correctionBounds.min)} and{' '}
-                {formatCycleDate(correctionBounds.max)}.
+                {t('cycleSheet.chooseBetween', {
+                  from: formatCycleDate(correctionBounds.min),
+                  to: formatCycleDate(correctionBounds.max),
+                })}
               </p>
             )}
 
@@ -1028,10 +1047,10 @@ export function CycleTrackerSheet({
               style={{ fontFamily: BODY }}
             >
               {saving
-                ? 'Saving…'
+                ? t('common.saving')
                 : correctionDate === editablePeriod.startDate
-                  ? 'Pick a different day'
-                  : `Move start to ${formatCycleDate(correctionDate)}`}
+                  ? t('cycleSheet.pickDifferentDay')
+                  : t('cycleSheet.moveStartTo', { date: formatCycleDate(correctionDate) })}
             </button>
           </div>
         )}
@@ -1044,13 +1063,13 @@ export function CycleTrackerSheet({
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
               <span className="h-px w-3 bg-primary/60" />
-              Edit cycle settings
+              {t('cycleSheet.editSettings')}
             </div>
             <h2
               className="mb-2 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
-              Cycle &amp; period length
+              {t('cycleSheet.editSettingsTitle')}
             </h2>
 
             {/* Once her own cycles are learned they win over the setting, so say so
@@ -1061,7 +1080,7 @@ export function CycleTrackerSheet({
             >
               {getCycleLengthSourceLabel(cycleData)}
               {cycleData?.cycleLengthSource === 'learned'
-                ? '. Your setting is a starting point until enough cycles are logged.'
+                ? t('cycleSheet.settingIsStartingPoint')
                 : ''}
             </p>
 
@@ -1069,15 +1088,15 @@ export function CycleTrackerSheet({
               className="mb-3 text-[11px] uppercase tracking-[0.12em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              Cycle length
+              {t('cycleSheet.cycleLengthLabel')}
             </p>
             <RangeSlider
               value={selectedCycleLength}
               min={CYCLE_MIN}
               max={CYCLE_MAX}
               defaultValue={CYCLE_DEFAULT}
-              unit="d"
-              defaultLabel="Average cycle length"
+              unit={t('cycleSheet.dayUnit')}
+              defaultLabel={t('cycleSheet.averageCycleLength')}
               onChange={setSelectedCycleLength}
             />
 
@@ -1085,15 +1104,15 @@ export function CycleTrackerSheet({
               className="mb-3 mt-6 text-[11px] uppercase tracking-[0.12em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              Period length
+              {t('cycleSheet.periodLengthLabel')}
             </p>
             <RangeSlider
               value={selectedPeriodLength}
               min={PERIOD_MIN}
               max={PERIOD_MAX}
               defaultValue={PERIOD_DEFAULT}
-              unit="d"
-              defaultLabel="Average period length"
+              unit={t('cycleSheet.dayUnit')}
+              defaultLabel={t('cycleSheet.averagePeriodLength')}
               onChange={setSelectedPeriodLength}
             />
 
@@ -1104,7 +1123,7 @@ export function CycleTrackerSheet({
                 className="flex-1 rounded-full border border-border-default py-[14px] text-[14px] text-on-surface-variant"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -1113,7 +1132,7 @@ export function CycleTrackerSheet({
                 className="flex-[2] rounded-full bg-primary py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-50"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </div>

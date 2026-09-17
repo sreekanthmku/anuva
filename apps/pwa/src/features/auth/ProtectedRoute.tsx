@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { assessmentPath } from '../onboarding/config/assessmentView';
 import { FamilyInviteGate } from '../family/FamilyInviteGate';
 import { useFamilyGate } from '../family/useFamilyGate';
 import { useAuth } from './auth-context';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { status, user } = useAuth();
   // Mounted here rather than on the dashboard alone: a gate that only blocks Home is not blocking,
   // because every other authenticated screen is one tab away. The three redirects below run first,
@@ -20,13 +22,13 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
             className="text-[22px] tracking-[0.16em] text-on-surface"
             style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 400 }}
           >
-            ANUVA WELLNESS
+            {t('common.brandName')}
           </p>
           <p
             className="mt-3 text-[13px] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            Checking your session...
+            {t('auth.checkingSession')}
           </p>
         </div>
       </main>

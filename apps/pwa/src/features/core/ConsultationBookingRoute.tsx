@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BottomNav } from './components/BottomNav';
 import { BookingConfirmedView } from './booking/components/BookingConfirmedView';
 import { BookingFormHeader } from './booking/components/BookingFormHeader';
@@ -8,6 +9,7 @@ import { TimeSlotSection } from './booking/components/TimeSlotSection';
 import { useConsultationBooking } from './booking/hooks/useConsultationBooking';
 
 export default function ConsultationBookingRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const booking = useConsultationBooking();
 
@@ -41,7 +43,7 @@ export default function ConsultationBookingRoute() {
             className="text-[12px] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            Loading specialists...
+            {t('booking.loadingSpecialists')}
           </p>
         ) : booking.selectedSpecialist ? (
           <>
@@ -60,21 +62,21 @@ export default function ConsultationBookingRoute() {
                     className="mt-4 text-[12px] text-on-surface-variant"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
-                    Loading slots...
+                    {t('booking.loadingSlots')}
                   </p>
                 ) : booking.dateSlots.length === 0 ? (
                   <div
                     className="mt-4 rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-3 text-[12px] text-on-surface-variant"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
-                    No slots found for {booking.windowLabel}. Try another date window.
+                    {t('booking.noSlotsInWindow', { window: booking.windowLabel })}
                   </div>
                 ) : booking.pickedDateId ? (
                   <TimeSlotSection
                     slots={booking.timeSlots}
                     pickedTimeId={booking.pickedTimeId}
                     onSelectTime={booking.setPickedTimeId}
-                    emptyMessage="No more times are available on this date."
+                    emptyMessage={t('booking.noMoreTimes')}
                   />
                 ) : null}
               </>
@@ -83,8 +85,7 @@ export default function ConsultationBookingRoute() {
                 className="rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-3 text-[12px] text-on-surface-variant"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                {booking.selectedSpecialist.bookingDisabledReason ??
-                  'Booking for this specialist is coming soon.'}
+                {booking.selectedSpecialist.bookingDisabledReason ?? t('booking.bookingDisabled')}
               </div>
             )}
           </>
@@ -111,13 +112,13 @@ export default function ConsultationBookingRoute() {
             letterSpacing: '-0.005em',
           }}
         >
-          {booking.submitting ? 'Confirming...' : 'Confirm Booking'}
+          {booking.submitting ? t('booking.confirming') : t('booking.confirmCta')}
         </button>
         <p
           className="mt-3 text-center text-[10.5px] leading-[1.5] text-outline"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
-          Your name is not shared until the call begins. You may leave at any time.
+          {t('booking.privacyNote')}
         </p>
       </section>
 

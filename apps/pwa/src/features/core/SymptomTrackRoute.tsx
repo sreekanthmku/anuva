@@ -7,6 +7,7 @@ import type {
   SleepDisruption,
   SleepHoursBucket,
 } from '@anuva/shared';
+import { Trans, useTranslation } from 'react-i18next';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
@@ -28,10 +29,11 @@ const EMOJI_TRACKERS = new Set(['L1-001', 'L1-003']);
  */
 const JOINTS_AFTER_TRACKER = 'L1-005';
 
-const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+/** Monday-first, as keys. The shown text is `track.weekdays.<key>`. */
+const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 type WeekDayCell = {
-  label: (typeof WEEKDAY_LABELS)[number];
+  key: (typeof WEEKDAY_KEYS)[number];
   dateNum: number;
   isToday: boolean;
 };
@@ -44,11 +46,11 @@ function getCurrentWeekDays(reference = new Date()): WeekDayCell[] {
   const monday = new Date(today);
   monday.setDate(today.getDate() - daysFromMonday);
 
-  return WEEKDAY_LABELS.map((label, i) => {
+  return WEEKDAY_KEYS.map((key, i) => {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
     return {
-      label,
+      key,
       dateNum: date.getDate(),
       isToday: date.getTime() === today.getTime(),
     };
@@ -58,12 +60,8 @@ function getCurrentWeekDays(reference = new Date()): WeekDayCell[] {
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 const FONT_MONO = '"Mulish", sans-serif';
 
-const TIERS: { key: NudgeTier; label: string }[] = [
-  { key: 'core', label: 'Daily core' },
-  { key: 'body', label: 'Body' },
-  { key: 'lifestyle', label: 'Lifestyle' },
-  { key: 'weekly', label: 'This week' },
-];
+/** Section order. Each tier's heading is `track.tiers.<key>`. */
+const TIERS: NudgeTier[] = ['core', 'body', 'lifestyle', 'weekly'];
 
 function OptionChip({
   label,
@@ -97,6 +95,7 @@ function OptionChip({
 }
 
 export default function SymptomTrackRoute() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { data, loading, error, respond, reload } = useNudgeDay();
   const moodLog = useMoodLog();
@@ -149,19 +148,15 @@ export default function SymptomTrackRoute() {
     setJointsSaving(true);
     try {
       const entry = await jointLog.logJoints(body);
-      showToast(
-        entry.severity === 'none'
-          ? 'No joint discomfort today. Good to know.'
-          : "Logged. I'll watch how this moves with your cycle.",
-      );
+      showToast(entry.severity === 'none' ? t('track.jointsNone') : t('track.jointsLogged'));
     } catch {
-      showToast("Couldn't save. We'll retry later.");
+      showToast(t('track.saveFailed'));
     } finally {
       setJointsSaving(false);
     }
   };
 
-  const firstName = user?.name?.trim().split(/\s+/)[0] || 'there';
+  const firstName = user?.name?.trim().split(/\s+/)[0] || t('home.nameFallback');
   const weekDays = useMemo(() => getCurrentWeekDays(), []);
 
   useEffect(
@@ -178,8 +173,10 @@ export default function SymptomTrackRoute() {
   };
 
   const trackers = data?.trackers ?? [];
-  const answerOf = (t: NudgeDayTracker): string | null => localAnswers[t.nudgeId] ?? t.answer;
-  const isAnswered = (t: NudgeDayTracker): boolean => answerOf(t) !== null;
+  // Renamed off `t` — that is the translator now.
+  const answerOf = (tracker: NudgeDayTracker): string | null =>
+    localAnswers[tracker.nudgeId] ?? tracker.answer;
+  const isAnswered = (tracker: NudgeDayTracker): boolean => answerOf(tracker) !== null;
 
   // Joints is one more thing to log on this page, so it counts here — the day
   // sheet's own totals cannot include it, since no nudge backs it.
@@ -188,19 +185,19 @@ export default function SymptomTrackRoute() {
   const total = trackers.length + (jointLog.loading ? 0 : 1);
   const pct = total ? Math.round((answeredCount / total) * 100) : 0;
 
-  const submit = async (t: NudgeDayTracker, answer: string) => {
-    setSaving(t.nudgeId);
-    setLocalAnswers((prev) => ({ ...prev, [t.nudgeId]: answer }));
+  const submit = async (tracker: NudgeDayTracker, answer: string) => {
+    setSaving(tracker.nudgeId);
+    setLocalAnswers((prev) => ({ ...prev, [tracker.nudgeId]: answer }));
     setEditing((prev) => {
       const next = new Set(prev);
-      next.delete(t.nudgeId);
+      next.delete(tracker.nudgeId);
       return next;
     });
     try {
-      const res = await respond({ nudgeId: t.nudgeId, answer });
+      const res = await respond({ nudgeId: tracker.nudgeId, answer });
       showToast(res.message);
     } catch {
-      showToast("Couldn't save. We'll retry later.");
+      showToast(t('track.saveFailed'));
     } finally {
       setSaving(null);
     }
@@ -231,11 +228,11 @@ export default function SymptomTrackRoute() {
     <div key="joints" className="flex items-center justify-between gap-2">
       <div className="min-w-0">
         <span className="text-[13px] text-on-surface" style={{ fontFamily: FONT_BODY }}>
-          Joints &amp; stiffness
+          {t('track.joints')}
           {jointsAnswered && <span className="ml-1.5 text-primary">✓</span>}
         </span>
         <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
-          {todayJoints ? todayJoints.summary : 'Not logged yet'}
+          {todayJoints ? todayJoints.summary : t('track.notLoggedYet')}
         </p>
       </div>
       <button
@@ -244,33 +241,35 @@ export default function SymptomTrackRoute() {
         className="shrink-0 rounded-full border border-border-default px-3.5 py-1.5 text-[12px] text-on-surface"
         style={{ fontFamily: FONT_BODY }}
       >
-        {jointsAnswered ? 'Change' : 'Log'}
+        {jointsAnswered ? t('track.change') : t('track.log')}
       </button>
     </div>
   );
 
   /** One nudge-backed tracker row. Extracted so the Joints card can sit between rows. */
-  const renderTracker = (t: NudgeDayTracker) => {
+  const renderTracker = (tracker: NudgeDayTracker) => {
     // Mood & sleep keep the emoji scale + extras via their sheets.
-    if (EMOJI_TRACKERS.has(t.nudgeId)) {
-      const answered = t.answer !== null;
+    if (EMOJI_TRACKERS.has(tracker.nudgeId)) {
+      const answered = tracker.answer !== null;
       const openSheet = () =>
-        t.nudgeId === 'L1-003' ? setMoodOpen(true) : setSleepOpen(true);
+        tracker.nudgeId === 'L1-003' ? setMoodOpen(true) : setSleepOpen(true);
       return (
-        <div key={t.nudgeId} className="flex items-center justify-between gap-2">
+        <div key={tracker.nudgeId} className="flex items-center justify-between gap-2">
           <div>
             <span
               className="text-[13px] text-on-surface"
               style={{ fontFamily: FONT_BODY }}
             >
-              {t.label}
+              {/* Tracker labels and answers come from the day sheet, so they arrive already in
+                  her language and are rendered as given. */}
+              {tracker.label}
               {answered && <span className="ml-1.5 text-primary">✓</span>}
             </span>
             <p
               className="text-[12px] text-on-surface-variant"
               style={{ fontFamily: FONT_BODY }}
             >
-              {answered ? t.answer : 'Not logged yet'}
+              {answered ? tracker.answer : t('track.notLoggedYet')}
             </p>
           </div>
           <button
@@ -279,46 +278,46 @@ export default function SymptomTrackRoute() {
             className="rounded-full border border-border-default px-3.5 py-1.5 text-[12px] text-on-surface"
             style={{ fontFamily: FONT_BODY }}
           >
-            {answered ? 'Change' : 'Log'}
+            {answered ? t('track.change') : t('track.log')}
           </button>
         </div>
       );
     }
 
-    const answer = answerOf(t);
+    const answer = answerOf(tracker);
     const answered = answer !== null;
-    const showOptions = !answered || editing.has(t.nudgeId);
+    const showOptions = !answered || editing.has(tracker.nudgeId);
     return (
-      <div key={t.nudgeId}>
+      <div key={tracker.nudgeId}>
         <div className="mb-2 flex items-baseline justify-between gap-2">
           <span
             className="text-[13px] text-on-surface"
             style={{ fontFamily: FONT_BODY }}
           >
-            {t.label}
+            {tracker.label}
             {answered && <span className="ml-1.5 text-primary">✓</span>}
           </span>
           {answered && !showOptions && (
             <button
               type="button"
-              onClick={() => toggleEdit(t.nudgeId)}
+              onClick={() => toggleEdit(tracker.nudgeId)}
               className="text-[10px] uppercase tracking-[0.1em] text-outline"
               style={{ fontFamily: FONT_MONO }}
             >
-              Change
+              {t('track.change')}
             </button>
           )}
         </div>
 
         {showOptions ? (
           <div className="flex flex-wrap gap-2">
-            {t.options.map((opt) => (
+            {tracker.options.map((opt) => (
               <OptionChip
                 key={opt}
                 label={opt}
                 selected={answer === opt}
-                disabled={saving === t.nudgeId}
-                onClick={() => submit(t, opt)}
+                disabled={saving === tracker.nudgeId}
+                onClick={() => submit(tracker, opt)}
               />
             ))}
           </div>
@@ -338,13 +337,21 @@ export default function SymptomTrackRoute() {
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 border-b border-border-default bg-primary-container">
         <div className="px-3 pb-[20px] pt-[max(0.875rem,env(safe-area-inset-top))]">
-          <Eyebrow>{loading ? 'Loading…' : `${answeredCount} of ${total} logged today`}</Eyebrow>
+          <Eyebrow>
+            {loading
+              ? t('track.loading')
+              : t('track.loggedToday', { answered: answeredCount, total })}
+          </Eyebrow>
           <h1 className="font-display mb-[16px] text-[30px] leading-[1.05] text-on-surface">
-            How was your{' '}
-            <em className="not-italic text-primary" style={{ fontWeight: 300 }}>
-              today
-            </em>
-            {`, ${firstName}?`}
+            {/* Trans, not three fragments: where her name and the emphasised word fall in the
+                sentence is different in every language. */}
+            <Trans
+              i18nKey="track.title"
+              values={{ name: firstName }}
+              components={{
+                1: <em className="not-italic text-primary" style={{ fontWeight: 300 }} />,
+              }}
+            />
           </h1>
 
           {/* Progress bar */}
@@ -359,12 +366,12 @@ export default function SymptomTrackRoute() {
             {weekDays.map((day) => {
               const isToday = day.isToday;
               return (
-                <div key={day.label} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                <div key={day.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
                   <span
                     className={`text-[9px] uppercase tracking-[0.08em] ${isToday ? 'text-primary' : 'text-outline'}`}
                     style={{ fontFamily: FONT_MONO }}
                   >
-                    {day.label}
+                    {t(`track.weekdays.${day.key}`)}
                   </span>
                   <span
                     className={`text-[11px] leading-none ${isToday ? 'font-medium text-on-surface' : 'text-on-surface-variant'}`}
@@ -384,7 +391,7 @@ export default function SymptomTrackRoute() {
                       fontSize: isToday ? 10 : 11,
                     }}
                   >
-                    {isToday ? 'Today' : null}
+                    {isToday ? t('track.today') : null}
                   </div>
                 </div>
               );
@@ -398,25 +405,25 @@ export default function SymptomTrackRoute() {
           <div className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-3 text-[13px] text-on-surface-variant">
             {error}{' '}
             <button type="button" onClick={reload} className="text-primary underline">
-              Retry
+              {t('common.retry')}
             </button>
           </div>
         )}
 
         {TIERS.map((tier) => {
-          const items = trackers.filter((t) => t.tier === tier.key);
-          const hasJoints = tier.key === 'body' && !jointLog.loading;
+          const items = trackers.filter((tracker) => tracker.tier === tier);
+          const hasJoints = tier === 'body' && !jointLog.loading;
           // Body still has something to show when only Joints is available — it
           // is the one tracker on this page the nudge day sheet knows nothing about.
           if (items.length === 0 && !hasJoints) return null;
-          const open = openTiers.has(tier.key);
+          const open = openTiers.has(tier);
           const tierTotal = items.length + (hasJoints ? 1 : 0);
           const tierAnswered =
             items.filter(isAnswered).length + (hasJoints && jointsAnswered ? 1 : 0);
 
           return (
             <section
-              key={tier.key}
+              key={tier}
               className={`overflow-hidden rounded-[20px] border border-border-default ${
                 open
                   ? 'bg-surface-raised'
@@ -425,7 +432,7 @@ export default function SymptomTrackRoute() {
             >
               <button
                 type="button"
-                onClick={() => toggleTier(tier.key)}
+                onClick={() => toggleTier(tier)}
                 className={`flex w-full items-center justify-between px-4 py-3.5 text-left ${
                   open ? 'bg-primary-container' : ''
                 }`}
@@ -434,7 +441,7 @@ export default function SymptomTrackRoute() {
                   className="text-[14px] font-medium text-on-surface"
                   style={{ fontFamily: FONT_BODY }}
                 >
-                  {tier.label}
+                  {t(`track.tiers.${tier}`)}
                 </span>
                 <span
                   className={`rounded-full px-2.5 py-1 text-[11px] ${
@@ -448,15 +455,17 @@ export default function SymptomTrackRoute() {
 
               {open && (
                 <div className="flex flex-col gap-4 border-t border-primary/10 px-4 py-4">
-                  {items.map((t) => (
-                    <Fragment key={t.nudgeId}>
-                      {renderTracker(t)}
+                  {items.map((tracker) => (
+                    <Fragment key={tracker.nudgeId}>
+                      {renderTracker(tracker)}
                       {/* Body ordering per spec: Hot flashes, then Joints & Stiffness. */}
-                      {hasJoints && t.nudgeId === JOINTS_AFTER_TRACKER && jointsCard}
+                      {hasJoints && tracker.nudgeId === JOINTS_AFTER_TRACKER && jointsCard}
                     </Fragment>
                   ))}
                   {/* Still show Joints if the hot-flash tracker is ever absent. */}
-                  {hasJoints && !items.some((t) => t.nudgeId === JOINTS_AFTER_TRACKER) && jointsCard}
+                  {hasJoints &&
+                    !items.some((tracker) => tracker.nudgeId === JOINTS_AFTER_TRACKER) &&
+                    jointsCard}
                 </div>
               )}
             </section>

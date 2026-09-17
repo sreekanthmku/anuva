@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+// The shared list is the server's vocabulary; what the screen takes from it is the topic *ids* and
+// their order. The words come from `qa.topics.*`.
 import {
   ANONYMOUS_QA_TOPICS,
-  anonymousQuestionTopicLabel,
   type AnonymousQuestion,
   type AnonymousQuestionTopic,
 } from '@anuva/shared';
@@ -17,10 +19,8 @@ const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
 /** `mine` includes questions still waiting; `all` is the answered wall everyone reads. */
 type Scope = 'all' | 'mine';
 
-const SCOPES: { id: Scope; label: string }[] = [
-  { id: 'all', label: 'Everyone' },
-  { id: 'mine', label: 'Yours' },
-];
+/** Order only; each scope's label is `qa.scopes.<id>`. */
+const SCOPES: Scope[] = ['all', 'mine'];
 
 function Eyebrow({ children, mint = false }: { children: string; mint?: boolean }) {
   return (
@@ -34,6 +34,8 @@ function Eyebrow({ children, mint = false }: { children: string; mint?: boolean 
 }
 
 function AnswerBlock({ answer }: { answer: AnonymousQuestion['answers'][number] }) {
+  const { t } = useTranslation();
+
   return (
     <div
       className="rounded-r-starchart-lg py-3 pl-3.5 pr-3.5"
@@ -43,8 +45,9 @@ function AnswerBlock({ answer }: { answer: AnonymousQuestion['answers'][number] 
         className="mb-1.5 text-[9.5px] uppercase tracking-[0.12em] text-primary"
         style={{ fontFamily: '"Mulish", sans-serif' }}
       >
-        {answer.expertName}
-        {answer.expertRole ? ` · ${answer.expertRole}` : ''}
+        {answer.expertRole
+          ? t('qa.expertWithRole', { name: answer.expertName, role: answer.expertRole })
+          : answer.expertName}
       </div>
       <p className="text-[12.5px] leading-[1.55] text-on-surface" style={{ fontFamily: MULISH }}>
         {answer.body}
@@ -54,6 +57,7 @@ function AnswerBlock({ answer }: { answer: AnonymousQuestion['answers'][number] 
 }
 
 function QuestionCard({ question, showTopic }: { question: AnonymousQuestion; showTopic: boolean }) {
+  const { t } = useTranslation();
   const answered = question.status === 'answered' && question.answers.length > 0;
 
   return (
@@ -63,7 +67,7 @@ function QuestionCard({ question, showTopic }: { question: AnonymousQuestion; sh
           className="shrink-0 text-[22px] font-medium leading-none text-primary"
           style={{ fontFamily: '"Fraunces", sans-serif' }}
         >
-          Q.
+          {t('qa.questionMark')}
         </span>
         <p
           className="flex-1 text-[15px] font-medium leading-[1.35] text-on-surface"
@@ -84,7 +88,7 @@ function QuestionCard({ question, showTopic }: { question: AnonymousQuestion; sh
           className="rounded-[16px] border border-dashed border-border-default px-3.5 py-3 text-[12px] leading-[1.5] text-on-surface-variant"
           style={{ fontFamily: MULISH }}
         >
-          Waiting for a specialist. You’ll get a notification the moment it’s answered.
+          {t('qa.waiting')}
         </div>
       )}
 
@@ -97,14 +101,14 @@ function QuestionCard({ question, showTopic }: { question: AnonymousQuestion; sh
             <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
             <circle cx="12" cy="12" r="3" fill="currentColor" />
           </svg>
-          {showTopic ? anonymousQuestionTopicLabel(question.topic) : 'Anonymous'}
+          {showTopic ? t(`qa.topics.${question.topic}`) : t('qa.anonymous')}
         </span>
         {answered && question.answers.some((answer) => answer.verified) ? (
           <span className="flex items-center gap-1.5 text-primary">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M5 12l5 5L20 7" stroke="#5E3566" strokeWidth="3" strokeLinecap="round" />
             </svg>
-            Verified expert
+            {t('qa.verifiedExpert')}
           </span>
         ) : (
           <span>{relativeTime(question.createdAt)}</span>
@@ -115,6 +119,7 @@ function QuestionCard({ question, showTopic }: { question: AnonymousQuestion; sh
 }
 
 export default function AnonymousQARoute() {
+  const { t } = useTranslation();
   const [question, setQuestion] = useState('');
   const [topic, setTopic] = useState<AnonymousQuestionTopic>('vasomotor');
   const [scope, setScope] = useState<Scope>('all');
@@ -139,15 +144,19 @@ export default function AnonymousQARoute() {
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface px-3 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
-        <Eyebrow mint>Ask the experts</Eyebrow>
+        <Eyebrow mint>{t('qa.eyebrow')}</Eyebrow>
         <h1 className="font-display max-w-[20rem] text-[30px] leading-[1.1] text-on-surface">
-          Anonymous.{' '}
-          <em
-            className="not-italic font-light text-primary"
-            style={{ fontFamily: '"Fraunces", sans-serif' }}
-          >
-            Always.
-          </em>
+          <Trans
+            i18nKey="qa.title"
+            components={{
+              1: (
+                <em
+                  className="not-italic font-light text-primary"
+                  style={{ fontFamily: '"Fraunces", sans-serif' }}
+                />
+              ),
+            }}
+          />
         </h1>
       </header>
 
@@ -172,13 +181,13 @@ export default function AnonymousQARoute() {
           </svg>
           <div className="min-w-0 flex-1">
             <div className="text-[12.5px] font-medium text-on-surface" style={{ fontFamily: MULISH }}>
-              Anonymous by default
+              {t('qa.anonymousByDefault')}
             </div>
             <p
               className="mt-0.5 text-[11px] leading-[1.4] text-on-surface-variant"
               style={{ fontFamily: MULISH }}
             >
-              Specialists see your question and nothing else — no name, no phone number, no profile.
+              {t('qa.anonymousBody')}
             </p>
           </div>
         </div>
@@ -186,24 +195,24 @@ export default function AnonymousQARoute() {
 
       <section className="px-3 pt-3.5">
         <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
-          <Eyebrow mint>Your question</Eyebrow>
+          <Eyebrow mint>{t('qa.yourQuestion')}</Eyebrow>
           <textarea
             value={question}
             onChange={(e) => setQuestion(e.target.value.slice(0, MAX_QUESTION_LENGTH))}
-            placeholder="Write in your own words. You can be as blunt as you like…"
+            placeholder={t('qa.placeholder')}
             rows={4}
             disabled={outOfQuota}
             className="mt-2.5 min-h-[80px] w-full resize-none border-0 bg-transparent text-[14px] leading-[1.5] text-on-surface outline-none placeholder:text-outline disabled:opacity-60"
             style={{ fontFamily: MULISH }}
           />
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {ANONYMOUS_QA_TOPICS.map((t) => {
-              const active = topic === t.id;
+            {ANONYMOUS_QA_TOPICS.map((entry) => {
+              const active = topic === entry.id;
               return (
                 <button
-                  key={t.id}
+                  key={entry.id}
                   type="button"
-                  onClick={() => setTopic(t.id)}
+                  onClick={() => setTopic(entry.id)}
                   className="whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors"
                   style={{
                     fontFamily: MULISH,
@@ -212,7 +221,7 @@ export default function AnonymousQARoute() {
                     borderColor: active ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
                   }}
                 >
-                  {t.label}
+                  {t(`qa.topics.${entry.id}`)}
                 </button>
               );
             })}
@@ -226,7 +235,7 @@ export default function AnonymousQARoute() {
                 backgroundColor: 'rgba(94, 53, 102, 0.12)',
               }}
             >
-              Sent anonymously. It’s in the specialists’ queue now — usually answered under 24h.
+              {t('qa.justSubmitted')}
             </div>
           ) : null}
 
@@ -241,7 +250,7 @@ export default function AnonymousQARoute() {
 
           {tooShort ? (
             <div className="mt-3 text-[11px] text-outline" style={{ fontFamily: MULISH }}>
-              A few more words, so a specialist can answer properly.
+              {t('qa.tooShort')}
             </div>
           ) : null}
 
@@ -251,10 +260,10 @@ export default function AnonymousQARoute() {
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
               {outOfQuota
-                ? 'Daily limit reached'
+                ? t('qa.dailyLimit')
                 : qa.remainingToday !== null
-                  ? `Usually answered < 24h · ${qa.remainingToday} left today`
-                  : 'Usually answered < 24h'}
+                  ? t('qa.usuallyAnsweredWithCount', { count: qa.remainingToday })
+                  : t('qa.usuallyAnswered')}
             </span>
             <button
               type="button"
@@ -263,7 +272,7 @@ export default function AnonymousQARoute() {
               className="rounded-full px-[18px] py-2 text-[12px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
               style={{ fontFamily: MULISH, backgroundColor: '#C97E92' }}
             >
-              {qa.submitting ? 'Sending…' : 'Submit'}
+              {qa.submitting ? t('common.sending') : t('qa.submit')}
             </button>
           </div>
         </article>
@@ -275,9 +284,9 @@ export default function AnonymousQARoute() {
             className="rounded-[20px] border border-error/20 bg-error-container px-4 py-3 text-[12.5px] text-on-error-container"
             style={{ fontFamily: MULISH }}
           >
-            {qa.loadError ?? 'Unable to load questions.'}{' '}
+            {qa.loadError ?? t('qa.loadFailed')}{' '}
             <button type="button" onClick={() => void qa.reload()} className="underline">
-              Retry
+              {t('common.retry')}
             </button>
           </div>
         </section>
@@ -285,17 +294,17 @@ export default function AnonymousQARoute() {
 
       <section className="px-3 py-4">
         <div className="flex items-end justify-between gap-3">
-          <Eyebrow>{scope === 'mine' ? 'Your questions' : 'Answered questions'}</Eyebrow>
+          <Eyebrow>{scope === 'mine' ? t('qa.yourQuestions') : t('qa.answeredQuestions')}</Eyebrow>
           <div className="mb-2 flex gap-1.5">
             {SCOPES.map((entry) => {
-              const active = scope === entry.id;
+              const active = scope === entry;
               // Only "Yours" is countable — the wall is paged, so a number there would understate it.
-              const count = entry.id === 'mine' ? qa.mine.length : 0;
+              const count = entry === 'mine' ? qa.mine.length : 0;
               return (
                 <button
-                  key={entry.id}
+                  key={entry}
                   type="button"
-                  onClick={() => setScope(entry.id)}
+                  onClick={() => setScope(entry)}
                   className="rounded-full border px-3 py-1 text-[11.5px] font-medium transition-colors"
                   style={{
                     fontFamily: MULISH,
@@ -304,8 +313,9 @@ export default function AnonymousQARoute() {
                     borderColor: active ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
                   }}
                 >
-                  {entry.label}
-                  {count > 0 ? ` (${count})` : ''}
+                  {count > 0
+                    ? t('qa.scopeCount', { label: t(`qa.scopes.${entry}`), count })
+                    : t(`qa.scopes.${entry}`)}
                 </button>
               );
             })}
@@ -316,9 +326,7 @@ export default function AnonymousQARoute() {
           className="mb-2.5 text-[11px] leading-[1.45] text-outline"
           style={{ fontFamily: MULISH }}
         >
-          {scope === 'mine'
-            ? 'Only you can see this list. Yours also appear in Everyone once answered, unsigned, like every other question.'
-            : 'Every answered question, from everyone. No asker is named, including you.'}
+          {scope === 'mine' ? t('qa.mineNote') : t('qa.allNote')}
         </p>
 
         {qa.state === 'loading' ? (
@@ -326,16 +334,14 @@ export default function AnonymousQARoute() {
             className="rounded-[20px] border border-dashed border-border-default px-4 py-6 text-[12.5px] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
-            Loading…
+            {t('qa.loading')}
           </div>
         ) : visible.length === 0 ? (
           <div
             className="rounded-[20px] border border-dashed border-border-default px-4 py-6 text-[12.5px] leading-[1.5] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
-            {scope === 'mine'
-              ? 'You haven’t asked anything yet. Nobody will know it was you.'
-              : 'No answered questions yet. Yours could be the first.'}
+            {scope === 'mine' ? t('qa.emptyMine') : t('qa.emptyAll')}
           </div>
         ) : (
           <div className="flex flex-col gap-3">

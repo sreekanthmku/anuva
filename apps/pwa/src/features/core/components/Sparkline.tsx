@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { formatShortDay, formatShortDayFrom } from '../summaryDates';
 import {
   type ChartScale,
@@ -76,6 +77,8 @@ export function Sparkline({
   unit,
   showMissingLegend,
 }: SparklineProps) {
+  // Before the early return below: a hook after a conditional return is a hook-order bug.
+  const { t } = useTranslation();
   const count = values.length;
   if (count === 0) return <div style={{ height: PLOT_HEIGHT }} />;
 
@@ -127,15 +130,30 @@ export function Sparkline({
 
   const logged = values.filter((v): v is number => v != null);
   const ariaLabel = (() => {
-    const span = `${formatShortDay(seriesStart)} to ${formatShortDayFrom(seriesStart, count - 1)}`;
-    if (logged.length === 0) return `${label}: nothing logged between ${span}.`;
+    const span = t('charts.span', {
+      from: formatShortDay(seriesStart),
+      to: formatShortDayFrom(seriesStart, count - 1),
+    });
+    if (logged.length === 0) return t('charts.ariaNothingLogged', { label, span });
     const lo = domain.formatValue(Math.min(...logged));
     const hi = domain.formatValue(Math.max(...logged));
     const latest = domain.formatValue(logged[logged.length - 1]!);
     const shape =
-      lo === hi ? `${lo} ${unit} throughout` : `ranged ${lo} to ${hi} ${unit}, latest ${latest} ${unit}`;
-    const missingNote = missingIndices.length > 0 ? ` ${missingIndices.length} not logged.` : '';
-    return `${label}, ${span}: ${shape}. ${logged.length} of ${count - inactive.filter(Boolean).length} days logged.${missingNote}`;
+      lo === hi
+        ? t('charts.ariaThroughout', { value: lo, unit })
+        : t('charts.ariaRanged', { low: lo, high: hi, unit, latest });
+    const missingNote =
+      missingIndices.length > 0
+        ? t('charts.ariaMissingNote', { count: missingIndices.length })
+        : '';
+    return t('charts.ariaSummary', {
+      label,
+      span,
+      shape,
+      logged: logged.length,
+      total: count - inactive.filter(Boolean).length,
+      missingNote,
+    });
   })();
 
   return (
@@ -267,7 +285,7 @@ export function Sparkline({
           className="mt-1 text-[8.5px] leading-[1.3]"
           style={{ fontFamily: MULISH, color: AXIS_TEXT }}
         >
-          Ticks under the axis are days with no check-in.
+          {t('charts.missingLegend')}
         </figcaption>
       )}
     </figure>

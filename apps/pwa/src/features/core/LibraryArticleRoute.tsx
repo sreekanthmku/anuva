@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import type { LibraryBlock } from '@anuva/shared';
 import { BottomNav } from './components/BottomNav';
 import { useLibraryArticle } from './library/useLibrary';
@@ -9,7 +11,12 @@ import { FRAUNCES, MULISH, TONE_COLOR } from './library/tone';
 function formatDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  // The active language, not the device's: the byline sits inside translated copy.
+  return date.toLocaleDateString(i18n.language, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 function Block({ block, accent }: { block: LibraryBlock; accent: string }) {
@@ -96,6 +103,7 @@ function Block({ block, accent }: { block: LibraryBlock; accent: string }) {
 }
 
 export default function LibraryArticleRoute() {
+  const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { state, error, data, reload } = useLibraryArticle(slug);
@@ -116,7 +124,7 @@ export default function LibraryArticleRoute() {
           className="flex h-9 items-center gap-2 text-[12px] text-on-surface-variant"
           style={{ fontFamily: MULISH }}
         >
-          <span aria-hidden="true">←</span> Library
+          <span aria-hidden="true">←</span> {t('library.backToLibrary')}
         </button>
       </header>
 
@@ -140,7 +148,7 @@ export default function LibraryArticleRoute() {
             className="mt-3 h-11 rounded-full bg-primary px-6 text-[13px] text-on-primary"
             style={{ fontFamily: MULISH }}
           >
-            Try again
+            {t('common.tryAgain')}
           </button>
         </section>
       )}
@@ -168,7 +176,10 @@ export default function LibraryArticleRoute() {
               className="mt-4 text-[9.5px] uppercase tracking-[0.15em]"
               style={{ fontFamily: '"Mulish", sans-serif', color: accent }}
             >
-              {data.article.categoryLabel} · {data.article.readMinutes} min read
+              {t('library.categoryAndRead', {
+                category: data.article.categoryLabel,
+                minutes: data.article.readMinutes,
+              })}
             </div>
 
             <h1
@@ -196,7 +207,10 @@ export default function LibraryArticleRoute() {
                   {data.article.author.name}
                 </div>
                 <div className="text-[10.5px] text-outline" style={{ fontFamily: MULISH }}>
-                  {data.article.author.credential} · {formatDate(data.article.publishedAt)}
+                  {t('library.credentialAndDate', {
+                    credential: data.article.author.credential,
+                    date: formatDate(data.article.publishedAt),
+                  })}
                 </div>
               </div>
             </div>
@@ -207,7 +221,7 @@ export default function LibraryArticleRoute() {
                   className="mb-2.5 text-[9.5px] uppercase tracking-[0.15em] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  In short
+                  {t('library.inShort')}
                 </div>
                 <ul className="flex flex-col gap-2">
                   {data.article.keyTakeaways.map((takeaway) => (
@@ -252,8 +266,7 @@ export default function LibraryArticleRoute() {
               className="mt-6 rounded-[20px] border border-border-default bg-surface-container-low p-3.5 text-[11.5px] leading-[1.5] text-outline"
               style={{ fontFamily: MULISH }}
             >
-              Educational content, not a diagnosis. Talk to a clinician about your own symptoms —
-              you can book a consultation from the More menu.
+              {t('library.disclaimer')}
             </p>
           </article>
 
@@ -264,7 +277,7 @@ export default function LibraryArticleRoute() {
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
                 <span className="h-px w-3 bg-outline/60" />
-                Read next
+                {t('library.readNext')}
               </div>
               <div className="flex flex-col gap-2.5">
                 {data.related.map((related) => (
@@ -311,7 +324,7 @@ export default function LibraryArticleRoute() {
                         {related.title}
                       </div>
                       <div className="text-[11px] text-outline" style={{ fontFamily: MULISH }}>
-                        {related.readMinutes} min read
+                        {t('library.minRead', { count: related.readMinutes })}
                       </div>
                     </div>
                   </button>

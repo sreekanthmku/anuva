@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type {
   MoodEmotion,
   NudgeCard,
@@ -22,6 +23,7 @@ const EMOJI_TRACKERS = new Set(['L1-001', 'L1-003']);
 // Collapsed tap-card bundle for the current slot. Each card is answered in place;
 // successful answers advance immediately and only the final reply is shown.
 export default function NudgeCardRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { slot } = useParams();
   const requestedSlot: NudgeSlot | undefined =
@@ -55,7 +57,7 @@ export default function NudgeCardRoute() {
     setSaving(true);
     try {
       await moodLog.logMood(feeling, emotions);
-      completeCard("Emotional days are not weakness. I'll track this carefully.");
+      completeCard(t('nudgeCard.moodLogged'));
     } finally {
       setSaving(false);
     }
@@ -69,7 +71,7 @@ export default function NudgeCardRoute() {
     setSaving(true);
     try {
       await sleepLog.logSleep(quality, hours, disruptions);
-      completeCard("Thanks for logging your sleep. I'll factor it into today.");
+      completeCard(t('nudgeCard.sleepLogged'));
     } finally {
       setSaving(false);
     }
@@ -82,7 +84,7 @@ export default function NudgeCardRoute() {
       const res = await respond({ nudgeId: card.nudgeId, answer });
       completeCard(res.message);
     } catch {
-      setAnswerError("I couldn't save that just now. We'll try again later.");
+      setAnswerError(t('nudgeCard.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -97,10 +99,10 @@ export default function NudgeCardRoute() {
           className="mb-6 text-[12px] text-on-surface-variant"
           style={{ fontFamily: FONT_MONO }}
         >
-          ← Home
+          {t('nudgeCard.backHome')}
         </button>
 
-        {loading && <p className="text-on-surface-variant">Loading your check-in…</p>}
+        {loading && <p className="text-on-surface-variant">{t('nudgeCard.loading')}</p>}
         {error && <p className="text-on-surface-variant">{error}</p>}
 
         {!loading && !error && (cards.length === 0 || done) && (
@@ -109,17 +111,17 @@ export default function NudgeCardRoute() {
               className="mb-2 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
-              {done ? "That's all for now." : 'Nothing to check in on right now.'}
+              {done ? t('nudgeCard.allDone') : t('nudgeCard.nothingNow')}
             </h2>
             <p className="text-[13px] text-on-surface-variant">
-              {done ? (finalReply ?? 'Thank you for sharing with me today.') : 'Come back at your next check-in.'}
+              {done ? (finalReply ?? t('nudgeCard.thankYou')) : t('nudgeCard.comeBack')}
             </p>
             <button
               type="button"
               onClick={() => navigate('/home')}
               className="mt-6 rounded-full bg-primary px-6 py-3 text-[14px] font-medium text-surface"
             >
-              Back to home
+              {t('nudgeCard.backToHome')}
             </button>
           </div>
         )}
@@ -132,7 +134,11 @@ export default function NudgeCardRoute() {
                 style={{ fontFamily: FONT_MONO }}
               >
                 <span className="h-px w-3 bg-primary/60" />
-                {data.bundleTitle} · {index + 1}/{cards.length}
+                {t('nudgeCard.bundleProgress', {
+                  title: data.bundleTitle,
+                  current: index + 1,
+                  total: cards.length,
+                })}
               </div>
             )}
             <h2
@@ -149,7 +155,7 @@ export default function NudgeCardRoute() {
                 onClick={() => setSheetOpen(true)}
                 className="w-full rounded-full bg-primary py-3.5 text-[14px] font-medium text-surface active:opacity-80 disabled:opacity-50"
               >
-                {card.nudgeId === 'L1-003' ? 'Log your mood' : 'Log your sleep'}
+                {card.nudgeId === 'L1-003' ? t('nudgeCard.logMood') : t('nudgeCard.logSleep')}
               </button>
             ) : (
               <div className="flex flex-col gap-2.5">

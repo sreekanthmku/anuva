@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import i18n from '../src/i18n';
 import type { WeeklyReportResponse } from '@anuva/shared';
 import {
-  PERIOD_NOUN,
+  periodNoun,
   addDaysIso,
   daysBetweenIso,
   formatDay,
@@ -91,7 +92,8 @@ describe('formatters', () => {
   it('formatDay uses short weekday + month + day', () => {
     const spy = vi.spyOn(Date.prototype, 'toLocaleDateString').mockReturnValue('Thu, Jun 20');
     expect(formatDay('2024-06-20')).toBe('Thu, Jun 20');
-    expect(spy).toHaveBeenCalledWith(undefined, {
+    // The active language, not `undefined`: every date on the summary sits in translated copy.
+    expect(spy).toHaveBeenCalledWith(i18n.language, {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -101,13 +103,13 @@ describe('formatters', () => {
   it('formatShortDay uses short month + day', () => {
     const spy = vi.spyOn(Date.prototype, 'toLocaleDateString').mockReturnValue('Jun 20');
     expect(formatShortDay('2024-06-20')).toBe('Jun 20');
-    expect(spy).toHaveBeenCalledWith(undefined, { month: 'short', day: 'numeric' });
+    expect(spy).toHaveBeenCalledWith(i18n.language, { month: 'short', day: 'numeric' });
   });
 
   it('formatMonth uses long month + year', () => {
     const spy = vi.spyOn(Date.prototype, 'toLocaleDateString').mockReturnValue('June 2024');
     expect(formatMonth('2024-06-01')).toBe('June 2024');
-    expect(spy).toHaveBeenCalledWith(undefined, { month: 'long', year: 'numeric' });
+    expect(spy).toHaveBeenCalledWith(i18n.language, { month: 'long', year: 'numeric' });
   });
 
   it('formatRange collapses to short day when start equals end', () => {
@@ -239,9 +241,13 @@ describe('periodDetail', () => {
   });
 });
 
-describe('PERIOD_NOUN', () => {
+describe('periodNoun', () => {
   it('maps each period to a singular noun', () => {
-    expect(PERIOD_NOUN).toEqual({
+    expect({
+      daily: periodNoun('daily'),
+      weekly: periodNoun('weekly'),
+      monthly: periodNoun('monthly'),
+    }).toEqual({
       daily: 'day',
       weekly: 'week',
       monthly: 'month',

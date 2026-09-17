@@ -1,6 +1,8 @@
 import type { ConsultationSpecialist } from '@anuva/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError } from '../../../../shared/lib/api';
+// The instance rather than the hook: these messages are set inside catch blocks.
+import i18n from '../../../../i18n';
 import { bookConsultation, fetchConsultationSlots, fetchConsultationSpecialists } from '../api';
 import {
   DATES_PER_PAGE,
@@ -53,7 +55,7 @@ export function useConsultationBooking() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Unable to load specialists right now.');
+        setError(err instanceof Error ? err.message : i18n.t('booking.loadSpecialistsFailed'));
       })
       .finally(() => {
         if (!cancelled) {
@@ -127,7 +129,7 @@ export function useConsultationBooking() {
       } catch (err: unknown) {
         if (requestId !== slotsRequestRef.current) return;
         setError(
-          err instanceof Error ? err.message : 'Unable to load appointment slots right now.'
+          err instanceof Error ? err.message : i18n.t('booking.loadSlotsFailed')
         );
       } finally {
         if (requestId === slotsRequestRef.current) {
@@ -187,7 +189,13 @@ export function useConsultationBooking() {
     : pickedDateId;
   const selectedWindowStart = dateAtLocalNoonFromTodayOffset(datePageStartOffset);
   const selectedWindowEnd = addDays(selectedWindowStart, DATES_PER_PAGE - 1);
-  const windowLabel = `${selectedWindowStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${selectedWindowEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  const windowLabel = i18n.t('booking.windowLabel', {
+    from: selectedWindowStart.toLocaleDateString(i18n.language, {
+      month: 'short',
+      day: 'numeric',
+    }),
+    to: selectedWindowEnd.toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' }),
+  });
 
   async function confirmBooking() {
     if (!pickedTimeId) return;
@@ -209,13 +217,13 @@ export function useConsultationBooking() {
         await loadSlots({ keepSelection: true });
         setError(
           err.message.startsWith('Request failed with status')
-            ? 'That slot was just booked. Please choose another time.'
+            ? i18n.t('booking.slotTaken')
             : err.message
         );
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unable to confirm your booking right now.');
+        setError(i18n.t('booking.confirmFailed'));
       }
     } finally {
       setSubmitting(false);

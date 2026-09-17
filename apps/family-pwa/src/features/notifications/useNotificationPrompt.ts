@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   enableFamilyNotifications,
   isFirebaseConfigured,
@@ -24,6 +25,7 @@ import {
 const PROMPT_DELAY_MS = 2000;
 
 export function useNotificationPrompt(ready: boolean) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +91,7 @@ export function useNotificationPrompt(ready: boolean) {
       const { permission, sync } = await enableFamilyNotifications();
       setOpen(false);
       if (permission === 'denied') {
-        setError('Notifications are blocked for this site. You can turn them on in site settings.');
+        setError(t('errors.notificationsBlocked'));
         return;
       }
       if (!sync.ok && permission === 'granted') {
@@ -98,7 +100,7 @@ export function useNotificationPrompt(ready: boolean) {
     } finally {
       setRegistering(false);
     }
-  }, []);
+  }, [t]);
 
   const dismiss = useCallback(() => {
     dismissPrompt();

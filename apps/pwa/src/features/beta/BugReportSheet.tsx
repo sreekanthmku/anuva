@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { captureScreenshot, sendReport, type Capture } from './sendReport';
 
 /**
@@ -30,6 +31,7 @@ type Props = {
 };
 
 export function BugReportSheet({ open, app, prompt, onClose }: Props) {
+  const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -111,7 +113,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
       <button
         type="button"
         className="absolute inset-0 bg-[#3E2542]/55 backdrop-blur-[2px]"
-        aria-label="Close"
+        aria-label={t('common.close')}
         onClick={onClose}
       />
 
@@ -122,11 +124,11 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
           type="button"
           className="absolute inset-0 z-10 flex items-center justify-center bg-[#3E2542]/90 p-4"
           onClick={() => setExpanded(false)}
-          aria-label="Close preview"
+          aria-label={t('beta.closePreview')}
         >
           <img
             src={capture.previewUrl}
-            alt="What will be sent with this report"
+            alt={t('beta.previewAlt')}
             className="max-h-full max-w-full rounded-[14px] object-contain"
           />
         </button>
@@ -147,10 +149,10 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
               className="mt-3 text-[18px] text-on-surface"
               style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
             >
-              Sent. Thank you.
+              {t('beta.sentTitle')}
             </p>
             <p className="mt-1.5 text-[13px] text-on-surface-variant" style={mulish}>
-              We can see exactly what your screen was doing.
+              {t('beta.sentBody')}
             </p>
           </div>
         ) : (
@@ -159,14 +161,14 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
               className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-tertiary"
               style={mulish}
             >
-              Report a problem
+              {t('beta.reportProblem')}
             </p>
             <h2
               id="beta-report-title"
               className="mt-1 text-[21px] leading-tight text-on-surface"
               style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
             >
-              {prompt ?? 'What went wrong?'}
+              {prompt ?? t('beta.whatWentWrong')}
             </h2>
 
             <textarea
@@ -174,7 +176,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
               value={message}
               onChange={(event) => setMessage(event.target.value.slice(0, MAX_MESSAGE))}
               rows={3}
-              placeholder="A few words is plenty — or just send it."
+              placeholder={t('beta.messagePlaceholder')}
               className="mt-3 w-full resize-none rounded-[18px] border border-border-default bg-surface-container-low px-4 py-3 text-[15px] leading-[1.55] text-on-surface placeholder:text-outline focus:border-secondary focus:ring-2 focus:ring-secondary/25"
               style={mulish}
             />
@@ -185,8 +187,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
                 className="mt-2 rounded-[14px] bg-error-container px-3 py-2 text-[12px] leading-snug text-on-error-container"
                 style={mulish}
               >
-                This build has no reporting configured, so nothing was sent. Please pass this on to
-                the team directly.
+                {t('beta.noTransport')}
               </p>
             ) : (
               <div className="mt-3 flex items-center gap-3 rounded-[16px] border border-border-default bg-surface-container-low px-3 py-2.5">
@@ -197,7 +198,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
                     className={`h-14 w-11 shrink-0 overflow-hidden rounded-[8px] border border-outline-variant transition-opacity ${
                       attach ? '' : 'opacity-35'
                     }`}
-                    aria-label="View the picture that will be sent"
+                    aria-label={t('beta.viewPicture')}
                   >
                     <img
                       src={capture.previewUrl}
@@ -215,15 +216,15 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
                 <div className="min-w-0 flex-1">
                   <p className="text-[12.5px] font-semibold leading-snug text-on-surface" style={mulish}>
                     {capture && !capture.data
-                      ? 'No picture this time'
+                      ? t('beta.noPicture')
                       : attach
-                        ? 'This picture will be sent'
-                        : 'Picture will not be sent'}
+                        ? t('beta.pictureWillBeSent')
+                        : t('beta.pictureWillNotBeSent')}
                   </p>
                   <p className="mt-0.5 text-[11px] leading-snug text-outline" style={mulish}>
                     {capture && !capture.data
-                      ? 'The report still helps — we can replay what happened.'
-                      : 'Tap it to see it full size.'}
+                      ? t('beta.noPictureNote')
+                      : t('beta.tapForFullSize')}
                   </p>
                 </div>
 
@@ -235,7 +236,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
                     className="shrink-0 rounded-full px-2.5 py-1.5 text-[11.5px] font-semibold text-secondary underline underline-offset-2"
                     style={mulish}
                   >
-                    {attach ? 'Remove' : 'Add back'}
+                    {attach ? t('beta.remove') : t('beta.addBack')}
                   </button>
                 ) : null}
               </div>
@@ -248,7 +249,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
               className="mt-4 min-h-[48px] w-full rounded-full bg-secondary px-5 text-[15px] font-semibold text-on-secondary disabled:opacity-60"
               style={mulish}
             >
-              {sending ? 'Sending…' : 'Send report'}
+              {sending ? t('common.sending') : t('beta.send')}
             </button>
             <button
               type="button"
@@ -256,7 +257,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
               className="mt-1.5 min-h-[44px] w-full rounded-full px-5 text-[13.5px] font-semibold text-on-surface-variant"
               style={mulish}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </>
         )}

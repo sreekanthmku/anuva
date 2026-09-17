@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { FamilyActivityResponse, FamilySupportActionKind } from '@anuva/shared';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { sendFamilyThanks } from './api';
@@ -21,15 +22,6 @@ const KIND_EMOJI: Record<FamilySupportActionKind, string> = {
   chocolates: '🍫',
 };
 
-const RELATIONSHIP_LABELS: Record<string, string> = {
-  partner: 'Partner',
-  child: 'Son / daughter',
-  parent: 'Parent',
-  sibling: 'Sibling',
-  friend: 'Friend',
-  other: 'Family',
-};
-
 const mulish = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' };
 
 function firstNameOf(name: string): string {
@@ -45,6 +37,7 @@ export function FamilyActivityDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [thanked, setThanked] = useState(false);
 
   useEffect(() => {
@@ -78,7 +71,7 @@ export function FamilyActivityDialog({
       <button
         type="button"
         className="absolute inset-0 bg-[#3E2542]/60 backdrop-blur-[2px]"
-        aria-label="Close"
+        aria-label={t('common.close')}
         onClick={onClose}
       />
 
@@ -89,7 +82,7 @@ export function FamilyActivityDialog({
           className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-tertiary"
           style={mulish}
         >
-          Today
+          {t('family.activity.today')}
         </p>
         <h2
           id="family-activity-title"
@@ -99,7 +92,12 @@ export function FamilyActivityDialog({
           {today.headline}
         </h2>
         <p className="mt-1 text-[12px] text-outline" style={mulish}>
-          {member.name} · {RELATIONSHIP_LABELS[member.relationship] ?? 'Family'}
+          {t('family.activity.memberLine', {
+            name: member.name,
+            relationship: t(`family.relationships.${member.relationship}`, {
+              defaultValue: t('family.relationships.other'),
+            }),
+          })}
         </p>
 
         <ul className="mt-4 space-y-2">
@@ -139,7 +137,9 @@ export function FamilyActivityDialog({
           className="mt-4 min-h-[48px] w-full rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary disabled:opacity-70"
           style={mulish}
         >
-          {thanked ? `${firstNameOf(member.name)} has been told 😊` : 'Say thank you 💛'}
+          {thanked
+            ? t('family.activity.thanked', { name: firstNameOf(member.name) })
+            : t('family.activity.sayThankYou')}
         </button>
         <button
           type="button"
@@ -147,7 +147,7 @@ export function FamilyActivityDialog({
           className="mt-1.5 min-h-[44px] w-full rounded-full px-5 text-[13.5px] font-semibold text-on-surface-variant"
           style={mulish}
         >
-          Close
+          {t('common.close')}
         </button>
       </div>
 

@@ -1,4 +1,4 @@
-import type { AssessmentQuestion } from './assessmentQuestions';
+import type { AssessmentOptionValue, AssessmentQuestion } from './assessmentQuestions';
 
 export type AssessmentOutcomeStatus = 'in_control' | 'further_assessment';
 
@@ -8,10 +8,14 @@ export type AssessmentOutcome = {
   status: AssessmentOutcomeStatus;
 };
 
-const answerScoreByLabel: Record<string, number> = {
-  Yes: 2,
-  Sometimes: 1,
-  No: 0,
+/**
+ * Scored off the option's *value*, never its label. The labels are translated; the values are not,
+ * so an answer weighs the same whichever language it was given in.
+ */
+const answerScoreByValue: Partial<Record<AssessmentOptionValue, number>> = {
+  yes: 2,
+  sometimes: 1,
+  no: 0,
 };
 
 export function scoreAssessmentQuestions(
@@ -29,7 +33,7 @@ export function scoreAssessmentQuestions(
       return total;
     }
 
-    const questionScore = answerScoreByLabel[selectedOption] ?? 0;
+    const questionScore = answerScoreByValue[selectedOption] ?? 0;
     return total + questionScore;
   }, 0);
 }

@@ -1,79 +1,34 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
+import { LanguageToggle } from '../../i18n/LanguageToggle';
 import { DPDP_ACT_URL } from '../../shared/lib/dpdp';
 import { useAuth } from '../auth/auth-context';
 import { activateOneDaySubscription } from '../auth/session';
 import { assessmentPath } from './config/assessmentView';
 
-type Plan = {
-  id: 'monthly' | 'annual' | 'family';
-  label: string;
-  price: string;
-  subLabel: string;
-  footnote: string;
-  badge?: string;
-};
+type PlanId = 'monthly' | 'annual' | 'family';
 
-const plans: Plan[] = [
-  {
-    id: 'monthly',
-    label: 'Monthly',
-    price: '₹799',
-    subLabel: 'per month',
-    footnote: 'Cancel anytime',
-  },
-  {
-    id: 'annual',
-    label: 'Annual',
-    price: '₹4,999',
-    subLabel: 'per year',
-    footnote: 'Save ₹4,589 · Best value',
-    badge: 'Most chosen',
-  },
-  {
-    id: 'family',
-    label: 'Family',
-    price: '₹6,999',
-    subLabel: 'per year · up to 3',
-    footnote: 'Share with mother or sister',
-  },
-];
+/** Order and identity only. Label, price, sublabel and footnote come from `subscription.plans.*`. */
+const planIds: PlanId[] = ['monthly', 'annual', 'family'];
 
-const includedItems = [
-  'Unlimited chat with ANU',
-  'Daily symptom tracking',
-  'Weekly benchmark reports',
-  'Anonymous Q&A with experts',
-  'Matched care-path routing',
-  'Free first consultation',
-  'Monthly masterclass access',
-  'DPDP-compliant, encrypted',
-];
-
-function renderIncludedItem(item: string) {
-  if (item !== 'DPDP-compliant, encrypted') {
-    return item;
-  }
-
-  return (
-    <>
-      <a
-        href={DPDP_ACT_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-inherit no-underline"
-      >
-        DPDP-compliant
-      </a>
-      , encrypted
-    </>
-  );
-}
+/** Order only; the copy is `subscription.included.*`. */
+const includedKeys = [
+  'chat',
+  'tracking',
+  'reports',
+  'qa',
+  'routing',
+  'consult',
+  'masterclass',
+  'dpdp',
+] as const;
 
 export default function SubscriptionRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
-  const [selectedPlanId, setSelectedPlanId] = useState<Plan['id']>('annual');
+  const [selectedPlanId, setSelectedPlanId] = useState<PlanId>('annual');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isTrialAvailable = !!user?.trialAvailable;
@@ -112,33 +67,44 @@ export default function SubscriptionRoute() {
           className="bg-transparent p-0 text-[13px] text-on-surface-variant"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
-          ← Back
+          {t('common.backArrow')}
         </button>
-        <img src="/anu.png" alt="Anuva logo" className="h-5 w-5 object-contain" />
+        <div className="flex items-center gap-2">
+          <LanguageToggle variant="compact" />
+          <img src="/anu.png" alt={t('subscription.logoAlt')} className="h-5 w-5 object-contain" />
+        </div>
       </section>
 
       <section className="px-3 pb-[18px] pt-2">
         <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-secondary">
           <span className="h-px w-3 bg-secondary/70" />
-          <span style={{ fontFamily: '"Mulish", sans-serif' }}>Full experience</span>
+          <span style={{ fontFamily: '"Mulish", sans-serif' }}>
+            {t('subscription.fullExperience')}
+          </span>
         </div>
 
         <h1 className="font-display mb-2 text-[30px] leading-[1.1] tracking-[-0.03em] text-on-surface">
-          {isTrialAvailable ? 'Begin your full ' : 'Continue your full '}
-          <em className="not-italic text-primary" style={{ fontFamily: '"Fraunces", sans-serif' }}>
-            Anuva Wellness
-          </em>{' '}
-          experience.
+          <Trans
+            i18nKey={isTrialAvailable ? 'subscription.titleTrial' : 'subscription.titleContinue'}
+            components={{
+              1: (
+                <em
+                  className="not-italic text-primary"
+                  style={{ fontFamily: '"Fraunces", sans-serif' }}
+                />
+              ),
+            }}
+          />
         </h1>
         <p
           className="text-[13px] leading-[1.5] text-on-surface-variant"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
           {isTrialAvailable
-            ? `${trialDays}-day free trial. No payment needed today.`
+            ? t('subscription.trialSubline', { days: trialDays })
             : user?.requiresPayment
-              ? 'Your free trial has ended. Choose a plan to continue.'
-              : 'Your access is active. You can continue into the app.'}
+              ? t('subscription.trialEnded')
+              : t('subscription.accessActive')}
         </p>
       </section>
 
@@ -146,10 +112,12 @@ export default function SubscriptionRoute() {
         <article className="rounded-[20px] border border-border-default bg-primary-container p-[18px]">
           <div className="mb-3.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
             <span className="h-px w-3 bg-primary/60" />
-            <span style={{ fontFamily: '"Mulish", sans-serif' }}>Everything included</span>
+            <span style={{ fontFamily: '"Mulish", sans-serif' }}>
+              {t('subscription.everythingIncluded')}
+            </span>
           </div>
           <div className="grid grid-cols-2 gap-x-[14px] gap-y-[10px]">
-            {includedItems.map((item) => (
+            {includedKeys.map((item) => (
               <div key={item} className="flex items-start gap-1.5">
                 <svg
                   width="13"
@@ -171,7 +139,25 @@ export default function SubscriptionRoute() {
                   className="text-[11.5px] leading-[1.35] text-on-surface"
                   style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                 >
-                  {renderIncludedItem(item)}
+                  {/* Only the DPDP line carries a link, and where the linked words fall moves
+                      with the language — so it goes through Trans rather than being split here. */}
+                  {item === 'dpdp' ? (
+                    <Trans
+                      i18nKey="subscription.included.dpdp"
+                      components={{
+                        1: (
+                          <a
+                            href={DPDP_ACT_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-inherit no-underline"
+                          />
+                        ),
+                      }}
+                    />
+                  ) : (
+                    t(`subscription.included.${item}`)
+                  )}
                 </span>
               </div>
             ))}
@@ -180,21 +166,22 @@ export default function SubscriptionRoute() {
       </section>
 
       <section className="flex flex-col gap-2.5 px-3">
-        {plans.map((plan) => {
-          const isSelected = selectedPlanId === plan.id;
+        {planIds.map((planId) => {
+          const isSelected = selectedPlanId === planId;
+          const badge = t(`subscription.plans.${planId}.badge`, { defaultValue: '' });
 
           return (
             <button
-              key={plan.id}
+              key={planId}
               type="button"
-              onClick={() => setSelectedPlanId(plan.id)}
+              onClick={() => setSelectedPlanId(planId)}
               className="relative flex items-center gap-3.5 rounded-[18px] px-4 py-3.5 text-left transition-colors"
               style={{
                 backgroundColor: isSelected ? '#FFFFFF' : '#FBF6F0',
                 border: isSelected ? '1.5px solid #5E3566' : '1px solid rgba(94, 53, 102, 0.2)',
               }}
             >
-              {plan.badge && (
+              {badge && (
                 <span
                   className="absolute right-3.5 top-[-8px] rounded-full bg-secondary px-2.5 py-0.5 text-[9px] uppercase text-on-secondary"
                   style={{
@@ -203,7 +190,7 @@ export default function SubscriptionRoute() {
                     fontWeight: 600,
                   }}
                 >
-                  {plan.badge}
+                  {badge}
                 </span>
               )}
 
@@ -220,13 +207,13 @@ export default function SubscriptionRoute() {
                     className="text-[18px] text-on-surface"
                     style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
                   >
-                    {plan.label}
+                    {t(`subscription.plans.${planId}.label`)}
                   </span>
                   <span
                     className="text-[10px] uppercase tracking-[0.08em] text-outline"
                     style={{ fontFamily: '"Mulish", sans-serif' }}
                   >
-                    {plan.subLabel}
+                    {t(`subscription.plans.${planId}.subLabel`)}
                   </span>
                 </span>
                 <span
@@ -236,7 +223,7 @@ export default function SubscriptionRoute() {
                     fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
                   }}
                 >
-                  {plan.footnote}
+                  {t(`subscription.plans.${planId}.footnote`)}
                 </span>
               </span>
 
@@ -248,7 +235,7 @@ export default function SubscriptionRoute() {
                   fontWeight: 500,
                 }}
               >
-                {plan.price}
+                {t(`subscription.plans.${planId}.price`)}
               </span>
             </button>
           );
@@ -258,9 +245,9 @@ export default function SubscriptionRoute() {
       <section className="flex flex-wrap justify-center gap-1.5 px-3 pb-2 pt-4">
         {(
           [
-            { key: 'dpdp', label: 'DPDP', href: DPDP_ACT_URL },
-            { key: 'trial', label: `${trialDays}-Day Trial` },
-            { key: 'consult', label: 'Free Consult' },
+            { key: 'dpdp', label: t('subscription.badges.dpdp'), href: DPDP_ACT_URL },
+            { key: 'trial', label: t('subscription.badges.trial', { days: trialDays }) },
+            { key: 'consult', label: t('subscription.badges.consult') },
           ] as const
         ).map((badge) => {
           const className =
@@ -302,10 +289,10 @@ export default function SubscriptionRoute() {
           }}
         >
           {user?.hasActiveAccess
-            ? 'Continue to Anuva Wellness'
+            ? t('subscription.continueCta')
             : isSubmitting
-              ? 'Activating...'
-              : `Activate ${trialDays}-Day Access`}
+              ? t('subscription.activating')
+              : t('subscription.activateCta', { days: trialDays })}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M5 12h14M13 6l6 6-6 6"
@@ -321,8 +308,8 @@ export default function SubscriptionRoute() {
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
           {user?.hasActiveAccess
-            ? 'Your access is already active.'
-            : `This button activates ${trialDays} days of access and then takes you into the app.`}
+            ? t('subscription.alreadyActive')
+            : t('subscription.activateNote', { days: trialDays })}
         </p>
       </section>
     </main>

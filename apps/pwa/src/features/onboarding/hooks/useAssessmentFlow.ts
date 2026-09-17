@@ -1,21 +1,28 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { assessmentQuestions } from '../data/assessmentQuestions';
 import { getAssessmentOutcome, scoreAssessmentQuestions } from '../data/assessmentOutcome';
 
 type AnswersMap = Record<number, number | undefined>;
 
 export function useAssessmentFlow() {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<AnswersMap>({});
 
   const question = assessmentQuestions[step];
   const selectedIndex = answers[step];
 
-  const progressLabel = useMemo(() => {
-    const current = String(step + 1).padStart(2, '0');
-    const total = String(assessmentQuestions.length).padStart(2, '0');
-    return `${current} / ${total}`;
-  }, [step]);
+  // Through `t` rather than a template literal: the separator and digit shaping are part of the
+  // translation, not a constant.
+  const progressLabel = useMemo(
+    () =>
+      t('assessment.progress', {
+        current: String(step + 1).padStart(2, '0'),
+        total: String(assessmentQuestions.length).padStart(2, '0'),
+      }),
+    [step, t],
+  );
 
   const canContinue = selectedIndex !== undefined;
   const isLastStep = step === assessmentQuestions.length - 1;

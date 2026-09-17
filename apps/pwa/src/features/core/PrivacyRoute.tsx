@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+// The instance for the module-level date and size helpers, and for the catch blocks.
+import i18n from '../../i18n';
 import { useNavigate } from 'react-router-dom';
 import {
   ERASURE_SCOPES,
@@ -37,13 +40,15 @@ type Sheet =
 function formatDate(iso: string): string {
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return '';
-  return at.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  // The active language, not a fixed locale: these dates sit inside translated sentences.
+  return at.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function formatBytes(bytes: number | null): string {
   if (!bytes) return '';
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024 * 1024)
+    return i18n.t('privacy.kilobytes', { value: Math.max(1, Math.round(bytes / 1024)) });
+  return i18n.t('privacy.megabytes', { value: (bytes / (1024 * 1024)).toFixed(1) });
 }
 
 function totalDeleted(counts: Record<string, number> | null): number {
@@ -68,6 +73,7 @@ function SectionCard({ children }: { children: ReactNode }) {
  * exercise as the partial ones, so it is a plain row on the same screen, not something to hunt for.
  */
 export default function PrivacyRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [summary, setSummary] = useState<PrivacySummaryResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -80,7 +86,7 @@ export default function PrivacyRoute() {
       setLoadError(null);
     } catch (e) {
       setLoadError(
-        e instanceof ApiError ? e.message : 'Could not load your data. Please try again.',
+        e instanceof ApiError ? e.message : i18n.t('privacy.loadFailed'),
       );
     }
   }, []);
@@ -117,7 +123,7 @@ export default function PrivacyRoute() {
     setNotice(
       deleted > 0
         ? `Deleted ${deleted} ${deleted === 1 ? 'item' : 'items'}. ${erasureScopeLabel(scope)}: done.`
-        : 'There was nothing left to delete in that category.',
+        : i18n.t('privacy.nothingToDelete'),
     );
   }
 
@@ -139,14 +145,14 @@ export default function PrivacyRoute() {
     );
 
     await load();
-    setNotice('Your data has been downloaded. The link has now been used and cannot be reopened.');
+    setNotice(i18n.t('privacy.downloaded'));
   }
 
   async function confirmCancel(id: string) {
     await cancelDeletionRequest(id);
     setSheet(null);
     await load();
-    setNotice('Your account will not be deleted. Nothing has been removed.');
+    setNotice(i18n.t('privacy.deletionCancelled'));
   }
 
   const activeScope = sheet?.kind === 'scope' ? sheet.scope : null;
@@ -164,27 +170,38 @@ export default function PrivacyRoute() {
             className="bg-transparent p-0 text-[13px] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
-            ← Profile
+            {t('privacy.backToProfile')}
           </button>
-          <img src="/anu.png" alt="Anuva" className="h-5 w-5 object-contain opacity-80" />
+          <img
+            src="/anu.png"
+            alt={t('privacy.logoAlt')}
+            className="h-5 w-5 object-contain opacity-80"
+          />
         </div>
       </header>
 
       <section className="px-3 pb-6 pt-2">
-        <Eyebrow>Privacy &amp; data</Eyebrow>
+        <Eyebrow>{t('privacy.eyebrow')}</Eyebrow>
         <h1 className="mb-2 font-display text-[24px] leading-tight text-on-surface">
-          Your data is yours
+          {t('privacy.title')}
         </h1>
         <p
           className="mb-6 text-[13px] leading-[1.6] text-on-surface-variant"
           style={{ fontFamily: MULISH }}
         >
-          Under the{' '}
-          <a href={DPDP_ACT_URL} target="_blank" rel="noopener noreferrer" className="text-primary">
-            Digital Personal Data Protection Act
-          </a>
-          , you can see what we hold, take a copy of it, and have it deleted. Everything below acts
-          on your account right away — we do not need to be asked twice.
+          <Trans
+            i18nKey="privacy.intro"
+            components={{
+              1: (
+                <a
+                  href={DPDP_ACT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary"
+                />
+              ),
+            }}
+          />
         </p>
 
         {notice ? (
@@ -201,7 +218,7 @@ export default function PrivacyRoute() {
               className="mt-1.5 bg-transparent p-0 text-[11.5px] text-primary"
               style={{ fontFamily: MULISH }}
             >
-              Dismiss
+              {t('privacy.dismiss')}
             </button>
           </div>
         ) : null}
@@ -217,7 +234,7 @@ export default function PrivacyRoute() {
               className="mt-1.5 bg-transparent p-0 text-[12px] text-primary"
               style={{ fontFamily: MULISH }}
             >
-              Try again
+              {t('common.tryAgain')}
             </button>
           </div>
         ) : null}
@@ -231,14 +248,13 @@ export default function PrivacyRoute() {
               className="text-[14px] leading-[1.5] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
             >
-              Your account is scheduled for deletion
+              {t('privacy.pendingTitle')}
             </p>
             <p
               className="mt-1 text-[12.5px] leading-[1.55] text-on-surface-variant"
               style={{ fontFamily: MULISH }}
             >
-              It will be deleted on {formatDate(pending.scheduledFor)}. Until then nothing has been
-              removed, and you can stop it.
+              {t('privacy.pendingBody', { date: formatDate(pending.scheduledFor) })}
             </p>
             <button
               type="button"
@@ -246,13 +262,13 @@ export default function PrivacyRoute() {
               className="mt-3 min-h-[44px] w-full rounded-full px-4 text-[14px] text-white"
               style={{ fontFamily: MULISH, fontWeight: 600, backgroundColor: '#5E3566' }}
             >
-              Cancel deletion
+              {t('privacy.cancelDeletion')}
             </button>
           </div>
         ) : null}
 
         {/* ── What we hold ─────────────────────────── */}
-        <Eyebrow>What Anuva holds</Eyebrow>
+        <Eyebrow>{t('privacy.whatWeHold')}</Eyebrow>
         <SectionCard>
           <ul className="divide-y divide-border-default">
             {(summary?.categories ?? []).map((category) => (
@@ -283,42 +299,43 @@ export default function PrivacyRoute() {
             ))}
             {!summary && !loadError ? (
               <li className="px-5 py-4 text-[13px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
-                Counting…
+                {t('privacy.counting')}
               </li>
             ) : null}
           </ul>
         </SectionCard>
         <p className="mt-2 px-1 text-[11px] leading-[1.5] text-outline" style={{ fontFamily: MULISH }}>
-          We do not sell your data and there are no advertising trackers in this app. The full list of
-          services that process it is included in your data download.
+          {t('privacy.noSelling')}
         </p>
 
         {/* ── Export ───────────────────────────────── */}
         <div className="mt-7">
-          <Eyebrow>Take a copy</Eyebrow>
+          <Eyebrow>{t('privacy.takeACopy')}</Eyebrow>
           <SectionCard>
             <div className="px-5 py-4">
               <p
                 className="text-[15px] text-on-surface"
                 style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
               >
-                Download your data
+                {t('privacy.downloadTitle')}
               </p>
               <p
                 className="mt-1 text-[12.5px] leading-[1.55] text-on-surface-variant"
                 style={{ fontFamily: MULISH }}
               >
-                One file with everything above — useful if you want to show your own doctor what you
-                have been tracking. Recordings and prescription files are not in it; download those
-                from Your consultations.
+                {t('privacy.downloadBody')}
               </p>
 
               {summary?.latestExport ? (
                 <p className="mt-2 text-[11px] text-outline" style={{ fontFamily: MULISH }}>
-                  Last requested {formatDate(summary.latestExport.createdAt)}
                   {summary.latestExport.sizeBytes
-                    ? ` · ${formatBytes(summary.latestExport.sizeBytes)}`
-                    : ''}
+                    ? t('privacy.lastRequestedWithSize', {
+                        date: formatDate(summary.latestExport.createdAt),
+                        size: formatBytes(summary.latestExport.sizeBytes),
+                      })
+                    : t('privacy.lastRequested', {
+                        date: formatDate(summary.latestExport.createdAt),
+                      })}
                 </p>
               ) : null}
 
@@ -329,12 +346,12 @@ export default function PrivacyRoute() {
                 className="mt-3 min-h-[48px] w-full rounded-full px-5 text-[15px] text-white disabled:opacity-40"
                 style={{ fontFamily: MULISH, fontWeight: 600, backgroundColor: '#5E3566' }}
               >
-                Download my data
+                {t('privacy.downloadCta')}
               </button>
 
               {exportBlockedUntil ? (
                 <p className="mt-2 text-[11px] text-outline" style={{ fontFamily: MULISH }}>
-                  You can ask for another copy after {formatDate(exportBlockedUntil)}.
+                  {t('privacy.exportBlocked', { date: formatDate(exportBlockedUntil) })}
                 </p>
               ) : null}
             </div>
@@ -343,7 +360,7 @@ export default function PrivacyRoute() {
 
         {/* ── Delete ───────────────────────────────── */}
         <div className="mt-7">
-          <Eyebrow>Delete your data</Eyebrow>
+          <Eyebrow>{t('privacy.deleteYourData')}</Eyebrow>
           <SectionCard>
             <ul className="divide-y divide-border-default">
               {ERASURE_SCOPES.map((scope) => {
@@ -367,7 +384,7 @@ export default function PrivacyRoute() {
                           className="text-[15px]"
                           style={{ fontFamily: MULISH, color: isAccount ? '#B0566F' : undefined }}
                         >
-                          {scope.label}
+                          {t(`privacy.scopes.${scope.id}.label`, { defaultValue: scope.label })}
                         </span>
                         {count !== null ? (
                           <span
@@ -382,7 +399,9 @@ export default function PrivacyRoute() {
                         className="text-[12px] leading-[1.5] text-on-surface-variant"
                         style={{ fontFamily: MULISH }}
                       >
-                        {scope.description}
+                        {t(`privacy.scopes.${scope.id}.description`, {
+                          defaultValue: scope.description,
+                        })}
                       </span>
                     </button>
                   </li>
@@ -391,28 +410,37 @@ export default function PrivacyRoute() {
             </ul>
           </SectionCard>
           <p className="mt-2 px-1 text-[11px] leading-[1.5] text-outline" style={{ fontFamily: MULISH }}>
-            Account deletion waits {summary?.graceDays ?? 7} days so you can change your mind, and
-            finishes within {summary?.slaDays ?? 30} days of your request.
+            {t('privacy.graceNote', {
+              grace: summary?.graceDays ?? 7,
+              sla: summary?.slaDays ?? 30,
+            })}
           </p>
         </div>
 
         {/* ── History ──────────────────────────────── */}
         {summary?.history.length ? (
           <div className="mt-7">
-            <Eyebrow>Your requests</Eyebrow>
+            <Eyebrow>{t('privacy.yourRequests')}</Eyebrow>
             <SectionCard>
               <ul className="divide-y divide-border-default">
                 {summary.history.map((request) => (
                   <li key={request.id} className="flex items-baseline justify-between gap-3 px-5 py-3">
                     <span className="text-[13.5px] text-on-surface" style={{ fontFamily: MULISH }}>
-                      {erasureScopeLabel(request.scope)}
                       {request.itemCounts
-                        ? ` · ${totalDeleted(request.itemCounts)} items`
-                        : ''}
+                        ? t('privacy.requestWithCount', {
+                            scope: t(`privacy.scopes.${request.scope}.label`),
+                            count: totalDeleted(request.itemCounts),
+                          })
+                        : t(`privacy.scopes.${request.scope}.label`)}
                     </span>
                     <span className="shrink-0 text-[11px] text-outline" style={{ fontFamily: MULISH }}>
-                      {request.status === 'cancelled' ? 'Cancelled' : 'Done'} ·{' '}
-                      {formatDate(request.completedAt ?? request.requestedAt)}
+                      {t('privacy.statusAndDate', {
+                        status:
+                          request.status === 'cancelled'
+                            ? t('privacy.cancelled')
+                            : t('privacy.done'),
+                        date: formatDate(request.completedAt ?? request.requestedAt),
+                      })}
                     </span>
                   </li>
                 ))}
@@ -423,18 +451,20 @@ export default function PrivacyRoute() {
 
         {/* ── Grievance ────────────────────────────── */}
         <div className="mt-7">
-          <Eyebrow>If something is wrong</Eyebrow>
+          <Eyebrow>{t('privacy.ifSomethingWrong')}</Eyebrow>
           <SectionCard>
             <div className="px-5 py-4">
               <p
                 className="text-[12.5px] leading-[1.6] text-on-surface-variant"
                 style={{ fontFamily: MULISH }}
               >
-                Write to our Grievance Officer at{' '}
-                <a href={`mailto:${GRIEVANCE_OFFICER_EMAIL}`} className="text-primary">
-                  {GRIEVANCE_OFFICER_EMAIL}
-                </a>
-                . If we do not resolve it, you can escalate to the Data Protection Board of India.
+                <Trans
+                  i18nKey="privacy.grievance"
+                  values={{ email: GRIEVANCE_OFFICER_EMAIL }}
+                  components={{
+                    1: <a href={`mailto:${GRIEVANCE_OFFICER_EMAIL}`} className="text-primary" />,
+                  }}
+                />
               </p>
               <button
                 type="button"
@@ -442,7 +472,7 @@ export default function PrivacyRoute() {
                 className="mt-3 min-h-[44px] w-full rounded-full border border-border-default bg-transparent px-4 text-[14px] text-on-surface-variant"
                 style={{ fontFamily: MULISH }}
               >
-                Ask us in the app instead
+                {t('privacy.askInApp')}
               </button>
             </div>
           </SectionCard>
@@ -452,58 +482,68 @@ export default function PrivacyRoute() {
       {/* ── Confirmations ──────────────────────────── */}
       <ConfirmSheet
         open={Boolean(activeScopeCopy)}
-        title={activeScopeCopy?.label ?? ''}
-        confirmLabel={activeScope === 'account' ? 'Delete my account' : 'Delete permanently'}
+        title={
+          activeScope
+            ? t(`privacy.scopes.${activeScope}.label`, {
+                defaultValue: activeScopeCopy?.label ?? '',
+              })
+            : ''
+        }
+        confirmLabel={
+          activeScope === 'account'
+            ? t('privacy.deleteAccountCta')
+            : t('privacy.deletePermanently')
+        }
         destructive
         otpIntent={activeScopeCopy?.requiresOtp ? 'account_deletion' : undefined}
         onClose={() => setSheet(null)}
         onConfirm={(result) => confirmScope(activeScope as DataErasureScope, result)}
       >
-        <p>{activeScopeCopy?.description}</p>
+        <p>
+          {activeScope
+            ? t(`privacy.scopes.${activeScope}.description`, {
+                defaultValue: activeScopeCopy?.description ?? '',
+              })
+            : ''}
+        </p>
         <p className="rounded-[14px] bg-surface px-3.5 py-2.5 text-[12.5px] leading-[1.55]">
-          <strong className="font-semibold text-on-surface">What is kept: </strong>
-          {activeScopeCopy?.collateral}
+          <strong className="font-semibold text-on-surface">{t('privacy.whatIsKept')}</strong>
+          {activeScope
+            ? t(`privacy.scopes.${activeScope}.collateral`, {
+                defaultValue: activeScopeCopy?.collateral ?? '',
+              })
+            : ''}
         </p>
         {activeScope === 'account' ? (
-          <p>
-            This cannot be undone once it runs. You have {summary?.graceDays ?? 7} days to change
-            your mind, and you will stay signed in until then.
-          </p>
+          <p>{t('privacy.accountUndone', { grace: summary?.graceDays ?? 7 })}</p>
         ) : (
-          <p>This cannot be undone.</p>
+          <p>{t('privacy.cannotBeUndone')}</p>
         )}
       </ConfirmSheet>
 
       <ConfirmSheet
         open={sheet?.kind === 'export'}
-        title="Download your data"
-        confirmLabel="Download"
+        title={t('privacy.downloadTitle')}
+        confirmLabel={t('privacy.download')}
         otpIntent="data_export"
         onClose={() => setSheet(null)}
         onConfirm={confirmExport}
       >
-        <p>
-          We will build one file containing everything Anuva holds about you and download it to this
-          device.
-        </p>
+        <p>{t('privacy.exportConfirmBody')}</p>
         <p className="rounded-[14px] bg-surface px-3.5 py-2.5 text-[12.5px] leading-[1.55]">
-          The link works once and expires in 24 hours. Keep the file somewhere safe — it is your full
-          health history, and once it is on your device it is out of our hands.
+          {t('privacy.exportConfirmNote')}
         </p>
       </ConfirmSheet>
 
       <ConfirmSheet
         open={sheet?.kind === 'cancel'}
-        title="Cancel deletion"
-        confirmLabel="Keep my account"
-        dismissLabel="Go back"
+        title={t('privacy.cancelDeletion')}
+        confirmLabel={t('privacy.keepMyAccount')}
+        dismissLabel={t('privacy.goBack')}
         onClose={() => setSheet(null)}
         onConfirm={() => confirmCancel(sheet?.kind === 'cancel' ? sheet.id : '')}
       >
-        <p>
-          Your account stays exactly as it is and nothing will be deleted. You can ask again at any
-          time.
-        </p>
+        <p>{t('privacy.cancelConfirmBody')}</p>
       </ConfirmSheet>
 
       <BottomNav />

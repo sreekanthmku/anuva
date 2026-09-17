@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CycleStateResponse } from '@anuva/shared';
 import {
   buildCalendarMonth,
@@ -6,7 +7,7 @@ import {
   CYCLE_MARK_COLORS,
   shiftMonth,
   todayISO,
-  WEEKDAY_LABELS,
+  weekdayInitials,
   type CycleDayMark,
 } from './cycleTrackerDisplay';
 
@@ -87,6 +88,7 @@ function LegendDot({ label, style }: { label: string; style: React.CSSProperties
 }
 
 export function CycleCalendar({ cycleData, selectedDate, onSelectDate }: Props) {
+  const { t } = useTranslation();
   const today = todayISO();
   const [cursor, setCursor] = useState(() => ({
     year: Number(selectedDate.slice(0, 4)),
@@ -106,7 +108,7 @@ export function CycleCalendar({ cycleData, selectedDate, onSelectDate }: Props) 
           type="button"
           onClick={() => setCursor((c) => shiftMonth(c.year, c.month, -1))}
           className="flex h-11 w-11 items-center justify-center rounded-full border border-border-default text-[14px] text-on-surface-variant"
-          aria-label="Previous month"
+          aria-label={t('calendar.previousMonth')}
         >
           ←
         </button>
@@ -119,7 +121,7 @@ export function CycleCalendar({ cycleData, selectedDate, onSelectDate }: Props) 
           </p>
           {month.firstISO > today && (
             <p className="text-[10px] text-outline" style={{ fontFamily: BODY }}>
-              Predicted
+              {t('calendar.predicted')}
             </p>
           )}
         </div>
@@ -127,14 +129,14 @@ export function CycleCalendar({ cycleData, selectedDate, onSelectDate }: Props) 
           type="button"
           onClick={() => setCursor((c) => shiftMonth(c.year, c.month, 1))}
           className="flex h-11 w-11 items-center justify-center rounded-full border border-border-default text-[14px] text-on-surface-variant"
-          aria-label="Next month"
+          aria-label={t('calendar.nextMonth')}
         >
           →
         </button>
       </div>
 
       <div className="mb-1 grid grid-cols-7 gap-1">
-        {WEEKDAY_LABELS.map((d, i) => (
+        {weekdayInitials().map((d, i) => (
           <span
             key={`${d}-${i}`}
             className="text-center text-[10px] uppercase tracking-[0.1em] text-outline"

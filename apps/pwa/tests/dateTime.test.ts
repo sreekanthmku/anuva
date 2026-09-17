@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import i18n from '../src/i18n';
 import {
   DATES_PER_PAGE,
   addDays,
@@ -149,7 +150,8 @@ describe('formatBookingTimeLabel', () => {
   it('formats an ISO timestamp with hour+minute 12h options', () => {
     const spy = vi.spyOn(Date.prototype, 'toLocaleTimeString').mockReturnValue('2:30 PM');
     expect(formatBookingTimeLabel('2024-06-20T14:30:00.000Z')).toBe('2:30 PM');
-    expect(spy).toHaveBeenCalledWith(undefined, {
+    // The active language, not `undefined`: booking times sit inside translated copy.
+    expect(spy).toHaveBeenCalledWith(i18n.language, {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
@@ -165,7 +167,7 @@ describe('formatBookingDateLong', () => {
   it('formats a valid YMD with long weekday/month/year options', () => {
     const spy = vi.spyOn(Date.prototype, 'toLocaleDateString').mockReturnValue('Thursday, June 20, 2024');
     expect(formatBookingDateLong('2024-06-20')).toBe('Thursday, June 20, 2024');
-    expect(spy).toHaveBeenCalledWith(undefined, {
+    expect(spy).toHaveBeenCalledWith(i18n.language, {
       weekday: 'long',
       month: 'long',
       day: 'numeric',

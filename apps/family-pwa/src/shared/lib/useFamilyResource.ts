@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+// The instance rather than the hook: this runs inside a catch, not a render.
+import i18n from '../../i18n';
 
 /**
  * One fetch, three states, and a reload. Small on purpose — the three screens each read a single
@@ -16,7 +18,7 @@ export function useFamilyResource<T>(fetcher: () => Promise<T>) {
       setError(null);
     } catch (e) {
       // Keep whatever was last rendered. A stale card beats a blank screen on a flaky connection.
-      setError(e instanceof Error ? e.message : 'Could not load this right now.');
+      setError(e instanceof Error ? e.message : i18n.t('errors.loadGeneric'));
     } finally {
       setLoading(false);
     }

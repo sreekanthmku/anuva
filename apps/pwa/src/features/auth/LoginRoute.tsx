@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { TrustStrip } from '../onboarding/components/TrustStrip';
 import { useAuth } from './auth-context';
 import { getPostAuthPath } from './postAuthPath';
@@ -12,10 +14,12 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Something went wrong. Please try again.';
+  // The instance, not the hook: this is a plain function outside the component.
+  return i18n.t('common.somethingWentWrong');
 }
 
 export default function LoginRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { status, user, setAuthenticatedSession } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
@@ -130,7 +134,7 @@ export default function LoginRoute() {
             />
             <img
               src="/anuva-logo-icon.png"
-              alt="Anuva Wellness logo"
+              alt={t('common.logoAlt')}
               className="relative z-10 h-20 w-20 object-contain"
             />
           </div>
@@ -143,7 +147,7 @@ export default function LoginRoute() {
             letterSpacing: '0.16em',
           }}
         >
-          ANUVA WELLNESS
+          {t('common.brandName')}
         </p>
         <p
           className="mt-0.5 text-[13px] tracking-normal text-primary"
@@ -154,10 +158,10 @@ export default function LoginRoute() {
           }}
         >
           {inOtpStep
-            ? 'Enter the 6-digit OTP to continue'
+            ? t('login.otpSubtitle')
             : mode === 'login'
-              ? 'Login with your phone number'
-              : 'Create your account with name and phone'}
+              ? t('login.loginSubtitle')
+              : t('login.signupSubtitle')}
         </p>
       </section>
 
@@ -181,7 +185,7 @@ export default function LoginRoute() {
                     color: active ? '#FBF6F0' : '#B49FB0',
                   }}
                 >
-                  {option === 'login' ? 'Login' : 'Sign up'}
+                  {option === 'login' ? t('login.login') : t('login.signup')}
                 </button>
               );
             })}
@@ -198,10 +202,10 @@ export default function LoginRoute() {
                 className="text-[12px] uppercase tracking-[0.12em] text-outline"
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
-                OTP sent
+                {t('login.otpSentLabel')}
               </p>
               <p className="mt-2 text-[15px] text-on-surface">
-                We sent a verification code to {maskedPhone}.
+                {t('login.otpSentTo', { phone: maskedPhone })}
               </p>
             </div>
 
@@ -209,7 +213,7 @@ export default function LoginRoute() {
               className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              6-digit OTP
+              {t('login.otpLabel')}
             </label>
             <input
               type="text"
@@ -221,7 +225,7 @@ export default function LoginRoute() {
               onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
               className="mb-2 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[18px] tracking-[0.35em] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
               style={{ fontFamily: '"Mulish", sans-serif' }}
-              placeholder="123456"
+              placeholder={t('login.otpPlaceholder')}
             />
 
             {errorMessage && (
@@ -243,7 +247,7 @@ export default function LoginRoute() {
                 letterSpacing: '-0.005em',
               }}
             >
-              {isSubmitting ? 'Verifying...' : 'Verify OTP'}
+              {isSubmitting ? t('login.verifying') : t('login.verifyOtp')}
             </button>
 
             <div className="mt-4">
@@ -256,7 +260,7 @@ export default function LoginRoute() {
               className="mt-3 w-full bg-transparent py-3 text-[13px] font-medium text-on-surface-variant"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              Change phone number
+              {t('login.changePhone')}
             </button>
 
             <button
@@ -282,7 +286,9 @@ export default function LoginRoute() {
               className="mt-1 w-full bg-transparent py-3 text-[13px] font-medium text-primary disabled:text-outline"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              {resendCountdown > 0 ? `Resend OTP in ${resendCountdown}s` : 'Resend OTP'}
+              {resendCountdown > 0
+                ? t('login.resendIn', { seconds: resendCountdown })
+                : t('login.resend')}
             </button>
           </form>
         ) : (
@@ -293,7 +299,7 @@ export default function LoginRoute() {
                   className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  Full name
+                  {t('login.nameLabel')}
                 </label>
                 <input
                   type="text"
@@ -303,7 +309,7 @@ export default function LoginRoute() {
                   onChange={(event) => setName(event.target.value)}
                   className="mb-4 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
                   style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-                  placeholder="Enter your name"
+                  placeholder={t('login.namePlaceholder')}
                 />
               </>
             )}
@@ -312,7 +318,7 @@ export default function LoginRoute() {
               className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              Phone number
+              {t('login.phoneLabel')}
             </label>
             <input
               type="tel"
@@ -323,16 +329,14 @@ export default function LoginRoute() {
               onChange={(event) => setPhone(event.target.value)}
               className="mb-2 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-              placeholder="+91 98765 43210"
+              placeholder={t('login.phonePlaceholder')}
             />
 
             <p
               className="mb-4 text-[12px] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              {mode === 'login'
-                ? 'Use the phone number linked to your account.'
-                : 'We will verify this number with a one-time password.'}
+              {mode === 'login' ? t('login.loginHint') : t('login.signupHint')}
             </p>
 
             {errorMessage && (
@@ -355,10 +359,10 @@ export default function LoginRoute() {
               }}
             >
               {isSubmitting
-                ? 'Sending OTP...'
+                ? t('login.sendingOtp')
                 : mode === 'signup'
-                  ? 'Begin My Wellness Journey'
-                  : 'Send OTP'}
+                  ? t('login.signupCta')
+                  : t('login.sendOtp')}
             </button>
 
             <div className="mt-4">

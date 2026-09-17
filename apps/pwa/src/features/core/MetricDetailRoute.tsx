@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { ReportRing, ReportRingKey, SummaryPeriod, WeeklyReportResponse } from '@anuva/shared';
 import { reportRingKeySchema } from '@anuva/shared';
 import { Eyebrow } from '../../shared/components/Eyebrow';
@@ -10,16 +11,10 @@ import { PeriodToggle } from './components/PeriodToggle';
 import { useSummary } from './hooks/useWeeklyReport';
 import { gaugeBandColor } from './ringColors';
 import { DELTA_TONE_COLOR, ringAriaLabel } from './ringDisplay';
-import { PERIOD_NOUN, periodDetail, periodHeadline } from './summaryDates';
+import { periodDetail, periodHeadline, periodNoun } from './summaryDates';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
 const FRAUNCES = '"Fraunces", sans-serif';
-
-const RESET_LABEL: Record<SummaryPeriod, string> = {
-  daily: 'Today',
-  weekly: 'This week',
-  monthly: 'This month',
-};
 
 function isRingKey(value: string | undefined): value is ReportRingKey {
   return !!value && (reportRingKeySchema.options as string[]).includes(value);
@@ -60,9 +55,10 @@ function DetailBody({
   onStep: (delta: number) => void;
   onReset: () => void;
 }) {
+  const { t } = useTranslation();
   // Readout takes the colour of the band the needle lands in, matching the dial.
   const color = gaugeBandColor(ring.pct);
-  const noun = PERIOD_NOUN[report.period];
+  const noun = periodNoun(report.period);
 
   const logged = ring.series.filter((v): v is number => v != null);
   const average =
@@ -79,7 +75,7 @@ function DetailBody({
             type="button"
             onClick={() => onStep(1)}
             disabled={!report.canGoBack}
-            aria-label={`Previous ${noun}`}
+            aria-label={t('metric.previousPeriod', { noun })}
             className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface disabled:opacity-25"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -103,7 +99,7 @@ function DetailBody({
             type="button"
             onClick={() => onStep(-1)}
             disabled={!report.canGoForward}
-            aria-label={`Next ${noun}`}
+            aria-label={t('metric.nextPeriod', { noun })}
             className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface disabled:opacity-25"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -127,7 +123,9 @@ function DetailBody({
             className="mt-2 min-h-[34px] rounded-full bg-surface-bright px-4 text-[12px] font-medium text-primary"
             style={{ fontFamily: MULISH }}
           >
-            Back to {RESET_LABEL[report.period].toLowerCase()}
+            {t('metric.backToPeriod', {
+              period: t(`summary.periods.${report.period}`).toLocaleLowerCase(),
+            })}
           </button>
         )}
       </div>
@@ -151,7 +149,7 @@ function DetailBody({
                 className="text-[22px] font-semibold leading-[1.15]"
                 style={{ fontFamily: MULISH, color: ring.pct != null ? color : '#B9A79A' }}
               >
-                {ring.pct != null ? (ring.band ?? ring.label) : 'Not logged'}
+                {ring.pct != null ? (ring.band ?? ring.label) : t('metric.notLogged')}
               </span>
               {ring.detail && (
                 <span
@@ -181,21 +179,27 @@ function DetailBody({
         style={{ fontFamily: MULISH }}
       >
         {ring.reference
-          ? `Dot marks ${ring.reference.label}: ${ring.reference.value} out of 100.`
-          : 'No comparison dot yet. Not enough history to compare against.'}
+          ? t('metric.referenceDot', {
+              label: ring.reference.label,
+              value: ring.reference.value,
+            })
+          : t('metric.noReferenceDot')}
         {' · '}
-        {ring.daysLogged} of {trackingDenominator(report)} days tracked
+        {t('metric.daysTracked', {
+          logged: ring.daysLogged,
+          total: trackingDenominator(report),
+        })}
       </p>
 
       {/* Highlights */}
       <div className="grid grid-cols-3 gap-2.5">
         {[
-          { label: 'Average', value: average },
-          { label: 'Best day', value: best },
-          { label: 'Hardest day', value: worst },
+          { key: 'average', value: average },
+          { key: 'bestDay', value: best },
+          { key: 'hardestDay', value: worst },
         ].map((cell) => (
           <article
-            key={cell.label}
+            key={cell.key}
             className="rounded-[20px] border border-border-default bg-surface-raised px-2 py-3 text-center"
           >
             <div className="text-[22px] leading-none text-on-surface">{cell.value ?? '—'}</div>
@@ -203,7 +207,7 @@ function DetailBody({
               className="mt-1.5 text-[9px] uppercase tracking-[0.08em] text-outline"
               style={{ fontFamily: MULISH }}
             >
-              {cell.label}
+              {t(`metric.${cell.key}`)}
             </div>
           </article>
         ))}
@@ -211,7 +215,7 @@ function DetailBody({
 
       {/* Day by day */}
       <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
-        <Eyebrow tone="gold">Day by day</Eyebrow>
+        <Eyebrow tone="gold">{t('metric.dayByDay')}</Eyebrow>
         <DayBarChart
           // Remount on a window change so the selected bar resets to the newest day.
           key={`${report.period}-${report.offset}-${ring.key}`}
@@ -230,6 +234,7 @@ function DetailBody({
 }
 
 export default function MetricDetailRoute() {
+  const { t } = useTranslation();
   const { metric } = useParams<{ metric: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -279,11 +284,11 @@ export default function MetricDetailRoute() {
                 strokeLinejoin="round"
               />
             </svg>
-            Summary
+            {t('metric.backToSummary')}
           </button>
 
           <h1 className="font-display mb-3 text-[26px] leading-[1.12] text-on-surface">
-            {ring?.label ?? 'Metric'}
+            {ring?.label ?? t('metric.fallbackLabel')}
           </h1>
 
           <PeriodToggle value={period} onChange={(next) => setWindow(next, 0)} />
@@ -304,7 +309,7 @@ export default function MetricDetailRoute() {
               className="mt-3 min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-medium text-on-secondary"
               style={{ fontFamily: MULISH }}
             >
-              Try again
+              {t('common.tryAgain')}
             </button>
           </article>
         </section>
@@ -322,7 +327,7 @@ export default function MetricDetailRoute() {
       {!loading && !error && data && !ring && (
         <section className="px-3 pt-2">
           <p className="text-[14px] text-on-surface" style={{ fontFamily: FRAUNCES }}>
-            That metric is no longer tracked.
+            {t('metric.noLongerTracked')}
           </p>
         </section>
       )}

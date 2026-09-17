@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { AnuChatHistoryResponse, AnuChatResponse } from '@anuva/shared';
 import { apiFetch } from '../../shared/lib/api';
 import { BottomNav } from './components/BottomNav';
@@ -15,9 +16,13 @@ type ChatMessage = {
 
 /// Shown only before the first exchange — after that every chip comes from
 /// ANU's own reply, so they follow whatever she actually raised.
-const openingPrompts = ['I feel tired', "I can't sleep", 'I get hot flashes'];
+///
+/// Keys, not sentences: a chip is sent verbatim as her message, so it has to be the wording she
+/// would actually use in the language she is reading.
+const OPENING_PROMPT_KEYS = ['chat.openers.tired', 'chat.openers.sleep', 'chat.openers.hotFlashes'];
 
 export default function AnuChatRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -50,7 +55,7 @@ export default function AnuChatRoute() {
         setSuggestions(data.turns.at(-1)?.suggestions ?? []);
       })
       .catch(() => {
-        if (!cancelled) setError('Could not load your conversation.');
+        if (!cancelled) setError(t('chat.loadFailed'));
       })
       .finally(() => {
         if (!cancelled) setHistoryLoading(false);
@@ -59,7 +64,7 @@ export default function AnuChatRoute() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const send = useCallback(
     async (text: string) => {
@@ -95,12 +100,12 @@ export default function AnuChatRoute() {
       } catch {
         // Not paced. A failure is the app speaking, not ANU, and holding it
         // behind a typing bubble only delays the retry.
-        setError('ANU could not reply just now. Please try again.');
+        setError(t('chat.replyFailed'));
       } finally {
         setSending(false);
       }
     },
-    [sending],
+    [sending, t],
   );
 
   // Sent here from the home card: the card's own copy is deterministic, and the
@@ -143,7 +148,8 @@ export default function AnuChatRoute() {
   }, [messages, sending, suggestions, historyLoading]);
 
   // Openers only seed an empty thread; once ANU has replied the chips are hers.
-  const chips = messages.length === 0 && !historyLoading ? openingPrompts : suggestions;
+  const chips =
+    messages.length === 0 && !historyLoading ? OPENING_PROMPT_KEYS.map((key) => t(key)) : suggestions;
 
   return (
     // The only reserved space is BottomNav, which is fixed and outside this
@@ -160,14 +166,14 @@ export default function AnuChatRoute() {
             onClick={() => navigate('/home')}
             className="bg-transparent p-0 text-[18px] leading-none text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-            aria-label="Back to home"
+            aria-label={t('chat.backToHome')}
           >
             ←
           </button>
 
           <div className="relative">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-surface-container-low">
-              <img src="/anu.png" alt="ANU avatar" className="h-6 w-6 object-contain" />
+              <img src="/anu.png" alt={t('chat.anuAvatarAlt')} className="h-6 w-6 object-contain" />
             </span>
             <span className="absolute -bottom-[1px] -right-[1px] h-2.5 w-2.5 rounded-full border-2 border-surface bg-primary" />
           </div>
@@ -177,20 +183,20 @@ export default function AnuChatRoute() {
               className="text-[17px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
             >
-              ANU
+              {t('chat.anuName')}
             </p>
             <p
               className="text-[10px] uppercase tracking-[0.08em] text-primary"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              ● Online · Remembers all
+              {t('chat.status')}
             </p>
           </div>
 
           <button
             type="button"
             className="bg-transparent p-0 text-[18px] text-outline"
-            aria-label="More options"
+            aria-label={t('chat.moreOptions')}
           >
             ⋯
           </button>
@@ -201,7 +207,7 @@ export default function AnuChatRoute() {
             <rect x="5" y="10" width="14" height="10" rx="2" stroke="#5E3566" strokeWidth="2" />
             <path d="M8 10V7a4 4 0 018 0v3" stroke="#5E3566" strokeWidth="2" />
           </svg>
-          <span style={{ fontFamily: '"Mulish", sans-serif' }}>Encrypted on device</span>
+          <span style={{ fontFamily: '"Mulish", sans-serif' }}>{t('chat.encrypted')}</span>
         </section>
       </header>
 
@@ -214,8 +220,7 @@ export default function AnuChatRoute() {
             className="mt-6 text-center text-[13px] leading-[1.6] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
-            Tell ANU what you&apos;re feeling. She can explain what may be behind it and help you
-            track it.
+            {t('chat.emptyState')}
           </p>
         )}
 
@@ -261,7 +266,7 @@ export default function AnuChatRoute() {
               className="rounded-[20px_20px_20px_4px] bg-primary-container px-[14px] py-[10px] text-[14px] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              ANU is typing…
+              {t('chat.typing')}
             </div>
           </div>
         )}
@@ -310,7 +315,7 @@ export default function AnuChatRoute() {
                 if (event.key === 'Enter') void send(input);
               }}
               disabled={sending}
-              placeholder="Share what you're feeling..."
+              placeholder={t('chat.placeholder')}
               className="w-full appearance-none border-none bg-transparent text-[16px] text-on-surface placeholder:text-outline [-webkit-tap-highlight-color:transparent] [outline:none] focus:[outline:none]"
               style={{
                 fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
@@ -327,7 +332,7 @@ export default function AnuChatRoute() {
             onClick={() => void send(input)}
             disabled={sending}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-secondary disabled:opacity-50"
-            aria-label="Send message"
+            aria-label={t('chat.send')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path

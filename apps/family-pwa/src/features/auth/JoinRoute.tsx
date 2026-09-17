@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { FamilyJoinPreviewResponse, FamilyRelationship } from '@anuva/shared';
 import { ApiError } from '../../shared/lib/api';
 import { AuthShell } from './AuthShell';
@@ -23,16 +24,18 @@ import {
 
 type Step = 'loading' | 'invalid' | 'details' | 'code';
 
-const RELATIONSHIPS: { value: FamilyRelationship; label: string }[] = [
-  { value: 'partner', label: 'Partner' },
-  { value: 'child', label: 'Son / daughter' },
-  { value: 'parent', label: 'Parent' },
-  { value: 'sibling', label: 'Sibling' },
-  { value: 'friend', label: 'Friend' },
-  { value: 'other', label: 'Someone else' },
+/** Order and identity only; the wording is resolved through `join.relationships.*` at render. */
+const RELATIONSHIPS: FamilyRelationship[] = [
+  'partner',
+  'child',
+  'parent',
+  'sibling',
+  'friend',
+  'other',
 ];
 
 export default function JoinRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { setSession } = useFamilyAuth();
 
@@ -68,11 +71,11 @@ export default function JoinRoute() {
         setPreview(next);
         setStep(next.status === 'pending' ? 'details' : 'invalid');
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'This link is not valid.');
+        setError(e instanceof Error ? e.message : t('errors.invalidLink'));
         setStep('invalid');
       }
     })();
-  }, [token, navigate]);
+  }, [token, navigate, t]);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -92,7 +95,7 @@ export default function JoinRoute() {
       setCode('');
       setStep('code');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not send the code.');
+      setError(e instanceof Error ? e.message : t('errors.sendCode'));
       if (e instanceof ApiError && (e.status === 409 || e.status === 410)) {
         // The link was claimed or pulled while they were filling the form.
         setStep('invalid');
@@ -100,7 +103,7 @@ export default function JoinRoute() {
     } finally {
       setBusy(false);
     }
-  }, [token, name, relationship, phone]);
+  }, [token, name, relationship, phone, t]);
 
   const verify = useCallback(async () => {
     if (!token || !challengeId) return;
@@ -118,20 +121,20 @@ export default function JoinRoute() {
       setSession(me);
       navigate('/', { replace: true });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'That code did not work.');
+      setError(e instanceof Error ? e.message : t('errors.badCode'));
       if (e instanceof ApiError && e.status === 409) {
         setStep('invalid');
       }
     } finally {
       setBusy(false);
     }
-  }, [token, challengeId, phone, code, name, relationship, setSession, navigate]);
+  }, [token, challengeId, phone, code, name, relationship, setSession, navigate, t]);
 
   if (step === 'loading') {
     return (
       <AuthShell>
         <p className="text-[13.5px] text-on-surface-variant" style={mulish}>
-          Checking your link…
+          {t('join.checkingLink')}
         </p>
       </AuthShell>
     );
@@ -144,29 +147,26 @@ export default function JoinRoute() {
         <h1
           className="font-display text-[26px] font-medium leading-[1.18] text-primary"
         >
-          {claimed ? 'Someone already joined' : 'This link is not active'}
+          {claimed ? t('join.claimedTitle') : t('join.inactiveTitle')}
         </h1>
         <p className="mt-3 text-[13.5px] leading-[1.6] text-on-surface-variant" style={mulish}>
-          {claimed
-            ? 'Each invite works for one person. Ask her to send a new link if it should have been you.'
-            : (error ??
-              'It may have expired, or been replaced by a newer one. Ask her to share it again.')}
+          {claimed ? t('join.claimedBody') : (error ?? t('join.inactiveBody'))}
         </p>
         <Link
           to="/signin"
           className="press mt-6 inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-gradient-to-br from-[#D08C9E] via-secondary to-[#B96C84] px-5 text-[15px] font-bold text-on-secondary shadow-[0_10px_24px_-8px_rgba(201,126,146,0.75)]"
           style={mulish}
         >
-          Sign in with your phone
+          {t('join.signInCta')}
         </Link>
         <p className="mt-3 text-[12px] leading-[1.6] text-outline" style={mulish}>
-          If you joined before, your number still works — you do not need a new link.
+          {t('join.signInNote')}
         </p>
       </AuthShell>
     );
   }
 
-  const her = preview?.patientFirstName ?? 'She';
+  const her = preview?.patientFirstName ?? t('join.invitedByFallback');
 
   return (
     <AuthShell>
@@ -174,17 +174,16 @@ export default function JoinRoute() {
         className="text-[11px] font-semibold uppercase tracking-[0.16em] text-tertiary"
         style={mulish}
       >
-        {step === 'code' ? 'Step 2 of 2' : 'Step 1 of 2'}
+        {step === 'code' ? t('join.stepTwo') : t('join.stepOne')}
       </div>
       <h1 className="mt-2 font-display text-[26px] font-medium leading-[1.18] text-primary">
-        {step === 'code' ? 'Enter your code' : `${her} asked you to support her`}
+        {step === 'code' ? t('join.enterCode') : t('join.invitedBy', { name: her })}
       </h1>
 
       {step === 'details' ? (
         <>
           <p className="mt-3 text-[13.5px] leading-[1.6] text-on-surface-variant" style={mulish}>
-            You will see how she is doing — trends only, never her records, notes, or conversations.
-            She can stop sharing at any time.
+            {t('join.intro')}
           </p>
 
           <form
@@ -196,7 +195,7 @@ export default function JoinRoute() {
           >
             <label className="block">
               <span className="text-[12px] font-semibold text-on-surface" style={mulish}>
-                Your name
+                {t('join.nameLabel')}
               </span>
               <input
                 type="text"
@@ -212,7 +211,7 @@ export default function JoinRoute() {
 
             <label className="block">
               <span className="text-[12px] font-semibold text-on-surface" style={mulish}>
-                You are her
+                {t('join.relationshipLabel')}
               </span>
               <select
                 value={relationship}
@@ -220,9 +219,9 @@ export default function JoinRoute() {
                 className="mt-1.5 h-[52px] w-full rounded-[16px] border border-border-default bg-surface-raised px-4 text-[15px] text-on-surface shadow-soft focus:border-secondary focus:ring-2 focus:ring-secondary/25"
                 style={mulish}
               >
-                {RELATIONSHIPS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {RELATIONSHIPS.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`join.relationships.${value}`)}
                   </option>
                 ))}
               </select>
@@ -230,7 +229,7 @@ export default function JoinRoute() {
 
             <label className="block">
               <span className="text-[12px] font-semibold text-on-surface" style={mulish}>
-                Your mobile number
+                {t('join.phoneLabel')}
               </span>
               <input
                 type="tel"
@@ -244,8 +243,7 @@ export default function JoinRoute() {
                 style={mulish}
               />
               <span className="mt-1.5 block text-[11.5px] text-outline" style={mulish}>
-                We send a one-time code to confirm it is you. Your number is never shown to her in
-                full.
+                {t('join.phoneHint')}
               </span>
             </label>
 
@@ -261,7 +259,7 @@ export default function JoinRoute() {
               className="press inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-gradient-to-br from-[#D08C9E] via-secondary to-[#B96C84] px-5 text-[15px] font-bold text-on-secondary shadow-[0_10px_24px_-8px_rgba(201,126,146,0.75)] disabled:opacity-55 disabled:shadow-none"
               style={mulish}
             >
-              {busy ? 'Sending code…' : 'Send me a code'}
+              {busy ? t('join.sendingCode') : t('join.sendCode')}
             </button>
           </form>
         </>
@@ -274,12 +272,12 @@ export default function JoinRoute() {
           }}
         >
           <p className="text-[13.5px] leading-[1.6] text-on-surface-variant" style={mulish}>
-            Sent to {maskedPhone}.
+            {t('join.sentTo', { phone: maskedPhone })}
           </p>
 
           <label className="block">
             <span className="text-[12px] font-semibold text-on-surface" style={mulish}>
-              6-digit code
+              {t('join.codeLabel')}
             </span>
             <input
               type="text"
@@ -305,7 +303,7 @@ export default function JoinRoute() {
             className="press inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-gradient-to-br from-[#D08C9E] via-secondary to-[#B96C84] px-5 text-[15px] font-bold text-on-secondary shadow-[0_10px_24px_-8px_rgba(201,126,146,0.75)] disabled:opacity-55 disabled:shadow-none"
             style={mulish}
           >
-            {busy ? 'Checking…' : 'Join'}
+            {busy ? t('common.checking') : t('join.joinCta')}
           </button>
 
           <button
@@ -315,7 +313,7 @@ export default function JoinRoute() {
             className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-5 text-[13px] font-medium text-on-surface-variant disabled:opacity-60"
             style={mulish}
           >
-            {resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend the code'}
+            {resendIn > 0 ? t('join.resendIn', { seconds: resendIn }) : t('join.resend')}
           </button>
         </form>
       )}

@@ -1,3 +1,6 @@
+// The instance rather than the hook: this file is pure date helpers.
+import i18n from '../../../i18n';
+
 export const DATES_PER_PAGE = 6;
 
 export function localYmd(d: Date): string {
@@ -39,21 +42,26 @@ export function bookingDateCard(ymd: string): {
   return {
     id: ymd,
     dayNum: date.getDate(),
-    monthLabel: date.toLocaleDateString(undefined, { month: 'short' }),
-    weekdayLabel: date.toLocaleDateString(undefined, { weekday: 'short' }),
+    // The active language, not the device's — these cards sit inside translated copy.
+    monthLabel: date.toLocaleDateString(i18n.language, { month: 'short' }),
+    weekdayLabel: date.toLocaleDateString(i18n.language, { weekday: 'short' }),
   };
 }
 
 export function formatBookingTimeLabel(iso: string): string {
   const date = new Date(iso);
-  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+  return date.toLocaleTimeString(i18n.language, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
 }
 
 export function formatBookingDateLong(ymd: string): string {
   const [y, m, d] = ymd.split('-').map(Number);
   if (!y || !m || !d) return ymd;
   const dt = new Date(y, m - 1, d);
-  return dt.toLocaleDateString(undefined, {
+  return dt.toLocaleDateString(i18n.language, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',

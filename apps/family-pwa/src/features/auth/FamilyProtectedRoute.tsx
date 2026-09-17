@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Wordmark } from '../shell/Wordmark';
 import { useFamilyAuth } from './family-auth-context';
 
 export function FamilyProtectedRoute({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { status } = useFamilyAuth();
 
   if (status === 'loading') {
@@ -11,7 +13,7 @@ export function FamilyProtectedRoute({ children }: { children: ReactNode }) {
       <main className="flex min-h-mobile items-center justify-center px-6">
         <div className="animate-[anuvaFade_400ms_ease-out] text-center">
           <Wordmark className="justify-center" />
-          <p className="mt-4 text-[13px] text-on-surface-variant">Checking your link…</p>
+          <p className="mt-4 text-[13px] text-on-surface-variant">{t('shell.checkingLink')}</p>
         </div>
       </main>
     );

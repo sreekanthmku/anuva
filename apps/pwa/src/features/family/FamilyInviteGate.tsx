@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import type { FamilyInvite } from '@anuva/shared';
 import {
   canNativeShare,
@@ -23,10 +25,12 @@ import type { FamilyGateState } from './useFamilyGate';
 
 function formatExpiry(iso: string): string {
   const date = new Date(iso);
-  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+  // The active language, not the device's: this date sits inside a translated sentence.
+  return date.toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' });
 }
 
 export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
+  const { t } = useTranslation();
   const { open, status, isSharing, error, share } = gate;
   const [copied, setCopied] = useState(false);
   const primaryRef = useRef<HTMLButtonElement | null>(null);
@@ -81,7 +85,7 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
 
       <div className="relative max-h-full w-full max-w-[380px] overflow-y-auto rounded-[24px] border border-border-default bg-surface-raised px-6 py-7 shadow-[0_18px_50px_rgba(94,53,102,0.28)]">
         <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-tertiary" style={mulish}>
-          One last step
+          {t('family.gate.eyebrow')}
         </div>
 
         <h2
@@ -89,7 +93,7 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
           className="mt-2 text-[23px] leading-[1.2] text-on-surface"
           style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
         >
-          Bring someone with you
+          {t('family.gate.title')}
         </h2>
 
         <p
@@ -97,20 +101,18 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
           className="mt-3 text-[13.5px] leading-[1.6] text-on-surface-variant"
           style={mulish}
         >
-          Send this link to the person closest to you. They get a small companion app showing how
-          you are doing and how to help — trends only, never your records, notes, or conversations
-          with Anu.
+          {t('family.gate.body')}
         </p>
 
         <div className="mt-5 rounded-[16px] bg-surface-container px-4 py-3">
           <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-outline" style={mulish}>
-            Your private link
+            {t('family.gate.yourPrivateLink')}
           </div>
           <p className="mt-1 break-all font-mono text-[11.5px] leading-[1.5] text-on-surface-variant">
             {invite.shareUrl}
           </p>
           <p className="mt-2 text-[11px] text-outline" style={mulish}>
-            Expires {formatExpiry(invite.expiresAt)} · works for one person
+            {t('family.gate.expires', { date: formatExpiry(invite.expiresAt) })}
           </p>
         </div>
 
@@ -131,7 +133,7 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
             className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary shadow-[0_8px_20px_rgba(201,126,146,0.28)] disabled:opacity-60"
             style={mulish}
           >
-            {isSharing ? 'Opening…' : 'Send on WhatsApp'}
+            {isSharing ? t('family.gate.opening') : t('family.gate.sendWhatsApp')}
           </button>
 
           {canNativeShare() ? (
@@ -142,7 +144,7 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
               className="inline-flex min-h-[46px] w-full items-center justify-center rounded-full border border-border-default px-5 text-[13.5px] font-semibold text-primary disabled:opacity-60"
               style={mulish}
             >
-              Share another way
+              {t('family.gate.shareAnotherWay')}
             </button>
           ) : null}
 
@@ -154,19 +156,19 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
                 const ok = await copyToClipboard(invite.shareUrl);
                 setCopied(ok);
                 if (!ok) {
-                  throw new Error('Could not copy the link.');
+                  throw new Error(t('family.gate.copyFailed'));
                 }
               })
             }
             className="inline-flex min-h-[46px] w-full items-center justify-center rounded-full px-5 text-[13px] font-medium text-on-surface-variant disabled:opacity-60"
             style={mulish}
           >
-            {copied ? '✓ Link copied' : 'Copy link instead'}
+            {copied ? t('family.gate.linkCopied') : t('family.gate.copyLink')}
           </button>
         </div>
 
         <p className="mt-4 text-center text-[11.5px] leading-relaxed text-outline" style={mulish}>
-          Waiting for them to join. We will check on our own — you do not need to come back here.
+          {t('family.gate.waiting')}
         </p>
       </div>
     </div>

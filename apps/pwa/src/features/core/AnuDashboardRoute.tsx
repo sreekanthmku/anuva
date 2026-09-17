@@ -10,6 +10,8 @@ import { Eyebrow } from '../../shared/components/Eyebrow';
 import { Check } from 'lucide-react';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LanguageToggle } from '../../i18n/LanguageToggle';
 import { useAuth } from '../auth/auth-context';
 import { AmbientWash } from './components/AmbientWash';
 import { BottomNav } from './components/BottomNav';
@@ -50,72 +52,54 @@ const circumference = 2 * Math.PI * 42;
 
 type QuickLogAction = 'mood' | 'sleep';
 
+/**
+ * The six tiles, as identity and emoji only. Label and sub-label are resolved through
+ * `home.quickLogItems.<key>` at render — `key` is also what the count badge and the "already
+ * logged" state key off, so none of that depends on the English wording.
+ */
 const QUICK_LOG_ITEMS: {
-  label: string;
-  sub: string;
+  key: string;
   emoji: string;
   action?: QuickLogAction;
   symptom?: QuickSymptom;
 }[] = [
-  { label: 'Hot flash', sub: 'Log now', emoji: '🔥', symptom: 'hot_flash' },
-  { label: 'Sleep', sub: 'Rate last night', emoji: '😴', action: 'sleep' },
-  { label: 'Mood', sub: 'How are you?', emoji: '🌸', action: 'mood' },
-  { label: 'Anxiety', sub: 'Log now', emoji: '😰', symptom: 'anxiety' },
-  { label: 'Chills', sub: 'Log now', emoji: '🥶', symptom: 'chills' },
-  { label: 'Irritability', sub: 'Log now', emoji: '😤', symptom: 'irritability' },
+  { key: 'hot_flash', emoji: '🔥', symptom: 'hot_flash' },
+  { key: 'sleep', emoji: '😴', action: 'sleep' },
+  { key: 'mood', emoji: '🌸', action: 'mood' },
+  { key: 'anxiety', emoji: '😰', symptom: 'anxiety' },
+  { key: 'chills', emoji: '🥶', symptom: 'chills' },
+  { key: 'irritability', emoji: '😤', symptom: 'irritability' },
 ];
 
-const MOOD_FEELING_LABELS: Record<number, string> = {
-  5: 'Feeling great',
-  4: 'Feeling good',
-  3: 'Feeling okay',
-  2: 'Feeling low',
-  1: 'Feeling awful',
+/** The emoji half of the reply to a quick tap; its caption is `home.symptomResponse.<symptom>`. */
+const QUICK_SYMPTOM_EMOJI: Record<QuickSymptom, string> = {
+  hot_flash: '🌬️',
+  anxiety: '🫂',
+  chills: '🍵',
+  irritability: '😮‍💨',
 };
 
-const SLEEP_QUALITY_LABELS: Record<number, string> = {
-  5: 'Slept great',
-  4: 'Slept good',
-  3: 'Slept okay',
-  2: 'Slept poorly',
-  1: 'Slept awful',
-};
-
-const QUICK_SYMPTOM_RESPONSE: Record<QuickSymptom, { emoji: string; caption: string }> = {
-  hot_flash: { emoji: '🌬️', caption: 'Cool down. This passes.' },
-  anxiety: { emoji: '🫂', caption: "You're held. Breathe." },
-  chills: { emoji: '🍵', caption: "Warm up. You're okay." },
-  irritability: { emoji: '😮‍💨', caption: 'Exhale. Let the tension out.' },
-};
-
-function getTimeGreeting(date = new Date()) {
+/** Which greeting the clock calls for. The words are `home.greeting.<slot>`. */
+function getGreetingSlot(date = new Date()): 'morning' | 'afternoon' | 'evening' | 'night' {
   const hour = date.getHours();
 
-  if (hour >= 5 && hour < 12) {
-    return 'Good morning';
-  }
-
-  if (hour >= 12 && hour < 17) {
-    return 'Good afternoon';
-  }
-
-  if (hour >= 17 && hour < 21) {
-    return 'Good evening';
-  }
-
-  return 'Good night';
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'night';
 }
 
 const SERIF = '"Fraunces", serif';
 
 export default function AnuDashboardRoute() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const detailedStatus = user?.detailedAssessmentStatus ?? 'not_started';
   const detailedCompleted = detailedStatus === 'completed';
   const notificationPrompt = useHomeNotificationPrompt();
-  const [greeting, setGreeting] = useState(() => getTimeGreeting());
+  const [greetingSlot, setGreetingSlot] = useState(() => getGreetingSlot());
   // Same minute tick as the greeting: the flow prompt opens at noon, and a user
   // already sitting on this page must not have to reload to see it.
   const [now, setNow] = useState(() => new Date());
@@ -169,13 +153,18 @@ export default function AnuDashboardRoute() {
   // rest live on /track, and three of the six summary gauges depend on them.
   const unanswered = (nudgeDay.data?.trackers ?? []).filter((t) => !t.answered);
   const remainingTrackers = unanswered.length;
+  // Tracker labels come from the server with the day sheet, so they are rendered as given; only
+  // the "and N more" frame around them is ours to translate.
   const remainingLabels =
     unanswered.length <= 3
-      ? unanswered.map((t) => t.label).join(', ')
-      : `${unanswered
-          .slice(0, 3)
-          .map((t) => t.label)
-          .join(', ')} and ${unanswered.length - 3} more`;
+      ? unanswered.map((tracker) => tracker.label).join(', ')
+      : t('home.remainingTrackersOverflow', {
+          list: unanswered
+            .slice(0, 3)
+            .map((tracker) => tracker.label)
+            .join(', '),
+          count: unanswered.length - 3,
+        });
 
   const handleLogMood = async (feeling: number, emotions: MoodEmotion[]) => {
     setMoodSaving(true);
@@ -204,41 +193,40 @@ export default function AnuDashboardRoute() {
   const handleQuickLog = (action?: QuickLogAction) => {
     if (action === 'mood') {
       if (todayMood) {
-        showToast('Mood already logged today. Come back tomorrow.');
+        showToast(t('home.moodAlreadyLogged'));
         return;
       }
       setMoodOpen(true);
     }
     if (action === 'sleep') {
       if (todaySleep) {
-        showToast('Sleep already logged today. Come back tomorrow.');
+        showToast(t('home.sleepAlreadyLogged'));
         return;
       }
       setSleepOpen(true);
     }
   };
 
-  const handleLogSymptom = async (symptom: QuickSymptom, _label: string) => {
+  const handleLogSymptom = async (symptom: QuickSymptom) => {
     try {
       const result = await quick.logSymptom(symptom);
       // A hot-flash tap now fills that day's heat tracker, so the day sheet
       // behind the "more to log" line is stale until reloaded.
       await nudgeDay.reload();
-      const response = QUICK_SYMPTOM_RESPONSE[symptom];
       setQuickMessage({
         message: result.message,
-        emoji: response.emoji,
-        caption: response.caption,
+        emoji: QUICK_SYMPTOM_EMOJI[symptom],
+        caption: t(`home.symptomResponse.${symptom}`),
         count: result.todayCount,
       });
     } catch {
-      showToast('Could not log right now. Try again.');
+      showToast(t('home.couldNotLog'));
     }
   };
   // Capitalised on the way out rather than trusted from the profile: names arrive from an OTP
   // sign-up where people type "sneha" as often as "Sneha", and the dashboard heading is the one
   // place in the app that renders her name at 40px.
-  const rawFirstName = user?.name?.trim().split(/\s+/)[0] || 'there';
+  const rawFirstName = user?.name?.trim().split(/\s+/)[0] || t('home.nameFallback');
   const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1);
   const profileInitial = firstName.charAt(0).toUpperCase() || 'U';
   const journeyAnchor = getCalibrationAnchor(user);
@@ -256,7 +244,7 @@ export default function AnuDashboardRoute() {
 
   useEffect(() => {
     const tick = () => {
-      setGreeting(getTimeGreeting());
+      setGreetingSlot(getGreetingSlot());
       setNow(new Date());
     };
 
@@ -325,19 +313,21 @@ export default function AnuDashboardRoute() {
           <div className="flex items-center gap-2">
             <img
               src="/anuva-logo-icon.png"
-              alt="Anuva Wellness logo"
+              alt={t('common.logoAlt')}
               className="h-10 w-10 object-contain"
             />
             <span
               className="text-[16px] tracking-[0.16em] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
             >
-              ANUVA WELLNESS
+              {t('common.brandName')}
             </span>
           </div>
+          <div className="flex items-center gap-2">
+            <LanguageToggle variant="compact" />
           <NavLink
             to="/profile"
-            aria-label="Open profile"
+            aria-label={t('home.openProfile')}
             className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border text-[14px] text-primary transition-opacity hover:opacity-90"
             style={{
               background: '#EFE4D8',
@@ -348,13 +338,14 @@ export default function AnuDashboardRoute() {
           >
             {profileInitial}
           </NavLink>
+          </div>
         </header>
 
         <p
           className="text-[12px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant"
           style={{ fontFamily: '"Mulish", sans-serif' }}
         >
-          {greeting},
+          {t('home.greetingWithComma', { greeting: t(`home.greeting.${greetingSlot}`) })}
         </p>
         <h1
           className="mt-1 text-[40px] leading-[1.05] text-primary"
@@ -369,15 +360,15 @@ export default function AnuDashboardRoute() {
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
             {memberDay !== null && memberWeek
-              ? `Day ${memberDay} · Week ${memberWeek}`
-              : 'Day 0 · Week 1'}
+              ? t('home.dayWeek', { day: memberDay, week: memberWeek })
+              : t('home.dayWeekZero')}
           </span>
           <span
             className="inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-3 py-1 text-[12.5px] font-semibold text-on-tertiary-container"
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-tertiary" />
-            Perimenopause
+            {t('home.perimenopause')}
           </span>
         </div>
       </section>
@@ -423,26 +414,28 @@ export default function AnuDashboardRoute() {
                   className="mt-1 text-[8.5px] uppercase tracking-[0.18em] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  calibrating
+                  {t('home.calibrating')}
                 </span>
               </div>
             </div>
 
             <div className="flex-1">
-              <Eyebrow>Your first two weeks</Eyebrow>
+              <Eyebrow>{t('home.firstTwoWeeks')}</Eyebrow>
               <p
                 className="mb-2.5 text-[20px] leading-[1.25] text-on-surface"
                 style={{ fontFamily: SERIF }}
               >
-                We&apos;re learning your rhythm.
+                {t('home.learningRhythm')}
               </p>
               {calibration && (
                 <span
                   className="inline-flex items-center gap-1.5 rounded-full bg-surface-bright px-3 py-1.5 text-[12px] font-medium text-on-surface-variant"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  Day {calibration.day} of {calibration.totalDays}
-                  {calibration.daysRemaining > 0 ? ` · ${calibration.daysRemaining}d left` : ''}
+                  {t('home.dayOf', { day: calibration.day, total: calibration.totalDays })}
+                  {calibration.daysRemaining > 0
+                    ? t('home.daysLeft', { count: calibration.daysRemaining })
+                    : ''}
                 </span>
               )}
             </div>
@@ -453,11 +446,11 @@ export default function AnuDashboardRoute() {
           <div
             className="h-[168px] animate-pulse rounded-[20px] bg-surface-raised"
             aria-busy="true"
-            aria-label="Loading today's wellness"
+            aria-label={t('home.loadingWellness')}
           />
         ) : (
           <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
-            <Eyebrow>Today&apos;s wellness</Eyebrow>
+            <Eyebrow>{t('home.todaysWellness')}</Eyebrow>
             <p
               className="text-[14px] leading-[1.4] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", sans-serif' }}
@@ -470,7 +463,7 @@ export default function AnuDashboardRoute() {
               className="mt-3 min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-medium text-on-secondary"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              Try again
+              {t('common.tryAgain')}
             </button>
           </article>
         )}
@@ -482,13 +475,14 @@ export default function AnuDashboardRoute() {
             <div className="flex items-start gap-3">
               <img
                 src="/anu.png"
-                alt="ANU avatar"
+                alt={t('home.anuAvatarAlt')}
                 className="mt-0.5 h-8 w-8 shrink-0 object-contain"
               />
               <div className="flex-1">
                 <Eyebrow>
-                  ANU
-                  {anuCard.card.sinceAt ? ` · ${relativeTime(anuCard.card.sinceAt)}` : ''}
+                  {anuCard.card.sinceAt
+                    ? t('home.anuEyebrowSince', { since: relativeTime(anuCard.card.sinceAt) })
+                    : t('home.anuEyebrow')}
                 </Eyebrow>
                 <p
                   className="text-[16px] leading-[1.45] text-on-surface"
@@ -511,7 +505,7 @@ export default function AnuDashboardRoute() {
                     className="rounded-full border border-primary/25 px-5 py-2.5 text-[14px] font-semibold text-primary transition-colors active:bg-primary/5"
                     style={{ fontFamily: '"Mulish", sans-serif' }}
                   >
-                    Later
+                    {t('home.later')}
                   </button>
                 </div>
               </div>
@@ -528,14 +522,14 @@ export default function AnuDashboardRoute() {
             className="flex w-full items-center justify-between rounded-[20px] border border-border-default bg-surface-container-low px-[18px] py-4 text-left transition-opacity active:opacity-80"
           >
             <div>
-              <Eyebrow>Complete your day</Eyebrow>
+              <Eyebrow>{t('home.completeYourDay')}</Eyebrow>
               <p
                 className="text-[15px] font-medium text-on-surface"
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
-                {nudgeDay.data.total - nudgeDay.data.answeredCount} quick{' '}
-                {nudgeDay.data.total - nudgeDay.data.answeredCount === 1 ? 'check-in' : 'check-ins'}{' '}
-                left
+                {t('home.checkInsLeft', {
+                  count: nudgeDay.data.total - nudgeDay.data.answeredCount,
+                })}
               </p>
             </div>
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-[15px] text-primary">
@@ -547,12 +541,12 @@ export default function AnuDashboardRoute() {
 
       <section className="px-3 pt-3">
         <div className="mb-3 flex items-end justify-between">
-          <Eyebrow>Quick log</Eyebrow>
+          <Eyebrow>{t('home.quickLog')}</Eyebrow>
           <span
             className="text-[12px] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
-            Tap to track
+            {t('home.tapToTrack')}
           </span>
         </div>
 
@@ -560,24 +554,22 @@ export default function AnuDashboardRoute() {
           {QUICK_LOG_ITEMS.map((item) => {
             const interactive = Boolean(item.action || item.symptom);
             const symptomCount = item.symptom ? (quickCounts?.[item.symptom] ?? 0) : 0;
-            let sub = item.sub;
+            let sub = t(`home.quickLogItems.${item.key}.sub`);
             let logged = false;
             if (item.action === 'mood' && todayMood) {
-              sub = MOOD_FEELING_LABELS[todayMood.feeling] ?? item.sub;
+              sub = t(`home.moodFeeling.${todayMood.feeling}`, { defaultValue: sub });
               logged = true;
             } else if (item.action === 'sleep' && todaySleep) {
-              sub = SLEEP_QUALITY_LABELS[todaySleep.quality] ?? item.sub;
+              sub = t(`home.sleepQuality.${todaySleep.quality}`, { defaultValue: sub });
               logged = true;
             }
             return (
               <button
-                key={item.label}
+                key={item.key}
                 type="button"
                 disabled={!interactive}
                 onClick={() =>
-                  item.symptom
-                    ? handleLogSymptom(item.symptom, item.label)
-                    : handleQuickLog(item.action)
+                  item.symptom ? handleLogSymptom(item.symptom) : handleQuickLog(item.action)
                 }
                 className={`flex min-h-[92px] flex-col justify-between rounded-[18px] border bg-surface-container-low p-3 text-left outline-none transition-opacity focus:outline-none focus-visible:outline-none enabled:active:opacity-80 disabled:cursor-default ${
                   logged ? 'border-primary/30' : 'border-border-default'
@@ -613,7 +605,7 @@ export default function AnuDashboardRoute() {
                     className="block text-[14px] font-semibold leading-tight text-on-surface"
                     style={{ fontFamily: '"Mulish", sans-serif' }}
                   >
-                    {item.label}
+                    {t(`home.quickLogItems.${item.key}.label`)}
                   </span>
                   <span
                     className="mt-1 block text-[11.5px] leading-snug text-on-surface-variant"
@@ -642,7 +634,7 @@ export default function AnuDashboardRoute() {
                 className="block text-[13.5px] font-semibold leading-tight text-on-surface"
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
-                {remainingTrackers} more to log today
+                {t('home.moreToLog', { count: remainingTrackers })}
               </span>
               <span
                 className="mt-0.5 block text-[11.5px] leading-snug text-on-surface-variant"
@@ -665,7 +657,7 @@ export default function AnuDashboardRoute() {
           className="w-full rounded-[20px] bg-primary-fixed px-[18px] py-4 text-left transition-opacity active:opacity-80"
         >
           <div className="mb-2 flex items-center justify-between gap-2">
-            <Eyebrow className="mb-0">Cycle tracker</Eyebrow>
+            <Eyebrow className="mb-0">{t('home.cycleTracker')}</Eyebrow>
             {cycle.data?.phase ? <CyclePhaseBadge phase={cycle.data.phase} /> : null}
           </div>
           <CycleTrackerSummary cycleData={cycle.data} loading={cycle.loading} />
@@ -675,20 +667,20 @@ export default function AnuDashboardRoute() {
       {!detailedCompleted && (
         <section className="px-3 pt-3">
           <article className="overflow-hidden rounded-[20px] bg-primary px-[18px] py-5">
-            <Eyebrow tone="cream">Next step required</Eyebrow>
+            <Eyebrow tone="cream">{t('home.nextStepRequired')}</Eyebrow>
 
             <p
               className="max-w-[20ch] text-[22px] leading-[1.25] text-on-primary"
               style={{ fontFamily: SERIF, fontWeight: 500 }}
             >
-              Let&apos;s go deeper with your assessment
+              {t('home.goDeeper')}
             </p>
 
             <p
               className="mt-3 max-w-[34ch] text-[13.5px] leading-[1.55]"
               style={{ color: '#E7D7E0', fontFamily: '"Mulish", sans-serif' }}
             >
-              Your detailed assessment helps ANU personalise your care path. Takes about 8 minutes.
+              {t('home.goDeeperBody')}
             </p>
 
             <button
@@ -698,8 +690,8 @@ export default function AnuDashboardRoute() {
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
               {detailedStatus === 'in_progress'
-                ? 'Resume detailed assessment'
-                : 'Start detailed assessment'}
+                ? t('home.resumeDetailed')
+                : t('home.startDetailed')}
               <span aria-hidden="true">→</span>
             </button>
           </article>
@@ -713,7 +705,7 @@ export default function AnuDashboardRoute() {
             onClick={() => navigate(`/library/${dailyInsight.article.slug}`)}
             className="w-full rounded-[20px] bg-tertiary-container px-[18px] py-4 text-left transition-opacity active:opacity-90"
           >
-            <Eyebrow tone="gold">Today&apos;s insight</Eyebrow>
+            <Eyebrow tone="gold">{t('home.todaysInsight')}</Eyebrow>
             <p className="text-[18px] leading-[1.45] text-on-surface" style={{ fontFamily: SERIF }}>
               {dailyInsight.text}
             </p>
@@ -728,7 +720,7 @@ export default function AnuDashboardRoute() {
                 className="shrink-0 text-[13px] font-semibold text-on-tertiary-container"
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
-                Read →
+                {t('home.read')}
               </span>
             </div>
           </button>

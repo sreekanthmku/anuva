@@ -1,7 +1,7 @@
 import type { SummaryDayBalance, WellnessGroup } from '@anuva/shared';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
 import { RING_EMPTY_COLOR } from '../ringColors';
-import { GROUP_COLOR, GROUP_LABEL } from '../wellnessDisplay';
+import { GROUP_COLOR, groupLabel } from '../wellnessDisplay';
 import { BALANCE_EMOJI } from '../summaryEmoji';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -38,7 +38,7 @@ export function DayBalanceStrip({
     ...(['good', 'okay', 'hard'] as WellnessGroup[]).map((group) => ({
       key: group,
       count: balance[group],
-      label: GROUP_LABEL[group],
+      label: groupLabel(group),
       color: GROUP_COLOR[group],
     })),
     {

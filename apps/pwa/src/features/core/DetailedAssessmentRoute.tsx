@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+// Both forms: `t` inside components so a language switch re-renders them, and the instance in the
+// module-level helpers below, which are plain functions.
+import i18n from '../../i18n';
 import {
   detailedAssessmentSections,
   findMissingDetailedAnswers,
   MULTISELECT_SEPARATOR,
-  PRACTITIONER_LABELS,
   QOL_OPTIONS,
   SEVERITY_OPTIONS,
   YESNO_OPTIONS,
@@ -69,13 +72,38 @@ function withAutoFilledDates(answers: AnswersMap): AnswersMap {
 }
 
 function practitionerLine(section: DetailedAssessmentSection): string {
-  const primary = PRACTITIONER_LABELS[section.primary];
+  const primary = i18n.t(`detailedAssessment.practitioners.${section.primary}`);
   if (section.primary === 'all') return primary;
-  const secondary = section.secondary ? PRACTITIONER_LABELS[section.secondary] : null;
-  return secondary ? `${primary} · ${secondary}` : primary;
+  const secondary = section.secondary
+    ? i18n.t(`detailedAssessment.practitioners.${section.secondary}`)
+    : null;
+  return secondary
+    ? i18n.t('detailedAssessment.practitionerPair', { primary, secondary })
+    : primary;
+}
+
+/**
+ * An answer option's key in the locale bundles.
+ *
+ * The *stored* answer stays the English string — it is a clinical record a doctor reads, and it has
+ * to mean the same thing whichever language she filled the form in. So the chips translate what
+ * they show and keep what they save.
+ */
+function optionKey(option: string): string {
+  return option
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+/** The chip's label in the active language, falling back to the English value itself. */
+function optionLabel(option: string): string {
+  return i18n.t(`detailedAssessment.options.${optionKey(option)}`, { defaultValue: option });
 }
 
 export default function DetailedAssessmentRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
   const { data, loading, saveDraft, submit } = useDetailedAssessment();
@@ -142,7 +170,7 @@ export default function DetailedAssessmentRoute() {
         setShowRequired(true);
         setError(
           missingHere.length === 1
-            ? 'Please answer the highlighted question before continuing.'
+            ? t('detailedAssessment.answerHighlighted')
             : `Please answer the ${missingHere.length} highlighted questions before continuing.`
         );
         return;
@@ -170,7 +198,7 @@ export default function DetailedAssessmentRoute() {
         if (target >= 0 && target !== step) goToStep(target);
         return;
       }
-      setError('Could not save. Please try again.');
+      setError(t('detailedAssessment.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -225,19 +253,21 @@ export default function DetailedAssessmentRoute() {
         <StepDots total={totalSteps} current={step} />
 
         <h1 className="mt-6 font-display text-[26px] leading-[1.15] text-on-surface">
-          {section.title}
+          {/* `defaultValue` is the English from `@anuva/shared`: a section or prompt the translator
+              has not reached yet still renders as words rather than as a raw key. */}
+          {t(`detailedAssessment.sections.${section.key}`, { defaultValue: section.title })}
         </h1>
         <p
           className="mt-1.5 text-[12px] uppercase tracking-[0.14em] text-primary"
           style={{ fontFamily: '"Mulish", sans-serif' }}
         >
-          Detailed assessment
+          {t('detailedAssessment.eyebrow')}
         </p>
         <p
           className="mt-1 text-[12px] text-outline"
           style={{ fontFamily: '"Mulish", sans-serif' }}
         >
-          Reviewed by {practitionerLine(section)}
+          {t('detailedAssessment.reviewedBy', { practitioners: practitionerLine(section) })}
         </p>
 
         <div className="mt-6 flex flex-col gap-3">
@@ -267,7 +297,11 @@ export default function DetailedAssessmentRoute() {
           className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[15px] text-[15px] font-semibold text-on-secondary disabled:opacity-60"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif', fontWeight: 500 }}
         >
-          {saving ? 'Saving…' : isLastStep ? 'Finish & submit' : 'Save & continue'}
+          {saving
+            ? t('common.saving')
+            : isLastStep
+              ? t('detailedAssessment.finish')
+              : t('detailedAssessment.saveContinue')}
           {!saving && <span aria-hidden="true">→</span>}
         </button>
       </div>
@@ -293,6 +327,8 @@ function QuestionField({
   invalid,
   onChange,
 }: FieldProps & { invalid?: boolean }) {
+  const { t } = useTranslation();
+
   return (
     <div
       className="rounded-[20px] border border-border-default bg-surface-raised p-4"
@@ -302,15 +338,17 @@ function QuestionField({
         className="block text-[15px] leading-[1.4] text-on-surface"
         style={{ fontFamily: '"Mulish", sans-serif' }}
       >
-        {question.prompt}
-        {question.optional && <span className="ml-1.5 text-[12px] text-outline">(optional)</span>}
+        {t(`detailedAssessment.questions.${question.key}`, { defaultValue: question.prompt })}
+        {question.optional && (
+          <span className="ml-1.5 text-[12px] text-outline">{t('detailedAssessment.optional')}</span>
+        )}
       </label>
       <div className="mt-2.5">
         <FieldInput question={question} value={value} onChange={onChange} />
       </div>
       {invalid && (
         <p className="mt-2 text-[12px] text-error" style={{ fontFamily: '"Mulish", sans-serif' }}>
-          This one is required.
+          {t('detailedAssessment.required')}
         </p>
       )}
     </div>
@@ -391,7 +429,7 @@ function ChipGroup({
               color: active ? '#5E3566' : '#6E5870',
             }}
           >
-            {option}
+            {optionLabel(option)}
           </button>
         );
       })}
@@ -564,21 +602,17 @@ function TextList({
 // value/onChange: ISO date string YYYY-MM-DD or ''
 // ─────────────────────────────────────────────
 
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+/** Month names in the active language; read at render so a switch re-labels the calendar. */
+function monthNames(): string[] {
+  return Array.from({ length: 12 }, (_, i) => i18n.t(`detailedAssessment.months.${i}`));
+}
+
+/** Sunday-first, matching the grid this picker draws. */
+function weekdayInitials(): string[] {
+  return (['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const).map((day) =>
+    i18n.t(`detailedAssessment.weekdayInitials.${day}`),
+  );
+}
 
 function parseDate(iso: string): { year: number; month: number; day: number } | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
@@ -595,14 +629,19 @@ function toIso(year: number, month: number, day: number): string {
 
 function formatDisplay(iso: string): string {
   const p = parseDate(iso);
-  if (!p) return 'Select date';
-  return `${String(p.day).padStart(2, '0')} ${MONTHS[p.month]} ${p.year}`;
+  if (!p) return i18n.t('detailedAssessment.selectDate');
+  return i18n.t('detailedAssessment.dateDisplay', {
+    day: String(p.day).padStart(2, '0'),
+    month: monthNames()[p.month],
+    year: p.year,
+  });
 }
 
 /** Roughly how tall the popover renders; only used to decide which way it should open. */
 const CALENDAR_HEIGHT = 340;
 
 function DatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
   const today = new Date();
   const parsed = parseDate(value);
   const [open, setOpen] = useState(false);
@@ -733,7 +772,7 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
                   className="text-[13px] uppercase tracking-[0.14em] text-primary"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  Select year
+                  {t('detailedAssessment.selectYear')}
                 </span>
                 <button
                   type="button"
@@ -782,7 +821,7 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
                   className="text-[14px] font-medium text-on-surface transition-opacity hover:opacity-70"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  {MONTHS[viewMonth]} {viewYear}
+                  {monthNames()[viewMonth]} {viewYear}
                 </button>
                 <button
                   type="button"
@@ -795,7 +834,7 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
 
               {/* Day-of-week headers */}
               <div className="mb-1 grid grid-cols-7 text-center">
-                {DAYS.map((d) => (
+                {weekdayInitials().map((d) => (
                   <span
                     key={d}
                     className="text-[11px] uppercase tracking-[0.08em] text-outline"
@@ -885,6 +924,7 @@ function DynList({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const { t } = useTranslation();
   const headers = columns ?? [];
   const columnCount = Math.max(headers.length, 1);
 
@@ -942,7 +982,7 @@ function DynList({
               type="button"
               onClick={() => remove(rowIndex)}
               className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border border-border-default bg-surface-container-lowest text-outline transition-colors hover:border-error hover:text-error"
-              aria-label="Remove"
+              aria-label={t('detailedAssessment.remove')}
             >
               ×
             </button>
@@ -958,7 +998,7 @@ function DynList({
         <span className="flex h-5 w-5 items-center justify-center rounded-full border border-primary/40 text-[14px] leading-none">
           +
         </span>
-        Add another
+        {t('detailedAssessment.addAnother')}
       </button>
     </div>
   );
@@ -972,6 +1012,7 @@ const SIGNATURE_WIDTH = 600;
 const SIGNATURE_HEIGHT = 200;
 
 function SignaturePad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const dirty = useRef(false);
@@ -1065,7 +1106,7 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (v: string
         onPointerUp={end}
         onPointerLeave={end}
         onPointerCancel={end}
-        aria-label="Signature area"
+        aria-label={t('detailedAssessment.signatureArea')}
         className="w-full rounded-2xl border bg-surface-container-lowest"
         style={{
           aspectRatio: `${SIGNATURE_WIDTH} / ${SIGNATURE_HEIGHT}`,
@@ -1075,7 +1116,7 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (v: string
       />
       <div className="flex items-center justify-between">
         <span className="text-[12px] text-outline" style={{ fontFamily: '"Mulish", sans-serif' }}>
-          {hasInk ? 'Signed' : 'Draw your signature above'}
+          {hasInk ? t('detailedAssessment.signed') : t('detailedAssessment.drawSignature')}
         </span>
         <button
           type="button"
@@ -1084,7 +1125,7 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (v: string
           className="text-[13px] text-primary transition-opacity hover:opacity-70 disabled:opacity-40"
           style={{ fontFamily: '"Mulish", sans-serif' }}
         >
-          Clear
+          {t('detailedAssessment.clear')}
         </button>
       </div>
     </div>
@@ -1096,6 +1137,7 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (v: string
 // ─────────────────────────────────────────────
 
 function ThanksScreen({ onDismiss }: { onDismiss: () => void }) {
+  const { t } = useTranslation();
   useEffect(() => {
     const timer = setTimeout(onDismiss, 2000);
     return () => clearTimeout(timer);
@@ -1125,13 +1167,13 @@ function ThanksScreen({ onDismiss }: { onDismiss: () => void }) {
         className="font-display text-[28px] leading-[1.2] text-on-surface"
         style={{ fontWeight: 300 }}
       >
-        Thank you
+        {t('detailedAssessment.thanksTitle')}
       </h1>
       <p
         className="mt-3 max-w-[26ch] text-[14px] leading-[1.6] text-outline"
         style={{ fontFamily: '"Mulish", sans-serif' }}
       >
-        Your assessment has been saved. ANU will use this to personalise your care.
+        {t('detailedAssessment.thanksBody')}
       </p>
 
       <button
@@ -1140,14 +1182,14 @@ function ThanksScreen({ onDismiss }: { onDismiss: () => void }) {
         className="mt-8 rounded-full border border-border-default px-6 py-2.5 text-[13px] text-outline transition-opacity hover:opacity-70"
         style={{ fontFamily: '"Mulish", sans-serif' }}
       >
-        Back to home
+        {t('detailedAssessment.backToHome')}
       </button>
 
       <p
         className="mt-4 text-[11px] uppercase tracking-[0.12em] text-outline/50"
         style={{ fontFamily: '"Mulish", sans-serif' }}
       >
-        Redirecting in 2s…
+        {t('detailedAssessment.redirecting')}
       </p>
     </main>
   );

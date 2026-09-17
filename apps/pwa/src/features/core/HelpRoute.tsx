@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
+// The shared list is the server's vocabulary; the screen takes the ids and their order from it and
+// gets the words from `help.categories.*`.
 import {
   SUPPORT_TICKET_CATEGORIES,
-  supportTicketCategoryLabel,
   type SupportTicket,
   type SupportTicketCategory,
 } from '@anuva/shared';
+// The instance for `ticketDate` and the catch blocks, which are not components.
+import i18n from '../../i18n';
 import { DPDP_ACT_URL, GRIEVANCE_OFFICER_EMAIL } from '../../shared/lib/dpdp';
 import { BottomNav } from './components/BottomNav';
 import { createSupportTicket, fetchMySupportTickets } from './support/api';
@@ -22,13 +26,6 @@ const MAX_SUBJECT_LENGTH = 120;
 const CONSENT_VERSION = 'support-consent-v1';
 const RETENTION_MONTHS = 6;
 
-const STATUS_LABEL: Record<SupportTicket['status'], string> = {
-  open: 'Received',
-  in_progress: 'Being looked at',
-  resolved: 'Answered',
-  closed: 'Closed',
-};
-
 function Eyebrow({ children, mint = false }: { children: string; mint?: boolean }) {
   return (
     <div
@@ -44,23 +41,27 @@ function ticketDate(iso: string): string {
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return '';
 
-  const time = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  const time = at.toLocaleTimeString(i18n.language, { hour: 'numeric', minute: '2-digit' });
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
   if (at.getTime() >= startOfToday.getTime()) {
-    return `Today at ${time}`;
+    return i18n.t('help.todayAt', { time });
   }
 
   const sameYear = at.getFullYear() === new Date().getFullYear();
-  return `${at.toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    ...(sameYear ? {} : { year: 'numeric' }),
-  })} at ${time}`;
+  return i18n.t('help.dateAt', {
+    date: at.toLocaleDateString(i18n.language, {
+      day: 'numeric',
+      month: 'short',
+      ...(sameYear ? {} : { year: 'numeric' }),
+    }),
+    time,
+  });
 }
 
 function TicketCard({ ticket }: { ticket: SupportTicket }) {
+  const { t } = useTranslation();
   const answered = Boolean(ticket.response);
 
   return (
@@ -80,7 +81,7 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
             color: answered ? '#5E3566' : '#3E2542',
           }}
         >
-          {STATUS_LABEL[ticket.status]}
+          {t(`help.status.${ticket.status}`)}
         </span>
       </div>
 
@@ -100,8 +101,9 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
             className="mb-1.5 text-[9.5px] uppercase tracking-[0.12em] text-primary"
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
-            Anuva Wellness support
-            {ticket.respondedAt ? ` · ${ticketDate(ticket.respondedAt)}` : ''}
+            {ticket.respondedAt
+              ? t('help.supportAndDate', { date: ticketDate(ticket.respondedAt) })
+              : t('help.supportName')}
           </div>
           <p className="text-[12.5px] leading-[1.55] text-on-surface" style={{ fontFamily: MULISH }}>
             {ticket.response}
@@ -114,7 +116,10 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
         style={{ fontFamily: '"Mulish", sans-serif' }}
       >
         <span>
-          {ticket.reference} · {supportTicketCategoryLabel(ticket.category)}
+          {t('help.referenceAndCategory', {
+            reference: ticket.reference,
+            category: t(`help.categories.${ticket.category}`),
+          })}
         </span>
         <span>{ticketDate(ticket.createdAt)}</span>
       </div>
@@ -128,6 +133,7 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
  * deletion request.
  */
 export default function HelpRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [remainingToday, setRemainingToday] = useState<number | null>(null);
@@ -150,7 +156,7 @@ export default function HelpRoute() {
       setRemainingToday(response.remainingToday);
       setLoadError(null);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load your requests.');
+      setLoadError(err instanceof Error ? err.message : i18n.t('help.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -193,7 +199,7 @@ export default function HelpRoute() {
       setContactEmail('');
       setWantsEmailReply(false);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Could not send your request.');
+      setSubmitError(err instanceof Error ? err.message : i18n.t('help.sendFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -208,23 +214,27 @@ export default function HelpRoute() {
           className="mb-2 bg-transparent p-0 text-[13px] text-on-surface-variant"
           style={{ fontFamily: MULISH }}
         >
-          ← Profile
+          {t('help.backToProfile')}
         </button>
-        <Eyebrow mint>Help &amp; support</Eyebrow>
+        <Eyebrow mint>{t('help.eyebrow')}</Eyebrow>
         <h1 className="font-display max-w-[20rem] text-[30px] leading-[1.1] text-on-surface">
-          Tell us what&apos;s{' '}
-          <em
-            className="not-italic font-light text-primary"
-            style={{ fontFamily: '"Fraunces", sans-serif' }}
-          >
-            wrong.
-          </em>
+          <Trans
+            i18nKey="help.title"
+            components={{
+              1: (
+                <em
+                  className="not-italic font-light text-primary"
+                  style={{ fontFamily: '"Fraunces", sans-serif' }}
+                />
+              ),
+            }}
+          />
         </h1>
       </header>
 
       <section className="px-3">
         <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
-          <Eyebrow mint>What is it about?</Eyebrow>
+          <Eyebrow mint>{t('help.whatAbout')}</Eyebrow>
 
           <div className="mt-1 flex flex-wrap gap-1.5">
             {SUPPORT_TICKET_CATEGORIES.map((entry) => {
@@ -242,7 +252,7 @@ export default function HelpRoute() {
                     borderColor: active ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
                   }}
                 >
-                  {entry.label}
+                  {t(`help.categories.${entry.id}`)}
                 </button>
               );
             })}
@@ -251,7 +261,7 @@ export default function HelpRoute() {
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value.slice(0, MAX_SUBJECT_LENGTH))}
-            placeholder="Subject (one line)"
+            placeholder={t('help.subjectPlaceholder')}
             disabled={outOfQuota}
             className="mt-3.5 w-full border-0 border-b border-border-default bg-transparent pb-2 text-[14px] text-on-surface outline-none placeholder:text-outline disabled:opacity-60"
             style={{ fontFamily: MULISH }}
@@ -260,7 +270,7 @@ export default function HelpRoute() {
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
-            placeholder="What happened? The more detail, the faster we can fix it."
+            placeholder={t('help.messagePlaceholder')}
             rows={4}
             disabled={outOfQuota}
             className="mt-3 min-h-[88px] w-full resize-none border-0 bg-transparent text-[14px] leading-[1.5] text-on-surface outline-none placeholder:text-outline disabled:opacity-60"
@@ -280,14 +290,14 @@ export default function HelpRoute() {
               }}
               className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
             />
-            <span>Reply to me by email instead of in the app</span>
+            <span>{t('help.emailReply')}</span>
           </label>
 
           {wantsEmailReply ? (
             <input
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value.slice(0, 200))}
-              placeholder="you@example.com"
+              placeholder={t('help.emailPlaceholder')}
               inputMode="email"
               autoComplete="email"
               className="mt-2.5 w-full border-0 border-b border-border-default bg-transparent pb-2 text-[14px] text-on-surface outline-none placeholder:text-outline"
@@ -301,19 +311,20 @@ export default function HelpRoute() {
             className="mt-3.5 rounded-[16px] bg-surface-container-low px-3.5 py-3 text-[11px] leading-[1.5] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
-            We use what you write here only to answer you. It is stored on Anuva Wellness systems,
-            never emailed to anyone outside, and deleted after {RETENTION_MONTHS} months. You can
-            ask us to delete it sooner, or withdraw this at any time, under the{' '}
-            <a
-              href={DPDP_ACT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline"
-            >
-              DPDP Act
-            </a>
-            . Please don&apos;t include health details you wouldn&apos;t want our support team to
-            read — for anything clinical, book a consultation instead.
+            <Trans
+              i18nKey="help.dpdpNotice"
+              values={{ months: RETENTION_MONTHS }}
+              components={{
+                1: (
+                  <a
+                    href={DPDP_ACT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline"
+                  />
+                ),
+              }}
+            />
           </p>
 
           {justSubmitted ? (
@@ -321,8 +332,7 @@ export default function HelpRoute() {
               className="mt-3 rounded-[16px] px-3.5 py-2.5 text-[12px] leading-[1.45] text-on-surface"
               style={{ fontFamily: MULISH, backgroundColor: 'rgba(94, 53, 102, 0.12)' }}
             >
-              Got it — your reference is {justSubmitted}. We usually reply within two working days,
-              right here in the app.
+              {t('help.submitted', { reference: justSubmitted })}
             </div>
           ) : null}
 
@@ -340,7 +350,7 @@ export default function HelpRoute() {
               className="text-[9.5px] uppercase tracking-[0.1em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              {outOfQuota ? 'Daily limit reached' : 'Replies in ~2 working days'}
+              {outOfQuota ? t('help.dailyLimit') : t('help.replyTime')}
             </span>
             <button
               type="button"
@@ -349,14 +359,14 @@ export default function HelpRoute() {
               className="rounded-full px-[18px] py-2 text-[12px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
               style={{ fontFamily: MULISH, backgroundColor: '#C97E92' }}
             >
-              {submitting ? 'Sending…' : 'Send'}
+              {submitting ? t('common.sending') : t('help.send')}
             </button>
           </div>
         </article>
       </section>
 
       <section className="px-3 py-4">
-        <Eyebrow>Your requests</Eyebrow>
+        <Eyebrow>{t('help.yourRequests')}</Eyebrow>
 
         {loadError ? (
           <div
@@ -365,7 +375,7 @@ export default function HelpRoute() {
           >
             {loadError}{' '}
             <button type="button" onClick={() => void load()} className="underline">
-              Retry
+              {t('common.retry')}
             </button>
           </div>
         ) : loading ? (
@@ -373,14 +383,14 @@ export default function HelpRoute() {
             className="rounded-[20px] border border-dashed border-border-default px-4 py-6 text-[12.5px] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
-            Loading…
+            {t('help.loading')}
           </div>
         ) : tickets.length === 0 ? (
           <div
             className="rounded-[20px] border border-dashed border-border-default px-4 py-6 text-[12.5px] leading-[1.5] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
-            Nothing yet. Anything you send will show up here with our reply.
+            {t('help.empty')}
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
@@ -395,11 +405,15 @@ export default function HelpRoute() {
           is not filed into the same queue it is about. */}
       <section className="px-3 pb-4">
         <p className="text-[11px] leading-[1.5] text-outline" style={{ fontFamily: MULISH }}>
-          Unhappy with how we handled your data? Write to our Grievance Officer at{' '}
-          <a href={`mailto:${GRIEVANCE_OFFICER_EMAIL}`} className="text-primary underline">
-            {GRIEVANCE_OFFICER_EMAIL}
-          </a>
-          .
+          <Trans
+            i18nKey="help.grievance"
+            values={{ email: GRIEVANCE_OFFICER_EMAIL }}
+            components={{
+              1: (
+                <a href={`mailto:${GRIEVANCE_OFFICER_EMAIL}`} className="text-primary underline" />
+              ),
+            }}
+          />
         </p>
       </section>
 

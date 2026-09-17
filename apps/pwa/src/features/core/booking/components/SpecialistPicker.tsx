@@ -1,5 +1,6 @@
 import type { ConsultationSpecialist } from '@anuva/shared';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BookingEyebrow } from './BookingEyebrow';
 
 type SpecialistPickerProps = {
@@ -9,12 +10,13 @@ type SpecialistPickerProps = {
 };
 
 export function SpecialistPicker({ specialists: items, value, onChange }: SpecialistPickerProps) {
+  const { t } = useTranslation();
   const [detailsOpenFor, setDetailsOpenFor] = useState<ConsultationSpecialist | null>(null);
 
   return (
     <>
       <section className="px-3">
-        <BookingEyebrow>Choose specialist</BookingEyebrow>
+        <BookingEyebrow>{t('booking.chooseSpecialist')}</BookingEyebrow>
         <div className="flex flex-col gap-2">
           {items.map((s) => {
             const sel = value === s.key;
@@ -35,7 +37,7 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
                     type="button"
                     onClick={() => setDetailsOpenFor(s)}
                     className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border-default bg-primary/10 p-0 text-[12px] text-primary"
-                    aria-label={`View details for ${s.name}`}
+                    aria-label={t('booking.viewDetails', { name: s.name })}
                   >
                     {s.imageUrl ? (
                       <img
@@ -88,7 +90,7 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
                           className="mt-1 text-[10px] uppercase tracking-[0.14em] text-primary"
                           style={{ fontFamily: '"Mulish", sans-serif' }}
                         >
-                          {s.bookingDisabledReason ?? 'Coming soon'}
+                          {s.bookingDisabledReason ?? t('booking.comingSoon')}
                         </div>
                       )}
                     </div>
@@ -129,6 +131,8 @@ type SpecialistDetailsModalProps = {
 };
 
 function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalProps) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     if (!specialist) return;
 
@@ -154,7 +158,7 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
         type="button"
         className="fixed inset-0 z-[60] cursor-default border-none bg-black/60 p-0"
         onClick={onClose}
-        aria-label="Close specialist details"
+        aria-label={t('booking.closeDetails')}
       />
       <div
         className="fixed left-1/2 top-1/2 z-[61] w-[calc(100vw-1.5rem)] max-w-[22.5rem] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[28px] border border-border-default bg-surface"
@@ -218,7 +222,7 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
                   className="text-[9.5px] uppercase tracking-[0.14em] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  About
+                  {t('booking.about')}
                 </div>
                 <div
                   className="mt-1 text-[13px] leading-[1.55] text-on-surface"
@@ -234,7 +238,7 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
                 className="text-[9.5px] uppercase tracking-[0.14em] text-outline"
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
-                Experience
+                {t('booking.experience')}
               </div>
               <div
                 className="mt-1 text-[14px] text-on-surface"
@@ -249,13 +253,13 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
                 className="text-[9.5px] uppercase tracking-[0.14em] text-outline"
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
-                Focus
+                {t('booking.focus')}
               </div>
               <div
                 className="mt-1 text-[14px] leading-[1.5] text-on-surface"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                {specialist.specialization ?? 'Specialist details coming soon.'}
+                {specialist.specialization ?? t('booking.focusFallback')}
               </div>
             </div>
 
@@ -265,7 +269,7 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
                   className="text-[9.5px] uppercase tracking-[0.14em] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  Qualifications
+                  {t('booking.qualifications')}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {specialist.qualifications.map((qualification) => (
@@ -288,7 +292,7 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
             className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-semibold text-on-secondary"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>

@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+// The instance for the fetch/download error paths, which run inside callbacks.
+import i18n from '../../i18n';
 import { useNavigate } from 'react-router-dom';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { ApiError, apiFetch, apiUrl } from '../../shared/lib/api';
@@ -104,6 +107,7 @@ function Recommendations({ blocks }: { blocks: RecommendationBlock[] }) {
 }
 
 export default function AssessmentReportRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [doc, setDoc] = useState<ReportDocument | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,7 +133,7 @@ export default function AssessmentReportRoute() {
           setError(err.message);
         } else {
           setError(
-            err instanceof Error ? err.message : 'Your report could not be loaded right now.',
+            err instanceof Error ? err.message : i18n.t('assessmentReport.loadFailed'),
           );
         }
       } finally {
@@ -163,7 +167,7 @@ export default function AssessmentReportRoute() {
       const response = await fetch(apiUrl('/api/report14/pdf'), {
         credentials: 'include',
       });
-      if (!response.ok) throw new Error('Could not prepare your report for download.');
+      if (!response.ok) throw new Error(i18n.t('assessmentReport.prepareFailed'));
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       blobUrls.current.push(url);
@@ -177,7 +181,7 @@ export default function AssessmentReportRoute() {
         link.click();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not open your report.');
+      setError(err instanceof Error ? err.message : i18n.t('assessmentReport.openFailed'));
     } finally {
       setOpening(false);
     }
@@ -193,18 +197,22 @@ export default function AssessmentReportRoute() {
             className="bg-transparent p-0 text-[13px] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
-            ← Profile
+            {t('assessmentReport.backToProfile')}
           </button>
-          <img src="/anu.png" alt="Anuva" className="h-5 w-5 object-contain opacity-80" />
+          <img
+            src="/anu.png"
+            alt={t('assessmentReport.logoAlt')}
+            className="h-5 w-5 object-contain opacity-80"
+          />
         </div>
       </header>
 
       <section className="px-3 pb-6 pt-2">
-        <Eyebrow>Your assessment report</Eyebrow>
+        <Eyebrow>{t('assessmentReport.eyebrow')}</Eyebrow>
 
         {loading && (
           <p className="py-8 text-[14px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
-            Preparing your report…
+            {t('assessmentReport.preparing')}
           </p>
         )}
 
@@ -213,7 +221,7 @@ export default function AssessmentReportRoute() {
             <h1
               className="mb-2 font-display text-[21px] leading-tight text-on-surface"
             >
-              Almost there
+              {t('assessmentReport.almostThere')}
             </h1>
             <p
               className="mb-5 text-[14px] leading-relaxed text-on-surface-variant"
@@ -227,7 +235,7 @@ export default function AssessmentReportRoute() {
               className="w-full rounded-full bg-primary px-4 py-3.5 text-[14px] font-semibold text-on-primary"
               style={{ fontFamily: MULISH, minHeight: 44 }}
             >
-              Continue my assessment
+              {t('assessmentReport.continueAssessment')}
             </button>
           </div>
         )}
@@ -238,7 +246,7 @@ export default function AssessmentReportRoute() {
               className="text-[14px] leading-relaxed text-on-surface-variant"
               style={{ fontFamily: MULISH }}
             >
-              {error ?? 'Your report could not be loaded right now.'}
+              {error ?? t('assessmentReport.loadFailed')}
             </p>
           </div>
         )}
@@ -260,13 +268,13 @@ export default function AssessmentReportRoute() {
               className="mt-5 w-full rounded-full bg-primary px-4 py-3.5 text-[14px] font-semibold text-on-primary disabled:opacity-60"
               style={{ fontFamily: MULISH, minHeight: 44 }}
             >
-              {opening ? 'Preparing your PDF…' : 'Download as PDF'}
+              {opening ? t('assessmentReport.preparingPdf') : t('assessmentReport.downloadPdf')}
             </button>
             <p
               className="mt-2 text-center text-[11.5px] text-on-surface-variant"
               style={{ fontFamily: MULISH }}
             >
-              A print-ready PDF you can save or share with your doctor.
+              {t('assessmentReport.pdfNote')}
             </p>
 
             {error && (
@@ -291,12 +299,12 @@ export default function AssessmentReportRoute() {
             </p>
 
             <div className="mt-6">
-              <Card label="Your menstrual status">{doc.menstrualStatus}</Card>
-              <Card label="Dominant symptom domain">{doc.dominantDomain}</Card>
+              <Card label={t('assessmentReport.menstrualStatus')}>{doc.menstrualStatus}</Card>
+              <Card label={t('assessmentReport.dominantDomain')}>{doc.dominantDomain}</Card>
             </div>
 
             <h2 className="mb-3 mt-7 font-display text-[19px] leading-snug text-primary">
-              Medical flags to raise with your doctor
+              {t('assessmentReport.medicalFlags')}
             </h2>
             <ul className="space-y-2">
               {doc.medicalFlags.map((flag) => (
@@ -316,11 +324,11 @@ export default function AssessmentReportRoute() {
             </ul>
 
             <h2 className="mb-4 mt-7 font-display text-[19px] leading-snug text-primary">
-              Your recommendations
+              {t('assessmentReport.recommendations')}
             </h2>
             <Recommendations blocks={doc.recommendations} />
 
-            <Card label="What ANU will track with you">{doc.trackerFocus}</Card>
+            <Card label={t('assessmentReport.trackerFocus')}>{doc.trackerFocus}</Card>
 
             <aside
               className="mt-5 rounded-[20px] px-5 py-4"
@@ -333,7 +341,7 @@ export default function AssessmentReportRoute() {
                 className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary"
                 style={{ fontFamily: MULISH }}
               >
-                From ANU
+                {t('assessmentReport.fromAnu')}
               </p>
               <p
                 className="text-[13.5px] leading-relaxed text-on-surface"
@@ -378,7 +386,7 @@ export default function AssessmentReportRoute() {
                     className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary"
                     style={{ fontFamily: MULISH }}
                   >
-                    From ANU
+                    {t('assessmentReport.fromAnu')}
                   </p>
                   <p
                     className="text-[13.5px] leading-relaxed text-on-surface"

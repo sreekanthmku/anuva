@@ -40,11 +40,13 @@ export default function AssessmentResultRoute() {
   const isInControl = status === 'in_control';
   const summaryItems: RiskPill[] = isInControl
     ? [
-        { title: 'Score', value: `${score}`, color: '#5E3566' },
-        { title: 'Status', value: 'In control', color: '#4F9D6B' },
-        { title: 'Check back', value: '3 months', color: '#5B82C4' },
+        { titleKey: 'score', valueKey: 'inControl', color: '#5E3566' },
+        { titleKey: 'status', valueKey: 'inControl', color: '#4F9D6B' },
+        { titleKey: 'checkBack', valueKey: 'threeMonths', color: '#5B82C4' },
       ]
     : riskPills;
+  // The score is a number she answered her way to, not copy. It is passed through untranslated.
+  const literalValues = isInControl ? { score: String(score) } : undefined;
   const steps = isInControl ? controlNextSteps : nextSteps;
   async function handlePrimaryAction() {
     if (!user) {
@@ -73,7 +75,12 @@ export default function AssessmentResultRoute() {
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pt-[40px] text-on-surface">
       <AssessmentResultNavBar onBack={() => navigate(assessmentPath())} />
-      <AssessmentResultSummary score={score} status={status} riskItems={summaryItems} />
+      <AssessmentResultSummary
+        score={score}
+        status={status}
+        riskItems={summaryItems}
+        literalValues={literalValues}
+      />
 
       <section className="px-3 pb-[calc(18px+env(safe-area-inset-bottom,0px))] pt-1">
         <NextStepsCard steps={steps} />

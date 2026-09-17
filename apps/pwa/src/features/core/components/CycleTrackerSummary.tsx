@@ -1,8 +1,10 @@
 import type { CycleStateResponse } from '@anuva/shared';
+import { useTranslation } from 'react-i18next';
 import {
   CYCLE_LENGTH_DEFAULT,
   CYCLE_PHASE_CONFIG,
   CYCLE_RING_CIRCUMFERENCE,
+  cyclePhaseLabel,
   formatCycleDate,
   getCycleHeadline,
   getCycleLength,
@@ -32,6 +34,7 @@ export function CyclePhaseBadge({
   phase: NonNullable<CycleStateResponse['phase']>;
   size?: PhaseBadgeSize;
 }) {
+  const { t } = useTranslation();
   const phaseConfig = CYCLE_PHASE_CONFIG[phase];
   return (
     <span
@@ -43,12 +46,13 @@ export function CyclePhaseBadge({
         fontFamily: '"Mulish", sans-serif',
       }}
     >
-      ● {phaseConfig.label} phase
+      {t('cycle.phaseBadge', { phase: cyclePhaseLabel(phase) })}
     </span>
   );
 }
 
 export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: Props) {
+  const { t } = useTranslation();
   const ringPx = RING_PX[ringSize];
   const emptyDayFont = ringSize === 'sheet' ? 'text-[22px]' : 'text-[20px]';
   const ready = isCycleTrackerReady(cycleData);
@@ -69,7 +73,7 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
     return (
       <div className="flex items-center justify-center py-6">
         <span className="text-[12px] text-outline" style={{ fontFamily: '"Mulish", sans-serif' }}>
-          Loading…
+          {t('cycle.summary.loading')}
         </span>
       </div>
     );
@@ -113,13 +117,13 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
             className="text-[16px] leading-[1.3] text-on-surface"
             style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
           >
-            Start tracking
+            {t('cycle.summary.startTracking')}
           </p>
           <p
             className="mt-1.5 text-[12px] leading-[1.45] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            Log your last period to see cycle day, phase, and predictions.
+            {t('cycle.summary.startTrackingBody')}
           </p>
         </div>
       </div>
@@ -186,7 +190,7 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
             className="mt-1 text-[12px] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            Next period{' '}
+            {t('cycle.summary.nextPeriod')}{' '}
             <span className="text-on-surface">{formatCycleDate(cycleData.nextPeriodDate)}</span>
           </p>
         )}
@@ -195,7 +199,7 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
             className="mt-1 text-[12px] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            Fertile window{' '}
+            {t('cycle.summary.fertileWindow')}{' '}
             <span className="text-on-surface">
               {formatCycleDate(cycleData.fertileWindowStart)}–
               {formatCycleDate(cycleData.fertileWindowEnd)}

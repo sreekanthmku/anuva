@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import type {
   JointsSummary,
   ReportInsight,
@@ -24,7 +25,7 @@ import { useSummary } from './hooks/useWeeklyReport';
 import { RING_COLORS } from './ringColors';
 import { DELTA_TONE_COLOR } from './ringDisplay';
 import { SUGGESTION_EMOJI } from './summaryEmoji';
-import { PERIOD_NOUN, daysBetweenIso, formatShortDay, periodHeadline } from './summaryDates';
+import { daysBetweenIso, formatShortDay, periodHeadline, periodNoun } from './summaryDates';
 
 /**
  * A stat card's line colour matches the ring the metric taps through to, so the
@@ -43,43 +44,15 @@ const FRAUNCES = '"Fraunces", sans-serif';
 /** Remembered within the session only — a fresh open always lands on Daily. */
 const PERIOD_STORAGE_KEY = 'anuva.summary.period';
 
-const TRACKER_EYEBROW: Record<SummaryPeriod, string> = {
-  daily: 'Your trackers',
-  weekly: 'Your trackers this week',
-  monthly: 'Your trackers this month',
-};
-
-/** Headline per tab; the second half is the accented phrase. */
-const PAGE_TITLE: Record<SummaryPeriod, [string, string]> = {
-  daily: ['Your wellness,', 'at a glance'],
-  weekly: ['Your week', 'in review'],
-  monthly: ['Your month', 'in review'],
-};
-
 /**
  * "See last month" only reads correctly from the current period. Stepped back
  * three months, the month before this one is not "last month", so the wording
- * follows the offset rather than assuming the reader is at the front.
+ * follows the offset rather than assuming the reader is at the front. Both
+ * wordings live under `report.previousLabel.<period>`; the tab headline is
+ * `report.titles.<period>` and the tracker eyebrow `report.trackerEyebrow.<period>`.
  */
-const PREVIOUS_LABEL: Record<SummaryPeriod, [current: string, earlier: string]> = {
-  daily: ['yesterday', 'the day before'],
-  weekly: ['last week', 'the week before'],
-  monthly: ['last month', 'the month before'],
-};
-
-const RESET_LABEL: Record<SummaryPeriod, string> = {
-  daily: 'Today',
-  weekly: 'This week',
-  monthly: 'This month',
-};
 
 // ── Joints & Stiffness ───────────────────────────────────────
-
-const JOINT_DIRECTION_COPY: Record<'improving' | 'steady' | 'worsening', string> = {
-  improving: 'easing',
-  steady: 'steady',
-  worsening: 'more than before',
-};
 
 const JOINT_DIRECTION_COLOR: Record<'improving' | 'steady' | 'worsening', string> = {
   improving: DELTA_TONE_COLOR.positive,
@@ -96,23 +69,28 @@ const JOINT_DIRECTION_COLOR: Record<'improving' | 'steady' | 'worsening', string
  * The chart carries the shape; the words carry the claim.
  */
 function JointsCard({ joints, report }: { joints: JointsSummary; report: WeeklyReportResponse }) {
+  const { t } = useTranslation();
+
   const rows: { label: string; value: string }[] = [
     {
-      label: 'Days with discomfort',
-      value: `${joints.daysWithDiscomfort} of ${joints.daysInWindow} days`,
+      label: t('report.joints.daysWithDiscomfort'),
+      value: t('report.joints.daysOfDays', {
+        withDiscomfort: joints.daysWithDiscomfort,
+        total: joints.daysInWindow,
+      }),
     },
     ...(joints.mostAffectedArea
-      ? [{ label: 'Most affected area', value: joints.mostAffectedArea }]
+      ? [{ label: t('report.joints.mostAffectedArea'), value: joints.mostAffectedArea }]
       : []),
     ...(joints.mostCommonSymptom
-      ? [{ label: 'Most common symptom', value: joints.mostCommonSymptom }]
+      ? [{ label: t('report.joints.mostCommonSymptom'), value: joints.mostCommonSymptom }]
       : []),
-    ...(joints.impact ? [{ label: 'Impact on your day', value: joints.impact }] : []),
+    ...(joints.impact ? [{ label: t('report.joints.impact'), value: joints.impact }] : []),
   ];
 
   return (
     <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
-      <Eyebrow className="mb-2">Joints &amp; stiffness</Eyebrow>
+      <Eyebrow className="mb-2">{t('report.joints.eyebrow')}</Eyebrow>
 
       <div className="flex items-baseline gap-2">
         <span className="text-[24px] leading-none text-on-surface">
@@ -123,7 +101,7 @@ function JointsCard({ joints, report }: { joints: JointsSummary; report: WeeklyR
             className="text-[11.5px]"
             style={{ fontFamily: MULISH, color: JOINT_DIRECTION_COLOR[joints.direction] }}
           >
-            {JOINT_DIRECTION_COPY[joints.direction]}
+            {t(`report.joints.direction.${joints.direction}`)}
           </span>
         )}
       </div>
@@ -131,7 +109,7 @@ function JointsCard({ joints, report }: { joints: JointsSummary; report: WeeklyR
         className="mt-1.5 text-[9.5px] uppercase tracking-[0.1em] text-outline"
         style={{ fontFamily: MULISH }}
       >
-        Average discomfort
+        {t('report.joints.averageDiscomfort')}
       </div>
 
       <div className="mt-2.5">
@@ -142,12 +120,12 @@ function JointsCard({ joints, report }: { joints: JointsSummary; report: WeeklyR
           coverageStart={report.seriesCoverageStart}
           coverageEnd={report.coverageEnd}
           scale={scaleFor('joints')}
-          label="Joint discomfort"
+          label={t('report.joints.chartLabel')}
           unit=""
         />
       </div>
       <p className="mt-2 text-[9.5px] leading-[1.35] text-outline" style={{ fontFamily: MULISH }}>
-        Higher means more discomfort — the opposite of the rings above.
+        {t('report.joints.higherIsWorse')}
       </p>
 
       <dl className="mt-3 flex flex-col gap-1.5">
@@ -271,11 +249,13 @@ function ArrowButton({
  * grid cannot say "which week" without a second selection model.
  */
 function CalendarButton({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation();
+
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label="Pick a day"
+      aria-label={t('report.pickADay')}
       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface transition-opacity active:opacity-60"
     >
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -312,6 +292,9 @@ function PeriodNav({
   /** Absent on weekly and monthly, where the picker does not apply. */
   onOpenCalendar?: () => void;
 }) {
+  const { t } = useTranslation();
+  const noun = periodNoun(period);
+
   return (
     <div className="mt-3 flex flex-col items-center">
       <div className="flex items-center gap-1">
@@ -319,7 +302,7 @@ function PeriodNav({
           direction="prev"
           disabled={!data?.canGoBack}
           onClick={() => onStep(1)}
-          label={`Previous ${PERIOD_NOUN[period]}`}
+          label={t('report.previousPeriod', { noun })}
         />
         <span
           aria-live="polite"
@@ -332,7 +315,7 @@ function PeriodNav({
           direction="next"
           disabled={!data?.canGoForward}
           onClick={() => onStep(-1)}
-          label={`Next ${PERIOD_NOUN[period]}`}
+          label={t('report.nextPeriod', { noun })}
         />
         {onOpenCalendar && <CalendarButton onClick={onOpenCalendar} />}
       </div>
@@ -344,7 +327,7 @@ function PeriodNav({
           it says now, and only when it applies. */}
       {data && data.coverageStart !== data.periodStart && (
         <p className="mt-1 text-[11px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
-          Your data from {formatShortDay(data.coverageStart)}
+          {t('report.yourDataFrom', { date: formatShortDay(data.coverageStart) })}
         </p>
       )}
 
@@ -355,7 +338,9 @@ function PeriodNav({
           className="mt-2 min-h-[34px] rounded-full bg-surface-bright px-4 text-[12px] font-medium text-primary"
           style={{ fontFamily: MULISH }}
         >
-          Back to {RESET_LABEL[period].toLowerCase()}
+          {t('report.backToPeriod', {
+            period: t(`summary.periods.${period}`).toLocaleLowerCase(),
+          })}
         </button>
       )}
     </div>
@@ -449,10 +434,16 @@ function AnuShell({
  * instead.
  */
 function AnuTalkCard({ onOpen }: { onOpen: () => void }) {
+  const { t } = useTranslation();
+
   return (
-    <AnuShell eyebrow="Talk to Anu" ariaLabel="Talk to ANU. Open the chat" onOpen={onOpen}>
+    <AnuShell
+      eyebrow={t('report.talkToAnu')}
+      ariaLabel={t('report.talkToAnuAria')}
+      onOpen={onOpen}
+    >
       <p className="text-[14px] leading-[1.45] text-on-surface" style={{ fontFamily: MULISH }}>
-        Something on your mind? I&apos;m here to help.
+        {t('report.talkToAnuBody')}
       </p>
     </AnuShell>
   );
@@ -484,12 +475,13 @@ function AnuInsightCard({
   reflection: string;
   onOpen: () => void;
 }) {
+  const { t } = useTranslation();
   const lines = [...insights.map((insight) => insight.body), reflection];
 
   return (
     <AnuShell
-      eyebrow="Anu's insight"
-      ariaLabel="ANU's insight. Open the chat with ANU"
+      eyebrow={t('report.anuInsight')}
+      ariaLabel={t('report.anuInsightAria')}
       onOpen={onOpen}
       interactive={ANU_INSIGHT_TAP_THROUGH}
     >
@@ -553,12 +545,13 @@ function TrackerListCard({
   report: WeeklyReportResponse;
   onSelectRing: (key: ReportRingKey) => void;
 }) {
+  const { t } = useTranslation();
   const isDaily = report.period === 'daily';
 
   return (
     <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-3.5">
       <div className="mb-1 flex items-center justify-between gap-2">
-        <Eyebrow className="mb-0">{TRACKER_EYEBROW[report.period]}</Eyebrow>
+        <Eyebrow className="mb-0">{t(`report.trackerEyebrow.${report.period}`)}</Eyebrow>
         <span
           className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-[9.5px] uppercase tracking-[0.08em] text-on-surface-variant"
           style={{ fontFamily: MULISH }}
@@ -633,6 +626,7 @@ function ReportBody({
   /** Steps one period back — the way out of an empty window. */
   onStepBack: () => void;
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const isDaily = report.period === 'daily';
   const isWeekly = report.period === 'weekly';
@@ -650,11 +644,13 @@ function ReportBody({
 
       {!hasAnyData && (
         <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
-          <Eyebrow tone="muted">Nothing logged</Eyebrow>
+          <Eyebrow tone="muted">{t('report.nothingLogged')}</Eyebrow>
           <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
             {isDaily
-              ? 'No check-ins for this day. A couple of answers is all it takes to fill this in.'
-              : `No check-ins in this ${isWeekly ? 'week' : 'month'} yet.`}
+              ? t('report.emptyDaily')
+              : isWeekly
+                ? t('report.emptyWeekly')
+                : t('report.emptyMonthly')}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -663,7 +659,7 @@ function ReportBody({
               className="min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-medium text-on-secondary"
               style={{ fontFamily: MULISH }}
             >
-              Log how you feel
+              {t('report.logHowYouFeel')}
             </button>
             {/* Without this, a month whose first days are unlogged is a dead
                 end: the previous month can be full and the only way to it is an
@@ -677,7 +673,13 @@ function ReportBody({
                 className="min-h-[44px] rounded-full bg-surface-bright px-5 text-[13px] font-medium text-primary"
                 style={{ fontFamily: MULISH }}
               >
-                See {PREVIOUS_LABEL[report.period][report.offset === 0 ? 0 : 1]}
+                {t('report.seePrevious', {
+                  label: t(
+                    `report.previousLabel.${report.period}.${
+                      report.offset === 0 ? 'current' : 'earlier'
+                    }`,
+                  ),
+                })}
               </button>
             )}
           </div>
@@ -747,10 +749,9 @@ function ReportBody({
 
       {report.calibrating && (
         <article className="rounded-[20px] border border-tertiary/25 bg-surface-raised p-4">
-          <Eyebrow tone="gold">Still calibrating</Eyebrow>
+          <Eyebrow tone="gold">{t('report.stillCalibrating')}</Eyebrow>
           <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
-            Your first two weeks are still filling in. These numbers settle once fourteen days are
-            logged.
+            {t('report.calibratingBody')}
           </p>
         </article>
       )}
@@ -786,6 +787,7 @@ function initialPeriod(): SummaryPeriod {
 }
 
 export default function WeeklyReportRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [period, setPeriod] = useState<SummaryPeriod>(initialPeriod);
   const [offset, setOffset] = useState(0);
@@ -840,14 +842,16 @@ export default function WeeklyReportRoute() {
           sticky headers. */}
       <header className="shrink-0 bg-surface">
         <div className="px-3 pb-4 pt-[max(0.875rem,env(safe-area-inset-top))]">
-          <Eyebrow tone="plum">Your summary</Eyebrow>
+          <Eyebrow tone="plum">{t('report.eyebrow')}</Eyebrow>
           {/* Not "benchmark": nothing on this page compares the user to anyone
               but herself, and the word promised a reference we do not have. */}
           <h1 className="font-display mb-3 text-[26px] leading-[1.15] text-on-surface">
-            {PAGE_TITLE[period][0]}{' '}
-            <em className="not-italic text-primary" style={{ fontFamily: FRAUNCES }}>
-              {PAGE_TITLE[period][1]}
-            </em>
+            <Trans
+              i18nKey={`report.titles.${period}`}
+              components={{
+                1: <em className="not-italic text-primary" style={{ fontFamily: FRAUNCES }} />,
+              }}
+            />
           </h1>
 
           <PeriodToggle value={period} onChange={changePeriod} />
@@ -875,7 +879,7 @@ export default function WeeklyReportRoute() {
               className="mt-3 min-h-[44px] rounded-full bg-secondary px-5 text-[13px] font-medium text-on-secondary"
               style={{ fontFamily: MULISH }}
             >
-              Try again
+              {t('common.tryAgain')}
             </button>
           </article>
         </section>

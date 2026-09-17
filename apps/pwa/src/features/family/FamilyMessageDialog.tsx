@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { sendFamilyThanks } from './api';
 import type { FamilyMessage } from './familyMessageLink';
 
@@ -14,6 +15,7 @@ export function FamilyMessageDialog({
   message: FamilyMessage | null;
   onDismiss: () => void;
 }) {
+  const { t } = useTranslation();
   const [thanking, setThanking] = useState(false);
 
   if (!message) return null;
@@ -39,7 +41,7 @@ export function FamilyMessageDialog({
       <button
         type="button"
         className="absolute inset-0 bg-[#3E2542]/60"
-        aria-label="Dismiss message"
+        aria-label={t('family.message.dismiss')}
         onClick={onDismiss}
       />
 
@@ -56,7 +58,7 @@ export function FamilyMessageDialog({
           className="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-tertiary"
           style={mulish}
         >
-          {message.from} says
+          {t('family.message.says', { name: message.from })}
         </p>
 
         <blockquote
@@ -72,7 +74,7 @@ export function FamilyMessageDialog({
           className="mt-6 min-h-[46px] w-full rounded-full bg-secondary px-5 text-[14px] font-semibold text-on-secondary"
           style={mulish}
         >
-          Thank you 💛
+          {t('family.message.thankYou')}
         </button>
         <button
           type="button"
@@ -80,10 +82,10 @@ export function FamilyMessageDialog({
           className="mt-1.5 min-h-[44px] w-full rounded-full px-5 text-[13px] font-semibold text-on-surface-variant"
           style={mulish}
         >
-          Close
+          {t('common.close')}
         </button>
         <p className="mt-2 text-[11px] text-outline" style={mulish}>
-          Notes are not saved — this one closes for good.
+          {t('family.message.notSaved')}
         </p>
       </div>
     </div>

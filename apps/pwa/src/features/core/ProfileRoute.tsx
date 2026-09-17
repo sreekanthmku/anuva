@@ -1,39 +1,32 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LanguageToggle } from '../../i18n/LanguageToggle';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { useAuth } from '../auth/auth-context';
 import { FamilyConnectionSection } from '../family/FamilyConnectionSection';
 import { BottomNav } from './components/BottomNav';
 
-const menuRows: { label: string; hint: string; id?: string; to?: string }[] = [
-  {
-    id: 'assessment-report',
-    label: 'View my assessment report',
-    hint: 'Your personalised report · save as PDF',
-    to: '/assessment-report',
-  },
-  {
-    id: 'bookings',
-    label: 'Your consultations',
-    hint: 'Upcoming, past & recordings',
-    to: '/my-bookings',
-  },
-  {
-    id: 'privacy',
-    label: 'Privacy & data',
-    hint: 'DPDP · export or delete',
-    to: '/privacy',
-  },
-  { label: 'Subscription', hint: 'Plan & billing' },
-  { id: 'help', label: 'Help & support', hint: 'Ask us anything · we reply in the app', to: '/help' },
+/** Order and destination only. Label and hint are `profile.menu.<key>`. */
+const menuRows: { key: string; to?: string }[] = [
+  { key: 'assessmentReport', to: '/assessment-report' },
+  { key: 'bookings', to: '/my-bookings' },
+  { key: 'privacy', to: '/privacy' },
+  { key: 'subscription' },
+  { key: 'help', to: '/help' },
 ];
 
 export default function ProfileRoute() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const displayName = user?.name?.trim() || 'Anuva Wellness Member';
+  const displayName = user?.name?.trim() || t('profile.displayNameFallback');
   const initial = displayName.charAt(0).toUpperCase() || 'A';
+  // Formatted in the active language, like every other date in the app.
   const memberSince = user
-    ? new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+    ? new Date(user.createdAt).toLocaleDateString(i18n.language, {
+        month: 'short',
+        year: 'numeric',
+      })
     : null;
 
   return (
@@ -46,13 +39,14 @@ export default function ProfileRoute() {
             className="bg-transparent p-0 text-[13px] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            ← Home
+            {t('profile.backHome')}
           </button>
+          <LanguageToggle />
         </div>
       </header>
 
       <section className="px-3 pb-6 pt-2">
-        <Eyebrow>Your account</Eyebrow>
+        <Eyebrow>{t('profile.yourAccount')}</Eyebrow>
 
         <div className="mb-6 flex items-center gap-4">
           <span
@@ -75,13 +69,13 @@ export default function ProfileRoute() {
               className="mt-0.5 truncate text-[13px] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              {user?.phone || 'Phone not available'}
+              {user?.phone || t('profile.phoneUnavailable')}
             </p>
             <p
               className="mt-1 text-[11px] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              {memberSince ? `Member since ${memberSince}` : 'Member'}
+              {memberSince ? t('profile.memberSince', { date: memberSince }) : t('profile.member')}
             </p>
           </div>
         </div>
@@ -89,7 +83,7 @@ export default function ProfileRoute() {
         <article className="overflow-hidden rounded-[20px] border border-border-default bg-surface-raised">
           <ul className="divide-y divide-border-default">
             {menuRows.map((row) => (
-              <li key={row.label}>
+              <li key={row.key}>
                 <button
                   type="button"
                   onClick={row.to ? () => navigate(row.to as string) : undefined}
@@ -99,13 +93,13 @@ export default function ProfileRoute() {
                     className="text-[15px] text-on-surface"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
-                    {row.label}
+                    {t(`profile.menu.${row.key}.label`)}
                   </span>
                   <span
                     className="text-[12px] text-on-surface-variant"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
-                    {row.hint}
+                    {t(`profile.menu.${row.key}.hint`)}
                   </span>
                 </button>
               </li>
@@ -125,7 +119,7 @@ export default function ProfileRoute() {
           className="mt-4 w-full rounded-full border border-border-default bg-surface-container-low px-2 py-3.5 text-[13px] font-medium text-on-surface-variant"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
-          Sign out
+          {t('profile.signOut')}
         </button>
       </section>
 

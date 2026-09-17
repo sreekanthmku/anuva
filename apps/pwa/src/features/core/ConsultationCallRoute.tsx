@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+// The instance, not the hook, for the error paths below: they run inside callbacks, and putting
+// `t` in their dependency arrays would re-run the effect that loads the call on a language change.
+import i18n from '../../i18n';
 import { Room, RoomEvent, Track, type RemoteTrack } from 'livekit-client';
 import type { ConsultationCallState } from '@anuva/shared';
 import {
@@ -22,6 +26,7 @@ function attachTrack(track: RemoteTrack, videoEl: HTMLVideoElement | null, audio
 }
 
 export default function ConsultationCallRoute() {
+  const { t } = useTranslation();
   const { id = '' } = useParams();
   const roomRef = useRef<Room | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -42,7 +47,7 @@ export default function ConsultationCallRoute() {
 
     async function load() {
       if (!id) {
-        setError('Missing consultation id.');
+        setError(i18n.t('call.missingId'));
         setScreen('error');
         return;
       }
@@ -63,7 +68,7 @@ export default function ConsultationCallRoute() {
         }
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Unable to load the call.');
+        setError(err instanceof Error ? err.message : i18n.t('call.loadFailed'));
         setScreen('error');
       }
     }
@@ -132,7 +137,7 @@ export default function ConsultationCallRoute() {
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
       room.disconnect();
       roomRef.current = null;
-      setError(err instanceof Error ? err.message : 'Unable to join the call.');
+      setError(err instanceof Error ? err.message : i18n.t('call.joinFailed'));
       setScreen('error');
     }
   }, [call?.patientConsented, id]);
@@ -149,7 +154,7 @@ export default function ConsultationCallRoute() {
       await room.localParticipant.setMicrophoneEnabled(next);
       setMicOn(next);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not change the microphone.');
+      setError(err instanceof Error ? err.message : i18n.t('call.micFailed'));
     }
   }, [micOn]);
 
@@ -171,7 +176,7 @@ export default function ConsultationCallRoute() {
         localVideoRef.current.srcObject = null;
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not change the camera.');
+      setError(err instanceof Error ? err.message : i18n.t('call.cameraFailed'));
     }
   }, [cameraOn]);
 
@@ -185,7 +190,7 @@ export default function ConsultationCallRoute() {
       const response = await endConsultationCall(id);
       setCall(response.call);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to end the call.');
+      setError(err instanceof Error ? err.message : i18n.t('call.endFailed'));
     } finally {
       roomRef.current?.disconnect();
       setScreen('ended');
@@ -198,36 +203,34 @@ export default function ConsultationCallRoute() {
       <header className="border-b border-border-default bg-surface/95 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <Link to="/home" className="rounded-full border border-border-default px-3 py-1.5 text-[12px] font-semibold">
-            Home
+            {t('call.home')}
           </Link>
           <div className="rounded-full bg-primary-fixed px-3 py-1 text-[11px] font-semibold text-primary">
             {call?.recording?.status
-              ? `Recording ${call.recording.status}`
+              ? t('call.recordingStatus', { status: call.recording.status })
               : call?.patientConsentRequired
-                ? 'Audio recorded call'
-                : 'Secure call'}
+                ? t('call.audioRecorded')
+                : t('call.secure')}
           </div>
         </div>
-        <h1 className="mt-4 font-display text-[29px] leading-[1.08]">Doctor consultation</h1>
+        <h1 className="mt-4 font-display text-[29px] leading-[1.08]">{t('call.title')}</h1>
         <p className="mt-2 text-[13px] leading-[1.5] text-on-surface-variant">
-          {call?.patientConsentRequired
-            ? 'The doctor starts the room. Audio recording begins only after you consent and join.'
-            : 'The doctor starts the room. This Phase 1 call is not server recorded.'}
+          {call?.patientConsentRequired ? t('call.introRecorded') : t('call.intro')}
         </p>
       </header>
 
       <section className="px-4 py-4">
         {screen === 'loading' ? (
           <div className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-6 text-[13px] text-on-surface-variant">
-            Checking call status...
+            {t('call.checkingStatus')}
           </div>
         ) : null}
 
         {screen === 'waiting' ? (
           <div className="rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-6">
-            <h2 className="font-display text-[24px] leading-[1.1]">Waiting for doctor</h2>
+            <h2 className="font-display text-[24px] leading-[1.1]">{t('call.waitingTitle')}</h2>
             <p className="mt-2 text-[13px] leading-[1.5] text-on-surface-variant">
-              You will be able to join as soon as the doctor starts the consultation.
+              {t('call.waitingBody')}
             </p>
           </div>
         ) : null}
@@ -235,19 +238,17 @@ export default function ConsultationCallRoute() {
         {screen === 'consent' ? (
           <div className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-5">
             <h2 className="font-display text-[24px] leading-[1.1]">
-              {call?.patientConsentRequired ? 'Recording consent' : 'Join consultation'}
+              {call?.patientConsentRequired ? t('call.consentTitle') : t('call.joinTitle')}
             </h2>
             <p className="mt-3 text-[13px] leading-[1.6] text-on-surface-variant">
-              {call?.patientConsentRequired
-                ? 'This consultation audio will be recorded securely on Anuva infrastructure for clinical continuity. The recording is not sent through a third-party calling provider.'
-                : 'Your doctor is ready. Camera and microphone permissions are requested only when you join.'}
+              {call?.patientConsentRequired ? t('call.consentBody') : t('call.joinBody')}
             </p>
             <button
               type="button"
               onClick={connect}
               className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-secondary px-4 py-3 text-[14px] font-semibold text-on-secondary"
             >
-              {call?.patientConsentRequired ? 'Consent and join call' : 'Join call'}
+              {call?.patientConsentRequired ? t('call.consentAndJoin') : t('call.joinCall')}
             </button>
           </div>
         ) : null}
@@ -260,18 +261,18 @@ export default function ConsultationCallRoute() {
               {!remoteConnected ? (
                 <div className="absolute inset-0 grid place-items-center px-8 text-center">
                   <div>
-                    <div className="font-display text-[26px]">Connecting to doctor</div>
+                    <div className="font-display text-[26px]">{t('call.connecting')}</div>
                     <p className="mt-2 text-[13px] leading-[1.5] text-[#EADFEF]">
-                      Keep this screen open while the room connects.
+                      {t('call.keepOpen')}
                     </p>
                   </div>
                 </div>
               ) : !remoteVideoOn ? (
                 <div className="absolute inset-0 grid place-items-center px-8 text-center">
                   <div>
-                    <div className="font-display text-[26px]">Doctor camera is off</div>
+                    <div className="font-display text-[26px]">{t('call.doctorCameraOff')}</div>
                     <p className="mt-2 text-[13px] leading-[1.5] text-[#EADFEF]">
-                      You are connected on audio.
+                      {t('call.audioOnly')}
                     </p>
                   </div>
                 </div>
@@ -280,7 +281,7 @@ export default function ConsultationCallRoute() {
                 <video ref={localVideoRef} className="h-full w-full object-cover" autoPlay muted playsInline />
                 {!cameraOn ? (
                   <div className="absolute inset-0 grid place-items-center bg-[#4A3050] px-2 text-center text-[10px] font-semibold text-[#EADFEF]">
-                    Camera off
+                    {t('call.cameraOff')}
                   </div>
                 ) : null}
               </div>
@@ -293,7 +294,7 @@ export default function ConsultationCallRoute() {
                 disabled={screen !== 'connected'}
                 className="rounded-full border border-border-default bg-surface-raised px-3 py-3 text-[13px] font-semibold disabled:opacity-45"
               >
-                {micOn ? 'Mute' : 'Unmute'}
+                {micOn ? t('call.mute') : t('call.unmute')}
               </button>
               <button
                 type="button"
@@ -301,7 +302,7 @@ export default function ConsultationCallRoute() {
                 disabled={screen !== 'connected'}
                 className="rounded-full border border-border-default bg-surface-raised px-3 py-3 text-[13px] font-semibold disabled:opacity-45"
               >
-                {cameraOn ? 'Camera off' : 'Camera on'}
+                {cameraOn ? t('call.cameraOff') : t('call.cameraOn')}
               </button>
               <button
                 type="button"
@@ -309,7 +310,7 @@ export default function ConsultationCallRoute() {
                 disabled={leaving || screen !== 'connected'}
                 className="rounded-full bg-error px-3 py-3 text-[13px] font-semibold text-on-error disabled:opacity-45"
               >
-                {leaving ? 'Leaving' : 'Leave'}
+                {leaving ? t('call.leaving') : t('call.leave')}
               </button>
             </div>
           </>
@@ -317,21 +318,21 @@ export default function ConsultationCallRoute() {
 
         {screen === 'error' ? (
           <div className="rounded-[20px] border border-error/20 bg-error-container px-4 py-4 text-[13px] text-on-error-container">
-            {error ?? 'Unable to open this call.'}
+            {error ?? t('call.openFailed')}
           </div>
         ) : null}
 
         {screen === 'ended' ? (
           <div className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-5">
-            <h2 className="font-display text-[24px] leading-[1.1]">Consultation ended</h2>
+            <h2 className="font-display text-[24px] leading-[1.1]">{t('call.endedTitle')}</h2>
             <p className="mt-2 text-[13px] leading-[1.5] text-on-surface-variant">
-              The call has finished. You can close this screen.
+              {t('call.endedBody')}
             </p>
             <Link
               to="/home"
               className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-secondary px-4 py-3 text-[14px] font-semibold text-on-secondary"
             >
-              Back to home
+              {t('call.backToHome')}
             </Link>
           </div>
         ) : null}

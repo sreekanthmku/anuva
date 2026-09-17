@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { MoodEmotion } from '@anuva/shared';
+import { useTranslation } from 'react-i18next';
 import { twemojiUrl } from '../../../shared/lib/twemoji';
 
 type MoodLogSheetProps = {
@@ -11,23 +12,25 @@ type MoodLogSheetProps = {
   onSave: (feeling: number, emotions: MoodEmotion[]) => void | Promise<void>;
 };
 
-const FEELINGS: { value: number; label: string; emoji: string }[] = [
-  { value: 5, label: 'Great', emoji: '😄' },
-  { value: 4, label: 'Good', emoji: '😊' },
-  { value: 3, label: 'Okay', emoji: '😐' },
-  { value: 2, label: 'Low', emoji: '😔' },
-  { value: 1, label: 'Awful', emoji: '😩' },
+/** The five-point scale, as stored values and their emoji. Labels: `moodSheet.feelings.<value>`. */
+const FEELINGS: { value: number; emoji: string }[] = [
+  { value: 5, emoji: '😄' },
+  { value: 4, emoji: '😊' },
+  { value: 3, emoji: '😐' },
+  { value: 2, emoji: '😔' },
+  { value: 1, emoji: '😩' },
 ];
 
-const EMOTIONS: { value: MoodEmotion; label: string }[] = [
-  { value: 'calm', label: 'Calm' },
-  { value: 'energized', label: 'Energized' },
-  { value: 'anxious', label: 'Anxious' },
-  { value: 'irritable', label: 'Irritable' },
-  { value: 'sad', label: 'Sad' },
-  { value: 'tearful', label: 'Tearful' },
-  { value: 'foggy', label: 'Foggy' },
-  { value: 'overwhelmed', label: 'Overwhelmed' },
+/** Stored values, in display order. Labels: `moodSheet.emotions.<value>`. */
+const EMOTIONS: MoodEmotion[] = [
+  'calm',
+  'energized',
+  'anxious',
+  'irritable',
+  'sad',
+  'tearful',
+  'foggy',
+  'overwhelmed',
 ];
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -41,6 +44,7 @@ export function MoodLogSheet({
   onClose,
   onSave,
 }: MoodLogSheetProps) {
+  const { t } = useTranslation();
   const [feeling, setFeeling] = useState<number | null>(null);
   const [emotions, setEmotions] = useState<MoodEmotion[]>([]);
 
@@ -81,7 +85,7 @@ export function MoodLogSheet({
         type="button"
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
-        aria-label="Close mood log"
+        aria-label={t('moodSheet.close')}
       />
       <div
         role="dialog"
@@ -94,18 +98,19 @@ export function MoodLogSheet({
           style={{ fontFamily: FONT_MONO }}
         >
           <span className="h-px w-3 bg-primary/60" />
-          Mood check-in
+          {t('moodSheet.eyebrow')}
         </div>
         <h2
           className="mb-5 text-[20px] text-on-surface"
           style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
         >
-          How are you feeling?
+          {t('moodSheet.title')}
         </h2>
 
         <div className="mb-6 grid grid-cols-5 gap-2">
           {FEELINGS.map((f) => {
             const selected = feeling === f.value;
+            const label = t(`moodSheet.feelings.${f.value}`);
             return (
               <button
                 key={f.value}
@@ -118,12 +123,12 @@ export function MoodLogSheet({
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                <img src={twemojiUrl(f.emoji)} alt={f.label} width={34} height={34} />
+                <img src={twemojiUrl(f.emoji)} alt={label} width={34} height={34} />
                 <span
                   className={`text-[9px] uppercase tracking-[0.04em] ${selected ? 'text-on-surface' : 'text-outline'}`}
                   style={{ fontFamily: FONT_MONO }}
                 >
-                  {f.label}
+                  {label}
                 </span>
               </button>
             );
@@ -131,16 +136,17 @@ export function MoodLogSheet({
         </div>
 
         <p className="mb-2.5 text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
-          Anything specific? <span className="text-outline">(optional)</span>
+          {t('moodSheet.anythingSpecific')}{' '}
+          <span className="text-outline">{t('moodSheet.optional')}</span>
         </p>
         <div className="mb-7 flex flex-wrap gap-2">
-          {EMOTIONS.map((e) => {
-            const selected = emotions.includes(e.value);
+          {EMOTIONS.map((emotion) => {
+            const selected = emotions.includes(emotion);
             return (
               <button
-                key={e.value}
+                key={emotion}
                 type="button"
-                onClick={() => toggleEmotion(e.value)}
+                onClick={() => toggleEmotion(emotion)}
                 aria-pressed={selected}
                 className="whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors"
                 style={{
@@ -150,7 +156,7 @@ export function MoodLogSheet({
                   borderColor: selected ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
                 }}
               >
-                {e.label}
+                {t(`moodSheet.emotions.${emotion}`)}
               </button>
             );
           })}
@@ -163,7 +169,7 @@ export function MoodLogSheet({
           className="w-full rounded-full bg-primary py-3.5 text-[14px] font-medium text-surface transition-opacity active:opacity-80 disabled:opacity-40"
           style={{ fontFamily: FONT_BODY }}
         >
-          {saving ? 'Saving…' : 'Save mood'}
+          {saving ? t('common.saving') : t('moodSheet.save')}
         </button>
       </div>
     </div>

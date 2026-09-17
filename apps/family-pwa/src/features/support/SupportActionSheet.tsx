@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { FamilySupportActionKind } from '@anuva/shared';
-import { CONFIRMED_KINDS, GIFT_KINDS, SUPPORT_ACTIONS, supportSheet } from '../data/labels';
+import { CONFIRMED_KINDS, GIFT_KINDS, SUPPORT_ACTIONS } from '../data/labels';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { PrimaryButton } from '../shell/ui';
 
@@ -47,6 +48,7 @@ export function SupportActionSheet({
   onSendMessage,
   onRemindLater,
 }: Props) {
+  const { t } = useTranslation();
   const titleId = useId();
   const [selected, setSelected] = useState<FamilySupportActionKind>('message');
   const [text, setText] = useState('');
@@ -76,7 +78,7 @@ export function SupportActionSheet({
       <button
         type="button"
         className="absolute inset-0 animate-[anuvaFade_260ms_ease-out] bg-[#3E2542]/50 backdrop-blur-[3px]"
-        aria-label="Close"
+        aria-label={t('common.close')}
         onClick={onClose}
       />
       <div
@@ -88,13 +90,13 @@ export function SupportActionSheet({
         <div className="mx-auto mb-4 h-1.5 w-11 rounded-full bg-outline-variant" aria-hidden />
 
         <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-tertiary">
-          {supportSheet.label}
+          {t('support.label')}
         </p>
         <h2 id={titleId} className="mt-1 font-display text-[23px] font-medium leading-tight text-primary">
-          {supportSheet.headline}
+          {t('support.headline')}
         </h2>
 
-        <div className="mt-4 grid grid-cols-2 gap-2.5" role="group" aria-label="Support actions">
+        <div className="mt-4 grid grid-cols-2 gap-2.5" role="group" aria-label={t('support.actionsGroup')}>
           {SUPPORT_ACTIONS.map((action) => {
             const pressed = selected === action.id;
             const done = doneKinds.includes(action.id);
@@ -121,11 +123,11 @@ export function SupportActionSheet({
                       className="shrink-0"
                     />
                   ) : null}
-                  <span className="leading-snug">{action.label}</span>
+                  <span className="leading-snug">{t(action.labelKey)}</span>
                 </span>
                 {done ? (
                   <span className="mt-1 block text-[11px] font-semibold text-success">
-                    ✓ done today
+                    {t('support.doneTodayBadge')}
                   </span>
                 ) : null}
               </button>
@@ -137,17 +139,17 @@ export function SupportActionSheet({
         {selected === 'message' ? (
           <div className="mt-4">
             <label className="block">
-              <span className="text-[12px] font-bold text-on-surface">Write her a note</span>
+              <span className="text-[12px] font-bold text-on-surface">{t('support.writeNote')}</span>
               <textarea
                 value={text}
                 onChange={(event) => setText(event.target.value.slice(0, MAX_MESSAGE))}
                 rows={3}
-                placeholder="Thinking of you today."
+                placeholder={t('support.notePlaceholder')}
                 className="mt-1.5 w-full resize-none rounded-[18px] border border-border-default bg-surface-container-low px-4 py-3 text-[14.5px] leading-[1.55] text-on-surface placeholder:text-outline focus:border-secondary focus:ring-2 focus:ring-secondary/25"
               />
             </label>
             <div className="mt-1 flex items-center justify-between text-[11px] text-outline">
-              <span>Arrives as a notification. Not saved anywhere.</span>
+              <span>{t('support.noteDisclaimer')}</span>
               <span className="tabular-nums">
                 {text.length}/{MAX_MESSAGE}
               </span>
@@ -160,8 +162,8 @@ export function SupportActionSheet({
         {isGift ? (
           <GiftPreview
             emoji={selectedAction?.emoji ?? '🌻'}
-            note={supportSheet.giftNote}
-            coming={supportSheet.giftComingSoon}
+            note={t('support.giftNote')}
+            coming={t('support.giftComingSoon')}
           />
         ) : null}
 
@@ -169,7 +171,7 @@ export function SupportActionSheet({
             be a surprise in the toast. */}
         {needsConfirm ? (
           <p className="mt-4 rounded-[18px] border border-border-default bg-surface-container-low px-4 py-3 text-[12.5px] leading-snug text-on-surface-variant">
-            {supportSheet.callNote}
+            {t('support.callNote')}
           </p>
         ) : null}
 
@@ -186,14 +188,14 @@ export function SupportActionSheet({
           }}
         >
           {sending
-            ? 'Sending…'
+            ? t('common.sending')
             : selected === 'message'
-              ? 'Send note'
+              ? t('support.sendNote')
               : isGift
-                ? 'Send it'
+                ? t('support.sendIt')
                 : needsConfirm
-                  ? supportSheet.callSelect
-                  : 'Done'}
+                  ? t('support.callSelect')
+                  : t('common.done')}
           {/* The gift travels as its picture, not as its name — same on both phones. */}
           {!sending && isGift && selectedAction?.emoji ? (
             <img src={twemojiUrl(selectedAction.emoji)} alt="" aria-hidden width={20} height={20} />
@@ -205,7 +207,7 @@ export function SupportActionSheet({
           onClick={onRemindLater}
           className="mt-1.5 flex min-h-[46px] w-full items-center justify-center rounded-full px-5 text-[14px] font-semibold text-primary"
         >
-          {supportSheet.remindLater}
+          {t('support.remindLater')}
         </button>
       </div>
     </div>

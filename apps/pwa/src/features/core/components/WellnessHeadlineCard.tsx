@@ -1,16 +1,11 @@
 import type { SummaryHeadline, SummaryPeriod } from '@anuva/shared';
+import { useTranslation } from 'react-i18next';
 import { RING_EMPTY_COLOR } from '../ringColors';
 import { wellnessColor } from '../wellnessDisplay';
 import { WellnessScene } from './WellnessScene';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
 const FRAUNCES = '"Fraunces", sans-serif';
-
-const EYEBROW: Record<SummaryPeriod, string> = {
-  daily: "How you're doing today",
-  weekly: 'How your week went',
-  monthly: 'How your month went',
-};
 
 /**
  * The card's own wash, one per band.
@@ -48,6 +43,7 @@ export function WellnessHeadlineCard({
   headline: SummaryHeadline;
   period: SummaryPeriod;
 }) {
+  const { t } = useTranslation();
   const color = wellnessColor(headline.score);
   const hasScore = headline.score != null;
 
@@ -72,7 +68,7 @@ export function WellnessHeadlineCard({
           className="text-[10.5px] font-semibold uppercase leading-none tracking-[0.12em] text-on-surface-variant"
           style={{ fontFamily: MULISH }}
         >
-          {EYEBROW[period]}
+          {t(`wellness.headlineEyebrow.${period}`)}
         </p>
 
         <h2
@@ -96,8 +92,8 @@ export function WellnessHeadlineCard({
           role="img"
           aria-label={
             hasScore
-              ? `Wellness ${headline.score} out of 100, ${headline.band}`
-              : 'No wellness score for this window yet'
+              ? t('wellness.headlineAria', { score: headline.score, band: headline.band })
+              : t('wellness.headlineAriaEmpty')
           }
         >
           <span
@@ -109,7 +105,7 @@ export function WellnessHeadlineCard({
             className="text-[11px] font-semibold leading-none text-on-surface"
             style={{ fontFamily: MULISH }}
           >
-            {hasScore ? `${headline.score}/100` : '—'}
+            {hasScore ? t('wellness.scoreOutOf', { score: headline.score }) : '—'}
           </span>
           {headline.band && (
             <span className="text-[11px] leading-none text-on-surface-variant" style={{ fontFamily: MULISH }}>

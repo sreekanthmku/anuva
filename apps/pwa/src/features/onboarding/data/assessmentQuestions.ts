@@ -1,66 +1,52 @@
+/**
+ * The pre-assessment, as structure only.
+ *
+ * Neither the prompt nor the answer labels live here any more — they are resolved through
+ * `assessment.questions.<id>` and `assessment.options.<value>` at render. What stays is the part
+ * that must never change with the language: the question order, each question's id, and the
+ * *values* its options carry. Scoring keys off those values (see `assessmentOutcome.ts`), so a
+ * woman answering in Tamil scores identically to one answering in English.
+ */
+
+export type AssessmentOptionValue =
+  | 'yes'
+  | 'no'
+  | 'sometimes'
+  | 'age_29_below'
+  | 'age_30_34'
+  | 'age_35_40'
+  | 'age_41_45'
+  | 'age_46_50'
+  | 'age_51_above';
+
 export type AssessmentQuestion = {
   id: string;
-  prompt: string;
-  options: string[];
+  /** Option values, in display order. Resolved to copy through `assessment.options.<value>`. */
+  options: AssessmentOptionValue[];
 };
 
+const YES_NO_SOMETIMES: AssessmentOptionValue[] = ['yes', 'no', 'sometimes'];
+
 export const assessmentQuestions: AssessmentQuestion[] = [
-  {
-    id: 'periods-unpredictable',
-    prompt:
-      'Have your periods become unpredictable (early or late, flow very heavy or very light, missed periods or prolonged bleeding)?',
-    options: ['Yes', 'No', 'Sometimes'],
-  },
-  {
-    id: 'hot-flashes',
-    prompt: 'Do you get sudden "waves" of heat in your face/neck (Hot Flashes)?',
-    options: ['Yes', 'No', 'Sometimes'],
-  },
-  {
-    id: 'night-sweats',
-    prompt: 'Do you wake up feeling hot or sweaty or damp at night?',
-    options: ['Yes', 'No', 'Sometimes'],
-  },
-  {
-    id: 'mood-swings',
-    prompt:
-      "Do you experience sudden mood swings you can't control (anxious, fear, worrying, crying)?",
-    options: ['Yes', 'No', 'Sometimes'],
-  },
-  {
-    id: 'weight-gain',
-    prompt: 'Have you gained weight recently, especially around the tummy?',
-    options: ['Yes', 'No', 'Sometimes'],
-  },
-  {
-    id: 'vaginal-dryness',
-    prompt: 'Do you feel dryness or discomfort "down there" (vaginal area)?',
-    options: ['Yes', 'No', 'Sometimes'],
-  },
-  {
-    id: 'brain-fog',
-    prompt: 'Do you feel "brain fog" or find it hard to concentrate or memory loss?',
-    options: ['Yes', 'No', 'Sometimes'],
-  },
-  {
-    id: 'low-interest-intimacy',
-    prompt: 'Have you noticed a decrease in your interest in intimacy?',
-    options: ['Yes', 'No', 'Sometimes'],
-  },
-  {
-    id: 'facial-hair-body-odour',
-    prompt: 'Have you noticed an increase in facial hair or body odour?',
-    options: ['Yes', 'No', 'Sometimes'],
-  },
-  {
-    id: 'aches-fatigue',
-    prompt:
-      'Do you have unexplained aches in your joints or muscles? Do you feel unexplained fatigue?',
-    options: ['Yes', 'No', 'Sometimes'],
-  },
+  { id: 'periods-unpredictable', options: YES_NO_SOMETIMES },
+  { id: 'hot-flashes', options: YES_NO_SOMETIMES },
+  { id: 'night-sweats', options: YES_NO_SOMETIMES },
+  { id: 'mood-swings', options: YES_NO_SOMETIMES },
+  { id: 'weight-gain', options: YES_NO_SOMETIMES },
+  { id: 'vaginal-dryness', options: YES_NO_SOMETIMES },
+  { id: 'brain-fog', options: YES_NO_SOMETIMES },
+  { id: 'low-interest-intimacy', options: YES_NO_SOMETIMES },
+  { id: 'facial-hair-body-odour', options: YES_NO_SOMETIMES },
+  { id: 'aches-fatigue', options: YES_NO_SOMETIMES },
   {
     id: 'age-bracket',
-    prompt: 'Age Bracket?',
-    options: ['29 or below', '30-34', '35-40', '41-45', '46-50', '51 or above'],
+    options: [
+      'age_29_below',
+      'age_30_34',
+      'age_35_40',
+      'age_41_45',
+      'age_46_50',
+      'age_51_above',
+    ],
   },
 ];

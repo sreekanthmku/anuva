@@ -1,4 +1,6 @@
 import { WELLNESS_BANDS, wellnessGroupFor, type WellnessGroup } from '@anuva/shared';
+// The instance rather than the hook: this file is pure helpers, not components.
+import i18n from '../../i18n';
 import { GAUGE_BANDS, RING_EMPTY_COLOR, gaugeBandColor } from './ringColors';
 
 /**
@@ -32,17 +34,15 @@ export const GROUP_COLOR: Record<WellnessGroup, string> = {
   hard: GAUGE_BANDS[1],
 };
 
-export const GROUP_LABEL: Record<WellnessGroup, string> = {
-  good: 'Good days',
-  okay: 'Okay days',
-  hard: 'Hard days',
-};
+export function groupLabel(group: WellnessGroup): string {
+  return i18n.t(`wellness.groups.${group}`);
+}
 
 /** Screen-reader sentence for one point on the wellness chart. */
 export function wellnessAriaLabel(label: string, score: number | null): string {
-  if (score == null) return `${label}: nothing logged`;
+  if (score == null) return i18n.t('wellness.ariaNothingLogged', { label });
   const band = WELLNESS_BANDS.find((b) => score >= b.min)?.label ?? '';
-  return `${label}: ${band}, ${Math.round(score)} out of 100`;
+  return i18n.t('wellness.ariaScore', { label, band, score: Math.round(score) });
 }
 
 export { wellnessGroupFor };

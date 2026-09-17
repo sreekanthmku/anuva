@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { BookingEyebrow } from './BookingEyebrow';
 
 type TimeSlot = { id: string; label: string };
@@ -15,15 +16,17 @@ export function TimeSlotSection({
   onSelectTime,
   emptyMessage,
 }: TimeSlotSectionProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="mt-4">
-      <BookingEyebrow>Choose a time</BookingEyebrow>
+      <BookingEyebrow>{t('booking.chooseTime')}</BookingEyebrow>
       {slots.length === 0 ? (
         <div
           className="rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-3 text-[12px] text-on-surface-variant"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
-          {emptyMessage ?? 'No time slots available for this date.'}
+          {emptyMessage ?? t('booking.noTimeSlots')}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

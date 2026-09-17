@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import type { FamilyStatusResponse } from '@anuva/shared';
 import { createFamilyInvite, fetchFamilyStatus, removeFamilyMember } from './api';
 
@@ -10,22 +12,19 @@ import { createFamilyInvite, fetchFamilyStatus, removeFamilyMember } from './api
  * blocks the page and reads as a browser warning rather than a decision about a person.
  */
 
-const RELATIONSHIP_LABELS: Record<string, string> = {
-  partner: 'Partner',
-  child: 'Son / daughter',
-  parent: 'Parent',
-  sibling: 'Sibling',
-  friend: 'Friend',
-  other: 'Family',
-};
-
 const mulish = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' };
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  // The active language, not the device's: this date sits inside a translated sentence.
+  return new Date(iso).toLocaleDateString(i18n.language, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 export function FamilyConnectionSection() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<FamilyStatusResponse | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -37,9 +36,9 @@ export function FamilyConnectionSection() {
       setStatus(await fetchFamilyStatus());
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load your family settings.');
+      setError(e instanceof Error ? e.message : t('family.sharing.loadFailed'));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -60,11 +59,11 @@ export function FamilyConnectionSection() {
       setConfirming(false);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not disconnect them.');
+      setError(e instanceof Error ? e.message : t('family.sharing.disconnectFailed'));
     } finally {
       setBusy(false);
     }
-  }, [status?.member?.id, load]);
+  }, [status?.member?.id, load, t]);
 
   const newLink = useCallback(async () => {
     setBusy(true);
@@ -76,11 +75,11 @@ export function FamilyConnectionSection() {
       );
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not create a new link.');
+      setError(e instanceof Error ? e.message : t('family.sharing.newLinkFailed'));
     } finally {
       setBusy(false);
     }
-  }, [load]);
+  }, [load, t]);
 
   // Nothing to show for an account that has opted out of family features entirely.
   if (!status || status.optedOut) {
@@ -95,29 +94,33 @@ export function FamilyConnectionSection() {
         className="text-[15px] leading-snug text-on-surface"
         style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
       >
-        Family sharing
+        {t('family.sharing.title')}
       </h2>
 
       {member ? (
         <>
           <p className="mt-2 text-[13px] leading-[1.55] text-on-surface" style={mulish}>
-            <span className="font-semibold">{member.name}</span>
-            {' · '}
-            {RELATIONSHIP_LABELS[member.relationship] ?? 'Family'}
+            {t('family.sharing.nameAndRelationship', {
+              name: member.name,
+              relationship: t(`family.relationships.${member.relationship}`, {
+                defaultValue: t('family.relationships.other'),
+              }),
+            })}
           </p>
           <p className="mt-0.5 text-[11.5px] text-outline" style={mulish}>
-            {member.maskedPhone} · joined {formatDate(member.joinedAt)}
+            {t('family.sharing.phoneAndJoined', {
+              phone: member.maskedPhone,
+              date: formatDate(member.joinedAt),
+            })}
           </p>
           <p className="mt-2 text-[12px] leading-[1.5] text-on-surface-variant" style={mulish}>
-            They see your sleep, mood, stress and energy in words only — never your records, notes,
-            or conversations with Anu.
+            {t('family.sharing.whatTheySee')}
           </p>
 
           {confirming ? (
             <div className="mt-3 rounded-[14px] border border-error/30 bg-error-container/40 px-3.5 py-3">
               <p className="text-[12.5px] leading-[1.5] text-on-surface" style={mulish}>
-                Disconnect {member.name}? They lose access straight away, and you can invite someone
-                else afterwards.
+                {t('family.sharing.confirmDisconnect', { name: member.name })}
               </p>
               <div className="mt-2.5 flex gap-2">
                 <button
@@ -127,7 +130,7 @@ export function FamilyConnectionSection() {
                   className="min-h-[40px] flex-1 rounded-full bg-error px-3 text-[12.5px] font-semibold text-on-error disabled:opacity-60"
                   style={mulish}
                 >
-                  {busy ? 'Disconnecting…' : 'Yes, disconnect'}
+                  {busy ? t('family.sharing.disconnecting') : t('family.sharing.yesDisconnect')}
                 </button>
                 <button
                   type="button"
@@ -136,7 +139,7 @@ export function FamilyConnectionSection() {
                   className="min-h-[40px] flex-1 rounded-full border border-border-default px-3 text-[12.5px] font-medium text-on-surface-variant"
                   style={mulish}
                 >
-                  Keep them
+                  {t('family.sharing.keepThem')}
                 </button>
               </div>
             </div>
@@ -147,15 +150,14 @@ export function FamilyConnectionSection() {
               className="mt-3 min-h-[40px] w-full rounded-full border border-border-default px-3 text-[12.5px] font-medium text-on-surface-variant"
               style={mulish}
             >
-              Disconnect {member.name}
+              {t('family.sharing.disconnectName', { name: member.name })}
             </button>
           )}
         </>
       ) : (
         <>
           <p className="mt-2 text-[13px] leading-[1.55] text-on-surface-variant" style={mulish}>
-            Nobody is connected yet. Share your link and they will see how you are doing — trends
-            only, nothing you write.
+            {t('family.sharing.nobodyConnected')}
           </p>
           <button
             type="button"
@@ -164,7 +166,11 @@ export function FamilyConnectionSection() {
             className="mt-3 min-h-[40px] w-full rounded-full bg-secondary px-3 text-[12.5px] font-semibold text-on-secondary disabled:opacity-60"
             style={mulish}
           >
-            {copied ? '✓ New link copied' : busy ? 'Creating…' : 'Get a new link'}
+            {copied
+              ? t('family.sharing.linkCopied')
+              : busy
+                ? t('family.sharing.creating')
+                : t('family.sharing.getNewLink')}
           </button>
         </>
       )}

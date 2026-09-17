@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ReportRingKey, WeeklyReportResponse } from '@anuva/shared';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
 import { type CurvePoint, smoothPath } from '../chartCurve';
@@ -23,12 +24,6 @@ const OVERALL_COLOR = '#5E3566';
 
 type SeriesKey = typeof OVERALL | ReportRingKey;
 
-const EYEBROW: Record<WeeklyReportResponse['period'], string> = {
-  daily: 'Your week around today',
-  weekly: 'How your week looked',
-  monthly: 'How your month looked',
-};
-
 function slotCenter(i: number, count: number): number {
   return ((i + 0.5) / count) * 100;
 }
@@ -46,11 +41,15 @@ function slotCenter(i: number, count: number): number {
  * so the chart agrees with every other monthly figure.
  */
 export function WellnessTrendCard({ report }: { report: WeeklyReportResponse }) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<SeriesKey>(OVERALL);
 
   const ring = report.rings.find((r) => r.key === selected);
   const color = selected === OVERALL ? OVERALL_COLOR : RING_COLORS[selected].color;
-  const seriesName = selected === OVERALL ? 'Overall wellness' : (ring?.label ?? 'Wellness');
+  const seriesName =
+    selected === OVERALL
+      ? t('wellness.overall')
+      : (ring?.label ?? t('wellness.wellnessFallback'));
   const isMonthly = report.period === 'monthly';
 
   const { values, labels, inactive, pointNames } = useMemo(() => {
@@ -131,18 +130,26 @@ export function WellnessTrendCard({ report }: { report: WeeklyReportResponse }) 
     .filter((i) => i >= 0);
 
   const logged = values.filter((v): v is number => v != null);
-  const unit = isMonthly ? 'week' : 'day';
+  const unit = t(`wellness.trendUnit.${isMonthly ? 'week' : 'day'}`);
   const ariaLabel =
     logged.length === 0
-      ? `${seriesName}: nothing logged in this window.`
-      : `${seriesName}, one point per ${unit}. ${loggedIndices
-          .map((i) => wellnessAriaLabel(pointNames[i] ?? '', values[i]!))
-          .join('. ')}.${missingIndices.length > 0 ? ` ${missingIndices.length} not logged.` : ''}`;
+      ? t('wellness.trendAriaEmpty', { series: seriesName })
+      : t('wellness.trendAriaSummary', {
+          series: seriesName,
+          unit,
+          points: loggedIndices
+            .map((i) => wellnessAriaLabel(pointNames[i] ?? '', values[i]!))
+            .join('. '),
+          missingNote:
+            missingIndices.length > 0
+              ? t('wellness.trendAriaMissing', { count: missingIndices.length })
+              : '',
+        });
 
   return (
     <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <Eyebrow className="mb-0">{EYEBROW[report.period]}</Eyebrow>
+        <Eyebrow className="mb-0">{t(`wellness.trendEyebrow.${report.period}`)}</Eyebrow>
 
         {/* A native select: it is the one control that already behaves like the
             platform picker the mockup draws, on both iOS and Android. */}

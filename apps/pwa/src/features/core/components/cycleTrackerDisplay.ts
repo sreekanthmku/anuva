@@ -1,43 +1,47 @@
 import type { CyclePrediction, CycleStateResponse } from '@anuva/shared';
+// The instance rather than the hook: these are pure helpers, called from render but not hooks
+// themselves. Components that show their output call `useTranslation()`, which is what re-renders
+// them when the language changes.
+import i18n from '../../../i18n';
 
 export const CYCLE_LENGTH_DEFAULT = 28;
 
 export type CyclePhase = NonNullable<CycleStateResponse['phase']>;
 
+/** Colour only. The phase's name and its insight are `cycle.phases.<phase>`. */
 export const CYCLE_PHASE_CONFIG: Record<
   CyclePhase,
-  { label: string; color: string; bg: string; border: string; insight: string }
+  { color: string; bg: string; border: string }
 > = {
   period: {
-    label: 'Period',
     color: '#C0405A',
     bg: 'rgba(192, 64, 90,0.15)',
     border: 'rgba(192, 64, 90,0.3)',
-    insight: 'Hormones are at their lowest. Rest, iron-rich food, and gentle movement help most now.',
   },
   follicular: {
-    label: 'Follicular',
     color: '#5E3566',
     bg: 'rgba(94, 53, 102,0.15)',
     border: 'rgba(94, 53, 102,0.3)',
-    insight: 'Oestrogen is climbing. Energy and focus usually rise, so it is a good window for harder workouts.',
   },
   ovulatory: {
-    label: 'Ovulatory',
     color: '#C97E92',
     bg: 'rgba(201, 126, 146,0.15)',
     border: 'rgba(201, 126, 146,0.3)',
-    insight: 'Oestrogen peaks around ovulation. Highest chance of conception in these days.',
   },
   luteal: {
-    label: 'Luteal',
     color: '#5B82C4',
     bg: 'rgba(125,211,252,0.15)',
     border: 'rgba(125,211,252,0.3)',
-    insight:
-      'Progesterone rises then falls. Bloating, mood shifts, and cravings are common before your period.',
   },
 };
+
+export function cyclePhaseLabel(phase: CyclePhase): string {
+  return i18n.t(`cycle.phases.${phase}.label`);
+}
+
+export function cyclePhaseInsight(phase: CyclePhase): string {
+  return i18n.t(`cycle.phases.${phase}.insight`);
+}
 
 export const CYCLE_MARK_COLORS = {
   period: '#C0405A',
@@ -48,14 +52,16 @@ export const CYCLE_MARK_COLORS = {
   ovulation: '#C97E92',
 } as const;
 
+// Formatted in the active language: a Tamil screen showing "12 Mar" in Latin reads as untranslated
+// rather than as a date we chose to leave alone.
 export function formatCycleDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' });
 }
 
 export function formatCycleDateLong(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  return d.toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
 /** Local calendar date as YYYY-MM-DD — matches how the API decides "today". */
@@ -100,47 +106,50 @@ export function getCycleRingDash(currentCycleDay: number, cycleLength: number): 
 export type CycleRingLabel = { value: string; caption: string };
 
 export function getCycleRingLabel(data: CycleStateResponse | null | undefined): CycleRingLabel {
-  if (!data || data.currentCycleDay == null) return { value: '—', caption: 'not set' };
-  if (data.status === 'stale') return { value: '?', caption: 'update log' };
+  if (!data || data.currentCycleDay == null)
+    return { value: '—', caption: i18n.t('cycle.ring.notSet') };
+  if (data.status === 'stale') return { value: '?', caption: i18n.t('cycle.ring.updateLog') };
   if (data.status === 'late') {
     const late = data.daysLate ?? 0;
-    return { value: String(late), caption: late === 1 ? 'day late' : 'days late' };
+    return { value: String(late), caption: i18n.t('cycle.ring.dayLate', { count: late }) };
   }
-  return { value: String(data.currentCycleDay), caption: `of ${getCycleLength(data)}d` };
+  return {
+    value: String(data.currentCycleDay),
+    caption: i18n.t('cycle.ring.ofDays', { count: getCycleLength(data) }),
+  };
 }
 
 /** Headline under the ring — mirrors Flo's "Period is late" / "Period in N days" line. */
 export function getCycleHeadline(data: CycleStateResponse | null | undefined): string | null {
   if (!data || data.currentCycleDay == null) return null;
-  if (data.status === 'stale') return 'Cycle data is out of date';
+  if (data.status === 'stale') return i18n.t('cycle.headline.outOfDate');
   if (data.status === 'late') {
     const late = data.daysLate ?? 0;
-    if (late === 0) return 'Period expected today';
-    return `Period is ${late} ${late === 1 ? 'day' : 'days'} late`;
+    if (late === 0) return i18n.t('cycle.headline.expectedToday');
+    return i18n.t('cycle.headline.late', { count: late });
   }
-  if (data.phase === 'period') return `Period day ${data.currentCycleDay}`;
+  if (data.phase === 'period')
+    return i18n.t('cycle.headline.periodDay', { day: data.currentCycleDay });
   const until = data.daysUntilNextPeriod;
   if (until == null) return null;
-  if (until === 0) return 'Period expected today';
-  return `Period in ${until} ${until === 1 ? 'day' : 'days'}`;
+  if (until === 0) return i18n.t('cycle.headline.expectedToday');
+  return i18n.t('cycle.headline.in', { count: until });
 }
 
 export function getCycleSubline(data: CycleStateResponse | null | undefined): string | null {
   if (!data) return null;
-  if (data.status === 'stale') return 'Log your recent period to refresh predictions.';
-  if (data.status === 'late') return 'Did your period start? Log it to update your cycle.';
-  if (data.isIrregular) return 'Your cycles vary, so predictions are approximate.';
-  if (data.cycleLengthSource === 'learned') return 'Predicted from your logged cycles.';
+  if (data.status === 'stale') return i18n.t('cycle.subline.stale');
+  if (data.status === 'late') return i18n.t('cycle.subline.late');
+  if (data.isIrregular) return i18n.t('cycle.subline.irregular');
+  if (data.cycleLengthSource === 'learned') return i18n.t('cycle.subline.learned');
   return null;
 }
 
 export type PregnancyChance = 'low' | 'medium' | 'high';
 
-export const PREGNANCY_CHANCE_LABEL: Record<PregnancyChance, string> = {
-  low: 'Low chance of getting pregnant',
-  medium: 'Medium chance of getting pregnant',
-  high: 'High chance of getting pregnant',
-};
+export function pregnancyChanceLabel(chance: PregnancyChance): string {
+  return i18n.t(`cycle.pregnancyChance.${chance}`);
+}
 
 /** Chance for a given day, from its distance to predicted ovulation. */
 export function getPregnancyChance(
@@ -286,7 +295,11 @@ export function buildCalendarMonth(year: number, month: number): CalendarMonth {
   return {
     year,
     month,
-    label: first.toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+    label: first.toLocaleDateString(i18n.language, {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }),
     firstISO: first.toISOString().split('T')[0]!,
     lastISO: last.toISOString().split('T')[0]!,
     leadingBlanks,
@@ -298,7 +311,12 @@ export function shiftMonth(year: number, month: number, delta: number): { year: 
   return { year: d.getUTCFullYear(), month: d.getUTCMonth() };
 }
 
-export const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const;
+/** Monday-first single letters for the calendar header, in the active language. */
+export function weekdayInitials(): string[] {
+  return (['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const).map((day) =>
+    i18n.t(`cycle.weekdayInitials.${day}`),
+  );
+}
 
 // ─────────────────────────────────────────────
 // Editing rules
@@ -413,10 +431,10 @@ export function getCycleLengthSourceLabel(
 ): string | null {
   if (!data) return null;
   if (data.cycleLengthSource === 'learned') {
-    return `Using your logged average of ${data.effectiveCycleLength} days`;
+    return i18n.t('cycle.lengthSource.learned', { days: data.effectiveCycleLength });
   }
   if (data.cycleLengthSource === 'settings') {
-    return `Using your setting of ${data.effectiveCycleLength} days`;
+    return i18n.t('cycle.lengthSource.settings', { days: data.effectiveCycleLength });
   }
-  return `Using the typical ${data.effectiveCycleLength} days until you log more cycles`;
+  return i18n.t('cycle.lengthSource.default', { days: data.effectiveCycleLength });
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { FamilyActivityResponse } from '@anuva/shared';
 import { FamilyActivityDialog } from './FamilyActivityDialog';
 
@@ -13,6 +14,7 @@ import { FamilyActivityDialog } from './FamilyActivityDialog';
  * worth more than one line, so tapping opens them in full.
  */
 export function FamilyCheckInCard({ activity }: { activity: FamilyActivityResponse | null }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   if (!activity?.member || !activity.today) {
@@ -56,7 +58,7 @@ export function FamilyCheckInCard({ activity }: { activity: FamilyActivityRespon
             ) : null}
             {/* Says what a tap does, since the card has no other affordance. */}
             <p className="mt-2 text-[11.5px] font-semibold text-secondary" style={mulish}>
-              See what they did →
+              {t('family.seeWhatTheyDid')}
             </p>
           </div>
         </div>

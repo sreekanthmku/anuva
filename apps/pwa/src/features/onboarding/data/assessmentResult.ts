@@ -1,30 +1,30 @@
+/**
+ * The result screen's fixed furniture: which pills appear, in what order, and what colour each one
+ * carries. The words are resolved through `assessmentResult.*` at render — a pill is identified by
+ * its key, not by the English it used to be spelled with.
+ */
+
 export type RiskPill = {
-  title: string;
-  value: string;
+  /** `assessmentResult.pills.<titleKey>` — the label above the value. */
+  titleKey: string;
+  /** `assessmentResult.values.<valueKey>` — the value itself. */
+  valueKey: string;
   color: string;
 };
 
 export const riskPills: RiskPill[] = [
-  { title: 'Vasomotor', value: 'High', color: '#C0405A' },
-  { title: 'Sleep', value: 'Moderate', color: '#5B82C4' },
-  { title: 'Cognitive', value: 'Low', color: '#5E3566' },
+  { titleKey: 'vasomotor', valueKey: 'high', color: '#C0405A' },
+  { titleKey: 'sleep', valueKey: 'moderate', color: '#5B82C4' },
+  { titleKey: 'cognitive', valueKey: 'low', color: '#5E3566' },
 ];
 
 export const controlPills: RiskPill[] = [
-  { title: 'Score', value: 'In control', color: '#5E3566' },
-  { title: 'Follow-up', value: '3 months', color: '#5B82C4' },
-  { title: 'Status', value: 'Stable', color: '#4F9D6B' },
+  { titleKey: 'score', valueKey: 'inControl', color: '#5E3566' },
+  { titleKey: 'followUp', valueKey: 'threeMonths', color: '#5B82C4' },
+  { titleKey: 'status', valueKey: 'stable', color: '#4F9D6B' },
 ];
 
-export const nextSteps: [string, string][] = [
-  ['Meet ANU', 'Your personal wellness companion'],
-  ['14 days of tracking', 'Build a personalised benchmark'],
-  ['Weekly report', 'Clinical insight in plain language'],
-  ['Care path', 'Matched specialist · free first consult'],
-];
+/** `assessmentResult.steps.<key>.title` / `.body`. */
+export const nextSteps: string[] = ['meetAnu', 'tracking', 'weeklyReport', 'carePath'];
 
-export const controlNextSteps: [string, string][] = [
-  ['Everything is in control', 'No urgent follow-up is needed right now'],
-  ['Check back after 3 months', 'Reassess if symptoms change or intensify'],
-  ['Keep tracking lightly', 'Stay in tune with your body and cycles'],
-];
+export const controlNextSteps: string[] = ['allInControl', 'checkBack', 'keepTracking'];

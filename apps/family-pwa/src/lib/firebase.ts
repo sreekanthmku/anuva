@@ -2,6 +2,8 @@ import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getMessaging, getToken, isSupported, onMessage, type Messaging } from 'firebase/messaging';
 import type { FcmPlatform } from '@anuva/shared';
 import { apiFetch } from '../shared/lib/api';
+// The instance rather than the hook: none of this runs inside a React render.
+import i18n from '../i18n';
 import { getOrCreateDeviceId } from './notifications/deviceId';
 import { requestNotificationPermission } from './notifications/notificationPrompt';
 
@@ -84,7 +86,7 @@ async function waitForActivation(registration: ServiceWorkerRegistration): Promi
 
 async function getFcmServiceWorkerRegistration(): Promise<ServiceWorkerRegistration> {
   if (!('serviceWorker' in navigator)) {
-    throw new Error('Service workers are not supported.');
+    throw new Error(i18n.t('errors.serviceWorkerUnsupported'));
   }
 
   const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
@@ -136,11 +138,11 @@ async function registerTokenOnServer(fcmToken: string): Promise<void> {
 export async function registerFamilyDevice(): Promise<FamilyPushResult> {
   const instance = await getFirebaseMessaging();
   if (!instance) {
-    return { ok: false, message: 'Push notifications are not available in this browser.' };
+    return { ok: false, message: i18n.t('errors.pushUnavailable') };
   }
 
   if (Notification.permission !== 'granted') {
-    return { ok: false, message: 'Notification permission is not granted.' };
+    return { ok: false, message: i18n.t('errors.permissionNotGranted') };
   }
 
   try {
@@ -155,7 +157,7 @@ export async function registerFamilyDevice(): Promise<FamilyPushResult> {
     }
 
     if (!token) {
-      return { ok: false, message: 'Could not get a device token. Try a hard refresh.' };
+      return { ok: false, message: i18n.t('errors.noDeviceToken') };
     }
 
     await registerTokenOnServer(token);
@@ -169,7 +171,7 @@ export async function registerFamilyDevice(): Promise<FamilyPushResult> {
   } catch (error) {
     return {
       ok: false,
-      message: error instanceof Error ? error.message : 'Could not turn on notifications.',
+      message: error instanceof Error ? error.message : i18n.t('errors.notificationsFailed'),
     };
   }
 }
@@ -181,7 +183,7 @@ export async function enableFamilyNotifications(): Promise<{
   const permission = await requestNotificationPermission();
 
   if (permission !== 'granted') {
-    return { permission, sync: { ok: false, message: 'Notification permission was not granted.' } };
+    return { permission, sync: { ok: false, message: i18n.t('errors.permissionWasNotGranted') } };
   }
 
   return { permission, sync: await registerFamilyDevice() };

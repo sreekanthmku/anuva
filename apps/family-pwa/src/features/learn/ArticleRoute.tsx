@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { fetchFamilyArticle } from '../../shared/lib/familyApi';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
 import { Card, ErrorCard, Eyebrow, SectionLabel, SkeletonCard } from '../shell/ui';
@@ -14,6 +15,7 @@ import { ArticleCard } from './ArticleCard';
  * teen; that decision lives in `apps/api/src/family/articles.ts` where the audience rules are.
  */
 function ArticleView({ slug }: { slug: string }) {
+  const { t } = useTranslation();
   // Stable per mount. The route remounts on a slug change (see the `key` below), which is what
   // re-runs the fetch — `useFamilyResource` deliberately loads once.
   const fetcher = useCallback(() => fetchFamilyArticle(slug), [slug]);
@@ -33,7 +35,7 @@ function ArticleView({ slug }: { slug: string }) {
       <div className="space-y-4">
         <BackLink />
         <ErrorCard
-          message={error ?? 'This article is not available.'}
+          message={error ?? t('errors.articleUnavailable')}
           onRetry={() => void reload()}
         />
       </div>
@@ -47,11 +49,13 @@ function ArticleView({ slug }: { slug: string }) {
       <BackLink />
 
       <header className="animate-[anuvaRise_420ms_cubic-bezier(0.16,1,0.3,1)]">
-        <Eyebrow>Topic {String(article.number).padStart(2, '0')}</Eyebrow>
+        <Eyebrow>
+          {t('article.topicNumber', { number: String(article.number).padStart(2, '0') })}
+        </Eyebrow>
         <h1 className="font-display text-[28px] font-medium leading-[1.14] text-primary">{article.title}</h1>
         <p className="mt-2 text-[15px] leading-[1.5] text-on-surface-variant">{article.teaser}</p>
         <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-outline">
-          <span>{article.readingMinutes} min read</span>
+          <span>{t('article.readingMinutes', { count: article.readingMinutes })}</span>
           <span aria-hidden>·</span>
           <span>{article.audienceLabel}</span>
         </p>
@@ -83,7 +87,7 @@ function ArticleView({ slug }: { slug: string }) {
 
       {more.length > 0 ? (
         <section>
-          <SectionLabel>Read next</SectionLabel>
+          <SectionLabel>{t('article.readNext')}</SectionLabel>
           <ul className="space-y-2">
             {more.map((next) => (
               <ArticleCard key={next.slug} article={next} />
@@ -110,6 +114,8 @@ function ArticleView({ slug }: { slug: string }) {
 }
 
 function BackLink() {
+  const { t } = useTranslation();
+
   return (
     <Link
       to="/learn"
@@ -128,7 +134,7 @@ function BackLink() {
       >
         <path d="m15 6-6 6 6 6" />
       </svg>
-      Explore topics
+      {t('article.exploreTopics')}
     </Link>
   );
 }

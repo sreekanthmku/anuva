@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { MoreMenuSheet } from './MoreMenuSheet';
 
 type NavItem = {
   to: string;
-  label: string;
+  /** Resolved through `t()` at render; see `nav.*`. */
+  labelKey: string;
   icon: 'home' | 'anu' | 'track' | 'report' | 'more';
   isMore?: boolean;
 };
@@ -12,11 +14,11 @@ type NavItem = {
 const moreRelatedPaths = ['/care', '/library', '/qa', '/booking', '/my-bookings', '/profile'];
 
 const navItems: NavItem[] = [
-  { to: '/home', label: 'Home', icon: 'home' },
-  { to: '/chat', label: 'ANU', icon: 'anu' },
-  { to: '/track', label: 'Track', icon: 'track' },
-  { to: '/report', label: 'Summary', icon: 'report' },
-  { to: '/more', label: 'More', icon: 'more', isMore: true },
+  { to: '/home', labelKey: 'nav.home', icon: 'home' },
+  { to: '/chat', labelKey: 'nav.anu', icon: 'anu' },
+  { to: '/track', labelKey: 'nav.track', icon: 'track' },
+  { to: '/report', labelKey: 'nav.summary', icon: 'report' },
+  { to: '/more', labelKey: 'nav.more', icon: 'more', isMore: true },
 ];
 
 function NavIcon({ icon, active }: { icon: NavItem['icon']; active: boolean }) {
@@ -72,6 +74,7 @@ function NavIcon({ icon, active }: { icon: NavItem['icon']; active: boolean }) {
 }
 
 export function BottomNav() {
+  const { t } = useTranslation();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -98,13 +101,13 @@ export function BottomNav() {
                     <NavIcon icon="more" active={moreActive} />
                   </span>
                   <span
-                    className="text-[9.5px] uppercase tracking-[0.1em]"
+                    className="px-0.5 text-center text-[9.5px] uppercase leading-[1.25] tracking-[0.1em]"
                     style={{
                       fontFamily: '"Mulish", sans-serif',
                       color: moreActive ? '#5E3566' : '#6E5A78',
                     }}
                   >
-                    {item.label}
+                    {t(item.labelKey)}
                   </span>
                 </button>
               </li>
@@ -119,14 +122,16 @@ export function BottomNav() {
                       >
                         <NavIcon icon={item.icon} active={isActive} />
                       </span>
+                      {/* Extra leading and centring: an Indic label wraps where the Latin one
+                          never did, and these tabs are 9.5px. */}
                       <span
-                        className="text-[9.5px] uppercase tracking-[0.1em]"
+                        className="px-0.5 text-center text-[9.5px] uppercase leading-[1.25] tracking-[0.1em]"
                         style={{
                           fontFamily: '"Mulish", sans-serif',
                           color: isActive ? '#5E3566' : '#6E5A78',
                         }}
                       >
-                        {item.label}
+                        {t(item.labelKey)}
                       </span>
                     </>
                   )}

@@ -3,6 +3,7 @@ import type { CycleStateResponse } from '@anuva/shared';
 import {
   CYCLE_LENGTH_DEFAULT,
   CYCLE_PHASE_CONFIG,
+  cyclePhaseLabel,
   CYCLE_RING_CIRCUMFERENCE,
   buildCycleDayMarks,
   correctionRange,
@@ -55,17 +56,18 @@ describe('CYCLE_LENGTH_DEFAULT / CYCLE_PHASE_CONFIG', () => {
     expect(CYCLE_LENGTH_DEFAULT).toBe(28);
   });
 
-  it('configures label + palette for every phase', () => {
+  it('configures a palette for every phase, and names each one', () => {
     expect(Object.keys(CYCLE_PHASE_CONFIG).sort()).toEqual([...PHASES].sort());
     for (const phase of PHASES) {
       const cfg = CYCLE_PHASE_CONFIG[phase];
-      expect(cfg.label.length).toBeGreaterThan(0);
       expect(cfg.color).toMatch(/^#/);
       expect(cfg.bg).toMatch(/^rgba\(/);
       expect(cfg.border).toMatch(/^rgba\(/);
+      // The name itself now comes from the locale bundle rather than this config.
+      expect(cyclePhaseLabel(phase).length).toBeGreaterThan(0);
     }
-    expect(CYCLE_PHASE_CONFIG.period.label).toBe('Period');
-    expect(CYCLE_PHASE_CONFIG.luteal.label).toBe('Luteal');
+    expect(cyclePhaseLabel('period')).toBe('Period');
+    expect(cyclePhaseLabel('luteal')).toBe('Luteal');
   });
 });
 

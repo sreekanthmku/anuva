@@ -1,4 +1,6 @@
 import type { ReportDeltaTone, ReportRing } from '@anuva/shared';
+// The instance rather than the hook: this file is pure helpers, not components.
+import i18n from '../../i18n';
 
 /**
  * Shared readout rules for a summary ring, used by both the grid cards and the
@@ -25,12 +27,21 @@ export const DELTA_TONE_COLOR: Record<ReportDeltaTone, string> = {
 
 /** Screen-reader sentence for one ring — spells out what the number means. */
 export function ringAriaLabel(ring: ReportRing): string {
-  if (ring.pct == null) return `${ring.label}, not logged`;
+  if (ring.pct == null) return i18n.t('wellness.ringNotLogged', { label: ring.label });
 
-  const parts = [`${ring.label}: ${ring.band ?? ''}`.trim(), `score ${ring.pct} out of 100`];
+  const parts = [
+    i18n.t('wellness.ringLabelAndBand', { label: ring.label, band: ring.band ?? '' }).trim(),
+    i18n.t('wellness.ringScore', { score: ring.pct }),
+  ];
   if (ring.detail) parts.push(ring.detail);
   parts.push(ring.delta);
-  if (ring.reference) parts.push(`${ring.reference.label} was ${ring.reference.value}`);
+  if (ring.reference)
+    parts.push(
+      i18n.t('wellness.ringReference', {
+        label: ring.reference.label,
+        value: ring.reference.value,
+      }),
+    );
 
   return `${parts.join('. ')}.`;
 }

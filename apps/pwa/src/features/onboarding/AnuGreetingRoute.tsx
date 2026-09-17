@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { getCalibrationAnchor } from '../core/wellnessCalibration';
 import { useAuth } from '../auth/auth-context';
 import { assessmentPath } from './config/assessmentView';
@@ -19,40 +21,51 @@ function addCalendarDays(from: Date, days: number): Date {
   return d;
 }
 
-function formatBenchmarkDay(date: Date): string {
-  const weekday = date.toLocaleDateString('en-IN', { weekday: 'short' });
-  return `Next ${weekday}`;
+/**
+ * Both dates are formatted in the *active* language rather than a fixed locale: a plan that says
+ * "Next Tue" inside a Tamil screen reads as a bug. `Intl` handles the day and month names; the
+ * "Next …" frame around the weekday is a translated string, because not every language puts it
+ * in front.
+ */
+function formatBenchmarkDay(date: Date, language: string): string {
+  const weekday = date.toLocaleDateString(language, { weekday: 'short' });
+  return i18n.t('greeting.nextWeekday', { weekday });
 }
 
 /** Month + day, e.g. May 12 */
-function formatCarePathDate(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+function formatCarePathDate(date: Date, language: string): string {
+  return date.toLocaleDateString(language, { month: 'short', day: 'numeric' });
 }
 
-function buildSevenDayPlan(trialStartedAt?: string) {
+function buildSevenDayPlan(language: string, trialStartedAt?: string) {
   const start = startOfDay(trialStartedAt ? new Date(trialStartedAt) : new Date());
 
   return [
-    { phase: 'Today', action: 'ANU learns about you', eta: 'Today' },
-    { phase: 'Days 2-6', action: 'Daily symptom tracking', eta: 'This week' },
+    { key: 'today', eta: i18n.t('greeting.plan.today.eta') },
+    { key: 'days2to6', eta: i18n.t('greeting.plan.days2to6.eta') },
     {
-      phase: 'Day 7',
-      action: 'Your first benchmark report',
-      eta: formatBenchmarkDay(addCalendarDays(start, BENCHMARK_DAY_OFFSET)),
+      key: 'day7',
+      eta: formatBenchmarkDay(addCalendarDays(start, BENCHMARK_DAY_OFFSET), language),
     },
     {
-      phase: 'Week 2',
-      action: 'Matched care path unlocks',
-      eta: formatCarePathDate(addCalendarDays(start, CARE_PATH_DAY_OFFSET)),
+      key: 'week2',
+      eta: formatCarePathDate(addCalendarDays(start, CARE_PATH_DAY_OFFSET), language),
     },
   ];
 }
 
 export default function AnuGreetingRoute() {
+  const { t, i18n: i18next } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [pulse, setPulse] = useState(0);
-  const sevenDayPlan = useMemo(() => buildSevenDayPlan(getCalibrationAnchor(user)), [user]);
+  // The language is an argument rather than a global read, so the memo's dependency on it is
+  // honest — the two computed dates are formatted in whichever language is active.
+  const language = i18next.language;
+  const sevenDayPlan = useMemo(
+    () => buildSevenDayPlan(language, getCalibrationAnchor(user)),
+    [user, language],
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -87,7 +100,7 @@ export default function AnuGreetingRoute() {
         >
           <img
             src="/anu.png"
-            alt="ANU companion mark"
+            alt={t('greeting.anuAlt')}
             className="h-[84px] w-[84px] object-contain"
           />
         </div>
@@ -96,30 +109,31 @@ export default function AnuGreetingRoute() {
           className="mt-[26px] text-[11px] uppercase tracking-[0.3em] text-primary"
           style={{ fontFamily: '"Mulish", sans-serif' }}
         >
-          Hello, I&apos;m ANU
+          {t('greeting.hello')}
         </p>
 
         <p className="font-display mt-[18px] px-2 text-center text-[22px] leading-[1.4] text-on-surface">
-          &quot;I&apos;ll be here every day — to listen, to learn what works for your body, and to
-          quietly guide you toward rest.&quot;
+          {t('greeting.quote')}
         </p>
         <p
           className="mt-2.5 text-center text-[12px] text-outline"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
-          — ANU, your wellness companion
+          {t('greeting.attribution')}
         </p>
 
         <article className="mt-[26px] w-full rounded-[20px] border border-border-default bg-surface-raised p-[18px]">
           <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
             <span className="h-px w-3 bg-primary/60" />
-            <span style={{ fontFamily: '"Mulish", sans-serif' }}>Next 7 days</span>
+            <span style={{ fontFamily: '"Mulish", sans-serif' }}>
+              {t('greeting.nextSevenDays')}
+            </span>
           </div>
 
           <div>
             {sevenDayPlan.map((item, index) => (
               <div
-                key={item.phase}
+                key={item.key}
                 className="flex items-center gap-3 py-2"
                 style={{ borderTop: index === 0 ? 'none' : '1px solid rgba(94, 53, 102, 0.2)' }}
               >
@@ -141,13 +155,13 @@ export default function AnuGreetingRoute() {
                     className="block text-[13px] font-medium text-on-surface"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
-                    {item.action}
+                    {t(`greeting.plan.${item.key}.action`)}
                   </span>
                   <span
                     className="mt-0.5 block text-[10px] uppercase tracking-[0.08em] text-outline"
                     style={{ fontFamily: '"Mulish", sans-serif' }}
                   >
-                    {item.phase}
+                    {t(`greeting.plan.${item.key}.phase`)}
                   </span>
                 </span>
 
@@ -171,7 +185,7 @@ export default function AnuGreetingRoute() {
             letterSpacing: '-0.005em',
           }}
         >
-          Begin with ANU
+          {t('greeting.beginWithAnu')}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M5 12h14M13 6l6 6-6 6"

@@ -6,10 +6,12 @@ import {
 import type { AssessmentQuestion } from '../src/features/onboarding/data/assessmentQuestions';
 import { assessmentQuestions } from '../src/features/onboarding/data/assessmentQuestions';
 
+// Option *values*, not labels: scoring reads the value, so the language a woman answers in cannot
+// change her score.
 const sampleQuestions: AssessmentQuestion[] = [
-  { id: 'q1', prompt: 'Q1?', options: ['Yes', 'No', 'Sometimes'] },
-  { id: 'q2', prompt: 'Q2?', options: ['Yes', 'No', 'Sometimes'] },
-  { id: 'q3', prompt: 'Age?', options: ['29 or below', '30-34'] },
+  { id: 'q1', options: ['yes', 'no', 'sometimes'] },
+  { id: 'q2', options: ['yes', 'no', 'sometimes'] },
+  { id: 'q3', options: ['age_29_below', 'age_30_34'] },
 ];
 
 describe('scoreAssessmentQuestions', () => {
@@ -17,14 +19,14 @@ describe('scoreAssessmentQuestions', () => {
     expect(scoreAssessmentQuestions({}, sampleQuestions)).toBe(0);
   });
 
-  it('scores Yes as 2, Sometimes as 1, and No as 0', () => {
-    expect(scoreAssessmentQuestions({ 0: 0 }, sampleQuestions)).toBe(2); // Yes
-    expect(scoreAssessmentQuestions({ 0: 2 }, sampleQuestions)).toBe(1); // Sometimes
-    expect(scoreAssessmentQuestions({ 0: 1 }, sampleQuestions)).toBe(0); // No
+  it('scores yes as 2, sometimes as 1, and no as 0', () => {
+    expect(scoreAssessmentQuestions({ 0: 0 }, sampleQuestions)).toBe(2); // yes
+    expect(scoreAssessmentQuestions({ 0: 2 }, sampleQuestions)).toBe(1); // sometimes
+    expect(scoreAssessmentQuestions({ 0: 1 }, sampleQuestions)).toBe(0); // no
   });
 
   it('sums scores across answered questions', () => {
-    // Yes (2) + Sometimes (1) = 3
+    // yes (2) + sometimes (1) = 3
     expect(scoreAssessmentQuestions({ 0: 0, 1: 2 }, sampleQuestions)).toBe(3);
   });
 
@@ -32,16 +34,16 @@ describe('scoreAssessmentQuestions', () => {
     expect(scoreAssessmentQuestions({ 0: undefined, 1: 99 }, sampleQuestions)).toBe(0);
   });
 
-  it('treats unrecognized option labels as 0 (e.g. age bracket)', () => {
+  it('treats unscored option values as 0 (e.g. age bracket)', () => {
     expect(scoreAssessmentQuestions({ 2: 0 }, sampleQuestions)).toBe(0);
   });
 
-  it('scores real assessment questions with Yes/Sometimes/No labels', () => {
+  it('scores the real assessment questions off their option values', () => {
     const yesOnly = Object.fromEntries(
       assessmentQuestions.map((_, index) => [index, 0])
     ) as Record<number, number>;
-    // First 10 questions use Yes/No/Sometimes; age bracket Yes-index is not Yes
-    const symptomYesCount = assessmentQuestions.filter((q) => q.options[0] === 'Yes').length;
+    // The first ten questions lead with `yes`; the age bracket's first option scores nothing.
+    const symptomYesCount = assessmentQuestions.filter((q) => q.options[0] === 'yes').length;
     expect(scoreAssessmentQuestions(yesOnly, assessmentQuestions)).toBe(symptomYesCount * 2);
   });
 });

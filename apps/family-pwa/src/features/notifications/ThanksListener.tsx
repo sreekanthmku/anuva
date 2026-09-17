@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { subscribeToForegroundMessages } from '../../lib/firebase';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 
@@ -16,6 +17,7 @@ const VISIBLE_MS = 5200;
 type Thanks = { from: string; body: string };
 
 export function ThanksListener() {
+  const { t } = useTranslation();
   const [thanks, setThanks] = useState<Thanks | null>(null);
 
   useEffect(
@@ -29,11 +31,12 @@ export function ThanksListener() {
         if (!message?.data?.familyThanks) return;
 
         setThanks({
-          from: message.data.familyThanksFrom?.trim() || 'She',
-          body: message.notification?.body ?? 'She saw what you did today, and it landed.',
+          from: message.data.familyThanksFrom?.trim() || t('thanks.fromFallback'),
+          // The push itself carries her words when there are any; this is the silent case.
+          body: message.notification?.body ?? t('thanks.bodyFallback'),
         });
       }),
-    [],
+    [t],
   );
 
   useEffect(() => {
@@ -53,7 +56,7 @@ export function ThanksListener() {
         <img src={twemojiUrl('😊')} alt="" aria-hidden width={34} height={34} className="shrink-0" />
         <div className="min-w-0">
           <p className="font-display text-[15px] font-medium leading-snug text-primary">
-            {thanks.from} says thank you
+            {t('thanks.title', { name: thanks.from })}
           </p>
           <p className="mt-0.5 text-[12.5px] leading-snug text-on-surface-variant">{thanks.body}</p>
         </div>

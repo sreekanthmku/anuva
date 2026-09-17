@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { BellIcon, PrimaryButton } from '../shell/ui';
 
 /**
@@ -18,6 +19,8 @@ export function NotificationPermissionDialog({
   onAccept: () => void;
   onDismiss: () => void;
 }) {
+  const { t } = useTranslation();
+
   if (!open) return null;
 
   return (
@@ -30,7 +33,7 @@ export function NotificationPermissionDialog({
       <button
         type="button"
         className="absolute inset-0 animate-[anuvaFade_260ms_ease-out] bg-[#3E2542]/50 backdrop-blur-[2px]"
-        aria-label="Not now"
+        aria-label={t('common.notNow')}
         onClick={onDismiss}
       />
 
@@ -53,22 +56,21 @@ export function NotificationPermissionDialog({
             id="family-notify-title"
             className="mt-4 font-display text-[21px] font-medium leading-tight text-on-surface"
           >
-            Know when it lands
+            {t('notifications.title')}
           </h2>
           <p className="mt-2.5 text-[13.5px] leading-[1.6] text-on-surface-variant">
-            When she opens your flowers or your note and taps thank you, we will send you a smiley.
-            That, and a gentle nudge if you asked to be reminded this evening. Nothing else.
+            {t('notifications.body')}
           </p>
 
           <PrimaryButton onClick={onAccept} disabled={registering} className="mt-5">
-            {registering ? 'Turning on…' : 'Turn on notifications'}
+            {registering ? t('notifications.turningOn') : t('notifications.turnOn')}
           </PrimaryButton>
           <button
             type="button"
             onClick={onDismiss}
             className="mt-1.5 min-h-[44px] w-full rounded-full px-5 text-[13.5px] font-semibold text-on-surface-variant"
           >
-            Not now
+            {t('common.notNow')}
           </button>
         </div>
       </div>

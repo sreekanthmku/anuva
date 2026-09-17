@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SummaryCalendarDay } from '@anuva/shared';
 import { useSummaryCalendar } from '../hooks/useSummaryCalendar';
 import {
   buildCalendarMonth,
   shiftMonth,
   todayISO,
-  WEEKDAY_LABELS,
+  weekdayInitials,
 } from './cycleTrackerDisplay';
 
 const BODY = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -59,6 +60,7 @@ export function SummaryDatePickerSheet({
   onSelectDate: (dateISO: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const today = todayISO();
   const [cursor, setCursor] = useState(() => monthOf(selectedDate));
   const { data, loading, error } = useSummaryCalendar(isoMonth(cursor.year, cursor.month));
@@ -98,13 +100,13 @@ export function SummaryDatePickerSheet({
         type="button"
         className="fixed inset-0 z-[60] cursor-default border-none bg-black/60 p-0"
         onClick={onClose}
-        aria-label="Close date picker"
+        aria-label={t('datePicker.close')}
       />
       <div
         className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-5"
         role="dialog"
         aria-modal="true"
-        aria-label="Pick a day"
+        aria-label={t('datePicker.pickADay')}
         style={{ maxHeight: '90dvh', overflowY: 'auto' }}
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" />
@@ -113,10 +115,10 @@ export function SummaryDatePickerSheet({
           className="mb-1 text-[20px] text-on-surface"
           style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
         >
-          Jump to a day
+          {t('datePicker.title')}
         </h2>
         <p className="mb-4 text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
-          A dot means that day carries logs — the bigger the dot, the more of it you tracked.
+          {t('datePicker.body')}
         </p>
 
         <div className="mb-3 flex items-center justify-between">
@@ -125,7 +127,7 @@ export function SummaryDatePickerSheet({
             disabled={!canPage(-1)}
             onClick={() => setCursor((c) => shiftMonth(c.year, c.month, -1))}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-border-default text-[14px] text-on-surface-variant disabled:opacity-30"
-            aria-label="Previous month"
+            aria-label={t('datePicker.previousMonth')}
           >
             ←
           </button>
@@ -141,14 +143,14 @@ export function SummaryDatePickerSheet({
             disabled={!canPage(1)}
             onClick={() => setCursor((c) => shiftMonth(c.year, c.month, 1))}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-border-default text-[14px] text-on-surface-variant disabled:opacity-30"
-            aria-label="Next month"
+            aria-label={t('datePicker.nextMonth')}
           >
             →
           </button>
         </div>
 
         <div className="mb-1 grid grid-cols-7 gap-1">
-          {WEEKDAY_LABELS.map((d, i) => (
+          {weekdayInitials().map((d, i) => (
             <span
               key={`${d}-${i}`}
               className="text-center text-[10px] uppercase tracking-[0.1em] text-outline"
@@ -215,7 +217,7 @@ export function SummaryDatePickerSheet({
           className="mt-5 min-h-[44px] w-full rounded-full bg-primary text-[14px] font-semibold text-on-primary"
           style={{ fontFamily: BODY }}
         >
-          Back to today
+          {t('datePicker.backToToday')}
         </button>
       </div>
     </>

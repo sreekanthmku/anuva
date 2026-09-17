@@ -9,10 +9,13 @@ import type {
   JointTrigger,
   LogJointBody,
 } from '@anuva/shared';
+import { useTranslation } from 'react-i18next';
+// The shared label maps are the server's copy of this vocabulary and stay where they are; what the
+// sheet takes from them is the *set of values* and their order. Every word shown here comes from
+// `joints.*` in the locale bundles instead.
 import {
   JOINT_AREA_LABELS,
   JOINT_IMPACT_LABELS,
-  JOINT_SEVERITY_LABELS,
   JOINT_SYMPTOM_LABELS,
   JOINT_TIME_OF_DAY_LABELS,
   JOINT_TRIGGER_LABELS,
@@ -78,9 +81,11 @@ function Chip({
 }
 
 function FieldLabel({ children, optional }: { children: string; optional?: boolean }) {
+  const { t } = useTranslation();
+
   return (
     <p className="mb-2 text-[12.5px] text-on-surface" style={{ fontFamily: FONT_BODY }}>
-      {children} {optional && <span className="text-outline">(optional)</span>}
+      {children} {optional && <span className="text-outline">{t('joints.optional')}</span>}
     </p>
   );
 }
@@ -92,6 +97,7 @@ export function JointsLogSheet({
   onClose,
   onSave,
 }: JointsLogSheetProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<1 | 2>(1);
   const [severity, setSeverity] = useState<JointSeverity | null>(null);
   const [areas, setAreas] = useState<JointArea[]>([]);
@@ -161,7 +167,7 @@ export function JointsLogSheet({
         type="button"
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
-        aria-label="Close joints log"
+        aria-label={t('joints.close')}
       />
       <div
         role="dialog"
@@ -174,7 +180,7 @@ export function JointsLogSheet({
           style={{ fontFamily: FONT_MONO }}
         >
           <span className="h-px w-3 bg-primary/60" />
-          Joints &amp; stiffness
+          {t('joints.eyebrow')}
         </div>
 
         {step === 1 && (
@@ -183,7 +189,7 @@ export function JointsLogSheet({
               className="mb-5 text-[20px] leading-snug text-on-surface"
               style={{ fontFamily: SERIF, fontWeight: 300 }}
             >
-              How are your joints feeling today?
+              {t('joints.step1Title')}
             </h2>
             <div className="flex flex-col gap-2.5">
               {SEVERITIES.map((value) => (
@@ -201,7 +207,7 @@ export function JointsLogSheet({
                       severity === value ? 'rgba(94, 53, 102, 0.10)' : 'transparent',
                   }}
                 >
-                  {JOINT_SEVERITY_LABELS[value]}
+                  {t(`joints.severity.${value}`)}
                 </button>
               ))}
             </div>
@@ -214,22 +220,22 @@ export function JointsLogSheet({
               className="mb-1 text-[20px] leading-snug text-on-surface"
               style={{ fontFamily: SERIF, fontWeight: 300 }}
             >
-              A little more about it
+              {t('joints.step2Title')}
             </h2>
             <button
               type="button"
               onClick={() => setStep(1)}
               className="mb-5 text-[12px] text-primary underline"
             >
-              {JOINT_SEVERITY_LABELS[severity]} · change
+              {t('joints.changeSeverity', { severity: t(`joints.severity.${severity}`) })}
             </button>
 
-            <FieldLabel>Where are you feeling it?</FieldLabel>
+            <FieldLabel>{t('joints.where')}</FieldLabel>
             <div className="mb-5 flex flex-wrap gap-2">
               {AREAS.map((area) => (
                 <Chip
                   key={area}
-                  label={JOINT_AREA_LABELS[area]}
+                  label={t(`joints.areas.${area}`)}
                   selected={areas.includes(area)}
                   disabled={saving}
                   onClick={() => setAreas((prev) => toggle(prev, area))}
@@ -237,12 +243,12 @@ export function JointsLogSheet({
               ))}
             </div>
 
-            <FieldLabel>What are you experiencing?</FieldLabel>
+            <FieldLabel>{t('joints.what')}</FieldLabel>
             <div className="mb-5 flex flex-wrap gap-2">
               {SYMPTOMS.map((symptom) => (
                 <Chip
                   key={symptom}
-                  label={JOINT_SYMPTOM_LABELS[symptom]}
+                  label={t(`joints.symptoms.${symptom}`)}
                   selected={symptoms.includes(symptom)}
                   disabled={saving}
                   onClick={() => setSymptoms((prev) => toggle(prev, symptom))}
@@ -250,12 +256,12 @@ export function JointsLogSheet({
               ))}
             </div>
 
-            <FieldLabel>How much is it affecting your day?</FieldLabel>
+            <FieldLabel>{t('joints.impact')}</FieldLabel>
             <div className="mb-5 flex flex-wrap gap-2">
               {IMPACTS.map((value) => (
                 <Chip
                   key={value}
-                  label={JOINT_IMPACT_LABELS[value]}
+                  label={t(`joints.impacts.${value}`)}
                   selected={impact === value}
                   disabled={saving}
                   onClick={() => setImpact(value)}
@@ -265,12 +271,12 @@ export function JointsLogSheet({
 
             {showDeeper ? (
               <>
-                <FieldLabel optional>When did you notice it most?</FieldLabel>
+                <FieldLabel optional>{t('joints.when')}</FieldLabel>
                 <div className="mb-5 flex flex-wrap gap-2">
                   {TIMES.map((value) => (
                     <Chip
                       key={value}
-                      label={JOINT_TIME_OF_DAY_LABELS[value]}
+                      label={t(`joints.timeOfDay.${value}`)}
                       selected={timeOfDay === value}
                       disabled={saving}
                       onClick={() => setTimeOfDay((prev) => (prev === value ? null : value))}
@@ -278,12 +284,12 @@ export function JointsLogSheet({
                   ))}
                 </div>
 
-                <FieldLabel optional>Did anything seem to make it worse?</FieldLabel>
+                <FieldLabel optional>{t('joints.triggers')}</FieldLabel>
                 <div className="mb-6 flex flex-wrap gap-2">
                   {TRIGGERS.map((value) => (
                     <Chip
                       key={value}
-                      label={JOINT_TRIGGER_LABELS[value]}
+                      label={t(`joints.triggerOptions.${value}`)}
                       selected={triggers.includes(value)}
                       disabled={saving}
                       onClick={() => setTriggers((prev) => toggle(prev, value))}
@@ -297,7 +303,7 @@ export function JointsLogSheet({
                 onClick={() => setShowDeeper(true)}
                 className="mb-6 text-[12.5px] text-primary underline"
               >
-                Add more detail
+                {t('joints.addMoreDetail')}
               </button>
             )}
 
@@ -307,11 +313,11 @@ export function JointsLogSheet({
               disabled={impact == null || saving}
               className="w-full rounded-full bg-primary py-3.5 text-[14px] font-medium text-surface transition-opacity active:opacity-80 disabled:opacity-40"
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? t('common.saving') : t('common.save')}
             </button>
             {impact == null && (
               <p className="mt-2 text-center text-[11.5px] text-outline">
-                Tell us how much it is affecting your day to save.
+                {t('joints.impactRequired')}
               </p>
             )}
           </>

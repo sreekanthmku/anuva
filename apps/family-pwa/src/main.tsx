@@ -15,6 +15,9 @@ import '@fontsource/fraunces/400-italic.css';
 import '@fontsource/dancing-script/500.css';
 import '@fontsource/dancing-script/600.css';
 import '@fontsource/dancing-script/700.css';
+// Before App: every screen reads from i18next at first render, and a component that mounts before
+// init would render raw keys for a frame.
+import './i18n';
 import App from './App';
 // Registers the beforeinstallprompt listener at import time: the event can fire before React mounts
 // and is only usable if it was captured when it fired.

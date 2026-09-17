@@ -1,9 +1,13 @@
+import { useTranslation } from 'react-i18next';
+
 /**
  * "Anuva Family" — the app's name, set the way the brand sets it: Fraunces for the name, the script
  * face for the one tagline it is allowed. Shared by the signed-in header and the two
  * unauthenticated screens so the doorway and the room match.
  */
 export function Wordmark({ className = '' }: { className?: string }) {
+  const { t } = useTranslation();
+
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <img
@@ -14,9 +18,11 @@ export function Wordmark({ className = '' }: { className?: string }) {
       />
       <div className="min-w-0">
         <div className="truncate font-display text-[17px] font-medium leading-tight tracking-[0.01em] text-primary">
-          Anuva Family
+          {t('wordmark.name')}
         </div>
-        <p className="font-script text-[14px] leading-tight text-secondary">a soft place to land.</p>
+        <p className="font-script text-[14px] leading-tight text-secondary">
+          {t('wordmark.tagline')}
+        </p>
       </div>
     </div>
   );

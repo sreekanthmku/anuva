@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import { fetchPrivacy } from '../../shared/lib/familyApi';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
 import { Card, ErrorCard, Eyebrow, PageIntro, SkeletonCard } from '../shell/ui';
 
 export function PrivacyRoute() {
+  const { t } = useTranslation();
   const { data, error, loading, reload } = useFamilyResource(fetchPrivacy);
 
   if (loading && !data) {
@@ -15,7 +17,7 @@ export function PrivacyRoute() {
   }
 
   if (!data) {
-    return <ErrorCard message={error ?? 'Could not load what is shared.'} onRetry={() => void reload()} />;
+    return <ErrorCard message={error ?? t('errors.loadShared')} onRetry={() => void reload()} />;
   }
 
   return (

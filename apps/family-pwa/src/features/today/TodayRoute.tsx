@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { FamilyMetricKey, FamilySupportActionKind } from '@anuva/shared';
 import {
   fetchToday,
@@ -7,7 +8,7 @@ import {
   postRemindLater,
   postSupportAction,
 } from '../../shared/lib/familyApi';
-import { ACTION_LABELS, CONFIRMED_KINDS, NUDGE_LAYER_TINT, supportSheet } from '../data/labels';
+import { ACTION_LABEL_KEYS, CONFIRMED_KINDS, NUDGE_LAYER_TINT } from '../data/labels';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
 import { NotificationPermissionDialog } from '../notifications/NotificationPermissionDialog';
 import { useNotificationPrompt } from '../notifications/useNotificationPrompt';
@@ -29,6 +30,7 @@ const METRIC_TINT: Record<FamilyMetricKey, string> = {
 };
 
 export function TodayRoute() {
+  const { t } = useTranslation();
   const { data, error, loading, reload } = useFamilyResource(fetchToday);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -52,10 +54,10 @@ export function TodayRoute() {
         showToast(result.toast);
         await reload();
       } catch (e) {
-        showToast(e instanceof Error ? e.message : 'Could not record that.');
+        showToast(e instanceof Error ? e.message : t('errors.recordAction'));
       }
     },
-    [showToast, reload],
+    [showToast, reload, t],
   );
 
   const confirmAction = useCallback(async () => {
@@ -64,9 +66,9 @@ export function TodayRoute() {
       showToast(result.toast);
       await reload();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Could not confirm that.');
+      showToast(e instanceof Error ? e.message : t('errors.confirmAction'));
     }
-  }, [showToast, reload]);
+  }, [showToast, reload, t]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -76,10 +78,10 @@ export function TodayRoute() {
         showToast(result.toast);
         await reload();
       } catch (e) {
-        showToast(e instanceof Error ? e.message : 'Could not send that note.');
+        showToast(e instanceof Error ? e.message : t('errors.sendNote'));
       }
     },
-    [showToast, reload],
+    [showToast, reload, t],
   );
 
   const remindLater = useCallback(async () => {
@@ -88,9 +90,9 @@ export function TodayRoute() {
       const result = await postRemindLater();
       showToast(result.toast);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Could not save that reminder.');
+      showToast(e instanceof Error ? e.message : t('errors.saveReminder'));
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   if (loading && !data) {
     return (
@@ -103,7 +105,7 @@ export function TodayRoute() {
   }
 
   if (!data) {
-    return <ErrorCard message={error ?? 'Could not load her week.'} onRetry={() => void reload()} />;
+    return <ErrorCard message={error ?? t('errors.loadWeek')} onRetry={() => void reload()} />;
   }
 
   const { status, nudge, support, education, progress, upcoming } = data;
@@ -119,7 +121,7 @@ export function TodayRoute() {
           the failure is reported above it. */}
       {error ? (
         <p className="rounded-[16px] bg-error-container/70 px-4 py-3 text-[12.5px] leading-relaxed text-on-error-container" role="alert">
-          {error} Showing what we last had.
+          {error} {t('today.staleSuffix')}
         </p>
       ) : null}
 
@@ -174,7 +176,11 @@ export function TodayRoute() {
           <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[14px] bg-success/10 px-3 py-2 text-[12.5px] font-semibold text-success">
             <span aria-hidden>✓</span>
             <span>
-              Done today: {support.completedKinds.map((kind) => ACTION_LABELS[kind] ?? kind).join(', ')}
+              {t('today.doneToday', {
+                actions: support.completedKinds
+                  .map((kind) => (ACTION_LABEL_KEYS[kind] ? t(ACTION_LABEL_KEYS[kind]) : kind))
+                  .join(', '),
+              })}
             </span>
           </p>
         ) : null}
@@ -187,7 +193,7 @@ export function TodayRoute() {
               {support.pendingPrompt}
             </p>
             <PrimaryButton className="mt-3" onClick={() => void confirmAction()}>
-              {supportSheet.confirmCta}
+              {t('support.confirmCta')}
             </PrimaryButton>
           </div>
         ) : null}
@@ -201,11 +207,11 @@ export function TodayRoute() {
             onClick={() => setSheetOpen(true)}
             className="press mt-2 flex min-h-[46px] w-full items-center justify-center rounded-full px-5 text-[14px] font-semibold text-primary"
           >
-            Do something else too
+            {t('today.doSomethingElse')}
           </button>
         ) : (
           <PrimaryButton onClick={() => setSheetOpen(true)} className="mt-4">
-            {support.completedToday ? 'Do something else too' : support.cta}
+            {support.completedToday ? t('today.doSomethingElse') : support.cta}
           </PrimaryButton>
         )}
       </Card>

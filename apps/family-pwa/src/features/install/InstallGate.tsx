@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { promptInstall } from '../../lib/pwa/installPrompt';
 import { getInAppBrowserName } from '../../lib/pwa/platform';
 import { AuthShell } from '../auth/AuthShell';
@@ -14,6 +15,10 @@ import { useInstallGate } from './useInstallGate';
  *
  * Every screen here says the same thing in a different way — get the icon onto the home screen —
  * because the mechanics differ per platform and a single generic instruction fits none of them.
+ *
+ * The step copy carries `<strong>` runs mid-sentence, so those lines go through `<Trans>`: the
+ * emphasis falls on a different word in every language, and splitting the sentence into fragments
+ * would fix it in English word order.
  */
 export default function InstallGate() {
   const { variant } = useInstallGate();
@@ -75,14 +80,16 @@ function Steps({ items }: { items: React.ReactNode[] }) {
 function OpenFromHomeScreenNote() {
   return (
     <p className="mt-5 text-[12px] leading-[1.6] text-outline">
-      Look for the <strong className="text-on-surface">Anuva Family</strong> icon on your home
-      screen. If it asks for your number again, it is the same one-time code — your phone is what
-      signs you in.
+      <Trans
+        i18nKey="install.homeScreenNote"
+        components={{ 1: <strong className="text-on-surface" /> }}
+      />
     </p>
   );
 }
 
 function PromptScreen() {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -97,19 +104,20 @@ function PromptScreen() {
 
   return (
     <>
-      <Title>One last step: add the app</Title>
-      <Body>
-        Anuva Family lives on your home screen. That is how we can tell you when she opens your note
-        — a browser tab cannot.
-      </Body>
+      <Title>{t('install.promptTitle')}</Title>
+      <Body>{t('install.promptBody')}</Body>
       <PrimaryButton onClick={() => void onInstall()} disabled={busy} className="mt-6">
-        {busy ? 'Opening…' : 'Add to home screen'}
+        {busy ? t('install.promptOpening') : t('install.promptCta')}
       </PrimaryButton>
       {dismissed && (
         <p className="mt-4 text-[12px] leading-[1.6] text-outline">
-          That did not finish. Tap the button again, or open your browser menu and choose{' '}
-          <strong className="text-on-surface">Install app</strong> or{' '}
-          <strong className="text-on-surface">Add to Home screen</strong>.
+          <Trans
+            i18nKey="install.promptDismissed"
+            components={{
+              1: <strong className="text-on-surface" />,
+              3: <strong className="text-on-surface" />,
+            }}
+          />
         </p>
       )}
     </>
@@ -117,50 +125,48 @@ function PromptScreen() {
 }
 
 function JustInstalledScreen() {
+  const { t } = useTranslation();
+
   return (
     <>
-      <Title>You are all set</Title>
-      <Body>
-        Open Anuva Family from your home screen to carry on. Your browser cannot open it for you, so
-        this last tap is yours.
-      </Body>
+      <Title>{t('install.justInstalledTitle')}</Title>
+      <Body>{t('install.justInstalledBody')}</Body>
       <OpenFromHomeScreenNote />
     </>
   );
 }
 
 function AlreadyInstalledScreen() {
+  const { t } = useTranslation();
+
   return (
     <>
-      <Title>You already have the app</Title>
-      <Body>
-        Anuva Family is on this device already. Open it from your home screen rather than this tab —
-        notifications only reach you there.
-      </Body>
+      <Title>{t('install.alreadyInstalledTitle')}</Title>
+      <Body>{t('install.alreadyInstalledBody')}</Body>
       <OpenFromHomeScreenNote />
     </>
   );
 }
 
 function InAppBrowserScreen() {
+  const { t } = useTranslation();
   const appName = getInAppBrowserName();
 
   return (
     <>
-      <Title>Open this page in your browser</Title>
+      <Title>{t('install.inAppTitle')}</Title>
       <Body>
-        {appName
-          ? `${appName}'s built-in browser cannot add apps to your home screen. Reopen this page in Safari or Chrome and you are two taps from done.`
-          : 'This in-app browser cannot add apps to your home screen. Reopen this page in Safari or Chrome and you are two taps from done.'}
+        {appName ? t('install.inAppBodyNamed', { app: appName }) : t('install.inAppBody')}
       </Body>
       <Steps
         items={[
-          'Tap the menu button in the corner of this screen.',
-          <>
-            Choose <strong>Open in browser</strong>, <strong>Open in Safari</strong>, or{' '}
-            <strong>Open in Chrome</strong>.
-          </>,
-          'Come back to this page and add Anuva Family.',
+          t('install.inAppStep1'),
+          <Trans
+            key="in-app-2"
+            i18nKey="install.inAppStep2"
+            components={{ 1: <strong />, 3: <strong />, 5: <strong /> }}
+          />,
+          t('install.inAppStep3'),
         ]}
       />
     </>
@@ -168,29 +174,24 @@ function InAppBrowserScreen() {
 }
 
 function IosScreen() {
+  const { t } = useTranslation();
+
   return (
     <>
-      <Title>Add Anuva Family to your home screen</Title>
-      <Body>
-        On iPhone this is done from Safari&apos;s Share menu. Two taps, and the icon is on your home
-        screen.
-      </Body>
+      <Title>{t('install.iosTitle')}</Title>
+      <Body>{t('install.iosBody')}</Body>
       <Steps
         items={[
-          <>
-            Tap the Share button <ShareIcon /> at the bottom of Safari.
-          </>,
-          <>
-            Scroll down and tap <strong>Add to Home Screen</strong>.
-          </>,
-          <>
-            Tap <strong>Add</strong>, then open Anuva Family from your home screen.
-          </>,
+          <Trans key="ios-1" i18nKey="install.iosStep1" components={{ 1: <ShareIcon /> }} />,
+          <Trans key="ios-2" i18nKey="install.iosStep2" components={{ 1: <strong /> }} />,
+          <Trans key="ios-3" i18nKey="install.iosStep3" components={{ 1: <strong /> }} />,
         ]}
       />
       <p className="mt-5 text-[12px] leading-[1.6] text-outline">
-        No Share button? You are probably still inside WhatsApp. Tap the ••• or compass icon in the
-        corner and choose <strong className="text-on-surface">Open in Safari</strong> first.
+        <Trans
+          i18nKey="install.iosNoShare"
+          components={{ 1: <strong className="text-on-surface" /> }}
+        />
       </p>
       <OpenFromHomeScreenNote />
     </>
@@ -199,11 +200,13 @@ function IosScreen() {
 
 /** iOS Share glyph, inline so the step reads as one sentence. */
 function ShareIcon() {
+  const { t } = useTranslation();
+
   return (
     <svg
       viewBox="0 0 24 24"
       role="img"
-      aria-label="Share"
+      aria-label={t('install.shareLabel')}
       className="mx-0.5 inline-block h-[1.05em] w-[1.05em] -translate-y-[0.1em] align-middle"
       fill="none"
       stroke="currentColor"
@@ -219,25 +222,24 @@ function ShareIcon() {
 }
 
 function ManualScreen() {
+  const { t } = useTranslation();
+
   return (
     <>
-      <Title>One last step: add the app</Title>
-      <Body>
-        Anuva Family runs from your home screen. Your browser has not offered a button for it, so
-        add it from the browser menu.
-      </Body>
+      <Title>{t('install.manualTitle')}</Title>
+      <Body>{t('install.manualBody')}</Body>
       <Steps
         items={[
-          'Open your browser menu.',
-          <>
-            Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.
-          </>,
-          'Open Anuva Family from your home screen.',
+          t('install.manualStep1'),
+          <Trans
+            key="manual-2"
+            i18nKey="install.manualStep2"
+            components={{ 1: <strong />, 3: <strong /> }}
+          />,
+          t('install.manualStep3'),
         ]}
       />
-      <p className="mt-5 text-[12px] leading-[1.6] text-outline">
-        If that option is not there, open this page in Chrome or Safari.
-      </p>
+      <p className="mt-5 text-[12px] leading-[1.6] text-outline">{t('install.manualFallback')}</p>
     </>
   );
 }

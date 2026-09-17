@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import { twemojiUrl } from '../../../shared/lib/twemoji';
 
@@ -20,6 +21,8 @@ export function QuickLogMessageDialog({
   caption,
   onClose,
 }: QuickLogMessageDialogProps) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -37,7 +40,7 @@ export function QuickLogMessageDialog({
         type="button"
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
-        aria-label="Dismiss"
+        aria-label={t('quickLogDialog.dismiss')}
       />
       <div
         role="dialog"
@@ -68,7 +71,7 @@ export function QuickLogMessageDialog({
           className="mx-auto mb-3 inline-flex items-center gap-1 rounded-full bg-primary/12 px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] text-primary"
           style={{ fontFamily: FONT_MONO }}
         >
-          <Check size={10} strokeWidth={3} /> Logged
+          <Check size={10} strokeWidth={3} /> {t('quickLogDialog.logged')}
         </span>
 
         <p
@@ -84,7 +87,7 @@ export function QuickLogMessageDialog({
           className="w-full rounded-full bg-primary py-3 text-[14px] font-medium text-surface transition-opacity active:opacity-80"
           style={{ fontFamily: FONT_BODY }}
         >
-          Got it
+          {t('quickLogDialog.gotIt')}
         </button>
       </div>
     </div>

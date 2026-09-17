@@ -77,9 +77,9 @@ export default {
         full: '9999px',
       },
       fontFamily: {
-        body: ['Mulish', 'sans-serif'],
-        display: ['Fraunces', 'serif'],
-        script: ['"Dancing Script"', 'cursive'],
+        body: ['Mulish', 'var(--anuva-indic)', 'sans-serif'],
+        display: ['Fraunces', 'var(--anuva-indic)', 'serif'],
+        script: ['"Dancing Script"', 'var(--anuva-indic)', 'cursive'],
       },
     },
   },

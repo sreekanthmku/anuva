@@ -31,12 +31,50 @@
   }
 
   .font-display {
-    font-family: 'Fraunces', serif;
+    font-family: 'Fraunces', var(--anuva-indic), serif;
   }
 
   .font-script {
-    font-family: 'Dancing Script', cursive;
+    font-family: 'Dancing Script', var(--anuva-indic), cursive;
   }
+
+  /* Raised surfaces, plum-tinted rather than black — a grey shadow on a cream ground reads as
+     dirt. Shared spelling with the family app so a component can move between the two. */
+  .shadow-soft {
+    box-shadow: 0 1px 2px rgba(94, 53, 102, 0.04), 0 10px 30px -12px rgba(94, 53, 102, 0.16);
+  }
+
+  .shadow-lift {
+    box-shadow: 0 2px 6px rgba(94, 53, 102, 0.06), 0 22px 44px -20px rgba(94, 53, 102, 0.28);
+  }
+
+  .press {
+    transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 160ms ease;
+  }
+
+  .press:active {
+    transform: scale(0.985);
+  }
+}
+
+/**
+ * Indic fallbacks.
+ *
+ * Mulish, Fraunces and Dancing Script carry Latin only, so every non-Latin language falls through
+ * to whatever comes next in the stack. Naming the faces the platforms actually ship — Noto on
+ * Android, the Sangam family on iOS — means Hindi, Tamil, Telugu and the rest land on a designed
+ * face rather than on the browser's last-resort default. Absent names cost nothing; the browser
+ * skips them.
+ *
+ * `--anuva-indic` is the tail of every stack below, so a change here reaches all three faces.
+ */
+:root {
+  --anuva-indic:
+    'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Tamil',
+    'Noto Sans Telugu', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Gujarati',
+    'Noto Sans Oriya', 'Devanagari Sangam MN', 'Bangla Sangam MN', 'Tamil Sangam MN',
+    'Telugu Sangam MN', 'Kannada Sangam MN', 'Malayalam Sangam MN', 'Gujarati Sangam MN',
+    'Oriya Sangam MN';
 }
 
 @layer base {
@@ -67,7 +105,7 @@
     min-height: 100dvh;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: rgba(201, 126, 146, 0.2);
-    font-family: 'Mulish', -apple-system, system-ui, sans-serif;
+    font-family: 'Mulish', -apple-system, system-ui, var(--anuva-indic), sans-serif;
     font-weight: 400;
     font-synthesis: none;
     text-rendering: geometricPrecision;

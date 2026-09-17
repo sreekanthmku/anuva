@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { sendFamilyThanks } from './api';
 import type { FamilyGift, FamilyGiftKind } from './familyMessageLink';
@@ -21,14 +22,14 @@ const GIFT: Record<
     emoji: string;
     /** Small pieces drifting behind the gift. Two or three, no more — this is a breeze, not confetti. */
     fall: string[];
-    eyebrow: (from: string) => string;
+    eyebrowKey: string;
     /**
      * Null for flowers on purpose. They do not need explaining — the picture *is* the message, and
      * a paragraph underneath turns a gesture into a greeting card. Chocolates keep a line because a
      * bar of chocolate on its own reads as a snack rather than as somebody thinking of her.
      */
-    headline: string | null;
-    body: ((from: string) => string) | null;
+    headlineKey: string | null;
+    bodyKey: string | null;
     /** Warm wash behind the emoji. Kept in the brand's plum/rose/gold family. */
     glow: string;
   }
@@ -36,18 +37,17 @@ const GIFT: Record<
   flowers: {
     emoji: '🌻',
     fall: ['🌻', '🌼', '🌸'],
-    eyebrow: (from) => `${from} sent you flowers`,
-    headline: null,
-    body: null,
+    eyebrowKey: 'family.gift.flowersEyebrow',
+    headlineKey: null,
+    bodyKey: null,
     glow: 'radial-gradient(circle at 50% 42%, rgba(201,126,146,0.30), rgba(201,126,146,0) 68%)',
   },
   chocolates: {
     emoji: '🍫',
     fall: ['🍫', '✨', '🤍'],
-    eyebrow: (from) => `${from} sent you chocolates`,
-    headline: 'Something sweet, for today.',
-    body: (from) =>
-      `Some days ask a lot of you. ${from} wanted this one to have at least one small good thing in it.`,
+    eyebrowKey: 'family.gift.chocolatesEyebrow',
+    headlineKey: 'family.gift.chocolatesHeadline',
+    bodyKey: 'family.gift.chocolatesBody',
     glow: 'radial-gradient(circle at 50% 42%, rgba(184,146,60,0.28), rgba(184,146,60,0) 68%)',
   },
 };
@@ -68,6 +68,7 @@ export function FamilyGiftDialog({
   gift: FamilyGift | null;
   onDismiss: () => void;
 }) {
+  const { t } = useTranslation();
   const [thanking, setThanking] = useState(false);
 
   // Hooks before the early return: the dialog mounts and unmounts as the gift arrives.
@@ -109,7 +110,7 @@ export function FamilyGiftDialog({
       <button
         type="button"
         className="absolute inset-0 bg-[#3E2542]/70 backdrop-blur-[3px] animate-[giftFade_320ms_ease-out]"
-        aria-label="Close"
+        aria-label={t('common.close')}
         onClick={onDismiss}
       />
 
@@ -148,8 +149,8 @@ export function FamilyGiftDialog({
             src={twemojiUrl(copy.emoji)}
             alt=""
             aria-hidden
-            width={copy.headline ? 92 : 124}
-            height={copy.headline ? 92 : 124}
+            width={copy.headlineKey ? 92 : 124}
+            height={copy.headlineKey ? 92 : 124}
             className="mx-auto animate-[giftPop_680ms_cubic-bezier(0.16,1,0.3,1)]"
             style={{ filter: 'drop-shadow(0 10px 18px rgba(94,53,102,0.22))' }}
           />
@@ -159,21 +160,21 @@ export function FamilyGiftDialog({
             className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-tertiary"
             style={mulish}
           >
-            {copy.eyebrow(gift.from)}
+            {t(copy.eyebrowKey, { name: gift.from })}
           </p>
 
-          {copy.headline ? (
+          {copy.headlineKey ? (
             <h2
               className="mt-2.5 text-[23px] leading-[1.25] text-on-surface"
               style={{ fontFamily: '"Fraunces", serif', fontWeight: 400 }}
             >
-              {copy.headline}
+              {t(copy.headlineKey)}
             </h2>
           ) : null}
 
-          {copy.body ? (
+          {copy.bodyKey ? (
             <p className="mt-3 text-[14px] leading-[1.6] text-on-surface-variant" style={mulish}>
-              {copy.body(gift.from)}
+              {t(copy.bodyKey, { name: gift.from })}
             </p>
           ) : null}
 
@@ -186,10 +187,10 @@ export function FamilyGiftDialog({
             className="mt-5 min-h-[48px] w-full rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary shadow-[0_10px_24px_rgba(201,126,146,0.32)]"
             style={mulish}
           >
-            Thank you 💛
+            {t('family.gift.thankYou')}
           </button>
           <p className="mt-2 text-[11px] text-outline" style={mulish}>
-            {gift.from} gets a smiley on their phone.
+            {t('family.gift.getsSmiley', { name: gift.from })}
           </p>
         </div>
       </div>

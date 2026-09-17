@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LanguageToggle } from '../../i18n/LanguageToggle';
 import { useAuth } from '../auth/auth-context';
 import { AnswerOption } from './components/AnswerOption';
 import { QuestionTitle } from './components/QuestionTitle';
@@ -8,6 +10,7 @@ import { useAssessmentPairedFlow } from './hooks/useAssessmentPairedFlow';
 import { persistOnboardingCompletionIfAuthenticated } from './persistOnboardingCompletion';
 
 export default function AssessmentPairedRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
   const {
@@ -56,6 +59,12 @@ export default function AssessmentPairedRoute() {
     <main
       className={`relative flex min-h-mobile flex-col overflow-x-hidden bg-surface pb-[calc(112px+env(safe-area-inset-bottom,0px))] text-on-surface ${showMascot ? 'pt-[clamp(24px,7vh,100px)]' : 'pt-6'}`}
     >
+      {/* Above everything, and on the first screen she sees: someone who cannot read the
+          assessment cannot be asked to answer it before switching language. */}
+      <div className="absolute right-4 top-3 z-20">
+        <LanguageToggle />
+      </div>
+
       {showMascot && (
         <section className="relative z-10 flex flex-col items-center px-6 pt-0">
           <div className="relative">
@@ -68,7 +77,7 @@ export default function AssessmentPairedRoute() {
             />
             <img
               src="/anu.png"
-              alt="Anuva logo"
+              alt={t('assessment.logoAlt')}
               className="relative z-10 h-20 w-20 object-contain"
             />
           </div>
@@ -80,7 +89,7 @@ export default function AssessmentPairedRoute() {
               letterSpacing: '0.18em',
             }}
           >
-            ANUVA WELLNESS
+            {t('common.brandName')}
           </p>
           <p
             className="mt-0.5 text-[13px] tracking-normal text-primary"
@@ -90,7 +99,7 @@ export default function AssessmentPairedRoute() {
               letterSpacing: '-0.02em',
             }}
           >
-            a soft place to land.
+            {t('common.tagline')}
           </p>
         </section>
       )}
@@ -113,7 +122,7 @@ export default function AssessmentPairedRoute() {
           style={{ fontFamily: '"Mulish", sans-serif', fontWeight: 400 }}
         >
           <span className="h-px w-3 bg-primary/60" />
-          Pre-assessment · 2 min
+          {t('assessment.eyebrow')}
         </div>
 
         <div className="flex flex-1 flex-col gap-6">
@@ -126,13 +135,13 @@ export default function AssessmentPairedRoute() {
                   fontWeight: 400,
                 }}
               >
-                <QuestionTitle prompt={question.prompt} />
+                <QuestionTitle prompt={t(`assessment.questions.${question.id}`)} />
               </h2>
               <div className="mt-3 flex flex-col gap-2">
                 {question.options.map((option, optionIndex) => (
                   <AnswerOption
                     key={option}
-                    label={option}
+                    label={t(`assessment.options.${option}`)}
                     isSelected={getSelectedIndex(index) === optionIndex}
                     onSelect={() => selectOption(index, optionIndex)}
                   />
@@ -166,7 +175,7 @@ export default function AssessmentPairedRoute() {
             letterSpacing: '-0.005em',
           }}
         >
-          {isLastStep ? 'Begin Your Journey' : 'Continue'}
+          {isLastStep ? t('assessment.beginJourney') : t('common.continue')}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M5 12h14M13 6l6 6-6 6"

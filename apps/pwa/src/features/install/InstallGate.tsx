@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import { LanguageToggle } from '../../i18n/LanguageToggle';
 import { promptInstall } from '../../lib/pwa/installPrompt';
 import { getInAppBrowserName } from '../../lib/pwa/platform';
 import { useInstallGate } from './useInstallGate';
@@ -34,28 +36,35 @@ export default function InstallGate() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-mobile flex flex-col items-center justify-center overflow-x-hidden bg-surface px-6 py-12 text-on-surface">
+    <main className="relative min-h-mobile flex flex-col items-center justify-center overflow-x-hidden bg-surface px-6 py-12 text-on-surface">
+      {/* Above everything: someone who cannot read the install instructions cannot be asked to
+          follow them before switching language. */}
+      <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))]">
+        <LanguageToggle />
+      </div>
       <div className="flex w-full max-w-sm flex-col items-center text-center">{children}</div>
     </main>
   );
 }
 
 function Wordmark() {
+  const { t } = useTranslation();
+
   return (
     <>
       <img
         src="/anuva-logo-icon.png"
-        alt="Anuva Wellness logo"
+        alt={t('common.logoAlt')}
         className="mb-5 h-20 w-20 object-contain"
       />
       <p className="text-[22px] tracking-[0.18em]" style={HEADING_FONT}>
-        ANUVA WELLNESS
+        {t('common.brandName')}
       </p>
       <p
         className="mt-1.5 text-[18px] text-secondary"
         style={{ fontFamily: '"Dancing Script", cursive', fontWeight: 600 }}
       >
-        a soft place to land.
+        {t('common.tagline')}
       </p>
     </>
   );
@@ -125,13 +134,17 @@ function Steps({ items }: { items: React.ReactNode[] }) {
 function OpenFromHomeScreenNote() {
   return (
     <p className="mt-6 text-[13px] text-on-surface-variant" style={BODY_FONT}>
-      Look for the <strong className="text-on-surface">Anuva Wellness</strong> icon on your home
-      screen.
+      {/* Through Trans: which words the emphasis falls on moves with the language. */}
+      <Trans
+        i18nKey="install.homeScreenNote"
+        components={{ 1: <strong className="text-on-surface" /> }}
+      />
     </p>
   );
 }
 
 function PromptScreen() {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -146,18 +159,17 @@ function PromptScreen() {
 
   return (
     <>
-      <Title>Install the app to continue</Title>
-      <Body>
-        Anuva lives on your home screen, so your daily check-ins and reminders are always one tap
-        away.
-      </Body>
+      <Title>{t('install.promptTitle')}</Title>
+      <Body>{t('install.promptBody')}</Body>
       <PrimaryButton onClick={() => void onInstall()} disabled={busy}>
-        {busy ? 'Opening installer...' : 'Install Anuva'}
+        {busy ? t('install.promptOpening') : t('install.promptCta')}
       </PrimaryButton>
       {dismissed && (
         <p className="mt-5 text-[13px] text-on-surface-variant" style={BODY_FONT}>
-          Installation was not completed. Tap Install Anuva to try again, or use your browser menu
-          and choose <strong className="text-on-surface">Add to Home screen</strong>.
+          <Trans
+            i18nKey="install.promptDismissed"
+            components={{ 1: <strong className="text-on-surface" /> }}
+          />
         </p>
       )}
     </>
@@ -165,50 +177,48 @@ function PromptScreen() {
 }
 
 function JustInstalledScreen() {
+  const { t } = useTranslation();
+
   return (
     <>
-      <Title>Anuva is installed</Title>
-      <Body>
-        Open Anuva from your home screen to sign in. Your browser cannot open it for you, so this
-        last step is manual.
-      </Body>
+      <Title>{t('install.justInstalledTitle')}</Title>
+      <Body>{t('install.justInstalledBody')}</Body>
       <OpenFromHomeScreenNote />
     </>
   );
 }
 
 function AlreadyInstalledScreen() {
+  const { t } = useTranslation();
+
   return (
     <>
-      <Title>You already have Anuva</Title>
-      <Body>
-        Anuva is installed on this device. Open it from your home screen to continue where you left
-        off.
-      </Body>
+      <Title>{t('install.alreadyInstalledTitle')}</Title>
+      <Body>{t('install.alreadyInstalledBody')}</Body>
       <OpenFromHomeScreenNote />
     </>
   );
 }
 
 function InAppBrowserScreen() {
+  const { t } = useTranslation();
   const appName = getInAppBrowserName();
 
   return (
     <>
-      <Title>Open this page in your browser</Title>
+      <Title>{t('install.inAppTitle')}</Title>
       <Body>
-        {appName
-          ? `${appName}'s built-in browser cannot install apps. Reopen this page in Safari or Chrome to continue.`
-          : 'This in-app browser cannot install apps. Reopen this page in Safari or Chrome to continue.'}
+        {appName ? t('install.inAppBodyNamed', { app: appName }) : t('install.inAppBody')}
       </Body>
       <Steps
         items={[
-          'Tap the menu button in the corner of this screen.',
-          <>
-            Choose <strong>Open in browser</strong>, <strong>Open in Safari</strong>, or{' '}
-            <strong>Open in Chrome</strong>.
-          </>,
-          'Come back to this page and install Anuva.',
+          t('install.inAppStep1'),
+          <Trans
+            key="in-app-2"
+            i18nKey="install.inAppStep2"
+            components={{ 1: <strong />, 3: <strong />, 5: <strong /> }}
+          />,
+          t('install.inAppStep3'),
         ]}
       />
     </>
@@ -216,30 +226,21 @@ function InAppBrowserScreen() {
 }
 
 function IosScreen() {
+  const { t } = useTranslation();
+
   return (
     <>
-      <Title>Add Anuva to your home screen</Title>
-      <Body>
-        On iPhone, Anuva installs from Safari&apos;s Share menu. It takes two taps and then you are
-        done.
-      </Body>
+      <Title>{t('install.iosTitle')}</Title>
+      <Body>{t('install.iosBody')}</Body>
       <Steps
         items={[
-          <>
-            Tap the Share button{' '}
-            <ShareIcon /> at the bottom of Safari.
-          </>,
-          <>
-            Scroll down and tap <strong>Add to Home Screen</strong>.
-          </>,
-          <>
-            Tap <strong>Add</strong>, then open Anuva from your home screen.
-          </>,
+          <Trans key="ios-1" i18nKey="install.iosStep1" components={{ 1: <ShareIcon /> }} />,
+          <Trans key="ios-2" i18nKey="install.iosStep2" components={{ 1: <strong /> }} />,
+          <Trans key="ios-3" i18nKey="install.iosStep3" components={{ 1: <strong /> }} />,
         ]}
       />
       <p className="mt-6 text-[13px] text-on-surface-variant" style={BODY_FONT}>
-        If you do not see the Share button, make sure this page is open in Safari rather than
-        another app.
+        {t('install.iosNoShare')}
       </p>
     </>
   );
@@ -247,11 +248,13 @@ function IosScreen() {
 
 /** iOS Share glyph, inline so the step reads as one sentence. */
 function ShareIcon() {
+  const { t } = useTranslation();
+
   return (
     <svg
       viewBox="0 0 24 24"
       role="img"
-      aria-label="Share"
+      aria-label={t('install.shareLabel')}
       className="mx-0.5 inline-block h-[1.05em] w-[1.05em] -translate-y-[0.1em] align-middle"
       fill="none"
       stroke="currentColor"
@@ -267,24 +270,25 @@ function ShareIcon() {
 }
 
 function ManualScreen() {
+  const { t } = useTranslation();
+
   return (
     <>
-      <Title>Install the app to continue</Title>
-      <Body>
-        Anuva runs from your home screen. Your browser has not offered an install button, so add it
-        from the browser menu.
-      </Body>
+      <Title>{t('install.manualTitle')}</Title>
+      <Body>{t('install.manualBody')}</Body>
       <Steps
         items={[
-          'Open your browser menu.',
-          <>
-            Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.
-          </>,
-          'Open Anuva from your home screen to sign in.',
+          t('install.manualStep1'),
+          <Trans
+            key="manual-2"
+            i18nKey="install.manualStep2"
+            components={{ 1: <strong />, 3: <strong /> }}
+          />,
+          t('install.manualStep3'),
         ]}
       />
       <p className="mt-6 text-[13px] text-on-surface-variant" style={BODY_FONT}>
-        If you cannot find that option, open this page in Chrome or Safari.
+        {t('install.manualFallback')}
       </p>
     </>
   );

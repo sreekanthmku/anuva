@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import type { LibraryArticleSummary } from '@anuva/shared';
 import { BottomNav } from './components/BottomNav';
 import { useLibraryFeed } from './library/useLibrary';
@@ -23,6 +24,8 @@ function FeatureCard({
   article: LibraryArticleSummary;
   onOpen: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <article
       role="link"
@@ -66,7 +69,7 @@ function FeatureCard({
         </span>
       </div>
       <div className="mt-3.5">
-        <Eyebrow mint>{`This week's feature · ${article.readMinutes} min`}</Eyebrow>
+        <Eyebrow mint>{t('library.weeksFeature', { minutes: article.readMinutes })}</Eyebrow>
         <h2 className="font-display mb-2 text-[22px] leading-[1.2] text-on-surface">
           {article.title}
         </h2>
@@ -88,7 +91,7 @@ function FeatureCard({
             </span>
           </div>
           <span className="text-[12px] font-medium text-primary" style={{ fontFamily: MULISH }}>
-            Read →
+            {t('library.read')}
           </span>
         </div>
       </div>
@@ -97,6 +100,7 @@ function FeatureCard({
 }
 
 function ArticleRow({ article, onOpen }: { article: LibraryArticleSummary; onOpen: () => void }) {
+  const { t } = useTranslation();
   const color = TONE_COLOR[article.tone];
 
   return (
@@ -142,7 +146,7 @@ function ArticleRow({ article, onOpen }: { article: LibraryArticleSummary; onOpe
           {article.title}
         </h3>
         <div className="text-[11px] text-outline" style={{ fontFamily: MULISH }}>
-          {article.readMinutes} min read
+          {t('library.minRead', { count: article.readMinutes })}
         </div>
       </div>
     </article>
@@ -150,6 +154,7 @@ function ArticleRow({ article, onOpen }: { article: LibraryArticleSummary; onOpe
 }
 
 export default function LibraryRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { state, error, feed, category, search, setCategory, setSearch, reload } =
     useLibraryFeed();
@@ -160,16 +165,22 @@ export default function LibraryRoute() {
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
       <header className="sticky top-0 z-30 shrink-0 bg-surface px-3 pb-[18px] pt-[max(0.875rem,env(safe-area-inset-top))]">
-        <Eyebrow mint>Library</Eyebrow>
+        <Eyebrow mint>{t('library.eyebrow')}</Eyebrow>
         <h1 className="font-display text-[32px] leading-[1.05] text-on-surface">
-          Know your{' '}
-          <em className="not-italic font-light text-primary" style={{ fontFamily: FRAUNCES }}>
-            body
-          </em>
-          .
+          <Trans
+            i18nKey="library.title"
+            components={{
+              1: (
+                <em
+                  className="not-italic font-light text-primary"
+                  style={{ fontFamily: FRAUNCES }}
+                />
+              ),
+            }}
+          />
         </h1>
         <p className="mt-2 text-[12px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
-          Expert-written. Translated for real life. Always free.
+          {t('library.subtitle')}
         </p>
       </header>
 
@@ -178,8 +189,8 @@ export default function LibraryRoute() {
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search articles"
-          aria-label="Search articles"
+          placeholder={t('library.searchPlaceholder')}
+          aria-label={t('library.searchPlaceholder')}
           className="h-11 w-full rounded-full border border-border-default bg-surface-raised px-4 text-[13px] text-on-surface outline-none placeholder:text-outline focus:border-primary/50"
           style={{ fontFamily: MULISH }}
         />
@@ -198,7 +209,7 @@ export default function LibraryRoute() {
               }`}
               style={{ fontFamily: MULISH }}
             >
-              All
+              {t('library.all')}
             </button>
             {feed.categories.map((facet) => {
               const active = category === facet.key;
@@ -214,7 +225,7 @@ export default function LibraryRoute() {
                   }`}
                   style={{ fontFamily: MULISH }}
                 >
-                  {facet.label} · {facet.count}
+                  {t('library.categoryCount', { label: facet.label, count: facet.count })}
                 </button>
               );
             })}
@@ -244,7 +255,7 @@ export default function LibraryRoute() {
             className="mt-3 h-11 rounded-full bg-primary px-6 text-[13px] text-on-primary"
             style={{ fontFamily: MULISH }}
           >
-            Try again
+            {t('common.tryAgain')}
           </button>
         </section>
       )}
@@ -300,13 +311,17 @@ export default function LibraryRoute() {
           )}
 
           <section className="px-3 py-[22px]">
-            <Eyebrow>{filtering ? `${feed.articles.length} articles` : 'Recent'}</Eyebrow>
+            <Eyebrow>
+              {filtering
+                ? t('library.articleCount', { count: feed.articles.length })
+                : t('library.recent')}
+            </Eyebrow>
             {feed.articles.length === 0 ? (
               <p
                 className="rounded-[20px] border border-border-default bg-surface-raised p-4 text-[12.5px] text-on-surface-variant"
                 style={{ fontFamily: MULISH }}
               >
-                Nothing here yet. Try another category or search term.
+                {t('library.emptyResults')}
               </p>
             ) : (
               <div className="flex flex-col gap-2.5">

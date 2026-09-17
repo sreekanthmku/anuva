@@ -1,18 +1,20 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export type MoreMenuItem = {
   num: string;
   to: string;
-  label: string;
+  /** Resolved through `t()` at render; see `nav.*`. */
+  labelKey: string;
 };
 
 const items: MoreMenuItem[] = [
-  { num: '08', to: '/profile', label: 'Profile' },
-  { num: '09', to: '/care', label: 'Care Direction' },
-  { num: '10', to: '/library', label: 'Library' },
-  { num: '11', to: '/qa', label: 'Anonymous Q&A' },
-  { num: '12', to: '/booking', label: 'Consultation Booking' },
+  { num: '08', to: '/profile', labelKey: 'nav.profile' },
+  { num: '09', to: '/care', labelKey: 'nav.careDirection' },
+  { num: '10', to: '/library', labelKey: 'nav.library' },
+  { num: '11', to: '/qa', labelKey: 'nav.anonymousQa' },
+  { num: '12', to: '/booking', labelKey: 'nav.consultationBooking' },
 ];
 
 type MoreMenuSheetProps = {
@@ -21,6 +23,7 @@ type MoreMenuSheetProps = {
 };
 
 export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,7 +48,7 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
         type="button"
         className="fixed inset-0 z-[60] cursor-default border-none bg-black/60 p-0"
         onClick={onClose}
-        aria-label="Close menu"
+        aria-label={t('nav.closeMenu')}
       />
       <div
         className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-5"
@@ -55,7 +58,7 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" />
         <h2 id="more-menu-title" className="sr-only">
-          More destinations
+          {t('nav.moreDestinations')}
         </h2>
         <ul className="flex flex-col gap-1">
           {items.map((item) => (
@@ -75,7 +78,7 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
                   className="text-[15px] text-on-surface"
                   style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </span>
               </button>
             </li>

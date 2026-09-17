@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BugReportSheet } from '../features/beta/BugReportSheet';
 
 /**
@@ -17,6 +18,7 @@ import { BugReportSheet } from '../features/beta/BugReportSheet';
  * the report has already been sent by the time she reads it.
  */
 function Fallback() {
+  const { t } = useTranslation();
   const mulish = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' };
   // Opened straight away in beta. This is the one moment we know for certain something is broken,
   // and asking here costs the tester nothing — they are already stuck on this screen.
@@ -36,11 +38,10 @@ function Fallback() {
           className="mt-4 text-[22px] leading-tight text-on-surface"
           style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
         >
-          Something went wrong on our end
+          {t('crash.title')}
         </h1>
         <p className="mt-2.5 text-[14px] leading-[1.6] text-on-surface-variant" style={mulish}>
-          Nothing you did caused this. Reloading usually sorts it out, and anything you sent her has
-          already gone through.
+          {t('crash.body')}
         </p>
 
         <button
@@ -49,7 +50,7 @@ function Fallback() {
           className="mt-6 min-h-[48px] w-full rounded-full bg-secondary px-5 text-[14.5px] font-semibold text-on-secondary"
           style={mulish}
         >
-          Reload
+          {t('common.reload')}
         </button>
 
         {__BETA_MODE__ ? (
@@ -60,10 +61,10 @@ function Fallback() {
               className="mt-1.5 min-h-[44px] w-full rounded-full px-5 text-[13.5px] font-semibold text-on-surface-variant"
               style={mulish}
             >
-              Tell us what happened
+              {t('crash.tellUs')}
             </button>
             <p className="mt-3 text-[11px] text-outline" style={mulish}>
-              Build {__BUILD_ID__}
+              {t('crash.build', { id: __BUILD_ID__ })}
             </p>
           </>
         ) : null}
@@ -72,7 +73,7 @@ function Fallback() {
       <BugReportSheet
         open={reporting}
         app="family-pwa"
-        prompt="Sorry — what were you doing?"
+        prompt={t('crash.reportPrompt')}
         onClose={() => setReporting(false)}
       />
     </main>

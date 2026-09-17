@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 type NotificationPermissionDialogProps = {
   open: boolean;
   isRegistering?: boolean;
@@ -11,6 +13,8 @@ export function NotificationPermissionDialog({
   onAccept,
   onDismiss,
 }: NotificationPermissionDialogProps) {
+  const { t } = useTranslation();
+
   if (!open) {
     return null;
   }
@@ -20,7 +24,7 @@ export function NotificationPermissionDialog({
       <button
         type="button"
         className="absolute inset-0 bg-black/55"
-        aria-label="Dismiss notification prompt"
+        aria-label={t('notificationPrompt.dismiss')}
         onClick={onDismiss}
       />
       <div
@@ -33,7 +37,7 @@ export function NotificationPermissionDialog({
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Close"
+          aria-label={t('common.close')}
           className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border text-on-surface-variant transition-opacity hover:opacity-90"
           style={{
             background: '#EFE4D8',
@@ -67,14 +71,13 @@ export function NotificationPermissionDialog({
           className="mb-2 text-[20px] leading-tight text-on-surface"
           style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 400 }}
         >
-          Stay in the loop?
+          {t('notificationPrompt.title')}
         </h2>
         <p
           id="notification-prompt-desc"
           className="mb-5 text-[13px] leading-relaxed text-on-surface-variant"
         >
-          Gentle reminders for symptom logging and your weekly summary. You can change this anytime
-          in Profile.
+          {t('notificationPrompt.body')}
         </p>
 
         <div className="flex flex-col gap-2">
@@ -85,7 +88,7 @@ export function NotificationPermissionDialog({
             className="inline-flex w-full items-center justify-center rounded-full bg-secondary px-4 py-3 text-[14px] font-semibold text-on-secondary disabled:opacity-60"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            {isRegistering ? 'Registering device…' : 'Enable notifications'}
+            {isRegistering ? t('notificationPrompt.registering') : t('notificationPrompt.enable')}
           </button>
           <button
             type="button"
@@ -93,7 +96,7 @@ export function NotificationPermissionDialog({
             className="inline-flex w-full items-center justify-center rounded-full px-4 py-3 text-[13px] font-medium text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            Not now
+            {t('notificationPrompt.notNow')}
           </button>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { TrustStrip } from './TrustStrip';
 
 type AssessmentResultCTAProps = {
@@ -6,6 +7,8 @@ type AssessmentResultCTAProps = {
 };
 
 export function AssessmentResultCTA({ onPrimary, isSubmitting = false }: AssessmentResultCTAProps) {
+  const { t } = useTranslation();
+
   return (
     <>
       <div className="mt-3.5 flex flex-col gap-2">
@@ -19,7 +22,7 @@ export function AssessmentResultCTA({ onPrimary, isSubmitting = false }: Assessm
             letterSpacing: '-0.005em',
           }}
         >
-          {isSubmitting ? 'Starting your trial...' : 'Start Your 14-Day Free Trial'}
+          {isSubmitting ? t('assessmentResult.startingTrial') : t('assessmentResult.startTrial')}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M5 12h14M13 6l6 6-6 6"

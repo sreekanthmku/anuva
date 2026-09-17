@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { fetchLearn } from '../../shared/lib/familyApi';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
 import { Card, ErrorCard, Eyebrow, PageIntro, SectionLabel, SkeletonCard } from '../shell/ui';
@@ -12,6 +13,7 @@ import { ArticleCard } from './ArticleCard';
  * behind a separate endpoint and nothing here reaches into it.
  */
 export function LearnRoute() {
+  const { t } = useTranslation();
   const { data, error, loading, reload } = useFamilyResource(fetchLearn);
 
   if (loading && !data) {
@@ -24,7 +26,7 @@ export function LearnRoute() {
   }
 
   if (!data) {
-    return <ErrorCard message={error ?? 'Could not load this week’s reading.'} onRetry={() => void reload()} />;
+    return <ErrorCard message={error ?? t('errors.loadReading')} onRetry={() => void reload()} />;
   }
 
   return (

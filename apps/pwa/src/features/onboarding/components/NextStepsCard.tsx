@@ -1,18 +1,25 @@
+import { useTranslation } from 'react-i18next';
+
 type NextStepsCardProps = {
-  steps: [string, string][];
+  /** Keys into `assessmentResult.steps.*`, in display order. */
+  steps: string[];
 };
 
 export function NextStepsCard({ steps }: NextStepsCardProps) {
+  const { t } = useTranslation();
+
   return (
     <article className="rounded-[20px] border border-border-default bg-primary-container p-[22px]">
       <div className="mb-3.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
         <span className="h-px w-3 bg-primary/60" />
-        <span style={{ fontFamily: '"Mulish", sans-serif' }}>What happens next</span>
+        <span style={{ fontFamily: '"Mulish", sans-serif' }}>
+          {t('assessmentResult.whatHappensNext')}
+        </span>
       </div>
 
       <div className="flex flex-col gap-3">
         {steps.map((step, index) => (
-          <div key={step[0]} className="flex items-start gap-3.5">
+          <div key={step} className="flex items-start gap-3.5">
             <span
               className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border border-primary bg-primary/15 text-[12px] text-primary"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
@@ -24,13 +31,13 @@ export function NextStepsCard({ steps }: NextStepsCardProps) {
                 className="text-[14px] font-medium text-on-surface"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                {step[0]}
+                {t(`assessmentResult.steps.${step}.title`)}
               </p>
               <p
                 className="mt-0.5 text-[12px] text-on-surface-variant"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                {step[1]}
+                {t(`assessmentResult.steps.${step}.body`)}
               </p>
             </div>
           </div>

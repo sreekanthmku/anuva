@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SummaryPeriod } from '@anuva/shared';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -7,11 +8,7 @@ const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
  * Labelled by the window a tap lands you in, not by the granularity — "Today"
  * is what the reader is looking for; "Daily" is what the API calls it.
  */
-const PERIODS: { value: SummaryPeriod; label: string }[] = [
-  { value: 'daily', label: 'Today' },
-  { value: 'weekly', label: 'This week' },
-  { value: 'monthly', label: 'This month' },
-];
+const PERIODS: SummaryPeriod[] = ['daily', 'weekly', 'monthly'];
 
 export function PeriodToggle({
   value,
@@ -20,25 +17,26 @@ export function PeriodToggle({
   value: SummaryPeriod;
   onChange: (period: SummaryPeriod) => void;
 }) {
+  const { t } = useTranslation();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const move = (from: number, step: number) => {
     const next = (from + step + PERIODS.length) % PERIODS.length;
-    onChange(PERIODS[next]!.value);
+    onChange(PERIODS[next]!);
     refs.current[next]?.focus();
   };
 
   return (
     <div
       role="tablist"
-      aria-label="Summary period"
+      aria-label={t('summary.periodToggleLabel')}
       className="flex gap-1 rounded-full bg-surface-bright p-1"
     >
       {PERIODS.map((period, i) => {
-        const active = period.value === value;
+        const active = period === value;
         return (
           <button
-            key={period.value}
+            key={period}
             ref={(el) => {
               refs.current[i] = el;
             }}
@@ -46,7 +44,7 @@ export function PeriodToggle({
             role="tab"
             aria-selected={active}
             tabIndex={active ? 0 : -1}
-            onClick={() => onChange(period.value)}
+            onClick={() => onChange(period)}
             onKeyDown={(e) => {
               if (e.key === 'ArrowRight') {
                 e.preventDefault();
@@ -63,7 +61,7 @@ export function PeriodToggle({
             }`}
             style={{ fontFamily: MULISH }}
           >
-            {period.label}
+            {t(`summary.periods.${period}`)}
           </button>
         );
       })}

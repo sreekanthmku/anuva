@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PrivacyOtpIntent } from '@anuva/shared';
 import { ApiError } from '../../../shared/lib/api';
 import { requestPrivacyOtp } from './api';
@@ -38,10 +39,11 @@ export function ConfirmSheet({
   confirmLabel,
   destructive = false,
   otpIntent,
-  dismissLabel = 'Keep my data',
+  dismissLabel,
   onConfirm,
   onClose,
 }: Props) {
+  const { t } = useTranslation();
   const [otp, setOtp] = useState('');
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [maskedPhone, setMaskedPhone] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function ConfirmSheet({
       setChallengeId(response.challengeId);
       setMaskedPhone(response.maskedPhone);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Could not send the code. Please try again.');
+      setError(e instanceof ApiError ? e.message : t('privacy.confirm.sendCodeFailed'));
     } finally {
       setBusy(false);
     }
@@ -85,7 +87,7 @@ export function ConfirmSheet({
     try {
       await onConfirm(otpIntent && challengeId ? { challengeId, otp } : undefined);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
+      setError(e instanceof ApiError ? e.message : t('privacy.confirm.genericFailed'));
       setBusy(false);
       return;
     }
@@ -99,7 +101,7 @@ export function ConfirmSheet({
     <div className="fixed inset-0 z-50 flex items-end" role="dialog" aria-modal="true">
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t('common.close')}
         onClick={busy ? undefined : onClose}
         className="absolute inset-0 border-0 bg-[rgba(62,37,66,0.45)] p-0"
       />
@@ -130,7 +132,7 @@ export function ConfirmSheet({
                   className="mb-2 block text-[12px] text-on-surface-variant"
                   style={{ fontFamily: MULISH }}
                 >
-                  Enter the 6-digit code sent to {maskedPhone}
+                  {t('privacy.confirm.enterCode', { phone: maskedPhone })}
                 </label>
                 <input
                   id="privacy-otp"
@@ -138,7 +140,7 @@ export function ConfirmSheet({
                   onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  placeholder="······"
+                  placeholder={t('privacy.confirm.otpPlaceholder')}
                   className="w-full rounded-full border border-border-default bg-surface-raised px-4 py-3 text-center text-[17px] tracking-[0.4em] text-on-surface outline-none focus:border-primary"
                   style={{ fontFamily: '"Space Mono", monospace' }}
                 />
@@ -149,14 +151,13 @@ export function ConfirmSheet({
                   className="mt-2 w-full bg-transparent p-0 text-[12px] text-primary disabled:opacity-50"
                   style={{ fontFamily: MULISH }}
                 >
-                  Send a new code
+                  {t('privacy.confirm.sendNewCode')}
                 </button>
               </>
             ) : (
               <>
                 <p className="mb-3 text-[12.5px] leading-[1.55] text-on-surface-variant" style={{ fontFamily: MULISH }}>
-                  We will text a code to the phone number on your account, so that only you can do
-                  this.
+                  {t('privacy.confirm.codeExplainer')}
                 </p>
                 <button
                   type="button"
@@ -165,7 +166,7 @@ export function ConfirmSheet({
                   className="min-h-[44px] w-full rounded-full border border-primary bg-transparent px-4 text-[14px] text-primary disabled:opacity-50"
                   style={{ fontFamily: MULISH, fontWeight: 600 }}
                 >
-                  {busy ? 'Sending…' : 'Send me a code'}
+                  {busy ? t('common.sending') : t('privacy.confirm.sendMeCode')}
                 </button>
               </>
             )}
@@ -194,7 +195,7 @@ export function ConfirmSheet({
               backgroundColor: destructive ? '#C97E92' : '#5E3566',
             }}
           >
-            {busy ? 'Working…' : confirmLabel}
+            {busy ? t('privacy.confirm.working') : confirmLabel}
           </button>
           <button
             type="button"
@@ -203,7 +204,7 @@ export function ConfirmSheet({
             className="min-h-[44px] w-full rounded-full border border-border-default bg-transparent px-5 text-[14px] text-on-surface-variant disabled:opacity-50"
             style={{ fontFamily: MULISH }}
           >
-            {dismissLabel}
+            {dismissLabel ?? t('privacy.confirm.keepMyData')}
           </button>
         </div>
       </section>

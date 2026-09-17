@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { BookingEyebrow } from './BookingEyebrow';
 
 type DateSlot = {
@@ -24,15 +25,17 @@ export function DateSlotSection({
   onNextPage,
   onSelectDate,
 }: DateSlotSectionProps) {
+  const { t } = useTranslation();
+
   return (
     <div>
-      <BookingEyebrow>Choose a date</BookingEyebrow>
+      <BookingEyebrow>{t('booking.chooseDate')}</BookingEyebrow>
       <div className="mb-2 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={onPrevPage}
           disabled={!canGoPrev}
-          aria-label="Previous dates"
+          aria-label={t('booking.previousDates')}
           className="flex min-h-[40px] flex-1 items-center justify-center gap-1 rounded-full border border-border-default bg-surface-container-low px-3 py-2 text-[12px] font-medium text-on-surface transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
@@ -45,16 +48,16 @@ export function DateSlotSection({
               strokeLinejoin="round"
             />
           </svg>
-          Earlier
+          {t('booking.earlier')}
         </button>
         <button
           type="button"
           onClick={onNextPage}
-          aria-label="Next dates"
+          aria-label={t('booking.nextDates')}
           className="flex min-h-[40px] flex-1 items-center justify-center gap-1 rounded-full border border-border-default bg-surface-container-low px-3 py-2 text-[12px] font-medium text-on-surface transition-opacity"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
-          Later
+          {t('booking.later')}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M9 6l6 6-6 6"

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../../i18n';
 import type { ReportRingKey, SummaryPeriod } from '@anuva/shared';
 import {
   DENSE_SLOT_THRESHOLD,
@@ -58,6 +60,7 @@ export function DayBarChart({
   referenceLabel: string | null;
   period: SummaryPeriod;
 }) {
+  const { t } = useTranslation();
   const { color, track } = RING_COLORS[ringKey];
   // Most recent logged day is the one people look for first.
   const [selected, setSelected] = useState<number>(() => lastLoggedIndex(values));
@@ -80,12 +83,12 @@ export function DayBarChart({
       <div className="mb-2 flex min-h-[34px] items-baseline justify-between gap-3">
         <span className="text-[12px] leading-none text-on-surface-variant" style={{ fontFamily: MULISH }}>
           {selectedDate
-            ? selectedDate.toLocaleDateString(undefined, {
+            ? selectedDate.toLocaleDateString(i18n.language, {
                 weekday: 'long',
                 month: 'short',
                 day: 'numeric',
               })
-            : 'Nothing logged in this window'}
+            : t('charts.nothingLogged')}
         </span>
         {selectedValue != null && (
           <span
@@ -202,9 +205,12 @@ export function DayBarChart({
         style={{ fontFamily: MULISH }}
       >
         {referenceValue != null && referenceLabel
-          ? `Dashed line = ${referenceLabel} (${referenceValue}). Scored 0–100, higher is always better.`
-          : 'Scored 0–100, higher is always better.'}
-        {dense ? ' Short ticks are days with no check-in.' : ' A short tick means no check-in that day.'}
+          ? t('charts.scoreNoteWithReference', {
+              label: referenceLabel,
+              value: referenceValue,
+            })
+          : t('charts.scoreNote')}
+        {dense ? t('charts.denseTickNote') : t('charts.sparseTickNote')}
       </p>
 
       {selected < 0 && (
@@ -212,7 +218,7 @@ export function DayBarChart({
           className="mt-1.5 text-center text-[10.5px] leading-none"
           style={{ fontFamily: MULISH, color: RING_EMPTY_COLOR }}
         >
-          No check-ins for these days.
+          {t('charts.noCheckIns')}
         </p>
       )}
     </div>

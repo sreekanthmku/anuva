@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from './auth-context';
 import { getPostAuthPath } from './postAuthPath';
 
 const SPLASH_MS = 2000;
 
 export default function SplashRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { status, user } = useAuth();
 
@@ -34,7 +36,7 @@ export default function SplashRoute() {
       <div className="relative z-10 flex flex-col items-center">
         <img
           src="/anuva-logo-icon.png"
-          alt="Anuva Wellness logo"
+          alt={t('common.logoAlt')}
           className="mb-6 h-24 w-24 object-contain sm:h-28 sm:w-28"
         />
         <p
@@ -44,7 +46,7 @@ export default function SplashRoute() {
             fontWeight: 500,
           }}
         >
-          ANUVA WELLNESS
+          {t('common.brandName')}
         </p>
         <p
           className="mt-2 text-[20px] text-secondary"
@@ -53,7 +55,7 @@ export default function SplashRoute() {
             fontWeight: 600,
           }}
         >
-          a soft place to land.
+          {t('common.tagline')}
         </p>
       </div>
     </main>

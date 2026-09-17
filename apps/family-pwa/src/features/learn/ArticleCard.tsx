@@ -1,5 +1,6 @@
 import type { FamilyArticleSummary } from '@anuva/shared';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 /**
  * A row in the article list.
@@ -10,6 +11,7 @@ import { Link } from 'react-router-dom';
  * same as the one someone else in the house sees.
  */
 export function ArticleCard({ article }: { article: FamilyArticleSummary }) {
+  const { t } = useTranslation();
   const restricted = article.audience !== 'everyone';
 
   return (
@@ -29,7 +31,7 @@ export function ArticleCard({ article }: { article: FamilyArticleSummary }) {
             {article.teaser}
           </span>
           <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-outline">
-            <span>{article.readingMinutes} min read</span>
+            <span>{t('article.readingMinutes', { count: article.readingMinutes })}</span>
             {restricted ? (
               <>
                 <span aria-hidden>·</span>

@@ -1,4 +1,5 @@
 import type { ReactNode, SVGProps } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * The family app's visual vocabulary, in one file.
@@ -210,6 +211,8 @@ export function SkeletonCard({ lines = 2 }: { lines?: number }) {
 }
 
 export function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useTranslation();
+
   return (
     <Card className="px-5 py-6 text-center" tone="plain">
       <div role="alert">
@@ -220,12 +223,12 @@ export function ErrorCard({ message, onRetry }: { message: string; onRetry: () =
           !
         </span>
         <h2 className="mt-3 font-display text-[18px] leading-snug text-on-surface">
-          This did not load
+          {t('errors.didNotLoad')}
         </h2>
         <p className="mt-2 text-[13.5px] leading-[1.55] text-on-surface-variant">{message}</p>
       </div>
       <QuietButton onClick={onRetry} className="mt-5">
-        Try again
+        {t('common.tryAgain')}
       </QuietButton>
     </Card>
   );

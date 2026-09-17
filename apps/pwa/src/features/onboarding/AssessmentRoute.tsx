@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LanguageToggle } from '../../i18n/LanguageToggle';
 import { useAuth } from '../auth/auth-context';
 import { AnswerOption } from './components/AnswerOption';
 import { QuestionTitle } from './components/QuestionTitle';
@@ -8,6 +10,7 @@ import { useAssessmentFlow } from './hooks/useAssessmentFlow';
 import { persistOnboardingCompletionIfAuthenticated } from './persistOnboardingCompletion';
 
 export default function AssessmentRoute() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
   const {
@@ -52,6 +55,12 @@ export default function AssessmentRoute() {
 
   return (
     <main className="relative flex min-h-mobile flex-col overflow-x-hidden bg-surface pb-[calc(112px+env(safe-area-inset-bottom,0px))] pt-[clamp(24px,7vh,100px)] text-on-surface">
+      {/* Above everything, and on the first screen she sees: someone who cannot read the
+          assessment cannot be asked to answer it before switching language. */}
+      <div className="absolute right-4 top-3 z-20">
+        <LanguageToggle />
+      </div>
+
       <section className="relative z-10 flex flex-col items-center px-6 pt-0">
         <div className="relative">
           <div
@@ -61,7 +70,11 @@ export default function AssessmentRoute() {
             }}
             aria-hidden
           />
-          <img src="/anu.png" alt="Anuva logo" className="relative z-10 h-20 w-20 object-contain" />
+          <img
+            src="/anu.png"
+            alt={t('assessment.logoAlt')}
+            className="relative z-10 h-20 w-20 object-contain"
+          />
         </div>
         <p
           className="mt-3 text-[22px] tracking-[0.18em] text-on-surface"
@@ -71,7 +84,7 @@ export default function AssessmentRoute() {
             letterSpacing: '0.18em',
           }}
         >
-          ANUVA WELLNESS
+          {t('common.brandName')}
         </p>
         <p
           className="mt-0.5 text-[13px] tracking-normal text-primary"
@@ -81,7 +94,7 @@ export default function AssessmentRoute() {
             letterSpacing: '-0.02em',
           }}
         >
-          a soft place to land.
+          {t('common.tagline')}
         </p>
       </section>
 
@@ -101,7 +114,7 @@ export default function AssessmentRoute() {
           style={{ fontFamily: '"Mulish", sans-serif', fontWeight: 400 }}
         >
           <span className="h-px w-3 bg-primary/60" />
-          Pre-assessment · 2 min
+          {t('assessment.eyebrow')}
         </div>
 
         <h1
@@ -111,14 +124,14 @@ export default function AssessmentRoute() {
             fontWeight: 400,
           }}
         >
-          <QuestionTitle prompt={question.prompt} />
+          <QuestionTitle prompt={t(`assessment.questions.${question.id}`)} />
         </h1>
 
         <div className="flex flex-1 flex-col gap-2">
           {question.options.map((option, index) => (
             <AnswerOption
               key={option}
-              label={option}
+              label={t(`assessment.options.${option}`)}
               isSelected={selectedIndex === index}
               onSelect={() => selectOption(index)}
             />
@@ -145,7 +158,7 @@ export default function AssessmentRoute() {
             letterSpacing: '-0.005em',
           }}
         >
-          {isLastStep ? 'Begin Your Journey' : 'Continue'}
+          {isLastStep ? t('assessment.beginJourney') : t('common.continue')}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M5 12h14M13 6l6 6-6 6"

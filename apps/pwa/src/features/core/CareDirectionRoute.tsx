@@ -1,27 +1,30 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
 
 type PathId = 'diet' | 'psych' | 'gynec' | 'combined';
 
-const paths: { id: PathId; label: string; tag: string; glyph: string }[] = [
-  { id: 'diet', label: 'Diet', tag: 'Nutritionist', glyph: '◇' },
-  { id: 'psych', label: 'Psychological', tag: 'Therapy', glyph: '◯' },
-  { id: 'gynec', label: 'Gynaec', tag: 'Clinical', glyph: '◇' },
-  { id: 'combined', label: 'Combined', tag: 'Recommended', glyph: '✦' },
+/** Identity and glyph only. Label and tag are `care.paths.<id>`. */
+const paths: { id: PathId; glyph: string }[] = [
+  { id: 'diet', glyph: '◇' },
+  { id: 'psych', glyph: '◯' },
+  { id: 'gynec', glyph: '◇' },
+  { id: 'combined', glyph: '✦' },
 ];
 
-const timeline: { stage: string; status: 'done' | 'active' | 'upcoming' }[] = [
-  { stage: 'Pre-assessment', status: 'done' },
-  { stage: '7-day tracking', status: 'done' },
-  { stage: 'First benchmark', status: 'done' },
-  { stage: 'Care path match', status: 'active' },
-  { stage: 'Free consultation', status: 'upcoming' },
-  { stage: '12-week programme', status: 'upcoming' },
+/** Stage keys into `care.timeline.*`, with where each one stands. */
+const timeline: { key: string; status: 'done' | 'active' | 'upcoming' }[] = [
+  { key: 'preAssessment', status: 'done' },
+  { key: 'tracking', status: 'done' },
+  { key: 'benchmark', status: 'done' },
+  { key: 'carePathMatch', status: 'active' },
+  { key: 'freeConsultation', status: 'upcoming' },
+  { key: 'programme', status: 'upcoming' },
 ];
 
-const focusTags = ['Vasomotor', 'Sleep support', 'Hormone balance', 'Mediterranean diet'];
+const focusTagKeys = ['vasomotor', 'sleepSupport', 'hormoneBalance', 'mediterraneanDiet'];
 
 function Eyebrow({ children, mint = false }: { children: string; mint?: boolean }) {
   return (
@@ -35,10 +38,11 @@ function Eyebrow({ children, mint = false }: { children: string; mint?: boolean 
 }
 
 export default function CareDirectionRoute() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activePath, setActivePath] = useState<PathId>('combined');
-  const firstName = user?.name?.trim().split(/\s+/)[0] || 'you';
+  const firstName = user?.name?.trim().split(/\s+/)[0] || t('care.nameFallback');
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
@@ -49,21 +53,27 @@ export default function CareDirectionRoute() {
             className="text-[9.5px] uppercase tracking-[0.15em] text-primary"
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
-            Week 1 · Care path ready
+            {t('care.weekBadge')}
           </span>
         </div>
         <h1 className="font-display mb-2 text-[28px] leading-[1.15] text-on-surface">
-          We&apos;ve found the right{' '}
-          <em className="not-italic text-primary" style={{ fontFamily: '"Fraunces", sans-serif' }}>
-            direction
-          </em>{' '}
-          for you.
+          <Trans
+            i18nKey="care.title"
+            components={{
+              1: (
+                <em
+                  className="not-italic text-primary"
+                  style={{ fontFamily: '"Fraunces", sans-serif' }}
+                />
+              ),
+            }}
+          />
         </h1>
         <p
           className="px-3 text-[12px] leading-[1.5] text-on-surface-variant"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
-          Based on 7 days of tracking and your benchmark, we recommend a dual-focus care path.
+          {t('care.subtitle')}
         </p>
       </header>
 
@@ -72,24 +82,28 @@ export default function CareDirectionRoute() {
           className="rounded-[20px] border border-border-default bg-primary-container p-[22px]"
           style={{}}
         >
-          <Eyebrow mint>{`Recommended for ${firstName}`}</Eyebrow>
+          <Eyebrow mint>{t('care.recommendedFor', { name: firstName })}</Eyebrow>
           <h2 className="font-display mb-4 text-[26px] leading-[1.15] text-on-surface">
-            Combined:{' '}
-            <em
-              className="not-italic text-primary"
-              style={{ fontFamily: '"Fraunces", sans-serif' }}
-            >
-              Gynec + Nutrition
-            </em>
+            <Trans
+              i18nKey="care.combinedTitle"
+              components={{
+                1: (
+                  <em
+                    className="not-italic text-primary"
+                    style={{ fontFamily: '"Fraunces", sans-serif' }}
+                  />
+                ),
+              }}
+            />
           </h2>
           <div className="mb-3.5 flex flex-wrap gap-1.5">
-            {focusTags.map((t) => (
+            {focusTagKeys.map((tag) => (
               <span
-                key={t}
+                key={tag}
                 className="rounded-full border border-primary/30 bg-primary/15 px-2.5 py-1 text-[10.5px] text-primary"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                {t}
+                {t(`care.focusTags.${tag}`)}
               </span>
             ))}
           </div>
@@ -97,14 +111,13 @@ export default function CareDirectionRoute() {
             className="border-t border-border-default pt-3 text-[12px] leading-[1.5] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            Pairs a clinical gynaecologist with a nutritionist for the next 12 weeks. Weekly
-            check-ins with ANU.
+            {t('care.combinedBody')}
           </p>
         </article>
       </section>
 
       <section className="px-3 pt-[18px]">
-        <Eyebrow>Other paths available</Eyebrow>
+        <Eyebrow>{t('care.otherPaths')}</Eyebrow>
         <div className="grid grid-cols-2 gap-2">
           {paths.map((p) => {
             const isActive = activePath === p.id;
@@ -132,7 +145,7 @@ export default function CareDirectionRoute() {
                   className="text-[13px] font-medium text-on-surface"
                   style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                 >
-                  {p.label}
+                  {t(`care.paths.${p.id}.label`)}
                 </div>
                 <div
                   className="mt-1 text-[9.5px] uppercase tracking-[0.1em]"
@@ -141,7 +154,7 @@ export default function CareDirectionRoute() {
                     fontFamily: '"Mulish", sans-serif',
                   }}
                 >
-                  {p.tag}
+                  {t(`care.paths.${p.id}.tag`)}
                 </div>
               </button>
             );
@@ -151,21 +164,21 @@ export default function CareDirectionRoute() {
 
       <section className="px-3 py-[22px]">
         <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
-          <Eyebrow>Your journey</Eyebrow>
+          <Eyebrow>{t('care.yourJourney')}</Eyebrow>
           <div className="relative pl-1">
-          {timeline.map((t, i) => {
+          {timeline.map((stage, i) => {
             const isLast = i === timeline.length - 1;
             const dotBg =
-              t.status === 'done' ? '#5E3566' : t.status === 'active' ? '#5E3566' : 'transparent';
-            const dotBorder = t.status === 'upcoming' ? '#B49FB0' : dotBg;
+              stage.status === 'done' || stage.status === 'active' ? '#5E3566' : 'transparent';
+            const dotBorder = stage.status === 'upcoming' ? '#B49FB0' : dotBg;
 
             return (
-              <div key={t.stage} className="relative flex gap-3.5 pb-3.5">
+              <div key={stage.key} className="relative flex gap-3.5 pb-3.5">
                 {!isLast && (
                   <div
                     className="absolute bottom-0 left-[9px] top-[19px] w-px"
                     style={{
-                      background: t.status === 'done' ? '#5E3566' : 'rgba(94, 53, 102, 0.2)',
+                      background: stage.status === 'done' ? '#5E3566' : 'rgba(94, 53, 102, 0.2)',
                     }}
                   />
                 )}
@@ -176,7 +189,7 @@ export default function CareDirectionRoute() {
                     border: `1.5px solid ${dotBorder}`,
                   }}
                 >
-                  {t.status === 'done' && (
+                  {stage.status === 'done' && (
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path
                         d="M5 12l5 5L20 7"
@@ -186,7 +199,7 @@ export default function CareDirectionRoute() {
                       />
                     </svg>
                   )}
-                  {t.status === 'active' && (
+                  {stage.status === 'active' && (
                     <span className="h-1.5 w-1.5 rounded-full bg-inverse-on-surface" />
                   )}
                 </div>
@@ -195,18 +208,18 @@ export default function CareDirectionRoute() {
                     className="text-[13px] text-on-surface"
                     style={{
                       fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
-                      fontWeight: t.status === 'active' ? 500 : 400,
-                      color: t.status === 'upcoming' ? '#B49FB0' : '#3E2542',
+                      fontWeight: stage.status === 'active' ? 500 : 400,
+                      color: stage.status === 'upcoming' ? '#B49FB0' : '#3E2542',
                     }}
                   >
-                    {t.stage}
+                    {t(`care.timeline.${stage.key}`)}
                   </p>
-                  {t.status === 'active' && (
+                  {stage.status === 'active' && (
                     <p
                       className="mt-0.5 text-[9.5px] uppercase tracking-[0.1em] text-secondary"
                       style={{ fontFamily: '"Mulish", sans-serif' }}
                     >
-                      In progress now
+                      {t('care.inProgress')}
                     </p>
                   )}
                 </div>
@@ -224,7 +237,7 @@ export default function CareDirectionRoute() {
               letterSpacing: '-0.005em',
             }}
           >
-            Book My Free Consultation
+            {t('care.bookCta')}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
                 d="M5 12h14M13 6l6 6-6 6"
