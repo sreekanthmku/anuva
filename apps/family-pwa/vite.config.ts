@@ -156,6 +156,9 @@ export default defineConfig(({ mode }) => {
           // The FCM worker registers itself under its own scope; precaching it here would let workbox
           // serve a stale copy of a worker it does not own.
           globIgnores: ['**/firebase-messaging-sw.js'],
+          // i18n locale JSON is glob-bundled into the main chunk; headroom for future languages
+          // pushing it past Workbox's 2 MiB default precache limit.
+          maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         },
       }),
       ...sentry,

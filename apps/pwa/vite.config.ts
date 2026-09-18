@@ -146,6 +146,9 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          // i18n locale JSON is glob-bundled into the main chunk; 9+ languages push it past
+          // Workbox's 2 MiB default precache limit.
+          maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.startsWith('/api') && !url.pathname.startsWith('/api/auth/'),
