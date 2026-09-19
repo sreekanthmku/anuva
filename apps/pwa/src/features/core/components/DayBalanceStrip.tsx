@@ -1,7 +1,8 @@
 import type { SummaryDayBalance, WellnessGroup } from '@anuva/shared';
+import i18n from '../../../i18n';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
 import { RING_EMPTY_COLOR } from '../ringColors';
-import { GROUP_COLOR, groupLabel } from '../wellnessDisplay';
+import { GROUP_COLOR } from '../wellnessDisplay';
 import { BALANCE_EMOJI } from '../summaryEmoji';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -10,12 +11,15 @@ const FRAUNCES = '"Fraunces", sans-serif';
 type Column = {
   key: 'good' | 'okay' | 'hard' | 'untracked';
   count: number;
-  label: string;
   color: string;
 };
 
-function singular(label: string, count: number): string {
-  return count === 1 ? label.replace(/days$/, 'day') : label;
+/**
+ * The column's label for its own count — "1 Good day", "3 Good days". A plural key rather than
+ * trimming an English "s", which is meaningless in every other language the app ships.
+ */
+function columnLabel(key: Column['key'], count: number): string {
+  return i18n.t(`report.balanceColumn.${key}`, { count });
 }
 
 /**
@@ -38,13 +42,11 @@ export function DayBalanceStrip({
     ...(['good', 'okay', 'hard'] as WellnessGroup[]).map((group) => ({
       key: group,
       count: balance[group],
-      label: groupLabel(group),
       color: GROUP_COLOR[group],
     })),
     {
       key: 'untracked' as const,
       count: balance.untracked,
-      label: 'Untracked days',
       color: RING_EMPTY_COLOR,
     },
   ];
@@ -59,7 +61,7 @@ export function DayBalanceStrip({
       style={{ background: 'linear-gradient(103deg, #FFFFFF 0%, #FDF6EF 54%, #F7E9E6 100%)' }}
     >
       <div className="relative mb-1 flex items-center justify-between gap-2 px-1">
-        <Eyebrow className="mb-0">Day balance</Eyebrow>
+        <Eyebrow className="mb-0">{i18n.t('report.dayBalance')}</Eyebrow>
         <span
           className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-[9.5px] uppercase tracking-[0.08em] text-on-surface-variant"
           style={{ fontFamily: MULISH }}
@@ -95,7 +97,7 @@ export function DayBalanceStrip({
               className="text-center text-[9.5px] leading-[1.25] text-on-surface-variant"
               style={{ fontFamily: MULISH }}
             >
-              {singular(column.label, column.count)}
+              {columnLabel(column.key, column.count)}
             </span>
           </div>
         ))}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SummaryCalendarResponse } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type CalendarState = {
   data: SummaryCalendarResponse | null;
@@ -34,7 +35,7 @@ export function useSummaryCalendar(month: string | null) {
       cache.current.set(target, data);
       setState({ data, loading: false, error: null });
     } catch {
-      setState({ data: null, loading: false, error: 'Could not load your calendar' });
+      setState({ data: null, loading: false, error: i18n.t('errors.loadCalendar') });
     }
   }, []);
 

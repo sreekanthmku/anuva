@@ -1,8 +1,16 @@
 import { prisma } from '@anuva/database';
 import { sendPushToAllTokens } from './fcm.js';
+import { copy, fill, withLanguage } from './i18n/index.js';
+import { languageForUser } from './i18n/recipients.js';
 import { logger } from './logger.js';
 
 const log = logger.child({ module: 'qa-notifications' });
+
+const QA_PUSH = copy('push.qaAnswered', {
+  title: 'Your question has an answer 💜',
+  body: '{{doctor}} has replied to the question you asked. Tap to read it whenever you like.',
+  fallbackDoctor: 'One of our specialists',
+});
 
 /**
  * Tells the asker her question came back. The push flows one way only — the doctor who answered
@@ -26,15 +34,16 @@ export async function notifyAskerQuestionAnswered(
     return;
   }
 
-  const name = doctorName.trim() || 'One of our specialists';
+  // Built in the asker's language: this runs inside the answering doctor's (or admin's) request.
+  const notification = withLanguage(await languageForUser(userId), () => ({
+    title: QA_PUSH.title,
+    body: fill(QA_PUSH.body, { doctor: doctorName.trim() || QA_PUSH.fallbackDoctor }),
+  }));
 
   try {
     await sendPushToAllTokens(
       tokens,
-      {
-        title: 'Your question has an answer 💜',
-        body: `${name} has replied to the question you asked. Tap to read it whenever you like.`,
-      },
+      notification,
       {
         url: '/qa',
         type: 'anonymous-qa-answer',

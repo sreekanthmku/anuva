@@ -8,6 +8,7 @@ import {
   type FamilyGift,
   type FamilyMessage,
 } from './familyMessageLink';
+import i18n from '../../i18n';
 
 /**
  * Three ways the note arrives, and all three end at the same place.
@@ -64,7 +65,7 @@ export function useFamilyMessage() {
       subscribeToForegroundMessages((payload) => {
         const data = foregroundData(payload);
         if (!data?.familyMessage) return;
-        setMessage({ text: data.familyMessage, from: data.familyFrom?.trim() || 'Your family' });
+        setMessage({ text: data.familyMessage, from: data.familyFrom?.trim() || i18n.t('family.fromFallback') });
       }),
     [],
   );

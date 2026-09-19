@@ -7,11 +7,18 @@ import type { NudgeCard, NudgeSlot } from '@anuva/shared';
 import {
   DAY_TRACKERS,
   DAY_TRACKER_ORDER,
+  canonicalAnswer,
   getNudge,
+  localizedAnswer,
+  localizedOptions,
+  localizedQuestion,
   selectToneTemplate,
+  toneMessage,
+  trackerLabel,
   type DayTier,
   type NudgeDef,
 } from './registry.js';
+import { copy, fill } from '../i18n/index.js';
 import { runGovernor } from './governor.js';
 import { firstNameOf, nudgeQuestion, type QuestionContext } from './questionVariants.js';
 import { selectL2Nudge } from './selectL2Nudge.js';
@@ -36,11 +43,11 @@ export function currentSlot(now: Date): NudgeSlot {
   return 'evening';
 }
 
-const SLOT_TITLES: Record<NudgeSlot, string> = {
+const SLOT_TITLES: Record<NudgeSlot, string> = copy('nudges.slotTitles', {
   morning: 'Morning',
   afternoon: 'Afternoon',
   evening: 'Evening/Night',
-};
+});
 
 // Primary mandatory nudge whose governor result gates the whole slot bundle.
 const SLOT_PRIMARY: Record<NudgeSlot, string> = {
@@ -60,8 +67,9 @@ export function toCard(def: NudgeDef, ctx?: QuestionContext): NudgeCard {
     nudgeId: def.id,
     layer: def.layer,
     slot: def.slot,
-    question: ctx ? nudgeQuestion(def.id, def.question, ctx) : def.question,
-    options: def.options,
+    question: ctx ? nudgeQuestion(def.id, localizedQuestion(def), ctx) : localizedQuestion(def),
+    // In her language; whatever she taps comes back through `canonicalAnswer` in storeResponse.
+    options: localizedOptions(def),
     required: def.required,
   };
 }
@@ -278,6 +286,10 @@ export async function storeResponse(
   const def = getNudge(nudgeId);
   if (!def) throw new Error(`Unknown nudge ${nudgeId}`);
 
+  // Stored — and scored, and classified below — as the English option it stands for, so a week of
+  // answers reads the same whatever language each one was given in.
+  answer = canonicalAnswer(def, answer);
+
   await persistAnswer(userId, def, answer, loggedAt);
 
   const dayStart = startOfDay(now);
@@ -306,7 +318,7 @@ export async function storeResponse(
   ]);
 
   const tone = selectToneTemplate(nudgeId, answer);
-  return { toneTemplateId: tone.id, message: tone.message, distressFlag: setDistress };
+  return { toneTemplateId: tone.id, message: toneMessage(tone), distressFlag: setDistress };
 }
 
 // ─────────────────────────────────────────────
@@ -316,20 +328,24 @@ export async function storeResponse(
 
 // Mood (L1-003) and sleep (L1-001) capture the numeric 1-5 emoji scale; map to a
 // display label for the day sheet's collapsed/answered row.
-const FEELING_LABELS: Record<number, string> = {
+const FEELING_LABELS: Record<number, string> = copy('nudges.feelingLabels', {
   5: 'Feeling great',
   4: 'Feeling good',
   3: 'Feeling okay',
   2: 'Feeling low',
   1: 'Feeling awful',
-};
-const QUALITY_LABELS: Record<number, string> = {
+});
+const QUALITY_LABELS: Record<number, string> = copy('nudges.qualityLabels', {
   5: 'Slept great',
   4: 'Slept good',
   3: 'Slept okay',
   2: 'Slept poorly',
   1: 'Slept awful',
-};
+});
+const SCORE_FALLBACK = copy('nudges.scoreFallback', {
+  sleep: 'Sleep {{score}}/5',
+  mood: 'Mood {{score}}/5',
+});
 
 // Read today's stored answer for a tracker, or null if not yet logged.
 async function readAnswer(userId: string, def: NudgeDef, dayStart: Date): Promise<string | null> {
@@ -340,7 +356,9 @@ async function readAnswer(userId: string, def: NudgeDef, dayStart: Date): Promis
         where: { userId, loggedAt: { gte: dayStart }, quality: { not: null } },
         orderBy: { loggedAt: 'desc' },
       });
-      return r?.quality != null ? (QUALITY_LABELS[r.quality] ?? `Sleep ${r.quality}/5`) : null;
+      return r?.quality != null
+        ? (QUALITY_LABELS[r.quality] ?? fill(SCORE_FALLBACK.sleep, { score: r.quality }))
+        : null;
     }
     case 'moodLog': {
       // L1-008 (evening) is the categorical mood-shift; L1-003 (morning) is the
@@ -350,20 +368,22 @@ async function readAnswer(userId: string, def: NudgeDef, dayStart: Date): Promis
           where: { userId, loggedAt: { gte: dayStart }, slot: 'evening' },
           orderBy: { loggedAt: 'desc' },
         });
-        return r?.moodShift ?? null;
+        return r?.moodShift != null ? localizedAnswer(def, r.moodShift) : null;
       }
       const r = await prisma.moodLog.findFirst({
         where: { userId, loggedAt: { gte: dayStart }, feeling: { not: null } },
         orderBy: { loggedAt: 'desc' },
       });
-      return r?.feeling != null ? (FEELING_LABELS[r.feeling] ?? `Mood ${r.feeling}/5`) : null;
+      return r?.feeling != null
+        ? (FEELING_LABELS[r.feeling] ?? fill(SCORE_FALLBACK.mood, { score: r.feeling }))
+        : null;
     }
     default: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const r = await (prisma as any)[s.model].findUnique({
         where: { userId_date: { userId, date: dayKey(dayStart) } },
       });
-      return r?.category ?? null;
+      return r?.category != null ? localizedAnswer(def, r.category) : null;
     }
   }
 }
@@ -401,9 +421,9 @@ export async function getDaySheet(userId: string, now: Date): Promise<DaySheet> 
     trackers.push({
       nudgeId: id,
       tier: meta.tier,
-      label: meta.label,
-      question: nudgeQuestion(id, def.question, ctx),
-      options: def.options,
+      label: trackerLabel(id),
+      question: nudgeQuestion(id, localizedQuestion(def), ctx),
+      options: localizedOptions(def),
       required: def.required,
       answered: answer !== null,
       answer,

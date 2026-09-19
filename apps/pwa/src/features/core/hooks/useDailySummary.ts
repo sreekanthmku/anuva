@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { WeeklyReportResponse } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type State = {
   data: WeeklyReportResponse | null;
@@ -45,7 +46,7 @@ export function useDailySummary(enabled: boolean) {
         if (live) setState({ data, loading: false, error: null });
       })
       .catch(() => {
-        if (live) setState({ data: null, loading: false, error: "Couldn't load today's wellness" });
+        if (live) setState({ data: null, loading: false, error: i18n.t('errors.loadToday') });
       });
 
     return () => {

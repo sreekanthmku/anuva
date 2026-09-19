@@ -25,6 +25,10 @@ model User {
   /// data any more: `phone` is rewritten to `erased:<id>`, `email` and `name` are nulled. Every
   /// auth path must refuse a user with this set — the account is a tombstone, not an account.
   erasedAt            DateTime?
+  /// The app language she last chose (`hi`, `ta`, …), learned from the `Accept-Language` her client
+  /// sends. Only read where there is no request to ask — push notifications and background jobs.
+  /// Optional: null means English, and an unknown value is treated as English too.
+  preferredLanguage   String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -331,6 +335,9 @@ model FamilyMember {
   revokedAt DateTime?
 
   lastSeenAt DateTime @default(now())
+
+  /// Same as `User.preferredLanguage`, for the family app: the language its pushes go out in.
+  preferredLanguage String?
 
   /// Set by "Remind me later" on the support sheet; read by the reminder job.
   supportRemindAt DateTime?

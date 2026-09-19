@@ -49,7 +49,8 @@
     "noDeviceToken": "Could not get a device token. Try a hard refresh.",
     "notificationsFailed": "Could not turn on notifications.",
     "permissionWasNotGranted": "Notification permission was not granted.",
-    "notificationsBlocked": "Notifications are blocked for this site. You can turn them on in site settings."
+    "notificationsBlocked": "Notifications are blocked for this site. You can turn them on in site settings.",
+    "requestFailed": "Request failed with status {{status}}"
   },
   "today": {
     "staleSuffix": "Showing what we last had.",

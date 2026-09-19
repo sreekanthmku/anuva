@@ -1,3 +1,4 @@
+import { copy } from '../i18n/index.js';
 // ANU home card — the signal registry.
 //
 // The card on the home screen used to be one hardcoded sentence. What replaces
@@ -78,6 +79,17 @@ function plural(count: number, singular: string, pluralWord: string): string {
   return count === 1 ? singular : pluralWord;
 }
 
+/** Words dropped into the `{episodes}`, `{dayWord}` and `{when}` slots. */
+const HOME_WORDS = copy('homeCard.words', {
+  episode: 'episode',
+  episodes: 'episodes',
+  day: 'day',
+  days: 'days',
+  today: 'today',
+  tomorrow: 'tomorrow',
+  inTwoDays: 'in two days',
+});
+
 const SIGNALS: HomeCardSignal[] = [
   {
     id: 'hot-flash-cluster',
@@ -93,7 +105,7 @@ const SIGNALS: HomeCardSignal[] = [
       if (count < CLUSTER_MIN) return null;
 
       return {
-        vars: { count, episodes: plural(count, 'episode', 'episodes') },
+        vars: { count, episodes: plural(count, HOME_WORDS.episode, HOME_WORDS.episodes) },
         sinceAt: ctx.lastQuickAt.hot_flash ?? ctx.hotFlashLoggedAt,
       };
     },
@@ -188,7 +200,7 @@ const SIGNALS: HomeCardSignal[] = [
     match: (ctx) => {
       const days = ctx.cycle.daysLate;
       if (days == null || days < 2) return null;
-      return { vars: { days, dayWord: plural(days, 'day', 'days') } };
+      return { vars: { days, dayWord: plural(days, HOME_WORDS.day, HOME_WORDS.days) } };
     },
     variants: [
       'Your period is {days} {dayWord} later than your usual cycle. Want to know whether that is expected right now?',
@@ -207,7 +219,12 @@ const SIGNALS: HomeCardSignal[] = [
     match: (ctx) => {
       const days = ctx.cycle.daysUntilNextPeriod;
       if (days == null || days > 2 || days < 0) return null;
-      return { vars: { days, when: days === 0 ? 'today' : days === 1 ? 'tomorrow' : 'in two days' } };
+      return {
+        vars: {
+          days,
+          when: days === 0 ? HOME_WORDS.today : days === 1 ? HOME_WORDS.tomorrow : HOME_WORDS.inTwoDays,
+        },
+      };
     },
     variants: [
       'Going by your cycle, your period is due {when}. Want to log how you are feeling in the run-up?',
@@ -267,6 +284,26 @@ const SIGNALS: HomeCardSignal[] = [
 
 export const HOME_CARD_SIGNAL_IDS = SIGNALS.map((s) => s.id);
 
+/**
+ * Every signal's wording, localised on read and keyed by signal id. `SIGNALS` keeps the English and
+ * the matching logic; only what she reads — and the chat seed she sends when she taps — comes from
+ * here. `{count}`-style tokens and `{{firstName}}` must survive translation where the sentence uses
+ * them.
+ */
+const SIGNAL_TEXT = copy(
+  'homeCard.signals',
+  Object.fromEntries(
+    SIGNALS.map((signal) => [
+      signal.id,
+      {
+        variants: signal.variants,
+        label: signal.primary.label,
+        ...(signal.primary.chatSeed ? { chatSeed: signal.primary.chatSeed } : {}),
+      },
+    ]),
+  ),
+) as Record<string, { variants: string[]; label: string; chatSeed?: string }>;
+
 export type HomeCardCandidate = {
   signalId: string;
   cooldownHours: number;
@@ -288,7 +325,8 @@ export function candidatesFor(ctx: HomeCardContext): HomeCardCandidate[] {
 
       // Per user, per day, per signal: the same pick as long as the day lasts,
       // so a refresh does not reword the card she is reading.
-      const template = signal.variants[
+      const text = SIGNAL_TEXT[signal.id]!;
+      const template = text.variants[
         variantIndex(`${ctx.variantSeed}:${signal.id}`, signal.variants.length)
       ]!;
 
@@ -299,9 +337,9 @@ export function candidatesFor(ctx: HomeCardContext): HomeCardCandidate[] {
           text: renderNudgeQuestion(fill(template, hit.vars), ctx.firstName),
           sinceAt: hit.sinceAt ?? null,
           primary: {
-            label: signal.primary.label,
-            action: signal.primary.chatSeed
-              ? { type: 'chat' as const, seed: fill(signal.primary.chatSeed, hit.vars) }
+            label: text.label,
+            action: text.chatSeed
+              ? { type: 'chat' as const, seed: fill(text.chatSeed, hit.vars) }
               : { type: 'route' as const, path: signal.primary.path! },
           },
         },

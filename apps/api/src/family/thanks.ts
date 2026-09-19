@@ -1,3 +1,4 @@
+import { copy, fill } from '../i18n/index.js';
 import { prisma } from '@anuva/database';
 import type { FamilySupportActionKind, FamilyThanksResponse } from '@anuva/shared';
 import { sendToFamilyMember } from './push.js';
@@ -21,12 +22,20 @@ const THANKS_LIMIT = 12;
 const THANKS_WINDOW_MS = 60 * 60 * 1000;
 
 /** What she is thanking them *for*, phrased for their lock screen. */
-const FOR_GESTURE: Record<FamilySupportActionKind, string> = {
+const FOR_GESTURE: Record<FamilySupportActionKind, string> = copy('family.thanksGesture', {
   message: 'your note',
   call: 'your call',
   flowers: 'the flowers',
   chocolates: 'the chocolates',
-};
+});
+
+const THANKS_TEXT = copy('family.thanksText', {
+  noted: 'Thank you noted.',
+  landed: '✓ They will know it landed.',
+  pushTitle: '{{name}} says thank you 😊',
+  pushBodyGesture: 'She opened {{gesture}} and it landed. 💛',
+  pushBody: 'She saw what you did today, and it landed. 💛',
+});
 
 function firstNameOf(name: string | null | undefined): string {
   return name?.trim().split(/\s+/)[0] || 'She';
@@ -60,28 +69,32 @@ export async function sendFamilyThanks(input: {
   if (members.length === 0) {
     // Nobody connected — or a memberId that is not hers. Same answer either way, so a guessed id
     // tells the caller nothing it did not already know.
-    return { delivered: false, toast: 'Thank you noted.' };
+    return { delivered: false, toast: THANKS_TEXT.noted };
   }
 
   const first = firstNameOf(user?.name);
-  const forGesture = input.kind ? FOR_GESTURE[input.kind] : null;
+  const kind = input.kind;
 
-  const title = `${first} says thank you 😊`;
-  const body = forGesture
-    ? `She opened ${forGesture} and it landed. 💛`
-    : 'She saw what you did today, and it landed. 💛';
+  // Built per recipient, in each family member's own language — `sendToFamilyMember` evaluates this
+  // inside that member's stored language, not hers.
+  const notification = () => ({
+    title: fill(THANKS_TEXT.pushTitle, { name: first }),
+    body: kind
+      ? fill(THANKS_TEXT.pushBodyGesture, { gesture: FOR_GESTURE[kind] })
+      : THANKS_TEXT.pushBody,
+  });
 
   // Deep-links to Today, where the support card is — the natural next thing after being thanked is
   // to do the next day's gesture, not to read a receipt.
   const data = { url: '/', familyThanks: input.kind ?? 'general', familyThanksFrom: first };
 
   const results = await Promise.all(
-    members.map((member) => sendToFamilyMember(member.id, { title, body }, data)),
+    members.map((member) => sendToFamilyMember(member.id, notification, data)),
   );
   const delivered = results.some((count) => count > 0);
 
   return {
     delivered,
-    toast: delivered ? '✓ They will know it landed.' : 'Thank you noted.',
+    toast: delivered ? THANKS_TEXT.landed : THANKS_TEXT.noted,
   };
 }

@@ -154,14 +154,14 @@ export function WellnessTrendCard({ report }: { report: WeeklyReportResponse }) 
         {/* A native select: it is the one control that already behaves like the
             platform picker the mockup draws, on both iOS and Android. */}
         <label className="shrink-0">
-          <span className="sr-only">Series to chart</span>
+          <span className="sr-only">{t('report.seriesToChart')}</span>
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value as SeriesKey)}
             className="min-h-[34px] rounded-full border-border-default bg-surface py-1 pl-3 pr-7 text-[11.5px] font-medium text-on-surface focus:border-primary focus:ring-0"
             style={{ fontFamily: MULISH }}
           >
-            <option value={OVERALL}>Overall trend</option>
+            <option value={OVERALL}>{t('report.overallTrend')}</option>
             {report.rings.map((r) => (
               <option key={r.key} value={r.key}>
                 {r.label}
@@ -359,9 +359,7 @@ export function WellnessTrendCard({ report }: { report: WeeklyReportResponse }) 
       </figure>
 
       <p className="mt-2.5 text-[9.5px] leading-[1.35] text-outline" style={{ fontFamily: MULISH }}>
-        {isMonthly
-          ? 'One point per week, averaged over the days you logged in it.'
-          : 'One point per day. Ticks under the axis are days with no check-in.'}
+        {isMonthly ? t('report.trendNoteWeekly') : t('report.trendNoteDaily')}
       </p>
     </article>
   );

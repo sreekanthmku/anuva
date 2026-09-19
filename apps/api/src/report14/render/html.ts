@@ -14,8 +14,21 @@
 import { ANUVA_LOGO_PNG } from '../assets/logo.js';
 import type { RecommendationBlock } from '../content/domains.js';
 import type { ReportDocument } from '../content/index.js';
+import { copy, currentLanguage } from '../../i18n/index.js';
 
 /** Inlined so the page stays self-contained — no asset route to authenticate. */
+const HTML_TEXT = copy('report14.labels', {
+  fromAnu: 'From ANU',
+  pageTitle: 'Your Assessment Report · Anuva Wellness',
+  saveAsPdf: 'Save as PDF',
+  eyebrow: 'Anuva Wellness · Assessment Report',
+  menstrualStatus: 'Your menstrual status',
+  dominantDomain: 'Dominant symptom domain',
+  medicalFlags: 'Medical flags to raise with your doctor',
+  recommendations: 'Your recommendations',
+  trackerFocus: 'What ANU will track with you',
+});
+
 const LOGO_BASE64 = ANUVA_LOGO_PNG.toString('base64');
 
 function esc(value: string): string {
@@ -273,7 +286,7 @@ export function renderReportHtml(doc: ReportDocument): string {
         </div>
         ${recommendationBlocks(overlay.recommendations)}
         <aside class="anu">
-          <p class="label" style="color: var(--plum)">From ANU</p>
+          <p class="label" style="color: var(--plum)">${esc(HTML_TEXT.fromAnu)}</p>
           <p>${esc(overlay.anuNote)}</p>
         </aside>
       </section>`,
@@ -281,12 +294,12 @@ export function renderReportHtml(doc: ReportDocument): string {
     .join('');
 
   return `<!doctype html>
-<html lang="en">
+<html lang="${currentLanguage()}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Your Assessment Report · Anuva Wellness</title>
+<title>${esc(HTML_TEXT.pageTitle)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
@@ -297,13 +310,13 @@ export function renderReportHtml(doc: ReportDocument): string {
 </head>
 <body>
 <div class="toolbar">
-  <button type="button" onclick="window.print()">Save as PDF</button>
+  <button type="button" onclick="window.print()">${esc(HTML_TEXT.saveAsPdf)}</button>
 </div>
 
 <main class="sheet">
   <header class="cover">
     <img class="brand" src="data:image/png;base64,${LOGO_BASE64}" alt="Anuva Wellness" />
-    <p class="eyebrow">Anuva Wellness · Assessment Report</p>
+    <p class="eyebrow">${esc(HTML_TEXT.eyebrow)}</p>
     <h1>${esc(doc.title)}</h1>
     <p class="subtitle">${esc(doc.stageContext)}</p>
     <div class="cover-meta">
@@ -317,28 +330,28 @@ export function renderReportHtml(doc: ReportDocument): string {
   <p>${esc(doc.introduction)}</p>
 
   <div class="card">
-    <p class="label">Your menstrual status</p>
+    <p class="label">${esc(HTML_TEXT.menstrualStatus)}</p>
     <p>${esc(doc.menstrualStatus)}</p>
   </div>
 
   <div class="card">
-    <p class="label">Dominant symptom domain</p>
+    <p class="label">${esc(HTML_TEXT.dominantDomain)}</p>
     <p>${esc(doc.dominantDomain)}</p>
   </div>
 
-  <h2>Medical flags to raise with your doctor</h2>
+  <h2>${esc(HTML_TEXT.medicalFlags)}</h2>
   <ul class="flags">${doc.medicalFlags.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
 
-  <h2>Your recommendations</h2>
+  <h2>${esc(HTML_TEXT.recommendations)}</h2>
   ${recommendationBlocks(doc.recommendations)}
 
   <div class="card">
-    <p class="label">What ANU will track with you</p>
+    <p class="label">${esc(HTML_TEXT.trackerFocus)}</p>
     <p>${esc(doc.trackerFocus)}</p>
   </div>
 
   <aside class="anu">
-    <p class="label" style="color: var(--plum)">From ANU</p>
+    <p class="label" style="color: var(--plum)">${esc(HTML_TEXT.fromAnu)}</p>
     <p>${esc(doc.anuNote)}</p>
   </aside>
 

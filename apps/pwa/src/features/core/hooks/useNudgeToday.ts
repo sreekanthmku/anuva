@@ -6,6 +6,7 @@ import type {
   SubmitNudgeResponseBody,
 } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type NudgeTodayState = {
   data: NudgeTodayResponse | null;
@@ -23,7 +24,7 @@ export function useNudgeToday(slot?: NudgeSlot) {
       const data = await apiFetch<NudgeTodayResponse>(`/api/nudge/today${query}`);
       setState({ data, loading: false, error: null });
     } catch {
-      setState({ data: null, loading: false, error: 'Failed to load your check-in' });
+      setState({ data: null, loading: false, error: i18n.t('errors.loadCheckIn') });
     }
   }, [slot]);
 

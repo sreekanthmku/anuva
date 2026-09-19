@@ -216,7 +216,8 @@ export function useConsultationBooking() {
         // she already has an overlapping appointment, so pass its own wording through.
         await loadSlots({ keepSelection: true });
         setError(
-          err.message.startsWith('Request failed with status')
+          // The generic message means the API sent no wording of its own for this 409.
+          err.message === i18n.t('errors.requestFailed', { status: err.status })
             ? i18n.t('booking.slotTaken')
             : err.message
         );

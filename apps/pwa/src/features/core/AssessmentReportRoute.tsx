@@ -356,7 +356,7 @@ export default function AssessmentReportRoute() {
                 key={overlay.id}
                 className="mt-8 border-t border-border-default pt-6"
               >
-                <Eyebrow tone="gold">Additional focus</Eyebrow>
+                <Eyebrow tone="gold">{t('assessmentReport.additionalFocus')}</Eyebrow>
                 <h2 className="mb-3 font-display text-[19px] leading-snug text-primary">
                   {overlay.title}
                 </h2>

@@ -1,3 +1,4 @@
+import { copy } from '../i18n/index.js';
 // ANU Nudge Engine — warm phrasings for every tracker prompt.
 //
 // One nudge asks the same thing every day, so a single fixed sentence starts reading like a form.
@@ -9,7 +10,11 @@
 
 const NAME_TOKEN = '{{firstName}}';
 
-export const NUDGE_QUESTION_VARIANTS: Record<string, string[]> = {
+/**
+ * Localised on read (see `copy()`). A translation must keep `{{firstName}}` exactly where the
+ * sentence addresses her — `renderNudgeQuestion` fills it, or strips it for a user with no name.
+ */
+export const NUDGE_QUESTION_VARIANTS: Record<string, string[]> = copy('nudges.variants', {
   // Sleep quality
   'L1-001': [
     'Good morning, {{firstName}} 🌷 Before we start today, how did you sleep last night?',
@@ -163,7 +168,7 @@ export const NUDGE_QUESTION_VARIANTS: Record<string, string[]> = {
     '{{firstName}}, how would you describe the timing and balance of your meals today?',
     'Just checking in, {{firstName}} 💕 What was your overall experience with eating and nourishment today?',
   ],
-};
+});
 
 /** Titles are not what someone is called — "Dr. Meera" should greet as "Meera". */
 const HONORIFICS = new Set(['dr', 'mr', 'mrs', 'ms', 'miss', 'smt', 'shri', 'sri', 'prof']);

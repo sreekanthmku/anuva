@@ -1,3 +1,4 @@
+import { translateMessage } from '../i18n/index.js';
 /**
  * Family sharing — HTTP surface.
  *
@@ -529,7 +530,7 @@ export function createFamilyRouter({
     (err: unknown, req: Request, res: Response, _next: NextFunction) => {
       if (err instanceof FamilyError) {
         req.log?.warn?.({ status: err.status, code: err.code }, `family: ${err.message}`);
-        res.status(err.status).json({ error: err.message, code: err.code });
+        res.status(err.status).json({ error: err.localized(), code: err.code });
         return;
       }
 
@@ -541,13 +542,18 @@ export function createFamilyRouter({
         typeof (err as { status?: unknown }).status === 'number'
       ) {
         const status = (err as { status: number }).status;
+        // The injected auth resolver throws the core API's HttpError, which knows how to localise
+        // itself; anything else is matched against the English message bundle.
+        const localized = (err as { localized?: () => string }).localized;
         const message = (err as { message?: unknown }).message ?? 'Request could not be completed.';
-        res.status(status).json({ error: String(message) });
+        res.status(status).json({
+          error: typeof localized === 'function' ? localized.call(err) : translateMessage(String(message)),
+        });
         return;
       }
 
       req.log?.error?.({ err }, 'family: unhandled failure');
-      res.status(500).json({ error: 'Something went wrong. Please try again.' });
+      res.status(500).json({ error: translateMessage('Something went wrong. Please try again.') });
     },
   );
 

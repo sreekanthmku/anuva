@@ -2,6 +2,7 @@
 // MVP source of truth: ANU_Nudge_Engine_MVP_Rules.md.
 
 import type { NudgeSlot } from '@anuva/shared';
+import { copy } from '../i18n/index.js';
 
 // Where a nudge answer is persisted.
 export type StorageTarget =
@@ -213,6 +214,16 @@ export const DAY_TRACKERS: Record<string, DayTrackerMeta> = {
 // Stable display order for the day sheet.
 export const DAY_TRACKER_ORDER = Object.keys(DAY_TRACKERS);
 
+/** Tracker names in the current language; `DAY_TRACKERS` keeps the English for everything else. */
+const TRACKER_LABELS = copy(
+  'nudges.trackerLabels',
+  Object.fromEntries(Object.entries(DAY_TRACKERS).map(([id, meta]) => [id, meta.label])),
+);
+
+export function trackerLabel(id: string): string {
+  return TRACKER_LABELS[id] ?? DAY_TRACKERS[id]?.label ?? id;
+}
+
 // ─────────────────────────────────────────────
 // ANU Tone Reference — MVP response templates
 // ─────────────────────────────────────────────
@@ -250,6 +261,16 @@ export const TONE_TEMPLATES: Record<string, ToneTemplate> = {
     neverSay: 'You need to answer accurately',
   },
 };
+
+/** What ANU says back, in the current language. `TONE_TEMPLATES` keeps the English and the ids. */
+const TONE_MESSAGES = copy(
+  'nudges.toneMessages',
+  Object.fromEntries(Object.entries(TONE_TEMPLATES).map(([id, tpl]) => [id, tpl.message])),
+);
+
+export function toneMessage(template: ToneTemplate): string {
+  return TONE_MESSAGES[template.id] ?? template.message;
+}
 
 // Answer-classification helpers used to pick the right tone template.
 const UNCERTAIN_ANSWERS = new Set(["i don't know", 'not sure', 'i forgot to track']);
@@ -300,4 +321,49 @@ export function selectToneTemplate(nudgeId: string, answer: string): ToneTemplat
 
   // Neutral fallback — non-judgmental acknowledgement.
   return tone('RT-004');
+}
+
+
+// ─────────────────────────────────────────────
+// Localisation of questions and answers
+//
+// `NUDGES` stays English: its option strings are what the log tables store and what the tone
+// classifier and the weekly report match on. The copy below is only the face of it — questions and
+// options go out in her language, and an option she picks comes back through `canonicalAnswer` to
+// the English it stands for before anything is stored.
+// ─────────────────────────────────────────────
+
+const NUDGE_COPY = copy(
+  'nudges.items',
+  Object.fromEntries(
+    Object.values(NUDGES).map((def) => [def.id, { question: def.question, options: def.options }]),
+  ),
+);
+
+/** The registry question in the current language (the fallback when a nudge has no variants). */
+export function localizedQuestion(def: NudgeDef): string {
+  return NUDGE_COPY[def.id]?.question ?? def.question;
+}
+
+/** The options in the current language, in the same order as `def.options`. */
+export function localizedOptions(def: NudgeDef): string[] {
+  const options = NUDGE_COPY[def.id]?.options;
+  return options ? def.options.map((english, index) => options[index] ?? english) : [...def.options];
+}
+
+/**
+ * An answer as submitted, turned back into the English option it stands for — by its position in the
+ * translated list. An English answer (an older client, or an English session) is returned as is; so
+ * is anything unrecognised, which is how answers were stored before translation existed.
+ */
+export function canonicalAnswer(def: NudgeDef, answer: string): string {
+  if (def.options.includes(answer)) return answer;
+  const index = localizedOptions(def).indexOf(answer);
+  return index >= 0 ? def.options[index]! : answer;
+}
+
+/** A stored English option, shown back in the current language. */
+export function localizedAnswer(def: NudgeDef, english: string): string {
+  const index = def.options.indexOf(english);
+  return index >= 0 ? (localizedOptions(def)[index] ?? english) : english;
 }

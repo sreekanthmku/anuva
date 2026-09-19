@@ -602,8 +602,10 @@ export function CycleTrackerSheet({
                   <div className="mb-4 flex flex-wrap gap-x-5 gap-y-1.5">
                     {cycleData.avgCycleLength != null && (
                       <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
-                        Avg cycle{' '}
-                        <span className="text-on-surface">{cycleData.avgCycleLength} days</span>
+                        {t('cycleSheet.avgCycle')}{' '}
+                        <span className="text-on-surface">
+                          {t('cycleSheet.daysValue', { count: cycleData.avgCycleLength })}
+                        </span>
                         {cycleData.cycleLengthVariation != null && cycleData.cycleLengthVariation > 0 && (
                           <span className="text-outline"> ±{cycleData.cycleLengthVariation}</span>
                         )}
@@ -611,14 +613,15 @@ export function CycleTrackerSheet({
                     )}
                     {cycleData.avgPeriodLength != null && (
                       <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
-                        Avg period{' '}
-                        <span className="text-on-surface">{cycleData.avgPeriodLength} days</span>
+                        {t('cycleSheet.avgPeriod')}{' '}
+                        <span className="text-on-surface">
+                          {t('cycleSheet.daysValue', { count: cycleData.avgPeriodLength })}
+                        </span>
                       </p>
                     )}
                     {cycleData.loggedCycleCount > 0 && (
                       <p className="text-[12px] text-outline" style={{ fontFamily: BODY }}>
-                        {cycleData.loggedCycleCount} logged{' '}
-                        {cycleData.loggedCycleCount === 1 ? 'cycle' : 'cycles'}
+                        {t('cycleSheet.loggedCycles', { count: cycleData.loggedCycleCount })}
                       </p>
                     )}
                   </div>

@@ -1,6 +1,8 @@
+import { withLanguage } from '../i18n/index.js';
 import { prisma } from '@anuva/database';
 import type { FcmPlatform } from '@anuva/shared';
 import { sendPushToAllTokens } from '../fcm.js';
+import { languageForFamilyMember } from '../i18n/recipients.js';
 
 /**
  * Push to the family app. Same transport as her notifications, separate token table — a family
@@ -54,19 +56,31 @@ export async function unregisterFamilyToken(input: {
 
 export async function sendToFamilyMember(
   familyMemberId: string,
-  notification: { title: string; body: string },
+  notification: FamilyNotification | (() => FamilyNotification),
   data: Record<string, string>,
 ): Promise<number> {
-  const rows = await prisma.familyFcmToken.findMany({
-    where: { familyMemberId, status: 'ACTIVE' },
-    select: { token: true },
-  });
+  const [rows, language] = await Promise.all([
+    prisma.familyFcmToken.findMany({
+      where: { familyMemberId, status: 'ACTIVE' },
+      select: { token: true },
+    }),
+    languageForFamilyMember(familyMemberId),
+  ]);
 
   const tokens = [...new Set(rows.map((row) => row.token))];
   if (tokens.length === 0) {
     return 0;
   }
 
-  const { successCount } = await sendPushToAllTokens(tokens, notification, data);
+  // Built in the *recipient's* language, not the request's. The request that triggers a push is
+  // often someone else's — her thank-you reaching him — and a job has no request at all. A member
+  // with no stored language gets English.
+  const content = withLanguage(language, () =>
+    typeof notification === 'function' ? notification() : notification,
+  );
+
+  const { successCount } = await sendPushToAllTokens(tokens, content, data);
   return successCount;
 }
+
+type FamilyNotification = { title: string; body: string };

@@ -1,3 +1,4 @@
+import i18n from '../../i18n';
 /**
  * A note from her family arrives in the URL *fragment* of the notification's deep link
  * (`/home#familyMessage=…&familyFrom=…`), never the query string — a fragment is not sent to the
@@ -17,7 +18,7 @@ export function readFamilyMessageFromHash(hash: string): FamilyMessage | null {
   const text = params.get('familyMessage');
   if (!text) return null;
 
-  return { text, from: params.get('familyFrom')?.trim() || 'Your family' };
+  return { text, from: params.get('familyFrom')?.trim() || i18n.t('family.fromFallback') };
 }
 
 /**
@@ -46,7 +47,7 @@ export function readFamilyGiftFromHash(hash: string): FamilyGift | null {
 
   return {
     kind: kind as FamilyGiftKind,
-    from: params.get('familyFrom')?.trim() || 'Your family',
+    from: params.get('familyFrom')?.trim() || i18n.t('family.fromFallback'),
   };
 }
 

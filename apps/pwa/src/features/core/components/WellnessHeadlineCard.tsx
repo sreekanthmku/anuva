@@ -24,6 +24,15 @@ const CARD_WASH: Record<string, string> = {
   'Very hard': 'linear-gradient(103deg, #FFFFFF 0%, #F6EFF2 46%, #E5DAEA 100%)',
 };
 
+/** The server sends the band as its English key (it also picks the wash); only its display is translated. */
+const BAND_NAME_KEYS: Record<string, string> = {
+  Great: 'wellness.bandNames.great',
+  Good: 'wellness.bandNames.good',
+  Okay: 'wellness.bandNames.okay',
+  Hard: 'wellness.bandNames.hard',
+  'Very hard': 'wellness.bandNames.veryHard',
+};
+
 const EMPTY_WASH = 'linear-gradient(103deg, #FFFFFF 0%, #F9F5F1 50%, #F2EBE6 100%)';
 
 /**
@@ -44,6 +53,8 @@ export function WellnessHeadlineCard({
   period: SummaryPeriod;
 }) {
   const { t } = useTranslation();
+  const bandKey = headline.band ? BAND_NAME_KEYS[headline.band] : undefined;
+  const bandName = bandKey ? t(bandKey) : headline.band;
   const color = wellnessColor(headline.score);
   const hasScore = headline.score != null;
 
@@ -92,7 +103,7 @@ export function WellnessHeadlineCard({
           role="img"
           aria-label={
             hasScore
-              ? t('wellness.headlineAria', { score: headline.score, band: headline.band })
+              ? t('wellness.headlineAria', { score: headline.score, band: bandName })
               : t('wellness.headlineAriaEmpty')
           }
         >
@@ -109,7 +120,7 @@ export function WellnessHeadlineCard({
           </span>
           {headline.band && (
             <span className="text-[11px] leading-none text-on-surface-variant" style={{ fontFamily: MULISH }}>
-              · {headline.band}
+              · {bandName}
             </span>
           )}
         </div>

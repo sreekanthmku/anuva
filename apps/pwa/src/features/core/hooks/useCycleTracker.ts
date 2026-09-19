@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { CycleStateResponse, PeriodFlow } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type CycleTrackerState = {
   data: CycleStateResponse | null;
@@ -17,7 +18,7 @@ export function useCycleTracker() {
       const data = await apiFetch<CycleStateResponse>('/api/cycle');
       setState({ data, loading: false, error: null });
     } catch {
-      setState({ data: null, loading: false, error: 'Failed to load cycle data' });
+      setState({ data: null, loading: false, error: i18n.t('errors.loadCycle') });
     }
   }, []);
 

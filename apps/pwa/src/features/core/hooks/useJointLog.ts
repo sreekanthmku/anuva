@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { JointLogEntry, JointStateResponse, LogJointBody } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type JointLogState = {
   data: JointStateResponse | null;
@@ -21,7 +22,7 @@ export function useJointLog() {
       const data = await apiFetch<JointStateResponse>('/api/joints');
       setState({ data, loading: false, error: null });
     } catch {
-      setState({ data: null, loading: false, error: 'Failed to load joint data' });
+      setState({ data: null, loading: false, error: i18n.t('errors.loadJoints') });
     }
   }, []);
 

@@ -12,11 +12,20 @@
 
 import { Router } from 'express';
 import type { Request, RequestHandler, Response, NextFunction } from 'express';
+import { copy, translateMessage, withLanguage } from '../i18n/index.js';
 import { classifyUser } from './classify/index.js';
 import { buildDocument } from './content/index.js';
 import { renderReportHtml } from './render/html.js';
 import { renderReportPdf } from './render/pdf.js';
 import { Report14Error } from './types.js';
+
+/** What she reads when the report can't be built, by Report14Error code. */
+const REPORT14_ERRORS: Record<string, string> = copy('errors.report14', {
+  ASSESSMENT_INCOMPLETE: 'Complete your detailed health assessment to unlock your report.',
+  MENSTRUAL_HISTORY_MISSING:
+    'Your report needs your menstrual history. Complete that section of your assessment to continue.',
+  GENERATION_FAILED: 'Your report could not be generated. Please try again.',
+});
 
 export interface Report14Deps {
   /** Resolves the signed-in user, or throws. Supplied by the host app. */
@@ -127,7 +136,11 @@ export function createReport14Router(deps: Report14Deps): Router {
       noStore(res);
       const userId = await deps.resolveUserId(req);
       const result = await classifyUser(userId);
-      const doc = buildDocument(result.classification, result.source.userName);
+      // English only: the PDF's built-in Times/Helvetica fonts have no Indic glyphs, so a
+      // translated document would print as boxes. The JSON and HTML views are localised.
+      const doc = withLanguage('en', () =>
+        buildDocument(result.classification, result.source.userName),
+      );
       const pdf = await renderReportPdf(doc);
 
       req.log?.info?.(
@@ -165,7 +178,7 @@ export function createReport14Router(deps: Report14Deps): Router {
     (err: unknown, req: Request, res: Response, _next: NextFunction) => {
       if (err instanceof Report14Error) {
         req.log?.warn?.({ status: err.status, code: err.code }, `report14: ${err.message}`);
-        res.status(err.status).json({ error: err.message, code: err.code });
+        res.status(err.status).json({ error: REPORT14_ERRORS[err.code] ?? err.message, code: err.code });
         return;
       }
       // Anything with a numeric status came from the injected auth resolver
@@ -178,11 +191,11 @@ export function createReport14Router(deps: Report14Deps): Router {
         const status = (err as { status: number }).status;
         const message =
           (err as { message?: unknown }).message ?? 'Request could not be completed.';
-        res.status(status).json({ error: String(message) });
+        res.status(status).json({ error: translateMessage(String(message)) });
         return;
       }
       req.log?.error?.({ err }, 'report14: unhandled failure');
-      res.status(500).json({ error: 'Your report could not be generated. Please try again.' });
+      res.status(500).json({ error: REPORT14_ERRORS.GENERATION_FAILED });
     },
   );
 

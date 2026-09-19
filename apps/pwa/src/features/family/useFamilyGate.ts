@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FamilyShareChannel, FamilyStatusResponse } from '@anuva/shared';
 import { fetchFamilyStatus, markFamilyInviteShared } from './api';
+import i18n from '../../i18n';
 
 /**
  * Owns the invite gate's state.
@@ -60,7 +61,7 @@ export function useFamilyGate(enabled: boolean): FamilyGateState {
     } catch (e) {
       // A failed poll must not blank a gate that is already open: keep the last known state and let
       // the next tick recover. Blocking on a network blip would be worse than a stale countdown.
-      setError(e instanceof Error ? e.message : 'Could not check your family invite.');
+      setError(e instanceof Error ? e.message : i18n.t('errors.checkFamilyInvite'));
     }
   }, [enabled]);
 
@@ -125,8 +126,8 @@ export function useFamilyGate(enabled: boolean): FamilyGateState {
         // gate open rather than pretending the window started.
         setError(
           e instanceof Error
-            ? `${e.message} If you already sent the link, tap share again.`
-            : 'Could not record that you shared the link.',
+            ? i18n.t('errors.shareRecordFailedWithReason', { reason: e.message })
+            : i18n.t('errors.shareRecordFailed'),
         );
       } finally {
         setIsSharing(false);

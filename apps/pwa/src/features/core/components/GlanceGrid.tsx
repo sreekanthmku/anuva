@@ -1,4 +1,5 @@
 import type { ReportRingKey, SummaryGlanceTile, SummaryGlanceTone } from '@anuva/shared';
+import i18n from '../../../i18n';
 import { GLANCE_EMOJI, RING_EMOJI } from '../summaryEmoji';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -106,7 +107,12 @@ export function GlanceGrid({
             key={tile.key}
             type="button"
             onClick={() => onSelect(tile.ringKey as ReportRingKey)}
-            aria-label={`${tile.eyebrow}: ${tile.label}${tile.value ? `, ${tile.value}` : ''} ${tile.note}. See day by day`}
+            aria-label={i18n.t('charts.glanceAria', {
+              eyebrow: tile.eyebrow,
+              label: tile.label,
+              value: tile.value ? i18n.t('charts.glanceValue', { value: tile.value }) : '',
+              note: tile.note,
+            })}
             className={`${shell}${tall} transition-transform active:scale-[0.98]`}
             style={{ backgroundColor: style.background }}
           >

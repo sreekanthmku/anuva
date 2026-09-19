@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { DetailedAnswer, DetailedAssessmentStateResponse } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type DetailedAssessmentState = {
   data: DetailedAssessmentStateResponse | null;
@@ -21,7 +22,7 @@ export function useDetailedAssessment() {
       const data = await apiFetch<DetailedAssessmentStateResponse>('/api/detailed-assessment');
       setState({ data, loading: false, error: null });
     } catch {
-      setState({ data: null, loading: false, error: 'Failed to load assessment' });
+      setState({ data: null, loading: false, error: i18n.t('errors.loadAssessment') });
     }
   }, []);
 

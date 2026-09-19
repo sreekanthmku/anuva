@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SummaryPeriod, WeeklyReportResponse } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type SummaryState = {
   data: WeeklyReportResponse | null;
@@ -49,7 +50,7 @@ export function useSummary(period: SummaryPeriod, offset: number) {
       const data = await fetchWindow(period, offset);
       setState({ data, loading: false, error: null });
     } catch {
-      setState({ data: null, loading: false, error: 'Failed to load your summary' });
+      setState({ data: null, loading: false, error: i18n.t('errors.loadSummary') });
     }
   }, [fetchWindow, period, offset]);
 

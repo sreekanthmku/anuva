@@ -1,3 +1,4 @@
+import { copy, copyList, dateLocale, fill as fillVars, plural } from '../i18n/index.js';
 import { prisma } from '@anuva/database';
 import type {
   ReportDeltaTone,
@@ -24,6 +25,7 @@ import {
   STRESS_SCORES,
   applyEventPenalty,
   bandFor,
+  localizedBand,
   hotFlashDayScore,
   isSymptomDay,
   lookupScore,
@@ -136,24 +138,10 @@ const fromDateOnly = fromDayKey;
 const toDateOnly = dayKey;
 const isoDate = isoDay;
 
-const MONTH_ABBR = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
 
 /** "12 Aug" — spelled out here rather than via toLocaleDateString, whose output depends on the server's locale. */
 function shortDate(d: Date): string {
-  return `${d.getDate()} ${MONTH_ABBR[d.getMonth()]}`;
+  return d.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short' });
 }
 
 function earlier(a: Date, b: Date): Date {
@@ -437,16 +425,16 @@ function formatPointDelta(
   period: SummaryPeriod
 ): { text: string; tone: ReportDeltaTone } {
   if (current == null) return { text: '—', tone: 'none' };
-  if (previous == null) return { text: `First ${PERIOD_WORDS[period].noun} of data`, tone: 'none' };
-  if (!comparable) return { text: 'Not enough to compare yet', tone: 'none' };
+  if (previous == null) return { text: fill(REPORT_TEXT.firstOfData, period), tone: 'none' };
+  if (!comparable) return { text: REPORT_TEXT.notEnoughToCompare, tone: 'none' };
 
   const diff = Math.round(current - previous);
   if (Math.abs(diff) < PERIOD_STEADY_BAND) {
-    return { text: `Steady vs ${PERIOD_WORDS[period].last}`, tone: 'neutral' };
+    return { text: fill(REPORT_TEXT.steadyVs, period), tone: 'neutral' };
   }
   return diff > 0
-    ? { text: `+${diff} pts · improving`, tone: 'positive' }
-    : { text: `−${Math.abs(diff)} pts · worsened`, tone: 'attention' };
+    ? { text: fillVars(REPORT_TEXT.pointsImproving, { points: diff }), tone: 'positive' }
+    : { text: fillVars(REPORT_TEXT.pointsWorsened, { points: Math.abs(diff) }), tone: 'attention' };
 }
 
 /**
@@ -510,18 +498,18 @@ function buildDailyRing(src: RingSource, w: PeriodWindow): RingDraft {
   if (pct == null) {
     delta = '—';
   } else if (!hasBaseline) {
-    delta = 'No baseline yet';
+    delta = REPORT_TEXT.noBaseline;
   } else if (pct - baseline! > band) {
     status = 'above';
-    delta = 'Better than usual';
+    delta = REPORT_TEXT.betterThanUsual;
     deltaTone = 'positive';
   } else if (baseline! - pct > band) {
     status = 'below';
-    delta = 'Below your usual';
+    delta = REPORT_TEXT.belowUsual;
     deltaTone = 'attention';
   } else {
     status = 'typical';
-    delta = 'Typical for you';
+    delta = REPORT_TEXT.typical;
     deltaTone = 'neutral';
   }
 
@@ -536,7 +524,7 @@ function buildDailyRing(src: RingSource, w: PeriodWindow): RingDraft {
     // The dot means the user's own previous level on every period. Without a
     // baseline there is no dot — better than borrowing a population line the
     // user never asked to be measured against.
-    reference: hasBaseline ? { value: Math.round(baseline!), label: 'your usual' } : null,
+    reference: hasBaseline ? { value: Math.round(baseline!), label: REPORT_TEXT.yourUsual } : null,
     daysLogged: pct == null ? 0 : 1,
     // One day, so the count is 0 or 1 — but it is the same question the monthly
     // tile asks, and answering it here keeps one definition of a symptom day.
@@ -588,11 +576,123 @@ function buildPeriodRing(src: RingSource, w: PeriodWindow): RingDraft {
 
 // ── Copy ─────────────────────────────────────────────────────
 
-const PERIOD_WORDS: Record<SummaryPeriod, { this: string; last: string; noun: string }> = {
+/**
+ * The report's single sentences and labels. `{{…}}` slots are filled at the call site; `{this}`,
+ * `{last}` and `{noun}` are the period words, filled by `fill()` below.
+ */
+const REPORT_TEXT = copy('report.text', {
+  firstOfData: 'First {noun} of data',
+  notEnoughToCompare: 'Not enough to compare yet',
+  steadyVs: 'Steady vs {last}',
+  pointsImproving: '+{{points}} pts · improving',
+  pointsWorsened: '−{{points}} pts · worsened',
+  noBaseline: 'No baseline yet',
+  betterThanUsual: 'Better than usual',
+  belowUsual: 'Below your usual',
+  typical: 'Typical for you',
+  yourUsual: 'your usual',
+  seriesDefault: 'One point per day across the window.',
+  steadySuggestion: 'Nothing needs fixing today. Keep whatever routine got you here.',
+  greatJob: 'Great job!',
+  holdingUpBest: 'Holding up best',
+  steadiestArea: 'Your steadiest area',
+  headlineEmptyDaily: 'A couple of check-ins and I can tell you how the day actually went.',
+  headlineEmptyPeriod: 'Nothing logged {this} yet. A few check-ins and this fills in.',
+  needsCare: '{{metric}} needs a little extra care.',
+  middleRange: 'Everything you logged sat in its middle range.',
+  nothingLoggedYet: 'Nothing logged yet',
+  strongestArea: 'Strongest area',
+  needsAttention: 'Needs attention',
+  lowerThan: 'Lower than {{reference}}',
+  worthCloserLook: 'Worth a closer look',
+  biggestImprovement: 'Biggest improvement',
+  plusPoints: '+{{points}} pts',
+  versus: 'vs {last}',
+  mostCommonSymptom: 'Most common symptom',
+  heatEpisodes: 'Heat episodes',
+  trackedDays: 'Tracked days',
+  daysOfTotal: '{{logged}} of {{total}}',
+  daysThis: 'days {this}',
+  todaysNudge: "Today's nudge",
+  aboveUsual: 'Above your usual',
+  movingTogether: 'Moving together',
+  belowUsualTitle: 'Below your usual',
+  steadyDay: 'A steady day',
+  steadyDayBody:
+    'Everything you logged today sat inside your usual range. Steady days are what the good weeks are made of.',
+  building: '↗ Building',
+  buildingBody:
+    'The back half of the month ran better than the front half. Whatever changed, it is working.',
+  drifting: '↘ Drifting',
+  driftingBody: 'The back half of the month ran harder than the front half. Worth naming what shifted.',
+  improving: '↑ Improving',
+  needsAttentionArrow: '↓ Needs attention',
+  reflectionEmptyDaily:
+    'Nothing logged for this day yet. A couple of check-ins and I can tell you how it actually went.',
+  reflectionEmptyPeriod:
+    'I don’t have enough from {this} yet. Answer a few daily check-ins and I’ll show you what’s actually shifting.',
+  reflectionQuiet: 'A quiet {noun} in the data. Keep logging and the pattern will show itself.',
+  reflectionOnlyToday:
+    '{{metric}} is the only thing I have for today. A couple more check-ins and I can give you the shape of the day.',
+  reflectionDaily:
+    'Today your {{strong}} held up, while {{weak}} is where the strain showed. One day is one day. The weekly view will tell you whether it’s a pattern.',
+  reflectionClearest: '{{metric}} is the clearest signal I have {this}. Shall we build around it?',
+  reflectionMonthly:
+    'Across the month your {{strong}} held up best, while {{weak}} is where the strain sat. Shall we discuss a care path?',
+  reflectionWeekly:
+    'Your {{strong}} is holding up well this week, while {{weak}} is where the strain shows. Shall we discuss a care path?',
+  keepTracking: 'Keep tracking',
+  referenceNote:
+    'Dots mark {{reference}}: the same comparison on every tab, and only ever with yourself.',
+  referenceNoteEmpty:
+    'No comparison dots yet. They appear once you have {{count}} days of history to compare against.',
+  checkInsLogged: '{{logged}} of {{total}} check-ins logged',
+  daysTrackedSoFar: '{{logged}} of {{total}} days tracked so far',
+  daysTracked: '{{logged}} of {{total}} days tracked',
+  joinedOn: 'You joined on {{date}}, so the days before that are not counted against you.',
+  statSleep: 'Sleep',
+  statAvgSleep: 'Avg sleep',
+  statHours: 'hrs',
+  statHotFlashes: 'Hot flashes',
+  statWellness: 'Wellness',
+});
+
+const REPORT_PLURALS = {
+  days: plural('report.plural.days', { one: '{{count}} day', other: '{{count}} days' }),
+  episodes: plural('report.plural.episodes', { one: 'episode', other: 'episodes' }),
+  episodesThis: plural('report.plural.episodesThis', {
+    one: '{{count}} episode {this}',
+    other: '{{count}} episodes {this}',
+  }),
+  insufficient: plural('report.plural.insufficient', {
+    one: '{{count}} day logged so far. Keep tracking. At {{need}} days I can tell you what’s actually moving, and I’d rather say nothing than guess.',
+    other: '{{count}} days logged so far. Keep tracking. At {{need}} days I can tell you what’s actually moving, and I’d rather say nothing than guess.',
+  }),
+  calibrating: plural('report.plural.calibrating', {
+    one: 'You’re {{count}} day in. I’m still learning your baseline, so these numbers will settle once we have a couple of weeks.',
+    other: 'You’re {{count}} days in. I’m still learning your baseline, so these numbers will settle once we have a couple of weeks.',
+  }),
+  keepTrackingBody: plural('report.plural.keepTrackingBody', {
+    one: '{{count}} day of {this} logged. I need at least {{need}} before I can tell you a trend rather than guess at one.',
+    other: '{{count}} days of {this} logged. I need at least {{need}} before I can tell you a trend rather than guess at one.',
+  }),
+};
+
+/** Ring names in the current language, keyed by ring. */
+const RING_LABELS = copy('report.ringLabels', {
+  sleep: 'Sleep quality',
+  energy: 'Energy level',
+  stress: 'Stress',
+  mood: 'Mood stability',
+  focus: 'Cognitive focus',
+  hotFlashes: 'Heat episodes',
+});
+
+const PERIOD_WORDS: Record<SummaryPeriod, { this: string; last: string; noun: string }> = copy('report.periodWords', {
   daily: { this: 'today', last: 'the week before', noun: 'day' },
   weekly: { this: 'this week', last: 'last week', noun: 'week' },
   monthly: { this: 'this month', last: 'last month', noun: 'month' },
-};
+});
 
 function fill(template: string, period: SummaryPeriod): string {
   const words = PERIOD_WORDS[period];
@@ -603,7 +703,7 @@ function fill(template: string, period: SummaryPeriod): string {
 }
 
 /** Weekly and monthly claim a trend, so their copy names the direction. */
-const TREND_COPY: Record<ReportRingKey, { up: string; down: string }> = {
+const TREND_COPY: Record<ReportRingKey, { up: string; down: string }> = copy('report.trend', {
   sleep: {
     up: 'Your sleep steadied {this}. Whatever your evenings look like right now, keep it.',
     down: 'Sleep slipped {this}. Worth looking at what changed after 8pm.',
@@ -628,10 +728,10 @@ const TREND_COPY: Record<ReportRingKey, { up: string; down: string }> = {
     up: 'Fewer heat episodes than {last}.',
     down: 'Hot flashes rose {this}. Track what preceded the worst days.',
   },
-};
+});
 
 /** Daily is observational — one day cannot support a trend claim. */
-const DAILY_COPY: Record<ReportRingKey, { strong: string; weak: string }> = {
+const DAILY_COPY: Record<ReportRingKey, { strong: string; weak: string }> = copy('report.daily', {
   sleep: {
     strong: 'Sleep was the steadiest thing you logged today.',
     weak: 'Sleep sat below your usual today. Worth noticing what the evening looked like.',
@@ -656,7 +756,7 @@ const DAILY_COPY: Record<ReportRingKey, { strong: string; weak: string }> = {
     strong: 'A quieter day for heat episodes than your usual.',
     weak: 'More heat episodes than your usual today.',
   },
-};
+});
 
 /**
  * What the stat card's figure is, relative to the chart under it.
@@ -667,7 +767,7 @@ const DAILY_COPY: Record<ReportRingKey, { strong: string; weak: string }> = {
  * on every period. Left unsaid, a total above a chart of daily peaks reads as a
  * bug.
  */
-const SERIES_NOTES: Record<string, Record<SummaryPeriod, string>> = {
+const SERIES_NOTES: Record<string, Record<SummaryPeriod, string>> = copy('report.seriesNotes', {
   avgSleep: {
     daily: 'Hours slept, with the six nights before it for context.',
     weekly: 'Hours slept each night. The figure is the average of the week.',
@@ -683,10 +783,10 @@ const SERIES_NOTES: Record<string, Record<SummaryPeriod, string>> = {
     weekly: 'Wellness each day. The figure is the average of the week.',
     monthly: 'Wellness each day. The figure is the average of the month.',
   },
-};
+});
 
 function seriesNote(key: string, period: SummaryPeriod): string {
-  return SERIES_NOTES[key]?.[period] ?? 'One point per day across the window.';
+  return SERIES_NOTES[key]?.[period] ?? REPORT_TEXT.seriesDefault;
 }
 
 // ── Headline, balance, glance ────────────────────────────────
@@ -700,21 +800,21 @@ function seriesNote(key: string, period: SummaryPeriod): string {
  * collapsing them to good/okay/hard would put an 85 day and a 61 day under the
  * same heading.
  */
-const DAILY_HEADLINE: Record<string, string> = {
+const DAILY_HEADLINE: Record<string, string> = copy('report.dailyHeadline', {
   Great: 'Doing really well',
   Good: 'Doing well',
   Okay: 'Doing okay',
   Hard: 'A hard day',
   'Very hard': 'A really hard day',
-};
+});
 
-const PERIOD_HEADLINE: Record<string, string> = {
+const PERIOD_HEADLINE: Record<string, string> = copy('report.periodHeadline', {
   Great: 'A strong {noun}',
   Good: 'A good {noun}',
   Okay: 'A mixed {noun}',
   Hard: 'A hard {noun}',
   'Very hard': 'A really hard {noun}',
-};
+});
 
 /**
  * One metric's band, as a clause that can be joined into a sentence.
@@ -724,7 +824,7 @@ const PERIOD_HEADLINE: Record<string, string> = {
  * "heat episodes is none" and "sleep is some waking" are what template-joining
  * produces, and neither is a sentence. Keys must match `RING_BANDS`.
  */
-const RING_CLAUSE: Record<ReportRingKey, Record<string, string>> = {
+const RING_CLAUSE: Record<ReportRingKey, Record<string, string>> = copy('report.ringClause', {
   sleep: {
     Restful: 'sleep was restful',
     'Some waking': 'sleep broke once or twice',
@@ -761,17 +861,17 @@ const RING_CLAUSE: Record<ReportRingKey, Record<string, string>> = {
     Moderate: 'heat episodes are moderate',
     High: 'heat episodes are frequent',
   },
-};
+});
 
 /** Short subject for the care sentence — "Sleep needs a little extra care." */
-const SHORT_NOUN: Record<ReportRingKey, string> = {
+const SHORT_NOUN: Record<ReportRingKey, string> = copy('report.shortNoun', {
   sleep: 'Sleep',
   energy: 'Energy',
   stress: 'Stress',
   mood: 'Mood',
   focus: 'Focus',
   hotFlashes: 'Heat episodes',
-};
+});
 
 /**
  * One thing to try, per metric — shown on the daily view against the weakest
@@ -781,27 +881,34 @@ const SHORT_NOUN: Record<ReportRingKey, string> = {
  * is not care advice and must never read as clinical instruction; the care path
  * lives behind ANU and the consultation flow.
  */
-const SUGGESTION_COPY: Record<ReportRingKey, string> = {
+const SUGGESTION_COPY: Record<ReportRingKey, string> = copy('report.suggestion', {
   sleep: 'Start winding down half an hour earlier tonight. Screens down, lights low.',
   energy: 'A short walk after lunch tends to do more for energy than another coffee.',
   stress: 'Take five slow breaths before the next thing you have to do.',
   mood: 'Name the feeling once, out loud or on paper. It usually takes the edge off.',
   focus: 'Keep one thing on your desk at a time and put the thinking work early.',
   hotFlashes: 'Hydrate well and keep a layer you can take off easily.',
-};
+});
 
-const STEADY_SUGGESTION =
-  'Nothing needs fixing today. Keep whatever routine got you here.';
 
 /** Edges are the wellness ladder's own — see `WELLNESS_BANDS`. */
 function strongestNote(score: number): string {
-  if (score >= 80) return 'Great job!';
-  if (score >= 60) return 'Holding up best';
-  return 'Your steadiest area';
+  if (score >= 80) return REPORT_TEXT.greatJob;
+  if (score >= 60) return REPORT_TEXT.holdingUpBest;
+  return REPORT_TEXT.steadiestArea;
 }
 
 function capitalise(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
+  return text.charAt(0).toLocaleUpperCase(dateLocale()) + text.slice(1);
+}
+
+/** "a and b" in the current language's own list grammar. */
+function joinClauses(parts: string[]): string {
+  try {
+    return new Intl.ListFormat(dateLocale(), { style: 'long', type: 'conjunction' }).format(parts);
+  } catch {
+    return parts.join(', ');
+  }
 }
 
 function clauseFor(ring: RingDraft): string | null {
@@ -823,8 +930,8 @@ function buildHeadlineBody(rings: RingDraft[], period: SummaryPeriod): string {
 
   if (scored.length === 0) {
     return period === 'daily'
-      ? 'A couple of check-ins and I can tell you how the day actually went.'
-      : `Nothing logged ${PERIOD_WORDS[period].this} yet. A few check-ins and this fills in.`;
+      ? REPORT_TEXT.headlineEmptyDaily
+      : fill(REPORT_TEXT.headlineEmptyPeriod, period);
   }
 
   const weakest = scored[scored.length - 1]!;
@@ -839,9 +946,9 @@ function buildHeadlineBody(rings: RingDraft[], period: SummaryPeriod): string {
     .filter((c): c is string => c != null);
 
   const parts: string[] = [];
-  if (clauses.length > 0) parts.push(`${capitalise(clauses.join(' and '))}.`);
-  if (needsCare) parts.push(`${SHORT_NOUN[weakest.key]} needs a little extra care.`);
-  if (parts.length === 0) parts.push('Everything you logged sat in its middle range.');
+  if (clauses.length > 0) parts.push(`${capitalise(joinClauses(clauses))}.`);
+  if (needsCare) parts.push(fillVars(REPORT_TEXT.needsCare, { metric: SHORT_NOUN[weakest.key] }));
+  if (parts.length === 0) parts.push(REPORT_TEXT.middleRange);
 
   return parts.join(' ');
 }
@@ -858,7 +965,7 @@ function buildHeadline(
     return {
       score: null,
       band: null,
-      headline: 'Nothing logged yet',
+      headline: REPORT_TEXT.nothingLoggedYet,
       body: buildHeadlineBody([], period),
     };
   }
@@ -915,9 +1022,9 @@ function buildGlance(
   if (strongest) {
     tiles.push({
       key: 'strongest',
-      eyebrow: 'Strongest area',
+      eyebrow: REPORT_TEXT.strongestArea,
       label: strongest.label,
-      value: strongest.band,
+      value: localizedBand(strongest.key, strongest.band),
       // Praise has to be earned by the score, not by winning a ranking. The
       // best of six metrics can still be a middling one, and "Great job!" over
       // the word "Slightly foggy" is how a page loses the reader's trust.
@@ -931,14 +1038,14 @@ function buildGlance(
   if (weakest) {
     tiles.push({
       key: 'attention',
-      eyebrow: 'Needs attention',
+      eyebrow: REPORT_TEXT.needsAttention,
       label: weakest.label,
-      value: weakest.band,
+      value: localizedBand(weakest.key, weakest.band),
       // Only claims a comparison when there was one to make.
       note:
         weakest.reference != null && weakest.pctRaw! < weakest.reference.value
-          ? `Lower than ${weakest.reference.label}`
-          : 'Worth a closer look',
+          ? fillVars(REPORT_TEXT.lowerThan, { reference: weakest.reference.label })
+          : REPORT_TEXT.worthCloserLook,
       ringKey: weakest.key,
       tone: 'attention',
     });
@@ -950,12 +1057,12 @@ function buildGlance(
   if (improved && improved.deltaValue! >= PERIOD_STEADY_BAND) {
     tiles.push({
       key: 'improvement',
-      eyebrow: 'Biggest improvement',
+      eyebrow: REPORT_TEXT.biggestImprovement,
       label: improved.label,
       // Points, and it says so. A bare +18 next to a 0-100 score reads as a
       // percentage of something.
-      value: `+${Math.round(improved.deltaValue!)} pts`,
-      note: `vs ${PERIOD_WORDS[w.period].last}`,
+      value: fillVars(REPORT_TEXT.plusPoints, { points: Math.round(improved.deltaValue!) }),
+      note: fill(REPORT_TEXT.versus, w.period),
       ringKey: improved.key,
       tone: 'improving',
     });
@@ -965,9 +1072,9 @@ function buildGlance(
   if (commonSymptom && commonSymptom.symptomDays > 0) {
     tiles.push({
       key: 'symptom',
-      eyebrow: 'Most common symptom',
+      eyebrow: REPORT_TEXT.mostCommonSymptom,
       label: commonSymptom.label,
-      value: `${commonSymptom.symptomDays} ${commonSymptom.symptomDays === 1 ? 'day' : 'days'}`,
+      value: REPORT_PLURALS.days({ count: commonSymptom.symptomDays }),
       note: PERIOD_WORDS[w.period].this,
       ringKey: commonSymptom.key,
       tone: 'info',
@@ -977,8 +1084,8 @@ function buildGlance(
   if (counts.heatDays > 0) {
     tiles.push({
       key: 'heat',
-      eyebrow: 'Heat episodes',
-      label: `${counts.heatDays} ${counts.heatDays === 1 ? 'day' : 'days'}`,
+      eyebrow: REPORT_TEXT.heatEpisodes,
+      label: REPORT_PLURALS.days({ count: counts.heatDays }),
       value: null,
       note: PERIOD_WORDS[w.period].this,
       ringKey: 'hotFlashes',
@@ -988,10 +1095,13 @@ function buildGlance(
 
   tiles.push({
     key: 'tracked',
-    eyebrow: 'Tracked days',
-    label: `${counts.daysLogged} of ${counts.trackedDenominator}`,
+    eyebrow: REPORT_TEXT.trackedDays,
+    label: fillVars(REPORT_TEXT.daysOfTotal, {
+      logged: counts.daysLogged,
+      total: counts.trackedDenominator,
+    }),
     value: null,
-    note: `days ${PERIOD_WORDS[w.period].this}`,
+    note: fill(REPORT_TEXT.daysThis, w.period),
     ringKey: null,
     tone: 'neutral',
   });
@@ -1010,10 +1120,10 @@ function buildSuggestion(rings: RingDraft[], period: SummaryPeriod): SummarySugg
 
   const weakest = scored[0]!;
   return {
-    title: "Today's nudge",
+    title: REPORT_TEXT.todaysNudge,
     body: isSymptomDay(weakest.key, weakest.pctRaw)
       ? SUGGESTION_COPY[weakest.key]
-      : STEADY_SUGGESTION,
+      : REPORT_TEXT.steadySuggestion,
   };
 }
 
@@ -1021,7 +1131,9 @@ function buildSuggestion(rings: RingDraft[], period: SummaryPeriod): SummarySugg
  * Metrics that reliably move together. When both sides land below the user's
  * own line on the same day, saying so is more useful than flagging either alone.
  */
-const DAILY_PAIRS: { keys: [ReportRingKey, ReportRingKey]; body: string }[] = [
+const DAILY_PAIRS: { keys: [ReportRingKey, ReportRingKey]; body: string }[] = copyList(
+  'report.pairs',
+  [
   {
     keys: ['sleep', 'focus'],
     body: 'Broken sleep and brain fog turned up on the same day. That is the most common pairing there is.',
@@ -1038,7 +1150,10 @@ const DAILY_PAIRS: { keys: [ReportRingKey, ReportRingKey]; body: string }[] = [
     keys: ['stress', 'hotFlashes'],
     body: 'A harder day for stress and more heat episodes landed together. Worth watching whether that repeats.',
   },
-];
+  ],
+  ['body'],
+  (pair) => pair.keys.join('-'),
+);
 
 // ── Insights ─────────────────────────────────────────────────
 
@@ -1059,7 +1174,7 @@ function buildDailyInsights(rings: RingDraft[]): ReportInsight[] {
   if (strongest) {
     insights.push({
       tone: 'positive',
-      title: 'Above your usual',
+      title: REPORT_TEXT.aboveUsual,
       body: DAILY_COPY[strongest.key].strong,
     });
   }
@@ -1069,11 +1184,11 @@ function buildDailyInsights(rings: RingDraft[]): ReportInsight[] {
   const weakest = below[0];
 
   if (pair) {
-    insights.push({ tone: 'attention', title: 'Moving together', body: pair.body });
+    insights.push({ tone: 'attention', title: REPORT_TEXT.movingTogether, body: pair.body });
   } else if (weakest) {
     insights.push({
       tone: 'attention',
-      title: 'Below your usual',
+      title: REPORT_TEXT.belowUsualTitle,
       body: DAILY_COPY[weakest.key].weak,
     });
   }
@@ -1081,8 +1196,8 @@ function buildDailyInsights(rings: RingDraft[]): ReportInsight[] {
   if (insights.length === 0) {
     insights.push({
       tone: 'neutral',
-      title: 'A steady day',
-      body: 'Everything you logged today sat inside your usual range. Steady days are what the good weeks are made of.',
+      title: REPORT_TEXT.steadyDay,
+      body: REPORT_TEXT.steadyDayBody,
     });
   }
 
@@ -1104,13 +1219,13 @@ function buildMonthTrajectory(weeks: SummaryWeekBreakdown[]): ReportInsight | nu
   return diff > 0
     ? {
         tone: 'positive',
-        title: '↗ Building',
-        body: 'The back half of the month ran better than the front half. Whatever changed, it is working.',
+        title: REPORT_TEXT.building,
+        body: REPORT_TEXT.buildingBody,
       }
     : {
         tone: 'attention',
-        title: '↘ Drifting',
-        body: 'The back half of the month ran harder than the front half. Worth naming what shifted.',
+        title: REPORT_TEXT.drifting,
+        body: REPORT_TEXT.driftingBody,
       };
 }
 
@@ -1126,7 +1241,7 @@ function buildPeriodInsights(
   if (improved && improved.deltaValue! >= PERIOD_STEADY_BAND) {
     insights.push({
       tone: 'positive',
-      title: '↑ Improving',
+      title: REPORT_TEXT.improving,
       body: fill(TREND_COPY[improved.key].up, period),
     });
   }
@@ -1135,7 +1250,7 @@ function buildPeriodInsights(
   if (worsened && worsened.deltaValue! <= -PERIOD_STEADY_BAND) {
     insights.push({
       tone: 'attention',
-      title: '↓ Needs attention',
+      title: REPORT_TEXT.needsAttentionArrow,
       body: fill(TREND_COPY[worsened.key].down, period),
     });
   } else {
@@ -1150,7 +1265,7 @@ function buildPeriodInsights(
     if (lowest && lowest.pctRaw! < ATTENTION_SCORE_FLOOR) {
       insights.push({
         tone: 'attention',
-        title: '↓ Needs attention',
+        title: REPORT_TEXT.needsAttentionArrow,
         body: fill(TREND_COPY[lowest.key].down, period),
       });
     }
@@ -1176,17 +1291,17 @@ function buildReflection(
 ): string {
   if (dataState === 'empty') {
     return period === 'daily'
-      ? "Nothing logged for this day yet. A couple of check-ins and I can tell you how it actually went."
-      : `I don't have enough from ${PERIOD_WORDS[period].this} yet. Answer a few daily check-ins and I'll show you what's actually shifting.`;
+      ? REPORT_TEXT.reflectionEmptyDaily
+      : fill(REPORT_TEXT.reflectionEmptyPeriod, period);
   }
 
   if (dataState === 'insufficient') {
     const need = MIN_DAYS_FOR_TREND[period];
-    return `${daysLogged} ${daysLogged === 1 ? 'day' : 'days'} logged so far. Keep tracking. At ${need} days I can tell you what's actually moving, and I'd rather say nothing than guess.`;
+    return REPORT_PLURALS.insufficient({ count: daysLogged, need });
   }
 
   if (calibrating) {
-    return `You're ${daysOnApp} ${daysOnApp === 1 ? 'day' : 'days'} in. I'm still learning your baseline, so these numbers will settle once we have a couple of weeks.`;
+    return REPORT_PLURALS.calibrating({ count: daysOnApp });
   }
 
   // Ranked on the scores themselves. Ranking by distance from a reference line
@@ -1198,25 +1313,34 @@ function buildReflection(
   const weakest = byScore[byScore.length - 1];
 
   if (!strongest || !weakest) {
-    return `A quiet ${PERIOD_WORDS[period].noun} in the data. Keep logging and the pattern will show itself.`;
+    return fill(REPORT_TEXT.reflectionQuiet, period);
   }
 
   if (period === 'daily') {
     if (strongest.key === weakest.key) {
-      return `${strongest.label} is the only thing I have for today. A couple more check-ins and I can give you the shape of the day.`;
+      return fillVars(REPORT_TEXT.reflectionOnlyToday, { metric: strongest.label });
     }
-    return `Today your ${strongest.label.toLowerCase()} held up, while ${weakest.label.toLowerCase()} is where the strain showed. One day is one day. The weekly view will tell you whether it's a pattern.`;
+    return fillVars(REPORT_TEXT.reflectionDaily, {
+      strong: strongest.label.toLocaleLowerCase(dateLocale()),
+      weak: weakest.label.toLocaleLowerCase(dateLocale()),
+    });
   }
 
   if (strongest.key === weakest.key) {
-    return `${strongest.label} is the clearest signal I have ${PERIOD_WORDS[period].this}. Shall we build around it?`;
+    return fill(fillVars(REPORT_TEXT.reflectionClearest, { metric: strongest.label }), period);
   }
 
   if (period === 'monthly') {
-    return `Across the month your ${strongest.label.toLowerCase()} held up best, while ${weakest.label.toLowerCase()} is where the strain sat. Shall we discuss a care path?`;
+    return fillVars(REPORT_TEXT.reflectionMonthly, {
+      strong: strongest.label.toLocaleLowerCase(dateLocale()),
+      weak: weakest.label.toLocaleLowerCase(dateLocale()),
+    });
   }
 
-  return `Your ${strongest.label.toLowerCase()} is holding up well this week, while ${weakest.label.toLowerCase()} is where the strain shows. Shall we discuss a care path?`;
+  return fillVars(REPORT_TEXT.reflectionWeekly, {
+    strong: strongest.label.toLocaleLowerCase(dateLocale()),
+    weak: weakest.label.toLocaleLowerCase(dateLocale()),
+  });
 }
 
 // ── Week breakdown (monthly) ─────────────────────────────────
@@ -1323,7 +1447,7 @@ export async function buildSummary(
   const sources: RingSource[] = [
     {
       key: 'sleep',
-      label: 'Sleep quality',
+      label: RING_LABELS.sleep,
       scores: collect(
         sleepRows,
         (r) => r.loggedAt,
@@ -1332,7 +1456,7 @@ export async function buildSummary(
     },
     {
       key: 'energy',
-      label: 'Energy level',
+      label: RING_LABELS.energy,
       scores: collect(
         energyRows,
         (r) => fromDateOnly(r.date),
@@ -1343,7 +1467,7 @@ export async function buildSummary(
       key: 'stress',
       // "Stress level" reads as the load; the score is the inverse of the load.
       // The band word underneath ("Manageable") carries the direction.
-      label: 'Stress',
+      label: RING_LABELS.stress,
       scores: collect(
         stressRows,
         (r) => fromDateOnly(r.date),
@@ -1352,7 +1476,7 @@ export async function buildSummary(
     },
     {
       key: 'mood',
-      label: 'Mood stability',
+      label: RING_LABELS.mood,
       scores: withEventPenalty(
         collect(
           moodRows,
@@ -1367,7 +1491,7 @@ export async function buildSummary(
     },
     {
       key: 'focus',
-      label: 'Cognitive focus',
+      label: RING_LABELS.focus,
       scores: collect(
         focusRows,
         (r) => fromDateOnly(r.date),
@@ -1378,7 +1502,7 @@ export async function buildSummary(
       key: 'hotFlashes',
       // Not "Hot flash load": the ring's number goes *up* as episodes go down,
       // so a label naming the burden fights its own reading. See RING_BANDS.
-      label: 'Heat episodes',
+      label: RING_LABELS.hotFlashes,
       scores: withEventPenalty(
         collect(
           hotFlashRows,
@@ -1430,23 +1554,23 @@ export async function buildSummary(
   const stats: ReportStat[] = [
     {
       key: 'avgSleep',
-      label: isDaily ? 'Sleep' : 'Avg sleep',
+      label: isDaily ? REPORT_TEXT.statSleep : REPORT_TEXT.statAvgSleep,
       value: avgSleepHours == null ? null : avgSleepHours.toFixed(1),
-      unit: 'hrs',
+      unit: REPORT_TEXT.statHours,
       trend: windowSeries(sleepHours, w),
       seriesNote: seriesNote('avgSleep', w.period),
     },
     {
       key: 'hotFlashes',
-      label: 'Hot flashes',
+      label: REPORT_TEXT.statHotFlashes,
       value: hotFlashDays.length === 0 ? null : String(hotFlashTotal),
-      unit: hotFlashTotal === 1 ? 'episode' : 'episodes',
+      unit: REPORT_PLURALS.episodes({ count: hotFlashTotal }),
       trend: windowSeries(hotFlashCounts, w),
       seriesNote: seriesNote('hotFlashes', w.period),
     },
     {
       key: 'wellness',
-      label: 'Wellness',
+      label: REPORT_TEXT.statWellness,
       value: wellnessScore == null ? null : String(Math.round(wellnessScore)),
       unit: '/100',
       trend: windowSeries(wellnessDaily, w),
@@ -1458,7 +1582,7 @@ export async function buildSummary(
   // next to the ring keeps the score from being read as a symptom quantity.
   const hotFlashRing = rings.find((r) => r.key === 'hotFlashes');
   if (hotFlashRing && hotFlashDays.length > 0) {
-    hotFlashRing.detail = `${hotFlashTotal} ${hotFlashTotal === 1 ? 'episode' : 'episodes'} ${PERIOD_WORDS[w.period].this}`;
+    hotFlashRing.detail = fill(REPORT_PLURALS.episodesThis({ count: hotFlashTotal }), w.period);
   }
 
   const weekBreakdown = buildWeekBreakdown(wellnessDaily, w);
@@ -1478,15 +1602,18 @@ export async function buildSummary(
 
   const isCurrentPeriod = w.offset === 0;
   const trackingLabel = isDaily
-    ? `${rings.filter((r) => r.pct != null).length} of ${rings.length} check-ins logged`
+    ? fillVars(REPORT_TEXT.checkInsLogged, {
+        logged: rings.filter((r) => r.pct != null).length,
+        total: rings.length,
+      })
     : isCurrentPeriod
-      ? `${daysLogged} of ${w.daysElapsedInPeriod} days tracked so far`
-      : `${daysLogged} of ${w.periodLength} days tracked`;
+      ? fillVars(REPORT_TEXT.daysTrackedSoFar, { logged: daysLogged, total: w.daysElapsedInPeriod })
+      : fillVars(REPORT_TEXT.daysTracked, { logged: daysLogged, total: w.periodLength });
 
   const joinedMidPeriod = w.coverageStart.getTime() > w.start.getTime();
   const trackingNote =
     joinedMidPeriod && !isDaily
-      ? `You joined on ${shortDate(w.coverageStart)}, so the days before that are not counted against you.`
+      ? fillVars(REPORT_TEXT.joinedOn, { date: shortDate(w.coverageStart) })
       : null;
 
   // ── Reference dots ───────────────────────────────────────
@@ -1512,8 +1639,8 @@ export async function buildSummary(
   const withReference = rings.filter((r) => r.reference != null);
   const referenceNote =
     withReference.length > 0
-      ? `Dots mark ${withReference[0]!.reference!.label}: the same comparison on every tab, and only ever with yourself.`
-      : `No comparison dots yet. They appear once you have ${trendFloor} days of history to compare against.`;
+      ? fillVars(REPORT_TEXT.referenceNote, { reference: withReference[0]!.reference!.label })
+      : fillVars(REPORT_TEXT.referenceNoteEmpty, { count: trendFloor });
 
   return {
     period: w.period,
@@ -1550,7 +1677,8 @@ export async function buildSummary(
       key: ring.key,
       label: ring.label,
       pct: ring.pct,
-      band: ring.band,
+      // English inside the builder — `RING_CLAUSE` is keyed by it — and localised only here.
+      band: localizedBand(ring.key, ring.band),
       detail: ring.detail,
       delta: ring.delta,
       deltaTone: ring.deltaTone,
@@ -1569,8 +1697,11 @@ export async function buildSummary(
           ? [
               {
                 tone: 'neutral' as const,
-                title: 'Keep tracking',
-                body: `${daysLogged} ${daysLogged === 1 ? 'day' : 'days'} of ${PERIOD_WORDS[w.period].this} logged. I need at least ${trendFloor} before I can tell you a trend rather than guess at one.`,
+                title: REPORT_TEXT.keepTracking,
+                body: fill(
+                  REPORT_PLURALS.keepTrackingBody({ count: daysLogged, need: trendFloor }),
+                  w.period,
+                ),
               },
             ]
           : isDaily

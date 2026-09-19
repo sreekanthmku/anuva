@@ -5,6 +5,7 @@ import { registerFcmTokenOnServer } from './notifications/registerFcmToken';
 import type { FcmSyncResult } from './notifications/fcmSync';
 import { toSyncErrorMessage } from './notifications/fcmSync';
 import { requestNotificationPermission } from './notifications/notificationPrompt';
+import i18n from '../i18n';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
@@ -31,7 +32,7 @@ export function isFirebaseConfigured(): boolean {
 
 function getFirebaseApp(): FirebaseApp {
   if (!isFirebaseConfigured()) {
-    throw new Error('Firebase is not configured.');
+    throw new Error(i18n.t('errors.firebaseNotConfigured'));
   }
 
   if (!app) {
@@ -95,7 +96,7 @@ async function waitForActivation(registration: ServiceWorkerRegistration): Promi
  */
 async function getFcmServiceWorkerRegistration(): Promise<ServiceWorkerRegistration> {
   if (!('serviceWorker' in navigator)) {
-    throw new Error('Service workers are not supported.');
+    throw new Error(i18n.t('errors.serviceWorkerUnsupported'));
   }
 
   const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
@@ -154,7 +155,7 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
     return {
       ok: false,
       reason: 'not_configured',
-      message: 'Push notifications are not configured on this build.',
+      message: i18n.t('errors.pushNotConfigured'),
     };
   }
 
@@ -162,7 +163,7 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
     return {
       ok: false,
       reason: 'unsupported',
-      message: 'This browser does not support push notifications.',
+      message: i18n.t('errors.pushUnsupported'),
     };
   }
 
@@ -170,7 +171,7 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
     return {
       ok: false,
       reason: 'not_granted',
-      message: 'Notification permission is not granted.',
+      message: i18n.t('errors.permissionNotGranted'),
     };
   }
 
@@ -180,7 +181,7 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
       return {
         ok: false,
         reason: 'unsupported',
-        message: 'Could not initialize messaging in this browser.',
+        message: i18n.t('errors.messagingInitFailed'),
       };
     }
 
@@ -206,7 +207,7 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
       return {
         ok: false,
         reason: 'no_token',
-        message: 'Could not get a device token from Firebase. Try a hard refresh.',
+        message: i18n.t('errors.noDeviceToken'),
       };
     }
 
@@ -241,7 +242,7 @@ export async function enablePushNotifications(): Promise<{
       sync: {
         ok: false,
         reason: 'not_granted',
-        message: 'Notification permission was not granted.',
+        message: i18n.t('errors.permissionWasNotGranted'),
       },
     };
   }

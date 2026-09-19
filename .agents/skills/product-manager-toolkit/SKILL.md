@@ -288,7 +288,7 @@ Key Metrics:
 3. Explicitly state what's out of scope
 4. Use visuals (wireframes, flows)
 5. Keep technical details in appendix
-6. Version control changes
+6. Version control  
 
 ### Effective Prioritization
 1. Mix quick wins with strategic bets

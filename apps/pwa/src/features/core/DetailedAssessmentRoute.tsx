@@ -133,8 +133,12 @@ export default function DetailedAssessmentRoute() {
   const totalSteps = sections.length;
   const isLastStep = step === totalSteps - 1;
   const progressLabel = useMemo(
-    () => `${String(step + 1).padStart(2, '0')} / ${String(totalSteps).padStart(2, '0')}`,
-    [step, totalSteps]
+    () =>
+      t('detailedAssessment.progress', {
+        current: String(step + 1).padStart(2, '0'),
+        total: String(totalSteps).padStart(2, '0'),
+      }),
+    [step, totalSteps, t]
   );
 
   const missingHere = useMemo(
@@ -171,7 +175,7 @@ export default function DetailedAssessmentRoute() {
         setError(
           missingHere.length === 1
             ? t('detailedAssessment.answerHighlighted')
-            : `Please answer the ${missingHere.length} highlighted questions before continuing.`
+            : t('detailedAssessment.answerHighlightedMany', { count: missingHere.length })
         );
         return;
       }
@@ -225,7 +229,7 @@ export default function DetailedAssessmentRoute() {
   if (loading && !hydrated) {
     return (
       <main className="flex min-h-mobile items-center justify-center bg-surface text-outline">
-        <span style={{ fontFamily: '"Mulish", sans-serif' }}>Loading…</span>
+        <span style={{ fontFamily: '"Mulish", sans-serif' }}>{t('common.loading')}</span>
       </main>
     );
   }
@@ -240,7 +244,7 @@ export default function DetailedAssessmentRoute() {
             className="text-[13px] text-outline transition-opacity hover:opacity-80"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            ← Back
+            {t('common.backArrow')}
           </button>
           <span
             className="text-[11px] uppercase tracking-[0.12em] text-outline"
@@ -502,7 +506,9 @@ function ReadOnlyDate({ value }: { value: string }) {
       style={{ fontFamily: '"Mulish", sans-serif' }}
     >
       <span>{formatDisplay(value)}</span>
-      <span className="text-[11px] uppercase tracking-[0.12em] text-outline">Auto</span>
+      <span className="text-[11px] uppercase tracking-[0.12em] text-outline">
+        {i18n.t('detailedAssessment.auto')}
+      </span>
     </div>
   );
 }
@@ -587,7 +593,7 @@ function TextList({
           key={index}
           type="text"
           value={line}
-          placeholder={`${index + 1}.`}
+          placeholder={i18n.t('detailedAssessment.listItem', { number: index + 1 })}
           onChange={(event) => update(index, event.target.value)}
           className={inputClass}
           style={{ fontFamily: '"Mulish", sans-serif' }}
@@ -970,7 +976,13 @@ function DynList({
                 key={cellIndex}
                 type="text"
                 value={cell}
-                placeholder={headers[cellIndex] ?? `Medication ${rowIndex + 1}`}
+                placeholder={
+                  headers[cellIndex]
+                    ? t(`detailedAssessment.columns.${optionKey(headers[cellIndex])}`, {
+                        defaultValue: headers[cellIndex],
+                      })
+                    : t('detailedAssessment.medicationRow', { number: rowIndex + 1 })
+                }
                 onChange={(event) => update(rowIndex, cellIndex, event.target.value)}
                 className={inputClass}
                 style={{ fontFamily: '"Mulish", sans-serif' }}

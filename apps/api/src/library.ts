@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { DEFAULT_LANGUAGE, currentLanguage, type Language } from './i18n/index.js';
 import { fileURLToPath } from 'node:url';
 import {
   libraryContentFileSchema,
@@ -16,6 +17,62 @@ import {
 /// table, no admin CRUD. Editing the JSON and restarting is the publish flow.
 const CONTENT_PATH = fileURLToPath(new URL('./data/library.json', import.meta.url));
 
+/**
+ * Optional translations: `data/library.<lang>.json`, e.g. `library.hi.json`. Each is an *overlay* on
+ * the English file, not a copy of it — any subset of
+ *
+ *   { "session": {…}, "categories": [{ "key", "label" }],
+ *     "articles": [{ "slug", "title", "dek", "keyTakeaways", "tags", "blocks", "heroCaption", "author" }] }
+ *
+ * matched by category `key` and article `slug`. Anything it leaves out stays English, so a language
+ * can ship with a handful of articles translated. A missing file means that language reads the
+ * English library; a file that breaks the schema once merged is logged and ignored the same way.
+ */
+function overlayPath(language: Language): string {
+  return fileURLToPath(new URL(`./data/library.${language}.json`, import.meta.url));
+}
+
+type Overlay = {
+  session?: Record<string, unknown>;
+  categories?: { key: string; [field: string]: unknown }[];
+  articles?: { slug: string; [field: string]: unknown }[];
+};
+
+/** Fields a translation may replace. Structure (slugs, dates, images, categories) is never overlaid. */
+const TRANSLATABLE_ARTICLE_FIELDS = ['title', 'dek', 'keyTakeaways', 'tags', 'blocks', 'heroCaption', 'author'];
+
+function readContentFile(language: Language): unknown {
+  const english = JSON.parse(readFileSync(CONTENT_PATH, 'utf8')) as {
+    session: Record<string, unknown>;
+    categories: { key: string }[];
+    articles: { slug: string }[];
+  };
+  if (language === DEFAULT_LANGUAGE || !existsSync(overlayPath(language))) return english;
+
+  let overlay: Overlay;
+  try {
+    overlay = JSON.parse(readFileSync(overlayPath(language), 'utf8')) as Overlay;
+  } catch (error) {
+    console.error(`[library] Ignoring unreadable library.${language}.json:`, error);
+    return english;
+  }
+
+  const categories = new Map((overlay.categories ?? []).map((c) => [c.key, c]));
+  const articles = new Map((overlay.articles ?? []).map((a) => [a.slug, a]));
+  const pick = (source: Record<string, unknown> | undefined, fields: string[]) =>
+    Object.fromEntries(fields.filter((f) => source && f in source).map((f) => [f, source![f]]));
+
+  return {
+    ...english,
+    session: english.session && overlay.session ? { ...english.session, ...overlay.session } : english.session,
+    categories: english.categories.map((c) => ({ ...c, ...pick(categories.get(c.key), ['label']) })),
+    articles: english.articles.map((a) => ({
+      ...a,
+      ...pick(articles.get(a.slug), TRANSLATABLE_ARTICLE_FIELDS),
+    })),
+  };
+}
+
 type LoadedLibrary = {
   session: LibraryFeedResponse['session'];
   categories: LibraryCategoryFacet[];
@@ -23,10 +80,17 @@ type LoadedLibrary = {
   bySlug: Map<string, LibraryArticle>;
 };
 
-function loadLibrary(): LoadedLibrary {
+function loadLibrary(language: Language = DEFAULT_LANGUAGE): LoadedLibrary {
   // Parse eagerly so a malformed content file fails at boot rather than on the
-  // first request.
-  const file = libraryContentFileSchema.parse(JSON.parse(readFileSync(CONTENT_PATH, 'utf8')));
+  // first request. A translation that fails the schema falls back to English rather than failing.
+  let file;
+  try {
+    file = libraryContentFileSchema.parse(readContentFile(language));
+  } catch (error) {
+    if (language === DEFAULT_LANGUAGE) throw error;
+    console.error(`[library] library.${language}.json does not fit the schema; serving English:`, error);
+    return loadLibrary(DEFAULT_LANGUAGE);
+  }
 
   const categoryMeta = new Map(file.categories.map((c) => [c.key, c]));
 
@@ -60,11 +124,16 @@ function loadLibrary(): LoadedLibrary {
   };
 }
 
-let cached: LoadedLibrary | null = null;
+const cached = new Map<Language, LoadedLibrary>();
 
-function library(): LoadedLibrary {
-  cached ??= loadLibrary();
-  return cached;
+/** The library in the current request's language, built once per language and kept. */
+function library(language: Language = currentLanguage()): LoadedLibrary {
+  let loaded = cached.get(language);
+  if (!loaded) {
+    loaded = loadLibrary(language);
+    cached.set(language, loaded);
+  }
+  return loaded;
 }
 
 /// Cards never carry the body — the detail endpoint is the only place blocks
@@ -192,12 +261,13 @@ function shuffled<T>(items: readonly T[], seed: number): T[] {
 /// the rotation, which is the only reason to touch it.
 const ROTATION_SEED = 0x616e75;
 
-let rotationCache: LibraryArticle[] | null = null;
+let rotationCache: string[] | null = null;
 
-function rotationOrder(): LibraryArticle[] {
+/** Slugs, from the English library, so every language rotates through the same day's article. */
+function rotationOrder(): string[] {
   if (!rotationCache) {
-    const bySlug = [...library().articles].sort((a, b) => a.slug.localeCompare(b.slug));
-    rotationCache = shuffled(bySlug, ROTATION_SEED);
+    const bySlug = [...library(DEFAULT_LANGUAGE).articles].sort((a, b) => a.slug.localeCompare(b.slug));
+    rotationCache = shuffled(bySlug, ROTATION_SEED).map((article) => article.slug);
   }
   return rotationCache;
 }
@@ -213,7 +283,8 @@ export function getDailyInsight(at: Date = new Date()): LibraryDailyInsightRespo
   const pass = Math.floor(day / total);
   const position = day % total;
 
-  const article = rotationOrder()[position];
+  const slug = rotationOrder()[position];
+  const article = slug ? library().bySlug.get(slug) : undefined;
   if (!article) return null;
 
   const takeaways = article.keyTakeaways;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MoodEmotion, MoodLogEntry, MoodStateResponse } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type MoodLogState = {
   data: MoodStateResponse | null;
@@ -17,7 +18,7 @@ export function useMoodLog() {
       const data = await apiFetch<MoodStateResponse>('/api/mood');
       setState({ data, loading: false, error: null });
     } catch {
-      setState({ data: null, loading: false, error: 'Failed to load mood data' });
+      setState({ data: null, loading: false, error: i18n.t('errors.loadMood') });
     }
   }, []);
 

@@ -660,7 +660,12 @@
     "editSettingsTitle": "Cycle & period length",
     "settingIsStartingPoint": ". Your setting is a starting point until enough cycles are logged.",
     "cycleLengthLabel": "Cycle length",
-    "periodLengthLabel": "Period length"
+    "periodLengthLabel": "Period length",
+    "avgCycle": "Avg cycle",
+    "avgPeriod": "Avg period",
+    "daysValue": "{{count}} days",
+    "loggedCycles_one": "{{count}} logged cycle",
+    "loggedCycles_other": "{{count}} logged cycles"
   },
   "profile": {
     "backHome": "← Home",
@@ -887,7 +892,8 @@
       "chocolatesBody": "Some days ask a lot of you. {{name}} wanted this one to have at least one small good thing in it.",
       "thankYou": "Thank you 💛",
       "getsSmiley": "{{name}} gets a smiley on their phone."
-    }
+    },
+    "fromFallback": "Your family"
   },
   "install": {
     "homeScreenNote": "Look for the <1>Anuva Wellness</1> icon on your home screen.",
@@ -953,7 +959,11 @@
   "calendar": {
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
-    "predicted": "Predicted"
+    "predicted": "Predicted",
+    "legendPeriod": "Period",
+    "legendPredicted": "Predicted",
+    "legendFertile": "Fertile",
+    "legendOvulation": "Ovulation"
   },
   "summary": {
     "periods": {
@@ -989,7 +999,15 @@
     "ariaThroughout": "{{value}} {{unit}} throughout",
     "ariaRanged": "ranged {{low}} to {{high}} {{unit}}, latest {{latest}} {{unit}}",
     "ariaMissingNote": " {{count}} not logged.",
-    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{logged}} of {{total}} days logged.{{missingNote}}"
+    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{logged}} of {{total}} days logged.{{missingNote}}",
+    "barAria": "{{date}}: {{value}}",
+    "outsideWindow": "outside this window",
+    "notLogged": "not logged",
+    "seeDayByDay": "{{label}}. See day by day",
+    "glanceAria": "{{eyebrow}}: {{label}}{{value}} {{note}}. See day by day",
+    "glanceValue": ", {{value}}",
+    "dayMetricsLogged": "{{date}}, {{count}} of {{total}} metrics logged",
+    "dayNothingLogged": "{{date}}, nothing logged"
   },
   "metric": {
     "backToSummary": "Summary",
@@ -1066,6 +1084,38 @@
         "steady": "steady",
         "worsening": "more than before"
       }
+    },
+    "dayBalance": "Day balance",
+    "untrackedDays": "Untracked days",
+    "scoredNote": "Scored 0–100, higher is always better. {{note}}",
+    "byTheNumbers": "By the numbers",
+    "whatStoodOut": "What stood out",
+    "stoodOut": {
+      "positive": "Improving",
+      "neutral": "Steady",
+      "attention": "Needs attention"
+    },
+    "stoodOutAria": "{{label}}, {{column}}. See day by day",
+    "delta": {
+      "positive": "Better",
+      "attention": "Worse",
+      "neutral": "Similar"
+    },
+    "points": "{{value}} pts",
+    "notLogged": "Not logged",
+    "seriesToChart": "Series to chart",
+    "overallTrend": "Overall trend",
+    "trendNoteWeekly": "One point per week, averaged over the days you logged in it.",
+    "trendNoteDaily": "One point per day. Ticks under the axis are days with no check-in.",
+    "balanceColumn": {
+      "good_one": "Good day",
+      "good_other": "Good days",
+      "okay_one": "Okay day",
+      "okay_other": "Okay days",
+      "hard_one": "Hard day",
+      "hard_other": "Hard days",
+      "untracked_one": "Untracked day",
+      "untracked_other": "Untracked days"
     }
   },
   "wellness": {
@@ -1101,7 +1151,14 @@
       "day": "day",
       "week": "week"
     },
-    "trendAriaSummary": "{{series}}, one point per {{unit}}. {{points}}.{{missingNote}}"
+    "trendAriaSummary": "{{series}}, one point per {{unit}}. {{points}}.{{missingNote}}",
+    "bandNames": {
+      "great": "Great",
+      "good": "Good",
+      "okay": "Okay",
+      "hard": "Hard",
+      "veryHard": "Very hard"
+    }
   },
   "booking": {
     "freeBadge": "★ Included free · first consult",
@@ -1424,6 +1481,16 @@
       "dietician": "Dietician",
       "coach": "Menopause Coach",
       "all": "All Practitioners"
+    },
+    "answerHighlightedMany": "Please answer the {{count}} highlighted questions before continuing.",
+    "auto": "Auto",
+    "listItem": "{{number}}.",
+    "medicationRow": "Medication {{number}}",
+    "progress": "{{current}} / {{total}}",
+    "columns": {
+      "medication_supplement": "Medication / Supplement",
+      "dosage": "Dosage",
+      "duration_frequency": "Duration / Frequency"
     }
   },
   "help": {
@@ -1545,7 +1612,10 @@
     "downloaded": "Your data has been downloaded. The link has now been used and cannot be reopened.",
     "deletionCancelled": "Your account will not be deleted. Nothing has been removed.",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "accountScheduled": "Your account is scheduled for deletion on {{date}}. You can cancel any time before then.",
+    "deletedItems_one": "Deleted {{count}} item. {{scope}}: done.",
+    "deletedItems_other": "Deleted {{count}} items. {{scope}}: done."
   },
   "bookings": {
     "backHome": "← Home",
@@ -1634,7 +1704,8 @@
     "openFailed": "Could not open your report.",
     "backToProfile": "← Profile",
     "eyebrow": "Your assessment report",
-    "preparing": "Preparing your report…"
+    "preparing": "Preparing your report…",
+    "additionalFocus": "Additional focus"
   },
   "datePicker": {
     "close": "Close date picker",
@@ -1644,5 +1715,50 @@
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "backToToday": "Back to today"
+  },
+  "time": {
+    "justNow": "Just now",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  },
+  "errors": {
+    "requestFailed": "Request failed with status {{status}}",
+    "loadCycle": "Failed to load cycle data",
+    "loadToday": "Couldn't load today's wellness",
+    "loadAssessment": "Failed to load assessment",
+    "loadJoints": "Failed to load joint data",
+    "loadMood": "Failed to load mood data",
+    "loadDay": "Failed to load your day",
+    "loadCheckIn": "Failed to load your check-in",
+    "loadQuickLog": "Failed to load quick log",
+    "loadSleep": "Failed to load sleep data",
+    "loadCalendar": "Could not load your calendar",
+    "loadSummary": "Failed to load your summary",
+    "loadLibrary": "Unable to load the library.",
+    "articleNotFound": "Article not found.",
+    "loadArticle": "Unable to load this article.",
+    "downloadUsed": "That download has already been used. Ask for your data again.",
+    "downloadFailed": "Could not download your data. Please try again.",
+    "loadQuestions": "Unable to load questions.",
+    "sendQuestion": "Unable to send your question.",
+    "checkFamilyInvite": "Could not check your family invite.",
+    "shareRecordFailedWithReason": "{{reason}} If you already sent the link, tap share again.",
+    "shareRecordFailed": "Could not record that you shared the link.",
+    "recordingUnavailable": "Recording is not available yet.",
+    "documentUnavailable": "This document could not be opened.",
+    "notificationsNotRegistered": "Notifications are on, but this device is not registered yet. Tap retry.",
+    "deviceRegisterFailed": "Could not register this device. Tap retry on Home.",
+    "firebaseNotConfigured": "Firebase is not configured.",
+    "serviceWorkerUnsupported": "Service workers are not supported.",
+    "pushNotConfigured": "Push notifications are not configured on this build.",
+    "pushUnsupported": "This browser does not support push notifications.",
+    "permissionNotGranted": "Notification permission is not granted.",
+    "messagingInitFailed": "Could not initialize messaging in this browser.",
+    "noDeviceToken": "Could not get a device token from Firebase. Try a hard refresh.",
+    "permissionWasNotGranted": "Notification permission was not granted.",
+    "notSignedIn": "You are not signed in. Please log in again, then retry.",
+    "saveNotificationSettings": "Could not save your notification settings. Please try again.",
+    "serverUnreachable": "Could not reach the server. Is the API running?",
+    "notificationsBlocked": "Notifications were blocked. Enable them in your browser site settings."
   }
 }

@@ -15,7 +15,12 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const APPS = ['pwa', 'family-pwa'];
+/** Each bundle set: the two PWAs, and the API's server-side copy (errors, pushes, reports). */
+const APPS = [
+  { name: 'pwa', dir: join(repoRoot, 'apps', 'pwa', 'src', 'i18n', 'locales') },
+  { name: 'family-pwa', dir: join(repoRoot, 'apps', 'family-pwa', 'src', 'i18n', 'locales') },
+  { name: 'api', dir: join(repoRoot, 'apps', 'api', 'src', 'i18n', 'locales') },
+];
 
 /** Every leaf, as `a.b.c` → the string at it. Objects are walked; nothing else is expected. */
 function flatten(node, prefix = '', out = new Map()) {
@@ -27,7 +32,8 @@ function flatten(node, prefix = '', out = new Map()) {
   return out;
 }
 
-const placeholderPattern = /\{\{\s*([a-zA-Z0-9_]+)[^}]*\}\}/g;
+// `{{name}}` everywhere; the API's report tables also use single-brace `{this}` / `{count}` slots.
+const placeholderPattern = /\{\{?\s*([a-zA-Z0-9_]+)[^}]*\}\}?/g;
 const markerPattern = /<(\/?)(\d+)\s*\/?>/g;
 
 function placeholders(text) {
@@ -53,8 +59,7 @@ function baseNames(keys) {
 
 let problems = 0;
 
-for (const app of APPS) {
-  const dir = join(repoRoot, 'apps', app, 'src', 'i18n', 'locales');
+for (const { name: app, dir } of APPS) {
   if (!existsSync(dir)) {
     console.error(`✗ ${app}: no locales directory at ${dir}`);
     problems += 1;

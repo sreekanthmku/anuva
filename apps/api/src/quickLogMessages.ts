@@ -1,11 +1,12 @@
 import type { QuickSymptom } from '@anuva/shared';
+import { copy } from './i18n/index.js';
 
 /**
  * Supportive, calming messages shown after a quick symptom log.
  * 10 variants per symptom — one is picked at random on each log.
  * Defined here (not the DB) so copy can be tuned without a migration.
  */
-export const QUICK_LOG_MESSAGES: Record<QuickSymptom, string[]> = {
+export const QUICK_LOG_MESSAGES: Record<QuickSymptom, string[]> = copy('quickLog', {
   hot_flash: [
     "Hot flashes pass. Breathe slow and let this one move through you.",
     "Your body is just recalibrating. Sip some water and loosen a layer.",
@@ -54,7 +55,7 @@ export const QUICK_LOG_MESSAGES: Record<QuickSymptom, string[]> = {
     "This wave of irritation will settle. You don't have to act on it.",
     "Give yourself grace. You're managing more than anyone sees.",
   ],
-};
+});
 
 export function randomQuickLogMessage(symptom: QuickSymptom): string {
   const list = QUICK_LOG_MESSAGES[symptom];

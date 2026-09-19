@@ -1,3 +1,4 @@
+import { copy, copyList } from '../i18n/index.js';
 import type {
   FamilyArticle,
   FamilyArticleAudience,
@@ -39,7 +40,7 @@ type Reference =
  * Resolved to full names rather than shipped as the source document's bare numbers. "Clinical
  * references: 2, 9" is a footnote in a Word file; in an app it is a citation nobody can follow.
  */
-const REFERENCES: Record<Reference, string> = {
+const REFERENCES: Record<Reference, string> = copy('family.articleReferences', {
   'who-menopause': 'WHO: Menopause',
   'nhs-symptoms': 'NHS: Symptoms of menopause and perimenopause',
   'nhs-self-help': 'NHS: Things you can do to help menopause symptoms',
@@ -51,34 +52,40 @@ const REFERENCES: Record<Reference, string> = {
   'nhs-stroke': 'NHS: Symptoms of a stroke',
   'nhs-urgent-mental-health': 'NHS: Where to get urgent help for mental health',
   'mha-erss': 'Ministry of Home Affairs: ERSS (112)',
-};
+});
 
 /** What an article with no clinical claim says instead of a citation. Never left blank. */
-const EDITORIAL_SOURCE = 'Original family-support copy. No medical claim intended.';
+const ARTICLE_TEXT = copy('family.articleText', {
+  editorialSource: 'Original family-support copy. No medical claim intended.',
+  footer:
+    'General information, not a diagnosis. A qualified clinician can help with symptoms that concern you. This app is not an emergency service.',
+  actionLabel: 'What you can do',
+  sayingLabel: 'Try saying',
+  sourcesLabel: 'Sources',
+});
 
 /**
  * Attached to every article, from the source document's suggested footer. Server-owned so a client
  * redesign cannot quietly drop it, and so the emergency wording stays in one place when this is
  * localised outside India.
  */
-export const FAMILY_ARTICLE_FOOTER =
-  'General information, not a diagnosis. A qualified clinician can help with symptoms that concern you. This app is not an emergency service.';
+// The footer lives in `ARTICLE_TEXT.footer`, localised with the rest of the article chrome.
 
 type Section = 'change' | 'together' | 'boundaries';
 
-const SECTION_LABELS: Record<Section, string> = {
+const SECTION_LABELS: Record<Section, string> = copy('family.articleSections', {
   change: 'Understanding the change',
   together: 'Supporting each other',
   boundaries: 'Respect, privacy and care',
-};
+});
 
 const SECTION_ORDER: Section[] = ['change', 'together', 'boundaries'];
 
-const AUDIENCE_LABELS: Record<FamilyArticleAudience, string> = {
+const AUDIENCE_LABELS: Record<FamilyArticleAudience, string> = copy('family.articleAudiences', {
   everyone: 'Partners and teens',
   teens: 'Teens only',
   partners: 'Adult partners only',
-};
+});
 
 type Authored = {
   slug: string;
@@ -97,7 +104,7 @@ type Authored = {
   references: Reference[];
 };
 
-const ARTICLES: Authored[] = [
+const AUTHORED_ARTICLES: Authored[] = [
   {
     slug: 'perimenopause-and-hormones',
     number: 1,
@@ -417,6 +424,17 @@ const ARTICLES: Authored[] = [
     references: ['nhs-symptoms', 'nhs-vaginal-dryness'],
   },
 ];
+/**
+ * The corpus, with every reader-facing field localised on read and keyed by slug — so a translation
+ * follows its article through any editorial reordering.
+ */
+const ARTICLES: Authored[] = copyList(
+  'family.articles',
+  AUTHORED_ARTICLES,
+  ['title', 'teaser', 'body', 'partnerAction', 'teenAction', 'saying'],
+  (article) => article.slug,
+);
+
 
 /**
  * Relationship to reader.
@@ -505,15 +523,15 @@ export function familyArticle(
       ...toSummary(found, reader),
       reader,
       body: found.body,
-      action: action ? { label: 'What you can do', text: action } : null,
-      sayingLabel: 'Try saying',
+      action: action ? { label: ARTICLE_TEXT.actionLabel, text: action } : null,
+      sayingLabel: ARTICLE_TEXT.sayingLabel,
       saying: found.saying,
-      sourcesLabel: 'Sources',
+      sourcesLabel: ARTICLE_TEXT.sourcesLabel,
       sources:
         found.references.length > 0
           ? found.references.map((key) => REFERENCES[key])
-          : [EDITORIAL_SOURCE],
-      footer: FAMILY_ARTICLE_FOOTER,
+          : [ARTICLE_TEXT.editorialSource],
+      footer: ARTICLE_TEXT.footer,
     },
     more,
   };

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AnonymousQuestion, AnonymousQuestionTopic } from '@anuva/shared';
 import { askAnonymousQuestion, fetchAnonymousQuestionFeed, fetchMyAnonymousQuestions } from './api';
+import i18n from '../../../i18n';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -30,7 +31,7 @@ export function useAnonymousQa() {
       setFeed(feedResponse.questions);
       setState('ready');
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Unable to load questions.');
+      setLoadError(err instanceof Error ? err.message : i18n.t('errors.loadQuestions'));
       setState('error');
     }
   }, []);
@@ -51,7 +52,7 @@ export function useAnonymousQa() {
         setJustSubmitted(true);
         return true;
       } catch (err) {
-        setSubmitError(err instanceof Error ? err.message : 'Unable to send your question.');
+        setSubmitError(err instanceof Error ? err.message : i18n.t('errors.sendQuestion'));
         return false;
       } finally {
         setSubmitting(false);

@@ -1,3 +1,4 @@
+import { LANGUAGE_NAMES, currentLanguage } from '../i18n/index.js';
 // ANU coach prompt. An earlier revision of this few-shot set was measured on
 // gpt-4o-mini over 26 queries (20 paraphrased symptom questions, 5 red-flag
 // phrasings, 1 out-of-scope):
@@ -493,6 +494,28 @@ export function buildMessages(
   // instruction in this prompt whose correct answer changes from turn to turn,
   // so it is also the one that has to be read against what just happened.
   messages.push({ role: 'system', content: nameDirective(her, recent, sheTyped) });
+  const language = languageDirective();
+  if (language) messages.push({ role: 'system', content: language });
   messages.push({ role: 'user', content: userMessage });
   return messages;
+}
+
+/**
+ * The reply language, when she has chosen one other than English in the app. Last-but-one for the
+ * same reason as the name rule: read after the few-shots (which are English) so they are taken as
+ * examples of tone, not of language. English sessions get no directive, so the prompt they see is
+ * exactly the one this module always sent.
+ */
+export function languageDirective(): string | null {
+  const language = currentLanguage();
+  if (language === 'en') return null;
+  const name = LANGUAGE_NAMES[language];
+  return [
+    `She reads the app in ${name}. Write the "reply" field in ${name}, in its own script, in the`,
+    'everyday spoken register a woman would use with a close friend — not formal, literary or',
+    'Sanskritised. Where people commonly say an English word (period, hormone, doctor), use it',
+    `written in ${name} script. Reply in ${name} even if her message is in English or mixed.`,
+    'Everything else in this prompt still applies, including every safety rule. The JSON keys and',
+    'the "symptom" value stay exactly as specified, in English — the app matches on them.',
+  ].join(' ');
 }

@@ -6,6 +6,7 @@ import type {
   SleepStateResponse,
 } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type SleepLogState = {
   data: SleepStateResponse | null;
@@ -22,7 +23,7 @@ export function useSleepLog() {
       const data = await apiFetch<SleepStateResponse>('/api/sleep');
       setState({ data, loading: false, error: null });
     } catch {
-      setState({ data: null, loading: false, error: 'Failed to load sleep data' });
+      setState({ data: null, loading: false, error: i18n.t('errors.loadSleep') });
     }
   }, []);
 

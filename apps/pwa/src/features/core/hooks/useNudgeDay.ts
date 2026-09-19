@@ -5,6 +5,7 @@ import type {
   SubmitNudgeResponseBody,
 } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type NudgeDayState = {
   data: NudgeDayResponse | null;
@@ -22,7 +23,7 @@ export function useNudgeDay() {
       const data = await apiFetch<NudgeDayResponse>('/api/nudge/day');
       setState({ data, loading: false, error: null });
     } catch {
-      setState({ data: null, loading: false, error: 'Failed to load your day' });
+      setState({ data: null, loading: false, error: i18n.t('errors.loadDay') });
     }
   }, []);
 

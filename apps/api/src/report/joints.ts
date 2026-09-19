@@ -1,3 +1,4 @@
+import { JOINT_TEXT } from '../i18n/joints.js';
 import {
   JOINT_AREA_LABELS,
   JOINT_IMPACT_LABELS,
@@ -79,10 +80,10 @@ function impactLabel(impacts: JointImpact[]): string | null {
   if (impacts.length === 0) return null;
   const meanImpact =
     impacts.reduce((sum, i) => sum + JOINT_IMPACT_SCORES[i], 0) / impacts.length;
-  if (meanImpact < 0.5) return 'Not affecting your day';
-  if (meanImpact < 1.5) return 'Mostly mild';
-  if (meanImpact < 2.5) return 'Moderate on most days';
-  return 'Affecting your day a lot';
+  if (meanImpact < 0.5) return JOINT_TEXT.summary.notAffecting;
+  if (meanImpact < 1.5) return JOINT_TEXT.summary.mostlyMild;
+  if (meanImpact < 2.5) return JOINT_TEXT.summary.moderate;
+  return JOINT_TEXT.summary.aLot;
 }
 
 /** The most-logged value, ties broken by the order the options are declared in. */
@@ -170,8 +171,8 @@ export function buildJointsSummary(rows: JointRow[], r: JointRanges): JointsSumm
     daysWithDiscomfort: withDiscomfort.length,
     daysLogged: windowRows.length,
     daysInWindow: r.daysInWindow,
-    mostAffectedArea: topArea ? JOINT_AREA_LABELS[topArea] : null,
-    mostCommonSymptom: topSymptom ? JOINT_SYMPTOM_LABELS[topSymptom] : null,
+    mostAffectedArea: topArea ? JOINT_TEXT.areas[topArea] : null,
+    mostCommonSymptom: topSymptom ? JOINT_TEXT.symptoms[topSymptom] : null,
     impact: impactLabel(impacts),
     trend,
   };

@@ -1,6 +1,7 @@
+import { copy, fill } from '../i18n/index.js';
 import { prisma } from '@anuva/database';
 import type { PrivacyRecipient } from '@anuva/shared';
-import { FAMILY_SHARED_SCOPES } from '../family/content.js';
+import { familySharedScopes } from '../family/content.js';
 
 /**
  * Who else holds any of her data — the DPDP §11 "and to whom it was disclosed" half.
@@ -15,14 +16,19 @@ import { FAMILY_SHARED_SCOPES } from '../family/content.js';
  * relationship she ended.
  */
 
-const RELATIONSHIP_LABELS: Record<string, string> = {
+const RELATIONSHIP_LABELS: Record<string, string> = copy('privacy.recipientRelationships', {
   partner: 'your partner',
   child: 'your son or daughter',
   parent: 'your parent',
   sibling: 'your sibling',
   friend: 'a friend',
   other: 'a family member',
-};
+});
+
+const RECIPIENT_TEXT = copy('privacy.recipient', {
+  name: '{{name}} ({{relationship}})',
+  control: 'Disconnect them from Profile → Family sharing. Access ends immediately.',
+});
 
 export async function buildPrivacyRecipients(userId: string): Promise<PrivacyRecipient[]> {
   const member = await prisma.familyMember.findFirst({
@@ -38,10 +44,13 @@ export async function buildPrivacyRecipients(userId: string): Promise<PrivacyRec
     {
       key: `family:${member.id}`,
       kind: 'family',
-      name: `${member.name} (${RELATIONSHIP_LABELS[member.relationship] ?? 'a family member'})`,
-      receives: [...FAMILY_SHARED_SCOPES],
+      name: fill(RECIPIENT_TEXT.name, {
+        name: member.name,
+        relationship: RELATIONSHIP_LABELS[member.relationship] ?? RELATIONSHIP_LABELS.other,
+      }),
+      receives: familySharedScopes(),
       since: member.createdAt.toISOString(),
-      control: 'Disconnect them from Profile → Family sharing. Access ends immediately.',
+      control: RECIPIENT_TEXT.control,
     },
   ];
 }

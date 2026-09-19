@@ -17,7 +17,7 @@ import {
   ERASURE_TRACKER_MODELS,
   CLINICAL_RECORD_RETENTION_YEARS,
 } from '@anuva/shared';
-import { FAMILY_SHARED_SCOPES } from '../family/content.js';
+import { familySharedScopes } from '../family/content.js';
 import { logger } from '../logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -247,7 +247,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
           relationship: member.relationship,
           maskedPhone: maskThirdPartyPhone(member.phone),
           since: member.createdAt.toISOString(),
-          canSee: [...FAMILY_SHARED_SCOPES],
+          canSee: familySharedScopes(),
         })),
       clinicalRecordRetentionYears: CLINICAL_RECORD_RETENTION_YEARS,
     },

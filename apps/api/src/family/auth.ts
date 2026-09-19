@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import { prisma } from '@anuva/database';
 import { FAMILY_SESSION_COOKIE_NAME, FAMILY_SESSION_TTL_DAYS } from './config.js';
 import { FamilyError } from './errors.js';
+import { requestedLanguage } from '../i18n/index.js';
 
 /**
  * Family sessions. Deliberately the same construction as the patient and doctor sessions — an
@@ -107,9 +108,16 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
     throw new FamilyError(403, 'family_sharing_stopped', 'Sharing has been turned off.');
   }
 
+  // The language rides along on the lastSeenAt write that happens anyway, so remembering it — for
+  // this member's pushes, which have no request to read it from — costs no extra query. Only an
+  // explicit header is stored; a client that sends none leaves the choice alone.
+  const language = requestedLanguage(req.headers);
   await prisma.$transaction([
     prisma.familySession.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } }),
-    prisma.familyMember.update({ where: { id: member.id }, data: { lastSeenAt: new Date() } }),
+    prisma.familyMember.update({
+      where: { id: member.id },
+      data: { lastSeenAt: new Date(), ...(language ? { preferredLanguage: language } : {}) },
+    }),
   ]);
 
   req.log = req.log?.child?.({ familyMemberId: member.id, userId: member.userId }) ?? req.log;

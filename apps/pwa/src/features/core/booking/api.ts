@@ -14,6 +14,7 @@ import type {
 } from '@anuva/shared';
 import { consultationDocumentFileName } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 export async function fetchConsultationSpecialists(): Promise<ConsultationSpecialistsResponse> {
   return apiFetch<ConsultationSpecialistsResponse>('/api/consultations/specialists');
@@ -82,7 +83,7 @@ export async function fetchConsultationRecordingUrl(consultationId: string): Pro
   });
 
   if (!response.ok) {
-    throw new Error('Recording is not available yet.');
+    throw new Error(i18n.t('errors.recordingUnavailable'));
   }
 
   return URL.createObjectURL(await response.blob());
@@ -117,7 +118,7 @@ export async function fetchConsultationDocumentFile(
   });
 
   if (!response.ok) {
-    throw new Error('This document could not be opened.');
+    throw new Error(i18n.t('errors.documentUnavailable'));
   }
 
   const blob = await response.blob();

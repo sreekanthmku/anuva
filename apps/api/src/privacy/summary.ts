@@ -1,3 +1,4 @@
+import { copy, fill } from '../i18n/index.js';
 // What we hold about her, counted.
 //
 // This is the DPDP §11 answer — a summary of the personal data held and why — and it is also what
@@ -67,76 +68,126 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
   return [
     {
       key: 'tracker',
-      label: 'Tracked health entries',
+      label: CATEGORY_TEXT.tracker.label,
       count: trackerCounts.reduce((sum, count) => sum + count, 0),
-      purpose: 'Your symptom trends, weekly reports and the nudges Anu sends you.',
+      purpose: CATEGORY_TEXT.tracker.purpose,
       retention: null,
     },
     {
       key: 'chat',
-      label: 'Messages with Anu',
+      label: CATEGORY_TEXT.chat.label,
       count: chatMessages + anuTurns,
-      purpose: 'Answering your questions, and keeping follow-ups on the same topic.',
+      purpose: CATEGORY_TEXT.chat.purpose,
       retention: null,
     },
     {
       key: 'recordings',
-      label: 'Consultation recordings',
+      label: CATEGORY_TEXT.recordings.label,
       count: recordings,
-      purpose: 'So you and your doctor can revisit what was said.',
+      purpose: CATEGORY_TEXT.recordings.purpose,
       retention: null,
     },
     {
       key: 'consultations',
-      label: 'Consultation records',
+      label: CATEGORY_TEXT.consultations.label,
       count: consultations,
-      purpose: 'The record of each consultation: when it happened and which doctor you saw.',
-      retention: `Kept ${CLINICAL_RECORD_RETENTION_YEARS} years, because a doctor is required to hold consultation records for that long.`,
+      purpose: CATEGORY_TEXT.consultations.purpose,
+      retention: fill(CATEGORY_TEXT.consultations.retention, { years: CLINICAL_RECORD_RETENTION_YEARS }),
     },
     {
       key: 'documents',
-      label: 'Prescriptions & diet plans',
+      label: CATEGORY_TEXT.documents.label,
       count: documents,
-      purpose: 'Documents your doctor shared with you after a consultation.',
-      retention: `Kept ${CLINICAL_RECORD_RETENTION_YEARS} years, for the same reason.`,
+      purpose: CATEGORY_TEXT.documents.purpose,
+      retention: fill(CATEGORY_TEXT.documents.retention, { years: CLINICAL_RECORD_RETENTION_YEARS }),
     },
     {
       key: 'assessments',
-      label: 'Assessments',
+      label: CATEGORY_TEXT.assessments.label,
       count: assessments + detailedAssessments,
-      purpose: 'Working out your stage, your score and which care path fits you.',
+      purpose: CATEGORY_TEXT.assessments.purpose,
       retention: null,
     },
     {
       key: 'questions',
-      label: 'Anonymous questions you asked',
+      label: CATEGORY_TEXT.questions.label,
       count: questions,
-      purpose: 'Getting an expert answer back to you without your name attached to it.',
+      purpose: CATEGORY_TEXT.questions.purpose,
       retention: null,
     },
     {
       key: 'support',
-      label: 'Support requests',
+      label: CATEGORY_TEXT.support.label,
       count: tickets,
-      purpose: 'Answering what you wrote to us.',
-      retention: 'Deleted 6 months after you open the request.',
+      purpose: CATEGORY_TEXT.support.purpose,
+      retention: CATEGORY_TEXT.support.retention,
     },
     {
       key: 'devices',
-      label: 'Devices signed in',
+      label: CATEGORY_TEXT.devices.label,
       count: devices + sessions,
-      purpose: 'Keeping you signed in, and delivering your notifications.',
+      purpose: CATEGORY_TEXT.devices.purpose,
       retention: null,
     },
     {
       key: 'family',
-      label: 'Family sharing',
+      label: CATEGORY_TEXT.family.label,
       // Members plus the record of what they did. Notes they sent are not counted, because they
       // were never stored — see family/messages.ts.
       count: familyMembers + familySupportActions,
-      purpose:
-        'Who you invited to support you, and when they checked in on you. Never what they wrote.',
-      retention: 'Deleted with your account. Disconnecting someone ends their access at once.',
+      purpose: CATEGORY_TEXT.family.purpose,
+      retention: CATEGORY_TEXT.family.retention,
     },
   ];
 }
+
+/**
+ * Each category's wording, localised on read (see `copy()`), keyed by the category's own key.
+ * `{{years}}` is filled with the statutory retention period.
+ */
+const CATEGORY_TEXT = copy('privacy.categories', {
+  tracker: {
+    label: 'Tracked health entries',
+    purpose: 'Your symptom trends, weekly reports and the nudges Anu sends you.',
+  },
+  chat: {
+    label: 'Messages with Anu',
+    purpose: 'Answering your questions, and keeping follow-ups on the same topic.',
+  },
+  recordings: {
+    label: 'Consultation recordings',
+    purpose: 'So you and your doctor can revisit what was said.',
+  },
+  consultations: {
+    label: 'Consultation records',
+    purpose: 'The record of each consultation: when it happened and which doctor you saw.',
+    retention: 'Kept {{years}} years, because a doctor is required to hold consultation records for that long.',
+  },
+  documents: {
+    label: 'Prescriptions & diet plans',
+    purpose: 'Documents your doctor shared with you after a consultation.',
+    retention: 'Kept {{years}} years, for the same reason.',
+  },
+  assessments: {
+    label: 'Assessments',
+    purpose: 'Working out your stage, your score and which care path fits you.',
+  },
+  questions: {
+    label: 'Anonymous questions you asked',
+    purpose: 'Getting an expert answer back to you without your name attached to it.',
+  },
+  support: {
+    label: 'Support requests',
+    purpose: 'Answering what you wrote to us.',
+    retention: 'Deleted 6 months after you open the request.',
+  },
+  devices: {
+    label: 'Devices signed in',
+    purpose: 'Keeping you signed in, and delivering your notifications.',
+  },
+  family: {
+    label: 'Family sharing',
+    purpose: 'Who you invited to support you, and when they checked in on you. Never what they wrote.',
+    retention: 'Deleted with your account. Disconnecting someone ends their access at once.',
+  },
+});

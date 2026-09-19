@@ -5,7 +5,6 @@ import i18n from '../../i18n';
 import { useNavigate } from 'react-router-dom';
 import {
   ERASURE_SCOPES,
-  erasureScopeLabel,
   type DataErasureScope,
   type PrivacySummaryResponse,
 } from '@anuva/shared';
@@ -114,7 +113,7 @@ export default function PrivacyRoute() {
 
     if (response.accountScheduled) {
       setNotice(
-        `Your account is scheduled for deletion on ${formatDate(response.request.scheduledFor)}. You can cancel any time before then.`,
+        i18n.t('privacy.accountScheduled', { date: formatDate(response.request.scheduledFor) }),
       );
       return;
     }
@@ -122,7 +121,10 @@ export default function PrivacyRoute() {
     const deleted = totalDeleted(response.request.itemCounts);
     setNotice(
       deleted > 0
-        ? `Deleted ${deleted} ${deleted === 1 ? 'item' : 'items'}. ${erasureScopeLabel(scope)}: done.`
+        ? i18n.t('privacy.deletedItems', {
+            count: deleted,
+            scope: i18n.t(`privacy.scopes.${scope}.label`),
+          })
         : i18n.t('privacy.nothingToDelete'),
     );
   }

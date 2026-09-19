@@ -1,4 +1,5 @@
 import type { ReportRing, ReportRingKey, SummaryPeriod } from '@anuva/shared';
+import i18n from '../../../i18n';
 import { RING_COLORS, RING_EMPTY_COLOR, gaugeBandColor } from '../ringColors';
 import { DELTA_TONE_COLOR, ringAriaLabel } from '../ringDisplay';
 import { RING_EMOJI } from '../summaryEmoji';
@@ -26,12 +27,10 @@ const ARROW: Record<ReportRing['deltaTone'], string> = {
  * `none` — no comparable history — deliberately renders nothing. A word there
  * would be a comparison we have not got.
  */
-const DELTA_WORD: Record<ReportRing['deltaTone'], string> = {
-  positive: 'Better',
-  attention: 'Worse',
-  neutral: 'Similar',
-  none: '',
-};
+/** `report.delta.<tone>`; `none` has no key on purpose and renders nothing. */
+function deltaWord(tone: ReportRing['deltaTone']): string {
+  return tone === 'none' ? '' : i18n.t(`report.delta.${tone}`);
+}
 
 /**
  * How many segments a score fills.
@@ -68,13 +67,15 @@ export function TrackerRow({
   const metric = RING_COLORS[ring.key];
   const filled = hasData ? filledSegments(ring.pct!) : 0;
   const label = ringAriaLabel(ring);
-  const word = DELTA_WORD[ring.deltaTone];
+  const word = deltaWord(ring.deltaTone);
   // Points only where a point delta means something: one day against a
   // trailing average is too noisy to quote, which is why the API's daily copy
   // has no number in it either.
   const points =
     period !== 'daily' && ring.deltaValue != null
-      ? `${ring.deltaValue > 0 ? '+' : ''}${Math.round(ring.deltaValue)} pts`
+      ? i18n.t('report.points', {
+          value: `${ring.deltaValue > 0 ? '+' : ''}${Math.round(ring.deltaValue)}`,
+        })
       : null;
 
   const inner = (
@@ -98,7 +99,7 @@ export function TrackerRow({
           className="mt-0.5 block truncate text-[11.5px] font-semibold leading-[1.2]"
           style={{ color: hasData ? bandColor : RING_EMPTY_COLOR, fontFamily: MULISH }}
         >
-          {hasData ? (ring.band ?? '—') : 'Not logged'}
+          {hasData ? (ring.band ?? '—') : i18n.t('report.notLogged')}
         </span>
       </span>
 
@@ -156,7 +157,7 @@ export function TrackerRow({
     <button
       type="button"
       onClick={() => onSelect(ring.key)}
-      aria-label={`${label}. See day by day`}
+      aria-label={i18n.t('charts.seeDayByDay', { label })}
       className="flex min-h-[56px] w-full items-center gap-3 py-2.5 text-left transition-opacity active:opacity-60"
     >
       {inner}

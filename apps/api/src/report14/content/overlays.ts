@@ -14,6 +14,7 @@
  * (section 14). A report's section order should not shift between versions.
  */
 
+import { copy } from '../../i18n/index.js';
 import type { OverlayId } from '../types.js';
 import type { RecommendationBlock } from './domains.js';
 
@@ -27,7 +28,8 @@ export interface OverlayBlock {
   anuNote: string;
 }
 
-export const OVERLAY_BLOCKS: Record<OverlayId, OverlayBlock> = {
+// Localised on read; translations must carry the same medical-advisor sign-off as the English.
+export const OVERLAY_BLOCKS: Record<OverlayId, OverlayBlock> = copy('report14.overlays', {
   GUT: {
     id: 'GUT',
     title: 'Gut Health',
@@ -112,7 +114,7 @@ export const OVERLAY_BLOCKS: Record<OverlayId, OverlayBlock> = {
     anuNote:
       "ANU includes a Family Awareness module that generates a personalised explainer you can share with your partner and family, written for people who are not going through perimenopause themselves. It translates your specific symptom profile into plain language, reducing the gap between what you are experiencing and what your family can understand. Access it from your ANU home screen under 'Share with Family.'",
   },
-};
+});
 
 /** Source-section order. Used for both resolution and rendering. */
 export const OVERLAY_ORDER: OverlayId[] = ['GUT', 'FAMILY'];

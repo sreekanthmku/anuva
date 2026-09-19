@@ -1,3 +1,4 @@
+import { copy, fill } from '../i18n/index.js';
 import cron from 'node-cron';
 import { prisma } from '@anuva/database';
 import { logger } from '../logger.js';
@@ -53,10 +54,14 @@ export async function sendDueSupportReminders(now = new Date()): Promise<number>
       continue;
     }
 
-    const her = member.user.name?.trim().split(/\s+/)[0] || 'her';
+    const name = member.user.name?.trim().split(/\s+/)[0];
+    // A builder, so the text is written in this member's own language (see sendToFamilyMember).
     sent += await sendToFamilyMember(
       member.id,
-      { title: 'A small thing today?', body: `You wanted a nudge to check in on ${her}.` },
+      () => ({
+        title: JOB_TEXT.reminderTitle,
+        body: fill(JOB_TEXT.reminderBody, { name: name || JOB_TEXT.herFallback }),
+      }),
       { url: '/' },
     );
   }
@@ -96,7 +101,11 @@ export async function sendPendingActionReminders(now = new Date()): Promise<numb
       data: { pendingActionKind: null, pendingActionAt: null },
     });
 
-    sent += await sendToFamilyMember(member.id, ACTION_PENDING_REMINDER, { url: '/' });
+    sent += await sendToFamilyMember(
+      member.id,
+      () => ({ title: ACTION_PENDING_REMINDER.title, body: ACTION_PENDING_REMINDER.body }),
+      { url: '/' },
+    );
   }
 
   if (pending.length > 0) {
@@ -121,13 +130,15 @@ export async function sendWeeklyLearnNudge(now = new Date()): Promise<number> {
     select: { id: true },
   });
 
-  const nudge = weeklyLearnNudge(now);
   let sent = 0;
 
   for (const member of members) {
     sent += await sendToFamilyMember(
       member.id,
-      { title: nudge.headline, body: nudge.body },
+      () => {
+        const nudge = weeklyLearnNudge(now);
+        return { title: nudge.headline, body: nudge.body };
+      },
       { url: '/learn' },
     );
   }
@@ -140,11 +151,18 @@ export async function sendWeeklyLearnNudge(now = new Date()): Promise<number> {
 }
 
 /** What the lock screen says, per layer. Deliberately contentless — see below. */
-const CADENCE_TITLES: Record<FamilyNudgeLayer, string> = {
+const CADENCE_TITLES: Record<FamilyNudgeLayer, string> = copy('family.cadenceTitles', {
   understand: 'Something worth knowing today',
   connect: 'A moment with her',
   act: 'One small thing today',
-};
+});
+
+const JOB_TEXT = copy('family.jobText', {
+  reminderTitle: 'A small thing today?',
+  reminderBody: 'You wanted a nudge to check in on {{name}}.',
+  herFallback: 'her',
+  cadenceBody: 'Open Anuva for today’s nudge.',
+});
 
 /**
  * One layer of the weekly cadence, for everyone with a device registered.
@@ -205,7 +223,7 @@ export async function sendCadenceNudge(
 
     sent += await sendToFamilyMember(
       member.id,
-      { title: CADENCE_TITLES[layer], body: 'Open Anuva for today’s nudge.' },
+      () => ({ title: CADENCE_TITLES[layer], body: JOB_TEXT.cadenceBody }),
       { url: '/', nudgeLayer: layer },
     );
   }

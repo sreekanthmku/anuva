@@ -1,3 +1,5 @@
+import { copy, fill, withLanguage } from '../i18n/index.js';
+import { languageForUser } from '../i18n/recipients.js';
 import { prisma } from '@anuva/database';
 import type { FamilyMessageResponse } from '@anuva/shared';
 import { sendPushToAllTokens } from '../fcm.js';
@@ -24,6 +26,14 @@ import { rateLimit } from './rateLimit.js';
  *     when she taps through. A fragment is used rather than a query string for the same reason the
  *     invite token uses one: fragments never reach a server, so the note stays out of access logs.
  */
+
+const MESSAGE_TEXT = copy('family.messageText', {
+  noDevice:
+    'Saved as a check-in. She has no device set up for notifications, so she will not see the note itself.',
+  pushTitle: '{{name}} sent you a message',
+  sent: '✓ Sent. She will see it on her phone.',
+  notAccepted: 'Saved as a check-in, but her phone did not accept the notification.',
+});
 
 /** Enough for a few notes a day, not enough to be used as a channel for pestering her. */
 const MESSAGE_LIMIT = 6;
@@ -82,24 +92,26 @@ export async function sendFamilyMessage(input: {
   if (tokens.length === 0) {
     return {
       delivered: false,
-      toast: 'Saved as a check-in. She has no device set up for notifications, so she will not see the note itself.',
+      toast: MESSAGE_TEXT.noDevice,
     };
   }
 
   // encodeURIComponent, then into the fragment. The app decodes it and strips the hash on read.
   const deepLink = `/home#familyMessage=${encodeURIComponent(input.text)}&familyFrom=${encodeURIComponent(first)}`;
 
+  // The title is on her lock screen, so it is worded in her language; the note itself goes as written.
+  const title = withLanguage(await languageForUser(input.userId), () =>
+    fill(MESSAGE_TEXT.pushTitle, { name: first }),
+  );
+
   const { successCount } = await sendPushToAllTokens(
     tokens,
-    { title: `${first} sent you a message`, body: input.text },
+    { title, body: input.text },
     { url: deepLink, familyMessage: input.text, familyFrom: first },
   );
 
   // Counts and codes only — never the text. Logging it would be storing it.
   return successCount > 0
-    ? { delivered: true, toast: '✓ Sent. She will see it on her phone.' }
-    : {
-        delivered: false,
-        toast: 'Saved as a check-in, but her phone did not accept the notification.',
-      };
+    ? { delivered: true, toast: MESSAGE_TEXT.sent }
+    : { delivered: false, toast: MESSAGE_TEXT.notAccepted };
 }

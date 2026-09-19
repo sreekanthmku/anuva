@@ -6,7 +6,7 @@ import type {
   FamilyRelationship,
 } from '@anuva/shared';
 import { FamilyError } from './errors.js';
-import { FAMILY_SHARED_SCOPES } from './content.js';
+import { familySharedScopes } from './content.js';
 import { createFamilySession } from './auth.js';
 import { inviteTokenHash, parseInviteToken } from './tokens.js';
 
@@ -186,7 +186,12 @@ export async function requestJoinOtp(
       ),
     );
     if (retryIn > 0) {
-      throw new FamilyError(429, 'otp_cooldown', `Please wait ${retryIn} seconds before asking for another code.`);
+      throw new FamilyError(
+        429,
+        'otp_cooldown',
+        `Please wait ${retryIn} seconds before asking for another code.`,
+        { key: 'errors.family.codeCooldown', vars: { count: retryIn } },
+      );
     }
   }
 
@@ -322,7 +327,7 @@ export async function verifyJoinOtp(
         relationship: member.relationship,
       },
       patientFirstName: firstNameOf(invite.user.name),
-      sharedScopes: [...FAMILY_SHARED_SCOPES],
+      sharedScopes: familySharedScopes(),
     },
     sessionToken: session.token,
     sessionExpiresAt: session.expiresAt,
@@ -341,6 +346,6 @@ export function familyMeBody(identity: {
       relationship: identity.relationship,
     },
     patientFirstName: firstNameOf(identity.patientName),
-    sharedScopes: [...FAMILY_SHARED_SCOPES],
+    sharedScopes: familySharedScopes(),
   };
 }

@@ -1,0 +1,2044 @@
+{
+  "errors": {
+    "enterAValidPhoneNumber": "Enter a valid phone number.",
+    "enterAValidIndianPhoneNumber": "Enter a valid Indian phone number.",
+    "invalidDate": "Invalid date.",
+    "userNotFound": "User not found.",
+    "thisAccountHasBeenDeleted": "This account has been deleted.",
+    "2factorIsNotConfiguredOnThe": "2Factor is not configured on the server.",
+    "unableToReachTheOtpProvider": "Unable to reach the OTP provider right now.",
+    "youAreNotSignedIn": "You are not signed in.",
+    "yourSessionHasExpiredPleaseSign": "Your session has expired. Please sign in again.",
+    "pushbroadcastsecretIsNotConfigured": "PUSH_BROADCAST_SECRET is not configured.",
+    "invalidOrMissingSecretQueryParameter": "Invalid or missing secret query parameter.",
+    "signInToContinue": "Sign in to continue.",
+    "livekitIsNotConfiguredOnThe": "LiveKit is not configured on the server.",
+    "consultationNotFound": "Consultation not found.",
+    "thisConsultationCannotBeCalled": "This consultation cannot be called.",
+    "thisConsultationCallHasAlreadyEnded": "This consultation call has already ended.",
+    "youAlreadyHaveAnAppointmentAt": "You already have an appointment at this time.",
+    "thisConsultationCanNoLongerBe": "This consultation can no longer be cancelled.",
+    "thisConsultationCanNoLongerBe2": "This consultation can no longer be rescheduled.",
+    "slotNotFound": "Slot not found.",
+    "thisIsAlreadyYourBookedSlot": "This is already your booked slot.",
+    "bookingIsNotAvailableForThis": "Booking is not available for this specialist yet.",
+    "thisSlotHasAlreadyBeenBooked": "This slot has already been booked.",
+    "thisSlotIsNoLongerAvailable": "This slot is no longer available.",
+    "noRecordingIsAvailableForThis": "No recording is available for this consultation.",
+    "recordingStorageIsNotConfiguredOn": "Recording storage is not configured on this server.",
+    "theRecordingFileIsMissingFrom": "The recording file is missing from storage.",
+    "thisDocumentIsStoredOutsideThe": "This document is stored outside the configured directory.",
+    "theDocumentFileIsMissingFrom": "The document file is missing from storage.",
+    "documentNotFound": "Document not found.",
+    "attachAFileToUpload": "Attach a file to upload.",
+    "thisConsultationWasCancelled": "This consultation was cancelled.",
+    "thatFileIsNotAReadable": "That file is not a readable image or PDF.",
+    "specialistNotFound": "Specialist not found.",
+    "tooManyFailedSigninAttemptsTry": "Too many failed sign-in attempts. Try again later.",
+    "incorrectUsernameOrPassword": "Incorrect username or password.",
+    "currentPasswordIsIncorrect": "Current password is incorrect.",
+    "chooseAPasswordYouHaveNot": "Choose a password you have not used here before.",
+    "provideFcmtokenOrDeviceid": "Provide fcmToken or deviceId.",
+    "onlyConfirmedConsultationsCanBeStarted": "Only confirmed consultations can be started.",
+    "callHasNotBeenStartedYet": "Call has not been started yet.",
+    "recordingConsentIsRequiredBeforeJoining": "Recording consent is required before joining.",
+    "slotsCanOnlyBeCreatedFor": "Slots can only be created for doctor specialists.",
+    "eachSlotMustEndAfterIt": "Each slot must end after it starts.",
+    "slotsMustBeInTheFuture": "Slots must be in the future.",
+    "slotsInThisRequestOverlapEach": "Slots in this request overlap each other.",
+    "atLeastOneSlotIsRequired": "At least one slot is required.",
+    "bookedSlotsCannotBeDeleted": "Booked slots cannot be deleted.",
+    "pastSlotsCannotBeDeleted": "Past slots cannot be deleted.",
+    "noAccountFoundForThisPhone": "No account found for this phone number.",
+    "anAccountAlreadyExistsForThis": "An account already exists for this phone number.",
+    "tooManyOtpRequestsPleaseWait": "Too many OTP requests. Please wait a few minutes and try again.",
+    "otpChallengeNotFound": "OTP challenge not found.",
+    "thisOtpHasAlreadyBeenUsed": "This OTP has already been used. Please request a new one.",
+    "thisOtpHasExpiredPleaseRequest": "This OTP has expired. Please request a new one.",
+    "tooManyIncorrectOtpAttemptsPlease": "Too many incorrect OTP attempts. Please request a new OTP.",
+    "completeOnboardingBeforeStartingYourTrial": "Complete onboarding before starting your trial.",
+    "yourFreeTrialHasAlreadyEnded": "Your free trial has already ended. Please choose a plan to continue.",
+    "completeOnboardingBeforeActivatingAccess": "Complete onboarding before activating access.",
+    "anuChatIsNotConfigured": "ANU chat is not configured.",
+    "periodStartDateCannotBeIn": "Period start date cannot be in the future.",
+    "periodLogNotFound": "Period log not found.",
+    "onlyYourMostRecentPeriodCan": "Only your most recent period can be changed.",
+    "periodEndDateCannotBeIn": "Period end date cannot be in the future.",
+    "periodEndDateCannotBeBefore": "Period end date cannot be before its start date.",
+    "aPeriodMustCoverAtLeast": "A period must cover at least one day.",
+    "youAlreadyHaveAPeriodRecorded": "You already have a period recorded on that day.",
+    "onlyYourMostRecentPeriodCan2": "Only your most recent period can be removed.",
+    "noRemovedPeriodToRestore": "No removed period to restore.",
+    "thatPeriodOverlapsOneYouHave": "That period overlaps one you have logged since.",
+    "flowCanOnlyBeLoggedFor": "Flow can only be logged for a day inside a logged period.",
+    "jointDiscomfortCannotBeLoggedFor": "Joint discomfort cannot be logged for a future day.",
+    "tellUsHowMuchItIs": "Tell us how much it is affecting your day.",
+    "answersMustBeWrittenFromA": "Answers must be written from a specialist’s own portal key.",
+    "invalidOrMissingDoctorAccessKey": "Invalid or missing doctor access key.",
+    "questionNotFound": "Question not found.",
+    "couldNotOpenYourRequestPlease": "Could not open your request. Please try again.",
+    "noInsightAvailable": "No insight available.",
+    "articleNotFound": "Article not found.",
+    "aDeletionIsAlreadyScheduledOn": "A deletion is already scheduled on this account. Cancel it first if you want to change it.",
+    "youHaveAnUpcomingConsultationPlease": "You have an upcoming consultation. Please cancel it first, then delete your account.",
+    "thatRequestCouldNotBeFound": "That request could not be found.",
+    "thatDeletionIsAlreadyBeingProcessed": "That deletion is already being processed and cannot be cancelled.",
+    "thatDownloadLinkIsIncomplete": "That download link is incomplete.",
+    "thatDownloadCouldNotBeFound": "That download could not be found.",
+    "thatDownloadHasAlreadyBeenUsed": "That download has already been used or has expired.",
+    "thatDownloadHasExpiredPleaseAsk": "That download has expired. Please ask for your data again.",
+    "thatDownloadIsNoLongerAvailable": "That download is no longer available.",
+    "someRequiredQuestionsAreStillUnanswered": "Some required questions are still unanswered.",
+    "validationFailed": "Validation failed",
+    "thatRequestWasTooLargeTry": "That request was too large. Try again with less data.",
+    "thatFileIsLargerThan10mb": "That file is larger than 10MB. Retake the photo or compress the PDF.",
+    "internalServerError": "Internal server error",
+    "otpWaitSeconds_one": "Please wait {{count}} second before requesting another OTP.",
+    "otpWaitSeconds_other": "Please wait {{count}} seconds before requesting another OTP.",
+    "periodTooLong": "A period cannot run longer than {{count}} days.",
+    "family": {
+      "linkNotValid": "This link is not valid.",
+      "linkNoLongerActive": "This link is no longer active.",
+      "linkClaimed": "Someone has already joined with this link.",
+      "linkExpired": "This link has expired. Ask her for a new one.",
+      "tooManyCodes": "Too many codes requested. Try again in a few minutes.",
+      "codeRequestNotFound": "That code request could not be found.",
+      "codeUsed": "That code has already been used. Ask for a new one.",
+      "codeExpired": "That code has expired. Ask for a new one.",
+      "tooManyIncorrectCodes": "Too many incorrect codes. Ask for a new one.",
+      "noMembership": "We could not find an active connection for this number. Ask her to send you a new invite link.",
+      "accountUnavailable": "This account is no longer available.",
+      "inviteGone": "That invite no longer exists.",
+      "inviteStale": "That link is no longer valid. Get a new one.",
+      "memberNotConnected": "That family member is not connected.",
+      "nothingToConfirm": "Nothing is waiting to be confirmed.",
+      "thanksRateLimited": "That is plenty of thank-yous for now. Try again in a little while.",
+      "messagesRateLimited": "You have sent a few messages already. Give it an hour before the next one.",
+      "tooManyAttempts": "Too many attempts. Try again in a minute.",
+      "articleUnavailable": "That article is not available.",
+      "notSignedIn": "You are not signed in.",
+      "sessionExpired": "Your session has expired. Open your invite link again.",
+      "accessRevoked": "You no longer have access to this.",
+      "sharingStopped": "Sharing has been turned off.",
+      "requestNotCompleted": "Request could not be completed.",
+      "somethingWentWrong": "Something went wrong. Please try again.",
+      "codeCooldown_one": "Please wait {{count}} second before asking for another code.",
+      "codeCooldown_other": "Please wait {{count}} seconds before asking for another code.",
+      "memberSlotsFull": "You can have {{count}} people connected at a time. Remove someone first to invite anyone else."
+    },
+    "dayInsidePeriod": "That day falls inside your period starting {{date}}. Change that period’s dates instead.",
+    "datesOverlapPeriod": "Those dates overlap your period starting {{date}}.",
+    "uploadRejected": "Upload rejected: {{reason}}",
+    "questionsDailyLimit_one": "You can ask up to {{count}} question a day. Please come back tomorrow.",
+    "questionsDailyLimit_other": "You can ask up to {{count}} questions a day. Please come back tomorrow.",
+    "ticketsDailyLimit_one": "You can open up to {{count}} request a day. We are already looking at the ones you sent.",
+    "ticketsDailyLimit_other": "You can open up to {{count}} requests a day. We are already looking at the ones you sent.",
+    "exportCooldown_one": "You can download your data once every {{count}} hour. Please try again later.",
+    "exportCooldown_other": "You can download your data once every {{count}} hours. Please try again later.",
+    "report14": {
+      "ASSESSMENT_INCOMPLETE": "Complete your detailed health assessment to unlock your report.",
+      "MENSTRUAL_HISTORY_MISSING": "Your report needs your menstrual history. Complete that section of your assessment to continue.",
+      "GENERATION_FAILED": "Your report could not be generated. Please try again."
+    }
+  },
+  "anu": {
+    "redFlags": {
+      "mental-health-urgent": {
+        "response": "You deserve immediate support, and you should not have to sit with this alone. Please reach out right now to someone who can help. Tele-MANAS on 14416 is free and available 24x7, and iCall (9152987821) and AASRA (9820466726) are there too. If you feel unsafe at this moment, please contact a trusted person near you or go to the nearest emergency department."
+      },
+      "neurological-urgent": {
+        "response": "These can be serious neurological warning signs. Please seek emergency medical care immediately."
+      },
+      "heart-urgent": {
+        "response": "These symptoms need urgent medical attention. Please seek emergency care or contact a doctor immediately."
+      },
+      "bleeding-urgent": {
+        "response": "Heavy bleeding with weakness or dizziness should be checked urgently. Please seek medical care."
+      },
+      "bleeding-prompt-medical-review": {
+        "response": "This needs medical evaluation. Please book a gynecologist consultation promptly; do not assume it is normal perimenopause."
+      },
+      "breast-prompt-medical-review": {
+        "response": "New breast changes should be clinically evaluated. Please book a gynecologist or breast specialist consultation."
+      },
+      "urinary-same-day-urgent": {
+        "response": "This may need medical evaluation quickly. Please consult a doctor rather than self-medicating."
+      },
+      "digestive-prompt-medical-review": {
+        "response": "Persistent or severe digestive symptoms should not be ignored. Please consult a doctor."
+      },
+      "infection-prompt-urgent-depending-severity": {
+        "response": "These symptoms can indicate infection or other gynecological issues. Please seek medical evaluation."
+      }
+    },
+    "chips": {
+      "why": "Why does {{symptom}} happen?",
+      "triggers": "What triggers or worsens {{symptom}}?",
+      "today": "What can I do today?",
+      "doctor": "When should I see a doctor?",
+      "log": "Log {{symptom}}"
+    },
+    "symptoms": {
+      "S01": "Irregular periods",
+      "S02": "Heavy periods",
+      "S03": "Spotting or bleeding between periods",
+      "S04": "Hot flashes",
+      "S05": "Night sweats",
+      "S06": "Sleep disturbance / insomnia",
+      "S07": "Fatigue and low energy",
+      "S08": "Mood swings",
+      "S09": "Irritability / anger bursts",
+      "S10": "Anxiety / panic feeling",
+      "S11": "Low mood / depression",
+      "S12": "Brain fog",
+      "S13": "Memory lapses / word recall",
+      "S14": "Headaches / migraines",
+      "S15": "Weight gain / belly fat",
+      "S16": "Bloating",
+      "S17": "Constipation / bowel changes",
+      "S18": "Breast tenderness",
+      "S19": "Low libido",
+      "S20": "Vaginal dryness / itching",
+      "S21": "Pain during sex",
+      "S22": "Urinary urgency / frequent urination",
+      "S23": "Recurrent UTIs",
+      "S24": "Urinary leakage / incontinence",
+      "S25": "Heart palpitations",
+      "S26": "Dizziness / vertigo",
+      "S27": "Joint pain",
+      "S28": "Muscle aches / cramps",
+      "S29": "Tingling / numbness",
+      "S30": "Skin dryness / itching",
+      "S31": "Acne / skin changes",
+      "S32": "Hair thinning / hair loss",
+      "S33": "Brittle nails",
+      "S34": "Dry eyes",
+      "S35": "Mouth burning / dry mouth",
+      "S36": "Sensitive teeth / bleeding gums",
+      "S37": "Tinnitus / ringing in ears",
+      "S38": "Changes in taste or smell",
+      "S39": "Cold flashes / chills",
+      "S40": "Body odour / increased sweating"
+    }
+  },
+  "specialists": {
+    "kekin-gala": {
+      "subtitle": "Obstetrician · Gynecologist · Fertility Specialist · Laparoscopic Surgeon",
+      "tag": "Clinical",
+      "role": "Obstetrician | Gynecologist | Fertility Specialist | Laparoscopic Surgeon",
+      "specialization": "Highly experienced in advanced gynecological treatments and patient-focused care, with expertise in fertility treatment, high-risk pregnancy management, and laparoscopic surgeries.",
+      "summary": "Combines modern medical techniques with compassionate care to ensure personalized treatment and a high standard of healthcare. Also a speaker and faculty member at national and international gynecological conferences.",
+      "experience": "Over a decade of medical experience"
+    },
+    "rizwana-sayed": {
+      "subtitle": "MD, DGO, DFP",
+      "tag": "Gynecologist",
+      "role": "Director of CARNATION Medical Centre, Juhu, Mumbai",
+      "specialization": "Practicing obstetrician and gynecologist for more than 18 years, with international experience and special interest in gynec endoscopy and sonology.",
+      "summary": "Organised cervical cancer awareness, adolescent health, and menopause care campaigns. She is also a keen academician, faculty at regional and national conferences, a consultant doctor on WIN TV Channel, and founder-trustee of Kidhmat Foundation.",
+      "experience": "18+ years"
+    },
+    "jai-bapat": {
+      "subtitle": "Counseling Psychologist · 13y",
+      "tag": "Therapy",
+      "role": "Counseling Psychologist",
+      "specialization": "Trained in RECBT Therapy from Albert Ellis Institute (NY).",
+      "summary": "Has been working in the field of mental health for the last 13 years and has helped individuals navigate emotions and function better.",
+      "experience": "13 years"
+    },
+    "jigna-shah": {
+      "subtitle": "Menopause coach · Clinical Nutritionist (RD)",
+      "tag": "Recommended",
+      "role": "Menopause coach & Clinical Nutritionist (RD)",
+      "specialization": "Specialized in Metabolic disorders (Diabetes, Cardiac, PCOD, Thyroid, Hypertension)",
+      "experience": "15 years"
+    }
+  },
+  "family": {
+    "activityPhrases": {
+      "message": "messaged you",
+      "call": "called you",
+      "flowers": "sent you flowers 🌻",
+      "chocolates": "sent you chocolates 🍫"
+    },
+    "activityLines": {
+      "message": "Sent you a message",
+      "call": "Called you",
+      "flowers": "Sent you flowers",
+      "chocolates": "Sent you chocolates"
+    },
+    "activityText": {
+      "someone": "Someone",
+      "checkedIn": "{{names}} checked in on you",
+      "oneActor": "{{name}} {{actions}} today.",
+      "manyActors": "{{count}} people thought of you today.",
+      "familyWeek": "Your family has shown up {{days}} this week.",
+      "memberWeek": "{{name}} has shown up {{days}} this week.",
+      "once": "once",
+      "days": "{{count}} days"
+    },
+    "articleReferences": {
+      "who-menopause": "WHO: Menopause",
+      "nhs-symptoms": "NHS: Symptoms of menopause and perimenopause",
+      "nhs-self-help": "NHS: Things you can do to help menopause symptoms",
+      "nhs-tiredness": "NHS: Tiredness and fatigue",
+      "nhs-joint-pain": "NHS: Joint pain",
+      "nhs-heavy-periods": "NHS: Heavy periods",
+      "nhs-postmenopausal-bleeding": "NHS: Postmenopausal bleeding",
+      "nhs-vaginal-dryness": "NHS: Vaginal dryness",
+      "nhs-stroke": "NHS: Symptoms of a stroke",
+      "nhs-urgent-mental-health": "NHS: Where to get urgent help for mental health",
+      "mha-erss": "Ministry of Home Affairs: ERSS (112)"
+    },
+    "articleText": {
+      "editorialSource": "Original family-support copy. No medical claim intended.",
+      "footer": "General information, not a diagnosis. A qualified clinician can help with symptoms that concern you. This app is not an emergency service.",
+      "actionLabel": "What you can do",
+      "sayingLabel": "Try saying",
+      "sourcesLabel": "Sources"
+    },
+    "articleSections": {
+      "change": "Understanding the change",
+      "together": "Supporting each other",
+      "boundaries": "Respect, privacy and care"
+    },
+    "articleAudiences": {
+      "everyone": "Partners and teens",
+      "teens": "Teens only",
+      "partners": "Adult partners only"
+    },
+    "articles": {
+      "perimenopause-and-hormones": {
+        "title": "Perimenopause and hormones",
+        "teaser": "Understand the change without making assumptions.",
+        "body": {
+          "0": "Perimenopause is the transition towards menopause, when hormone levels change and periods may become less predictable. Natural menopause is usually identified after 12 months without a period, when there is no other cause.",
+          "1": "Experiences differ: some women have few symptoms; others find daily life harder. Her experience deserves to be heard, rather than compared with someone else’s."
+        },
+        "partnerAction": "Ask what she has noticed and what she wants you to understand. Let her decide how much to share.",
+        "teenAction": "You can learn about this stage without asking Mum for private details. You did not cause these changes.",
+        "saying": "I may not understand everything yet, but I want to learn."
+      },
+      "sleep-and-restless-nights": {
+        "title": "Sleep and restless nights",
+        "teaser": "Being in bed does not always mean getting rest.",
+        "body": {
+          "0": "Difficulty falling asleep or staying asleep can happen during this transition. A long night in bed may still include many interruptions. The next morning, patience and concentration can feel harder to find.",
+          "1": "Protecting rest is a practical way to show care, while ongoing sleep difficulties deserve professional attention."
+        },
+        "partnerAction": "Agree on a comfortable bedroom temperature and take responsibility for one morning task after a difficult night.",
+        "teenAction": "Keep late-night noise low and organise your school or college things yourself.",
+        "saying": "Would a quieter evening or help with the morning routine make things easier?"
+      },
+      "low-energy-and-fatigue": {
+        "title": "Low energy and fatigue",
+        "teaser": "Tiredness is not a measure of effort.",
+        "body": {
+          "0": "Fatigue can be linked to poor sleep, stress or hormonal changes, but other causes include anaemia, thyroid problems and sleep apnoea. Avoid deciding that it is “just menopause” or laziness.",
+          "1": "If tiredness persists for weeks or affects everyday life, encourage a medical appointment. She should not have to prove she is exhausted before getting help."
+        },
+        "partnerAction": "Take over a complete task, such as planning and preparing dinner, rather than waiting for detailed instructions.",
+        "teenAction": "Choose one manageable responsibility, such as clearing your dishes, without giving up your own rest or studies.",
+        "saying": "I can take care of dinner tonight. You don’t need to supervise."
+      },
+      "brain-fog-and-forgetfulness": {
+        "title": "Brain fog and forgetfulness",
+        "teaser": "A forgotten word does not erase her ability.",
+        "body": {
+          "0": "Some women notice difficulty concentrating or remembering things during perimenopause, and poor sleep may make this worse. Give her time to finish a thought instead of testing her memory, teasing her or taking over.",
+          "1": "If changes persist, worsen or interfere with daily life, support a medical review. Sudden confusion or new speech difficulty needs urgent medical help; it should not be labelled brain fog."
+        },
+        "partnerAction": "Offer a shared calendar or written reminder only if she finds it useful.",
+        "teenAction": "Give one piece of information at a time and repeat it kindly if asked.",
+        "saying": "Take your time. Would you like me to write that down?"
+      },
+      "mood-changes-and-emotions": {
+        "title": "Mood changes and emotions",
+        "teaser": "Listen to the feeling, not just the tone.",
+        "body": {
+          "0": "Mood changes can happen during perimenopause, and tiredness may make emotions harder to manage. That does not mean every concern is caused by hormones.",
+          "1": "A complaint about feeling unsupported may point to a real problem that needs attention. Listen to what is being said. Everyone in the family still deserves respectful treatment."
+        },
+        "partnerAction": "Ask about the concern itself before offering an explanation. Acknowledge your part if something needs to change.",
+        "teenAction": "You are allowed to say a conversation feels hurtful and take a break. You are not responsible for fixing Mum’s mood.",
+        "saying": "I hear that you’re upset. What would you like me to understand?"
+      },
+      "hot-flashes-and-night-sweats": {
+        "title": "Hot flashes and night sweats",
+        "teaser": "A little practical comfort can mean a lot.",
+        "body": {
+          "0": "A hot flash is a sudden wave of heat that may come with sweating. When this happens at night, it can interrupt sleep.",
+          "1": "Ask what feels comfortable: a fan, a cooler room or a drink may help. Do not make jokes, announce it to others or insist she must feel the same temperature as you."
+        },
+        "partnerAction": "Keep an extra sheet or towel available if she wants one, and agree on bedding that works for both of you.",
+        "teenAction": "Offer water or help adjust the fan, then let Mum decide whether she wants company.",
+        "saying": "Would you like the fan on, some water, or a little space?"
+      },
+      "stress-worry-and-anxiety": {
+        "title": "Stress, worry and anxiety",
+        "teaser": "A calm response starts with taking her seriously.",
+        "body": {
+          "0": "Anxiety can occur around menopause, but work, relationships and other health concerns may also contribute. Saying “stop overthinking” rarely opens a helpful conversation.",
+          "1": "Ask what feels difficult and avoid adding pressure to explain everything immediately. When worry is persistent or disrupts ordinary activities, encourage professional support rather than expecting the family to manage it alone."
+        },
+        "partnerAction": "Offer to sit with her or help with one specific source of pressure. Ask before suggesting a relaxation exercise.",
+        "teenAction": "You can be kind without becoming Mum’s counsellor. Tell a trusted adult if you feel worried or overwhelmed.",
+        "saying": "Would you like company, a quieter space, or help finding support?"
+      },
+      "joint-pain-and-stiffness": {
+        "title": "Joint pain and stiffness",
+        "teaser": "Pain deserves care, even when it is invisible.",
+        "body": {
+          "0": "Joint aches may occur during perimenopause, but injury and conditions such as arthritis can also cause pain. Avoid assuming all stiffness is hormonal.",
+          "1": "Pain that keeps returning, affects sleep or limits activity deserves medical advice. A hot, swollen joint, especially with fever or feeling unwell, needs urgent assessment."
+        },
+        "partnerAction": "Offer help with a task that hurts and support movement at her comfortable pace, without pushing through pain.",
+        "teenAction": "Carry a manageable bag or help with a small chore if asked. Leave medicines and treatment decisions to adults and clinicians.",
+        "saying": "Which part of today feels physically difficult? I can help with that."
+      },
+      "changing-periods": {
+        "title": "Changing periods",
+        "teaser": "Understand the change while respecting privacy.",
+        "body": {
+          "0": "Periods can become less predictable during perimenopause. Bleeding that is unusually heavy, lasts longer than expected or occurs between periods needs medical discussion. Bleeding after menopause needs checking even if it happens only once.",
+          "1": "Support should make things easier, not turn her cycle into a family conversation she has not agreed to."
+        },
+        "partnerAction": "Offer to buy her preferred period products or help arrange an appointment if she wants. Do not ask for access to her cycle logs.",
+        "teenAction": "Treat period products as ordinary essentials. Avoid jokes about leaks, stains or bathroom breaks.",
+        "saying": "Would you like me to pick anything up or help with something practical?"
+      },
+      "body-changes-and-confidence": {
+        "title": "Body changes and confidence",
+        "teaser": "She deserves comfort without comments on her size.",
+        "body": {
+          "0": "Body shape may change around menopause. Whether or not she talks about it, avoid making weight, food or appearance the centre of family attention. Uninvited diet advice can feel like criticism.",
+          "1": "Ask what helps her feel comfortable and confident, and remember to notice her humour, skills and interests too."
+        },
+        "partnerAction": "Invite her to an activity you can enjoy together without presenting it as a weight-loss project. Respect a no.",
+        "teenAction": "Avoid jokes about Mum’s body or comparing her with older photos. Compliment something you appreciate about her as a person.",
+        "saying": "I love spending time with you. What would feel good to do together?"
+      },
+      "listen-before-trying-to-solve": {
+        "title": "Listen before trying to solve",
+        "teaser": "Sometimes being heard is the help she wants.",
+        "body": {
+          "0": "When someone shares a difficult day, advice can arrive before understanding. Start by letting her finish. Reflect back what you heard, then ask what kind of response she wants.",
+          "1": "Listening does not require agreeing with everything or knowing the perfect answer. It means making room for her experience without immediately correcting it."
+        },
+        "partnerAction": "Put your phone aside and ask permission before giving advice or suggesting a solution.",
+        "teenAction": "You can listen for a short time and still say when you need to return to homework or rest.",
+        "saying": "Would you like me to listen, help with something, or give you some space?"
+      },
+      "share-the-mental-load": {
+        "title": "Share the mental load",
+        "teaser": "Remembering the task is part of doing it.",
+        "body": {
+          "0": "Household work includes noticing what is needed, planning it and following through. If she must remind everyone repeatedly, she is still managing the task.",
+          "1": "Agree on responsibilities that each person can own from start to finish. Sharing the load should be an ordinary family habit, not something she has to earn by having a difficult day."
+        },
+        "partnerAction": "Own a recurring task, including planning and follow-up, such as grocery shopping or arranging a repair.",
+        "teenAction": "Take charge of an age-appropriate task, such as your school bag or putting away your laundry. You do not need to run the household.",
+        "saying": "I’ll handle this from start to finish. You don’t need to remind me."
+      },
+      "give-space-and-stay-connected": {
+        "title": "Give space and stay connected",
+        "teaser": "A quiet moment can coexist with closeness.",
+        "body": {
+          "0": "Wanting time alone does not automatically mean someone is angry or rejecting you. Ask what she needs instead of guessing.",
+          "1": "A short pause can be easier when everyone knows whether and when to reconnect. Space should be a choice, not a punishment or a reason to ignore each other indefinitely."
+        },
+        "partnerAction": "Ask whether she would like company or privacy, then agree on a suitable time to check in if she wants that.",
+        "teenAction": "Let Mum know you are available, then continue your own activities. You do not need to keep checking whether she is okay.",
+        "saying": "Would you prefer some quiet time? Shall we catch up after dinner?"
+      },
+      "handle-disagreements-with-care": {
+        "title": "Handle disagreements with care",
+        "teaser": "Understanding and boundaries belong together.",
+        "body": {
+          "0": "Disagreements still need to be addressed. Avoid “you’re hormonal” or “you always overreact”; these phrases dismiss the issue. Talk about one specific event and what each person needs next.",
+          "1": "If the conversation becomes heated, pause and return when it feels safe and calmer. Symptoms never excuse threats, humiliation or violence."
+        },
+        "partnerAction": "Acknowledge your own behaviour and agree on one practical change rather than trying to win the argument.",
+        "teenAction": "You do not have to mediate adult disagreements. Step away if you feel unsafe and contact a trusted adult or emergency help if there is danger.",
+        "saying": "I want to work this out, but let’s pause until we can speak respectfully."
+      },
+      "supporting-mum-while-being-a-teen": {
+        "title": "Supporting Mum while being a teen",
+        "teaser": "You can care without carrying everything.",
+        "body": {
+          "0": "If Mum seems tired, distracted or different, it is okay to have questions. You did not cause her symptoms and you are not responsible for making them disappear.",
+          "1": "Small acts of kindness can help, but your schoolwork, friendships, sleep and feelings matter too. You should not be expected to manage medicines, monitor symptoms or keep adult worries secret."
+        },
+        "teenAction": "Choose one small, manageable way to help. If things feel too heavy, talk to another parent, a relative, a teacher or a school counsellor. Ask for help immediately if you feel unsafe.",
+        "saying": "I care about you, Mum. I can help with this, but I need time for myself too."
+      },
+      "privacy-consent-and-trust": {
+        "title": "Privacy, consent and trust",
+        "teaser": "Being family does not mean access to everything.",
+        "body": {
+          "0": "Supporting someone does not give you automatic access to their health information. She decides what to share, with whom and when.",
+          "1": "A quiet day or an unanswered question is not permission to check her phone or tracker. Respecting privacy helps make family support feel safe."
+        },
+        "partnerAction": "Ask before discussing her symptoms with relatives or clinicians, or forwarding a report. Accept it if she changes her mind about sharing.",
+        "teenAction": "You do not need to read Mum’s health logs to be supportive. Learn from general articles and ask respectful questions.",
+        "saying": "Share only what feels comfortable. I won’t pass it on without asking."
+      },
+      "when-professional-help-is-needed": {
+        "title": "When professional help is needed",
+        "teaser": "Family support and clinical care can work together.",
+        "body": {
+          "0": "Encourage a medical appointment when symptoms are new, worsening, persistent or disrupting daily life. Do not wait for every period to stop before seeking advice.",
+          "1": "Ask whether she wants help arranging the visit, and let her speak for herself.",
+          "2": "In an emergency, including sudden speech difficulty, one-sided weakness or immediate risk of self-harm, call 112 in India. Do not wait for an app reply."
+        },
+        "partnerAction": "Offer practical appointment support without choosing treatments for her or insisting on being present.",
+        "teenAction": "Tell a trusted adult if you are worried. In immediate danger, contact emergency help; you do not need to handle the situation alone.",
+        "saying": "Would you like help arranging an appointment, or would you prefer to do that privately?"
+      },
+      "closeness-and-intimacy": {
+        "title": "Closeness and intimacy",
+        "teaser": "Connection begins with comfort and consent.",
+        "body": {
+          "0": "Vaginal dryness can make sex uncomfortable, and changes in desire may occur around menopause. Do not assume discomfort or a no means a lack of love.",
+          "1": "Ask what kind of closeness feels welcome, with no expectation that affection must lead to sex. Stop if there is pain. Persistent discomfort or bleeding after sex needs medical advice; treatment options are available."
+        },
+        "partnerAction": "Have a private conversation outside an intimate moment. Let her choose whether she wants to explore clinical support. Shared chores or gifts never create an obligation to be intimate.",
+        "saying": "There’s no pressure. What kind of closeness feels comfortable for you?"
+      }
+    },
+    "metricNouns": {
+      "sleep": "Sleep",
+      "mood": "Mood",
+      "stress": "Stress",
+      "energy": "Energy"
+    },
+    "metricWords": {
+      "sleep": {
+        "positive": "Sleeping better",
+        "attention": "Sleeping less",
+        "neutral": "About the same"
+      },
+      "mood": {
+        "positive": "More steady",
+        "attention": "More up and down",
+        "neutral": "Fairly steady"
+      },
+      "stress": {
+        "positive": "Easing off",
+        "attention": "Running higher",
+        "neutral": "Holding steady"
+      },
+      "energy": {
+        "positive": "Picking up",
+        "attention": "Running low",
+        "neutral": "About the same"
+      }
+    },
+    "text": {
+      "nothingShared": "Nothing shared yet",
+      "actionCompletionPrompt": "Done? Tap ✓ when you’ve made her smile.",
+      "actionCompletionMessage": "Beautiful. ❤️ Sometimes the smallest actions are the ones she remembers.",
+      "consultationFallback": "Wellness consultation"
+    },
+    "supportByMetric": {
+      "sleep": {
+        "headline": "Send her a thoughtful message",
+        "body": "A small gesture may help after a difficult night’s sleep. Try to take something off her plate today."
+      },
+      "mood": {
+        "headline": "Ask, then listen",
+        "body": "Mood shifts are hormonal, not personal. Asking how she is doing, and not trying to fix it, helps more than advice."
+      },
+      "stress": {
+        "headline": "Take something off her list",
+        "body": "A stressful week eases fastest when the practical load lightens. Pick one thing and quietly handle it."
+      },
+      "energy": {
+        "headline": "Keep today gentle",
+        "body": "Low energy is a symptom, not reluctance. A slower plan and an early night will do more than encouragement."
+      }
+    },
+    "supportSteady": {
+      "headline": "A good week to say so",
+      "body": "Nothing looks difficult right now. Noticing the steady weeks out loud is its own kind of support."
+    },
+    "supportUnknown": {
+      "headline": "Let her know you are here",
+      "body": "There is nothing to read yet. A short message saying you are around is a good place to start."
+    },
+    "educationByMetric": {
+      "sleep": {
+        "headline": "Poor sleep can affect energy and patience",
+        "body": "Falling oestrogen interrupts sleep and raises night-time body temperature. The following day is harder for reasons that have nothing to do with willpower."
+      },
+      "mood": {
+        "headline": "Mood changes are not always personal",
+        "body": "Hormonal fluctuation affects emotional regulation directly. A sharp reaction is usually the hormone, not the relationship."
+      },
+      "stress": {
+        "headline": "Stress lands harder during perimenopause",
+        "body": "The same pressures feel heavier when hormones are shifting, because the body’s buffer against them is thinner than it used to be."
+      },
+      "energy": {
+        "headline": "Fatigue here is physical",
+        "body": "Broken sleep, hot flushes and hormonal change together produce a tiredness that rest alone does not fully clear."
+      }
+    },
+    "educationGeneral": {
+      "headline": "Perimenopause is a physical transition",
+      "body": "It can last years and affects sleep, mood, energy and memory. Knowing that helps everyone in the house take it less personally."
+    },
+    "nudgeLayerLabels": {
+      "understand": "Worth knowing today",
+      "connect": "A moment with her",
+      "act": "One thing you can do"
+    },
+    "actionPendingReminder": {
+      "title": "Still on your list?",
+      "body": "A small gesture can still make today better."
+    },
+    "learnNudges": {
+      "0": {
+        "headline": "Mood changes aren’t always personal",
+        "body": "Hormonal fluctuations can affect emotional regulation. Try not to read a difficult moment as a verdict on you."
+      },
+      "1": {
+        "headline": "Sleep is the first thing to go",
+        "body": "Night waking and heat episodes often arrive before anything else. Most of the hard days start the night before."
+      },
+      "2": {
+        "headline": "Brain fog is real and temporary",
+        "body": "Losing a word mid-sentence is a known symptom, not a sign of decline. Filling the gap for her is kinder than pointing it out."
+      },
+      "3": {
+        "headline": "This is not a short phase",
+        "body": "Perimenopause commonly runs four to eight years. Pacing your support matters more than an intense first month."
+      }
+    },
+    "learnTips": {
+      "0": {
+        "headline": "Listen before trying to solve",
+        "body": "Ask: “Would you like me to listen, help, or give you space?” It works because it hands the choice back to her."
+      },
+      "1": {
+        "headline": "Offer specifics, not availability",
+        "body": "“I’ll do dinner tonight” lands better than “let me know if you need anything”, which quietly makes it her job to ask."
+      },
+      "2": {
+        "headline": "Keep the house cooler than you would choose",
+        "body": "Heat episodes are worse in a warm room. It is a small concession with an outsized effect on her sleep."
+      },
+      "3": {
+        "headline": "Do not diagnose out loud",
+        "body": "Attributing every difficult moment to hormones is its own kind of dismissal. Believe the feeling first."
+      }
+    },
+    "consultationLabel": {
+      "nutri": "Nutrition consultation"
+    },
+    "sharedScopes": {
+      "metrics": "{{metrics}}: in words only (\"sleeping less\", \"manageable\"), never scores",
+      "nudge": "A daily suggestion, chosen from how her week is going — including whether she has been having heat episodes. It never shows a symptom, a count or a score.",
+      "tracking": "How many days this week she has tracked",
+      "consultation": "That a consultation is booked, and when. Never which specialist or why."
+    },
+    "privateItems": {
+      "0": "Medical records, notes and prescriptions",
+      "1": "Her conversations with Anu",
+      "2": "Her symptom logs — which symptoms, how often, and how severe",
+      "3": "Anything she writes in the app",
+      "4": "Which specialist she is seeing, and why"
+    },
+    "nudges": {
+      "partner-general-01": {
+        "text": "She may not ask for support today. Give it anyway. ❤️"
+      },
+      "partner-general-02": {
+        "text": "Sometimes “I’m here” is all she needs to hear."
+      },
+      "partner-stress-01": {
+        "text": "Her day looks heavy. Take one thing off her plate today."
+      },
+      "partner-mood-01": {
+        "text": "A little patience today could mean a lot to her."
+      },
+      "partner-sleep-01": {
+        "text": "She didn’t sleep well. A gentler morning might help."
+      },
+      "partner-fatigue-01": {
+        "text": "She’s running low today. Help her slow down."
+      },
+      "partner-hotflashes-01": {
+        "text": "She may be feeling uncomfortable. Keep things cool—and judgment-free."
+      },
+      "partner-emotional-01": {
+        "text": "Don’t fix it. Just sit beside her and listen."
+      },
+      "partner-connection-01": {
+        "text": "When did you last ask, “How are you really feeling?”"
+      },
+      "partner-appreciation-01": {
+        "text": "Tell her one thing you appreciate about her today."
+      },
+      "partner-action-01": {
+        "text": "Tea. Hug. Quiet time. Your move. ❤️"
+      },
+      "partner-action-02": {
+        "text": "Surprise her with something small today. No occasion needed."
+      },
+      "partner-action-03": {
+        "text": "Take over one chore before she asks."
+      },
+      "partner-affection-01": {
+        "text": "One long hug can say more than ten questions."
+      },
+      "partner-relationship-01": {
+        "text": "She’s changing. Your relationship can grow with her."
+      },
+      "teen-general-01": {
+        "text": "Mum might be having a tough day. Be a little extra kind. ❤️"
+      },
+      "teen-general-02": {
+        "text": "One “How was your day, Mum?” can mean more than you think."
+      },
+      "teen-fatigue-01": {
+        "text": "Mum looks tired? Help without waiting to be asked."
+      },
+      "teen-mood-01": {
+        "text": "If Mum seems quiet today, give her a little space—and a little love."
+      },
+      "teen-appreciation-01": {
+        "text": "Tell Mum something you love about her today."
+      },
+      "teen-action-01": {
+        "text": "Tiny mission: make Mum smile once today. 😊"
+      },
+      "teen-action-02": {
+        "text": "Do one household job before Mum notices it needs doing."
+      },
+      "teen-connection-01": {
+        "text": "Put the phone down for 10 minutes. Sit with Mum."
+      },
+      "teen-emotional-01": {
+        "text": "Sometimes Mum needs understanding, not questions."
+      },
+      "teen-gratitude-01": {
+        "text": "Send Mum a random “Love you.” No reason required."
+      },
+      "teen-care-01": {
+        "text": "Ask Mum if she wants tea, water, or just company."
+      },
+      "teen-awareness-01": {
+        "text": "Her body may be changing. Your kindness shouldn’t."
+      },
+      "adult-general-01": {
+        "text": "Check in on her today—not just her symptoms."
+      },
+      "adult-stress-01": {
+        "text": "She may be carrying more than she’s saying. Reach out."
+      },
+      "adult-fatigue-01": {
+        "text": "Today might be a low-energy day. Help make things easier."
+      },
+      "adult-emotional-01": {
+        "text": "Listen first. Advice can wait."
+      },
+      "adult-connection-01": {
+        "text": "A two-minute call could completely change her day."
+      },
+      "adult-support-01": {
+        "text": "Ask what she needs today instead of assuming."
+      },
+      "adult-action-01": {
+        "text": "Small gesture. Big impact. Do something thoughtful today."
+      },
+      "adult-appreciation-01": {
+        "text": "Remind her she’s valued beyond everything she does for others."
+      },
+      "adult-isolation-01": {
+        "text": "Don’t let her go through a difficult day alone."
+      },
+      "adult-selfcare-01": {
+        "text": "Encourage her to take some time for herself—then help make it possible."
+      },
+      "impact-care-01": {
+        "text": "She takes care of everyone. Today, take care of her."
+      },
+      "impact-emotional-01": {
+        "text": "You may not understand exactly what she’s feeling. You can still stand beside her."
+      },
+      "impact-isolation-01": {
+        "text": "She doesn’t need you to have all the answers. She needs to know she isn’t alone."
+      },
+      "impact-awareness-01": {
+        "text": "Perimenopause happens to her body. But how the family responds can change her experience."
+      },
+      "impact-awareness-02": {
+        "text": "Don’t wait for her to say she’s struggling. Notice her."
+      },
+      "impact-action-01": {
+        "text": "The most powerful support can sometimes be: “I’ve got this. You rest.”"
+      }
+    },
+    "digest": {
+      "statusLabel": "Overall status",
+      "emptyHeadline": "Nothing shared yet this week",
+      "emptyBody": "When she logs how she is feeling, you will see the direction things are moving. Nothing appears here until she does.",
+      "earlyHeadline": "Still early days",
+      "earlyBody": "Only a few days logged so far, so there is no pattern to read yet. {{metric}} is the lowest of them today.",
+      "okayHeadline": "She is doing okay this week",
+      "okayBody": "Nothing stands out as difficult. Steady weeks are worth noticing too.",
+      "supportHeadline": "She may need support",
+      "supportBodyImproving": "{{metric}} has been the hardest part of her week, though it is moving in the right direction. Small, practical help still goes a long way.",
+      "supportBody": "{{metric}} has been the hardest part of her week. Small, practical help lands better than advice right now.",
+      "progressLabel": "Positive progress",
+      "progressHeadline": "{{logged}} of {{total}} days tracked",
+      "progressAllBody": "She has tracked every day this week. That consistency is what makes the picture reliable.",
+      "progressSomeBody": "Every day she logs makes the picture clearer. No need to chase her about it.",
+      "upcomingLabel": "Upcoming care",
+      "greeting": {
+        "morning": "Good morning, {{name}}",
+        "afternoon": "Good afternoon, {{name}}",
+        "evening": "Good evening, {{name}}"
+      },
+      "todayEyebrow": "Her wellness this week",
+      "supportLabel": "How you can support her",
+      "supportCta": "Choose a supportive action",
+      "supportCompletedCta": "✓ Support action completed",
+      "metricsLabel": "This week · shared with you",
+      "educationLabel": "Understand her experience",
+      "learnEyebrow": "Family learning",
+      "learnTitle": "Know what she’s going through",
+      "learnSubline": "Two supportive nudges each week",
+      "learnNudgeLabel": "This week’s nudge",
+      "learnTipLabel": "Communication tip",
+      "learnArticlesLabel": "Explore topics",
+      "privacyEyebrow": "Privacy & consent",
+      "privacyTitle": "She stays in control",
+      "privacySubline": "Only what {{name}} chooses to share reaches this app.",
+      "privacySharedLabel": "Currently shared with you",
+      "privacyPrivateLabel": "Never shared"
+    },
+    "cadenceTitles": {
+      "understand": "Something worth knowing today",
+      "connect": "A moment with her",
+      "act": "One small thing today"
+    },
+    "jobText": {
+      "reminderTitle": "A small thing today?",
+      "reminderBody": "You wanted a nudge to check in on {{name}}.",
+      "herFallback": "her",
+      "cadenceBody": "Open Anuva for today’s nudge."
+    },
+    "messageText": {
+      "noDevice": "Saved as a check-in. She has no device set up for notifications, so she will not see the note itself.",
+      "pushTitle": "{{name}} sent you a message",
+      "sent": "✓ Sent. She will see it on her phone.",
+      "notAccepted": "Saved as a check-in, but her phone did not accept the notification."
+    },
+    "supportToasts": {
+      "message": "✓ Message sent. She will see that you thought of her.",
+      "call": "✓ Call logged. A voice helps more than a text on a hard day.",
+      "flowers": "✓ Flowers sent. They are on her phone now.",
+      "chocolates": "✓ Virtual chocolates sent. They are on her phone now."
+    },
+    "giftPush": {
+      "flowers": {
+        "title": "{{name}} sent you flowers 🌻",
+        "body": "Thinking of you today. Tap to open them."
+      },
+      "chocolates": {
+        "title": "{{name}} sent you chocolates 🍫",
+        "body": "Something sweet for a hard day. Tap to open it."
+      }
+    },
+    "giftText": {
+      "undelivered": "Recorded for today, but her phone has no notifications set up, so she will not see them.",
+      "alreadyFlowers": "Already sent her flowers today. She has them.",
+      "alreadyChocolates": "Already sent her chocolates today. She has them.",
+      "reminderSaved": "Reminder saved for this evening."
+    },
+    "thanksGesture": {
+      "message": "your note",
+      "call": "your call",
+      "flowers": "the flowers",
+      "chocolates": "the chocolates"
+    },
+    "thanksText": {
+      "noted": "Thank you noted.",
+      "landed": "✓ They will know it landed.",
+      "pushTitle": "{{name}} says thank you 😊",
+      "pushBodyGesture": "She opened {{gesture}} and it landed. 💛",
+      "pushBody": "She saw what you did today, and it landed. 💛"
+    },
+    "shareMessage": {
+      "opener": "I have started using Anuva to understand what my body is going through.",
+      "openerNamed": "{{name}} here. I have started using Anuva to understand what my body is going through.",
+      "explainer": "This link lets you see how I am doing and how you can help. It only works for you, and it expires."
+    }
+  },
+  "report": {
+    "bands": {
+      "sleep": {
+        "Restful": "Restful",
+        "Some waking": "Some waking",
+        "Disturbed": "Disturbed",
+        "Barely slept": "Barely slept"
+      },
+      "energy": {
+        "Strong": "Strong",
+        "Slightly low": "Slightly low",
+        "Tired": "Tired",
+        "Very tired": "Very tired"
+      },
+      "stress": {
+        "Low stress": "Low stress",
+        "Manageable": "Manageable",
+        "Stressful": "Stressful",
+        "Very stressful": "Very stressful"
+      },
+      "mood": {
+        "Stable": "Stable",
+        "Mild shifts": "Mild shifts",
+        "Unsettled": "Unsettled",
+        "Very unsettled": "Very unsettled"
+      },
+      "focus": {
+        "Clear": "Clear",
+        "Slightly foggy": "Slightly foggy",
+        "Foggy": "Foggy",
+        "Very foggy": "Very foggy"
+      },
+      "hotFlashes": {
+        "None": "None",
+        "Mild": "Mild",
+        "Moderate": "Moderate",
+        "High": "High"
+      }
+    },
+    "text": {
+      "firstOfData": "First {noun} of data",
+      "notEnoughToCompare": "Not enough to compare yet",
+      "steadyVs": "Steady vs {last}",
+      "pointsImproving": "+{{points}} pts · improving",
+      "pointsWorsened": "−{{points}} pts · worsened",
+      "noBaseline": "No baseline yet",
+      "betterThanUsual": "Better than usual",
+      "belowUsual": "Below your usual",
+      "typical": "Typical for you",
+      "yourUsual": "your usual",
+      "seriesDefault": "One point per day across the window.",
+      "steadySuggestion": "Nothing needs fixing today. Keep whatever routine got you here.",
+      "greatJob": "Great job!",
+      "holdingUpBest": "Holding up best",
+      "steadiestArea": "Your steadiest area",
+      "headlineEmptyDaily": "A couple of check-ins and I can tell you how the day actually went.",
+      "headlineEmptyPeriod": "Nothing logged {this} yet. A few check-ins and this fills in.",
+      "needsCare": "{{metric}} needs a little extra care.",
+      "middleRange": "Everything you logged sat in its middle range.",
+      "nothingLoggedYet": "Nothing logged yet",
+      "strongestArea": "Strongest area",
+      "needsAttention": "Needs attention",
+      "lowerThan": "Lower than {{reference}}",
+      "worthCloserLook": "Worth a closer look",
+      "biggestImprovement": "Biggest improvement",
+      "plusPoints": "+{{points}} pts",
+      "versus": "vs {last}",
+      "mostCommonSymptom": "Most common symptom",
+      "heatEpisodes": "Heat episodes",
+      "trackedDays": "Tracked days",
+      "daysOfTotal": "{{logged}} of {{total}}",
+      "daysThis": "days {this}",
+      "todaysNudge": "Today’s nudge",
+      "aboveUsual": "Above your usual",
+      "movingTogether": "Moving together",
+      "belowUsualTitle": "Below your usual",
+      "steadyDay": "A steady day",
+      "steadyDayBody": "Everything you logged today sat inside your usual range. Steady days are what the good weeks are made of.",
+      "building": "↗ Building",
+      "buildingBody": "The back half of the month ran better than the front half. Whatever changed, it is working.",
+      "drifting": "↘ Drifting",
+      "driftingBody": "The back half of the month ran harder than the front half. Worth naming what shifted.",
+      "improving": "↑ Improving",
+      "needsAttentionArrow": "↓ Needs attention",
+      "reflectionEmptyDaily": "Nothing logged for this day yet. A couple of check-ins and I can tell you how it actually went.",
+      "reflectionEmptyPeriod": "I don’t have enough from {this} yet. Answer a few daily check-ins and I’ll show you what’s actually shifting.",
+      "reflectionQuiet": "A quiet {noun} in the data. Keep logging and the pattern will show itself.",
+      "reflectionOnlyToday": "{{metric}} is the only thing I have for today. A couple more check-ins and I can give you the shape of the day.",
+      "reflectionDaily": "Today your {{strong}} held up, while {{weak}} is where the strain showed. One day is one day. The weekly view will tell you whether it’s a pattern.",
+      "reflectionClearest": "{{metric}} is the clearest signal I have {this}. Shall we build around it?",
+      "reflectionMonthly": "Across the month your {{strong}} held up best, while {{weak}} is where the strain sat. Shall we discuss a care path?",
+      "reflectionWeekly": "Your {{strong}} is holding up well this week, while {{weak}} is where the strain shows. Shall we discuss a care path?",
+      "keepTracking": "Keep tracking",
+      "referenceNote": "Dots mark {{reference}}: the same comparison on every tab, and only ever with yourself.",
+      "referenceNoteEmpty": "No comparison dots yet. They appear once you have {{count}} days of history to compare against.",
+      "checkInsLogged": "{{logged}} of {{total}} check-ins logged",
+      "daysTrackedSoFar": "{{logged}} of {{total}} days tracked so far",
+      "daysTracked": "{{logged}} of {{total}} days tracked",
+      "joinedOn": "You joined on {{date}}, so the days before that are not counted against you.",
+      "statSleep": "Sleep",
+      "statAvgSleep": "Avg sleep",
+      "statHours": "hrs",
+      "statHotFlashes": "Hot flashes",
+      "statWellness": "Wellness"
+    },
+    "plural": {
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "episodes_one": "episode",
+      "episodes_other": "episodes",
+      "episodesThis_one": "{{count}} episode {this}",
+      "episodesThis_other": "{{count}} episodes {this}",
+      "insufficient_one": "{{count}} day logged so far. Keep tracking. At {{need}} days I can tell you what’s actually moving, and I’d rather say nothing than guess.",
+      "insufficient_other": "{{count}} days logged so far. Keep tracking. At {{need}} days I can tell you what’s actually moving, and I’d rather say nothing than guess.",
+      "calibrating_one": "You’re {{count}} day in. I’m still learning your baseline, so these numbers will settle once we have a couple of weeks.",
+      "calibrating_other": "You’re {{count}} days in. I’m still learning your baseline, so these numbers will settle once we have a couple of weeks.",
+      "keepTrackingBody_one": "{{count}} day of {this} logged. I need at least {{need}} before I can tell you a trend rather than guess at one.",
+      "keepTrackingBody_other": "{{count}} days of {this} logged. I need at least {{need}} before I can tell you a trend rather than guess at one."
+    },
+    "ringLabels": {
+      "sleep": "Sleep quality",
+      "energy": "Energy level",
+      "stress": "Stress",
+      "mood": "Mood stability",
+      "focus": "Cognitive focus",
+      "hotFlashes": "Heat episodes"
+    },
+    "periodWords": {
+      "daily": {
+        "this": "today",
+        "last": "the week before",
+        "noun": "day"
+      },
+      "weekly": {
+        "this": "this week",
+        "last": "last week",
+        "noun": "week"
+      },
+      "monthly": {
+        "this": "this month",
+        "last": "last month",
+        "noun": "month"
+      }
+    },
+    "trend": {
+      "sleep": {
+        "up": "Your sleep steadied {this}. Whatever your evenings look like right now, keep it.",
+        "down": "Sleep slipped {this}. Worth looking at what changed after 8pm."
+      },
+      "energy": {
+        "up": "Your mornings started stronger {this} than {last}.",
+        "down": "Energy dipped {this}. Often it trails sleep by a day or two."
+      },
+      "stress": {
+        "up": "Your afternoons felt calmer {this} than {last}.",
+        "down": "Stress ran higher {this}. Worth naming what is driving it."
+      },
+      "mood": {
+        "up": "Fewer sudden mood shifts than {last}. That is real progress.",
+        "down": "More mood swings {this} than {last}. Common when sleep is broken."
+      },
+      "focus": {
+        "up": "Your focus was clearer {this}.",
+        "down": "More brain fog {this}. It usually tracks with sleep and stress."
+      },
+      "hotFlashes": {
+        "up": "Fewer heat episodes than {last}.",
+        "down": "Hot flashes rose {this}. Track what preceded the worst days."
+      }
+    },
+    "daily": {
+      "sleep": {
+        "strong": "Sleep was the steadiest thing you logged today.",
+        "weak": "Sleep sat below your usual today. Worth noticing what the evening looked like."
+      },
+      "energy": {
+        "strong": "Your energy held up better than it usually does.",
+        "weak": "Energy ran low today. It often trails a broken night by a day or two."
+      },
+      "stress": {
+        "strong": "Today read calmer than your usual.",
+        "weak": "Stress ran higher than your usual today."
+      },
+      "mood": {
+        "strong": "Your mood stayed level today.",
+        "weak": "Mood moved around more than it usually does today."
+      },
+      "focus": {
+        "strong": "Your head was clearer than usual today.",
+        "weak": "Focus was harder to hold than usual today."
+      },
+      "hotFlashes": {
+        "strong": "A quieter day for heat episodes than your usual.",
+        "weak": "More heat episodes than your usual today."
+      }
+    },
+    "seriesNotes": {
+      "avgSleep": {
+        "daily": "Hours slept, with the six nights before it for context.",
+        "weekly": "Hours slept each night. The figure is the average of the week.",
+        "monthly": "Hours slept each night. The figure is the average of the month."
+      },
+      "hotFlashes": {
+        "daily": "Episodes per day, with the six days before it for context.",
+        "weekly": "Episodes each day. The figure is the total for the week, not a daily peak.",
+        "monthly": "Episodes each day. The figure is the total for the month, not a daily peak."
+      },
+      "wellness": {
+        "daily": "Wellness each day, with the six days before it for context.",
+        "weekly": "Wellness each day. The figure is the average of the week.",
+        "monthly": "Wellness each day. The figure is the average of the month."
+      }
+    },
+    "dailyHeadline": {
+      "Great": "Doing really well",
+      "Good": "Doing well",
+      "Okay": "Doing okay",
+      "Hard": "A hard day",
+      "Very hard": "A really hard day"
+    },
+    "periodHeadline": {
+      "Great": "A strong {noun}",
+      "Good": "A good {noun}",
+      "Okay": "A mixed {noun}",
+      "Hard": "A hard {noun}",
+      "Very hard": "A really hard {noun}"
+    },
+    "ringClause": {
+      "sleep": {
+        "Restful": "sleep was restful",
+        "Some waking": "sleep broke once or twice",
+        "Disturbed": "sleep was disturbed",
+        "Barely slept": "you barely slept"
+      },
+      "energy": {
+        "Strong": "energy is strong",
+        "Slightly low": "energy is slightly low",
+        "Tired": "energy is running low",
+        "Very tired": "energy is very low"
+      },
+      "stress": {
+        "Low stress": "stress is low",
+        "Manageable": "stress is manageable",
+        "Stressful": "stress is running high",
+        "Very stressful": "stress is very high"
+      },
+      "mood": {
+        "Stable": "mood is steady",
+        "Mild shifts": "mood shifted a little",
+        "Unsettled": "mood is unsettled",
+        "Very unsettled": "mood is very unsettled"
+      },
+      "focus": {
+        "Clear": "focus is clear",
+        "Slightly foggy": "focus is slightly foggy",
+        "Foggy": "focus is foggy",
+        "Very foggy": "focus is very foggy"
+      },
+      "hotFlashes": {
+        "None": "there were no heat episodes",
+        "Mild": "heat episodes are mild",
+        "Moderate": "heat episodes are moderate",
+        "High": "heat episodes are frequent"
+      }
+    },
+    "shortNoun": {
+      "sleep": "Sleep",
+      "energy": "Energy",
+      "stress": "Stress",
+      "mood": "Mood",
+      "focus": "Focus",
+      "hotFlashes": "Heat episodes"
+    },
+    "suggestion": {
+      "sleep": "Start winding down half an hour earlier tonight. Screens down, lights low.",
+      "energy": "A short walk after lunch tends to do more for energy than another coffee.",
+      "stress": "Take five slow breaths before the next thing you have to do.",
+      "mood": "Name the feeling once, out loud or on paper. It usually takes the edge off.",
+      "focus": "Keep one thing on your desk at a time and put the thinking work early.",
+      "hotFlashes": "Hydrate well and keep a layer you can take off easily."
+    },
+    "pairs": {
+      "sleep-focus": {
+        "body": "Broken sleep and brain fog turned up on the same day. That is the most common pairing there is."
+      },
+      "sleep-energy": {
+        "body": "Sleep and energy both sat below your usual today. They almost always move together."
+      },
+      "stress-mood": {
+        "body": "Stress and mood both ran below your usual today."
+      },
+      "stress-hotFlashes": {
+        "body": "A harder day for stress and more heat episodes landed together. Worth watching whether that repeats."
+      }
+    }
+  },
+  "joints": {
+    "severity": {
+      "none": "No discomfort",
+      "mild": "Mild discomfort",
+      "moderate": "Moderate discomfort",
+      "severe": "Severe discomfort"
+    },
+    "areas": {
+      "neck": "Neck",
+      "shoulders": "Shoulders",
+      "elbows": "Elbows",
+      "hands_wrists_fingers": "Hands / Wrists / Fingers",
+      "lower_back": "Lower back",
+      "hips": "Hips",
+      "knees": "Knees",
+      "ankles_feet": "Ankles / Feet",
+      "multiple_areas": "Multiple areas",
+      "other": "Other"
+    },
+    "symptoms": {
+      "aching": "Aching",
+      "pain": "Pain",
+      "stiffness": "Stiffness",
+      "swelling": "Swelling",
+      "tenderness": "Tenderness",
+      "reduced_movement": "Reduced movement"
+    },
+    "impacts": {
+      "not_at_all": "Not at all",
+      "a_little": "A little",
+      "moderately": "Moderately",
+      "a_lot": "A lot"
+    },
+    "summary": {
+      "notAffecting": "Not affecting your day",
+      "mostlyMild": "Mostly mild",
+      "moderate": "Moderate on most days",
+      "aLot": "Affecting your day a lot"
+    }
+  },
+  "nudges": {
+    "variants": {
+      "L1-001": {
+        "0": "Good morning, {{firstName}} 🌷 Before we start today, how did you sleep last night?",
+        "1": "Morning, {{firstName}}. How restful did your sleep feel overnight?",
+        "2": "Hi {{firstName}}, how was your sleep last night? Did you wake feeling rested?",
+        "3": "Before the day gets busy, {{firstName}}, how did you sleep through the night?",
+        "4": "Good morning 🌸 How would you describe your sleep last night, {{firstName}}?",
+        "5": "{{firstName}}, take a gentle moment to check in with yourself. How was your sleep overnight?",
+        "6": "Morning, {{firstName}} ☀️ Did you sleep comfortably last night?",
+        "7": "Hi {{firstName}}, how well did your body and mind get to rest last night?",
+        "8": "As you begin this new day, {{firstName}}, what was your sleep like last night?",
+        "9": "Good morning, {{firstName}} 💛 Before we move into today, how did you sleep?"
+      },
+      "L1-002": {
+        "0": "How are you feeling energy-wise this morning, {{firstName}}?",
+        "1": "Good morning, {{firstName}} ☀️ Does your body feel refreshed or still a little tired today?",
+        "2": "Hi {{firstName}}, what's your energy level like right now?",
+        "3": "As you start your day, {{firstName}}, how much energy do you feel you have?",
+        "4": "Morning 🌸 How is your body feeling this morning, {{firstName}}?",
+        "5": "{{firstName}}, if you pause for a second, how energized do you feel right now?",
+        "6": "Hi {{firstName}} 💛 Are you feeling fresh, slightly low, or quite tired this morning?",
+        "7": "Before we continue, {{firstName}}, how would you describe your morning energy?",
+        "8": "Good morning, {{firstName}} 🌷 How does your body feel with energy today?",
+        "9": "Hi {{firstName}}, how are you feeling physically as you begin your morning?"
+      },
+      "L1-003": {
+        "0": "{{firstName}}, how are you feeling emotionally right now?",
+        "1": "Hi {{firstName}} 💛 What feeling is most present for you at this moment?",
+        "2": "Take a gentle pause, {{firstName}} 🌸 What's your emotional state like right now?",
+        "3": "How is your heart feeling today, {{firstName}}?",
+        "4": "{{firstName}}, what best describes your mood at this moment?",
+        "5": "Hi {{firstName}}, are you feeling calm, anxious, emotional, or something else right now?",
+        "6": "As you check in with yourself, {{firstName}}, what emotions are you noticing?",
+        "7": "Good morning 🌷 How are you doing emotionally today, {{firstName}}?",
+        "8": "{{firstName}}, what feels most true for you emotionally right now?",
+        "9": "Hi {{firstName}} 💕 What emotional tone are you carrying into today?"
+      },
+      "L1-004": {
+        "0": "{{firstName}}, how has today been feeling for you so far: calm, manageable, or stressful?",
+        "1": "Hi {{firstName}} 🌸 How much stress have you been carrying today up to now?",
+        "2": "As you pause for a moment, {{firstName}}, how stressful has your day felt so far?",
+        "3": "{{firstName}}, what best describes your stress level right now?",
+        "4": "Hi 💛 Has today felt mostly manageable, or has it been a bit overwhelming?",
+        "5": "{{firstName}}, how are you coping with the demands of today so far?",
+        "6": "Looking back on the day so far, {{firstName}}, how pressured have you felt?",
+        "7": "Hi {{firstName}} 🌷 Has today felt light, busy, stressful, or overwhelming for you?",
+        "8": "{{firstName}}, how supported do you feel in handling today's stress so far?",
+        "9": "Just checking in, {{firstName}} 💕 How stressful has your day felt up to this point?"
+      },
+      "L1-005": {
+        "0": "{{firstName}}, how many hot flashes or sudden waves of heat did you notice today?",
+        "1": "Hi {{firstName}} 🌸 Did you experience any sudden warmth or flushing episodes today?",
+        "2": "Looking back on your day, {{firstName}}, how often did hot flashes show up for you?",
+        "3": "{{firstName}}, how was your experience with hot flashes or heat surges today?",
+        "4": "Hi 💛 Did your body feel unexpectedly warm or flushed at any point today?",
+        "5": "{{firstName}}, about how many noticeable heat episodes did you have today?",
+        "6": "As you think back on today, {{firstName}}, how often did sudden warmth occur?",
+        "7": "Hi {{firstName}} 🌷 Did you notice any heat surges, sweating, or flushing today?",
+        "8": "{{firstName}}, what best describes the number of hot flashes you experienced today?",
+        "9": "Just checking in, {{firstName}} 💕 How many hot flashes or sudden heat episodes stood out to you today?"
+      },
+      "L1-007": {
+        "0": "{{firstName}}, were you able to try today's care suggestion, even in a small way?",
+        "1": "Hi {{firstName}} 🌸 How did today's self-care suggestion go for you?",
+        "2": "{{firstName}}, were you able to make a little time for today's care practice?",
+        "3": "Hi 💛 Did today's care suggestion feel manageable for you?",
+        "4": "{{firstName}}, how closely were you able to follow today's supportive practice?",
+        "5": "Looking back on today, {{firstName}}, were you able to do any part of the care activity?",
+        "6": "Hi {{firstName}} 🌷 What was your experience with today's care suggestion?",
+        "7": "{{firstName}}, did you get a chance to practice today's recommended self-care?",
+        "8": "No pressure at all, {{firstName}} 💕 Were you able to engage with today's care suggestion in any way?",
+        "9": "Hi {{firstName}}, how did today's care practice fit into your day?"
+      },
+      "L1-008": {
+        "0": "{{firstName}}, did you notice any sudden changes in your mood today?",
+        "1": "Hi {{firstName}} 🌸 How emotionally steady did you feel throughout the day?",
+        "2": "Looking back on today, {{firstName}}, were there any unexpected mood shifts?",
+        "3": "{{firstName}}, did your feelings change more quickly than usual at any point today?",
+        "4": "Hi 💛 Did you experience any noticeable emotional ups and downs today?",
+        "5": "{{firstName}}, how stable or changeable did your mood feel today?",
+        "6": "As you reflect on your day, {{firstName}}, did any sudden emotional changes stand out?",
+        "7": "Hi {{firstName}} 🌷 Were there moments today when you felt unexpectedly irritated, emotional, or anxious?",
+        "8": "{{firstName}}, what best describes the stability of your mood today?",
+        "9": "Just checking in, {{firstName}} 💕 Did your mood stay fairly steady, or did it shift suddenly during the day?"
+      },
+      "L2-001": {
+        "0": "{{firstName}}, about how much water did you drink today?",
+        "1": "Hi {{firstName}} 🌸 How well were you able to stay hydrated today?",
+        "2": "Looking back on your day, {{firstName}}, do you feel you drank enough water?",
+        "3": "{{firstName}}, what best describes your water intake today?",
+        "4": "Hi 💛 Did your body get plenty of water today, or could you have used more?",
+        "5": "{{firstName}}, how mindful were you of drinking water throughout the day?",
+        "6": "As you check in with yourself, {{firstName}}, how hydrated do you feel right now?",
+        "7": "Hi {{firstName}} 🌷 How did your hydration go today?",
+        "8": "{{firstName}}, were you able to keep up with drinking water during the day?",
+        "9": "Just checking in, {{firstName}} 💕 How much water do you think you had today?"
+      },
+      "L2-002": {
+        "0": "{{firstName}}, did you notice any cravings today, such as sweets, salty foods, or caffeine?",
+        "1": "Hi {{firstName}} 🌸 Were there any foods or drinks you found yourself wanting more than usual today?",
+        "2": "Looking back on today, {{firstName}}, what cravings, if any, showed up for you?",
+        "3": "{{firstName}}, did your body seem to ask for anything specific today?",
+        "4": "Hi 💛 Did you experience any strong urges for snacks, sweets, tea, coffee, or comfort foods today?",
+        "5": "{{firstName}}, what best describes your cravings today?",
+        "6": "As you reflect on your day, {{firstName}}, did any particular cravings stand out?",
+        "7": "Hi {{firstName}} 🌷 Were you craving sweet, salty, fried, or caffeinated foods or drinks today?",
+        "8": "{{firstName}}, did you feel unusually hungry or unsatisfied after eating today?",
+        "9": "Just checking in, {{firstName}} 💕 Have you noticed any noticeable cravings today?"
+      },
+      "L2-003": {
+        "0": "{{firstName}}, how has your focus been feeling today?",
+        "1": "Hi {{firstName}} 🌸 Has it been easy or difficult to concentrate today?",
+        "2": "Looking back on the day, {{firstName}}, how clear or foggy has your mind felt?",
+        "3": "{{firstName}}, what has your mental clarity been like so far today?",
+        "4": "Hi 💛 Have you felt focused and present, or more distracted and forgetful today?",
+        "5": "{{firstName}}, how well has your mind been able to stay on tasks today?",
+        "6": "As you check in with yourself, {{firstName}}, how has your concentration been today?",
+        "7": "Hi {{firstName}} 🌷 Have you noticed any brain fog or forgetfulness affecting your day?",
+        "8": "{{firstName}}, what best describes your ability to focus today?",
+        "9": "Just checking in, {{firstName}} 💕 How mentally clear and focused have you felt today?"
+      },
+      "L2-009": {
+        "0": "{{firstName}}, how would you describe your eating pattern today?",
+        "1": "Hi {{firstName}} 🌸 Did your meals feel balanced and nourishing today?",
+        "2": "Looking back on your day, {{firstName}}, how did your meals and snacks go?",
+        "3": "{{firstName}}, were you able to eat regularly throughout the day?",
+        "4": "Hi 💛 What best describes your eating rhythm today?",
+        "5": "{{firstName}}, did your eating feel balanced, irregular, or influenced by cravings today?",
+        "6": "As you reflect on today, {{firstName}}, how well did you nourish yourself?",
+        "7": "Hi {{firstName}} 🌷 Did you find yourself skipping meals, eating late, or eating more than usual today?",
+        "8": "{{firstName}}, how would you describe the timing and balance of your meals today?",
+        "9": "Just checking in, {{firstName}} 💕 What was your overall experience with eating and nourishment today?"
+      }
+    },
+    "trackerLabels": {
+      "L1-001": "Sleep",
+      "L1-002": "Energy",
+      "L1-003": "Mood",
+      "L1-004": "Stress",
+      "L1-005": "Hot flashes",
+      "L2-001": "Hydration",
+      "L1-007": "Plan adherence",
+      "L1-008": "Mood shift",
+      "L2-003": "Focus",
+      "L2-002": "Cravings",
+      "L2-009": "Food rhythm"
+    },
+    "toneMessages": {
+      "RT-001": "Glad to hear that. I'll mark this as stable today.",
+      "RT-002": "No guilt. We adjust the plan to your real life, not the other way around.",
+      "RT-003": "Emotional days are not weakness. I'll track this carefully.",
+      "RT-004": "That's okay. I'll mark this as uncertain instead of forcing an answer."
+    },
+    "items": {
+      "L1-001": {
+        "question": "Good morning. Before your day begins, tell me how your sleep was last night.",
+        "options": {
+          "0": "I slept well",
+          "1": "I woke up 1–2 times",
+          "2": "I had disturbed sleep",
+          "3": "I barely slept",
+          "4": "I woke up sweaty or uncomfortable"
+        }
+      },
+      "L1-002": {
+        "question": "How is your energy this morning?",
+        "options": {
+          "0": "Fresh and active",
+          "1": "Slightly low",
+          "2": "Very tired",
+          "3": "Heavy body feeling",
+          "4": "Mentally tired, even after sleeping"
+        }
+      },
+      "L1-003": {
+        "question": "What is your emotional state right now?",
+        "options": {
+          "0": "Calm",
+          "1": "Irritated",
+          "2": "Sad",
+          "3": "Anxious",
+          "4": "Emotionally numb",
+          "5": "I don't know"
+        }
+      },
+      "L1-004": {
+        "question": "On a simple level, how stressful has today felt so far?",
+        "options": {
+          "0": "Low stress",
+          "1": "Manageable",
+          "2": "Stressful",
+          "3": "Very stressful",
+          "4": "I feel overwhelmed"
+        }
+      },
+      "L1-005": {
+        "question": "How many hot flashes or sudden heat episodes did you notice today?",
+        "options": {
+          "0": "None",
+          "1": "1–2",
+          "2": "3–5",
+          "3": "More than 5",
+          "4": "Not sure"
+        }
+      },
+      "L1-007": {
+        "question": "Were you able to follow today's care suggestion?",
+        "options": {
+          "0": "Yes, fully",
+          "1": "Partly",
+          "2": "I forgot",
+          "3": "I couldn't manage today",
+          "4": "I did not feel like doing it"
+        }
+      },
+      "L1-008": {
+        "question": "Did your mood change suddenly today?",
+        "options": {
+          "0": "No, mood was stable",
+          "1": "Mild mood changes",
+          "2": "I felt irritated suddenly",
+          "3": "I cried or felt emotional",
+          "4": "I felt anxious suddenly",
+          "5": "I had multiple mood shifts"
+        }
+      },
+      "L2-001": {
+        "question": "How much water did you drink today?",
+        "options": {
+          "0": "Less than 2 glasses",
+          "1": "2–4 glasses",
+          "2": "5–6 glasses",
+          "3": "More than 6 glasses",
+          "4": "I forgot to track"
+        }
+      },
+      "L2-002": {
+        "question": "Have you noticed any cravings today?",
+        "options": {
+          "0": "No cravings",
+          "1": "Sweet cravings",
+          "2": "Salty cravings",
+          "3": "Tea/coffee cravings",
+          "4": "Fried/snack cravings",
+          "5": "I felt hungry even after eating"
+        }
+      },
+      "L2-003": {
+        "question": "How has your focus been today?",
+        "options": {
+          "0": "Clear and focused",
+          "1": "Slightly distracted",
+          "2": "Forgetful",
+          "3": "Brain fog",
+          "4": "Unable to concentrate"
+        }
+      },
+      "L2-009": {
+        "question": "How was your eating pattern today?",
+        "options": {
+          "0": "Balanced",
+          "1": "Skipped meals",
+          "2": "Ate late",
+          "3": "Overate",
+          "4": "Had cravings",
+          "5": "Not sure"
+        }
+      }
+    },
+    "slotTitles": {
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening/Night"
+    },
+    "feelingLabels": {
+      "1": "Feeling awful",
+      "2": "Feeling low",
+      "3": "Feeling okay",
+      "4": "Feeling good",
+      "5": "Feeling great"
+    },
+    "qualityLabels": {
+      "1": "Slept awful",
+      "2": "Slept poorly",
+      "3": "Slept okay",
+      "4": "Slept good",
+      "5": "Slept great"
+    },
+    "scoreFallback": {
+      "sleep": "Sleep {{score}}/5",
+      "mood": "Mood {{score}}/5"
+    }
+  },
+  "homeCard": {
+    "words": {
+      "episode": "episode",
+      "episodes": "episodes",
+      "day": "day",
+      "days": "days",
+      "today": "today",
+      "tomorrow": "tomorrow",
+      "inTwoDays": "in two days"
+    },
+    "signals": {
+      "hot-flash-cluster": {
+        "variants": {
+          "0": "You logged {count} hot flash {episodes} today. Want me to talk you through a cooling routine for tonight?",
+          "1": "That's {count} hot flash {episodes} today, {{firstName}}. Shall we plan something for this evening?",
+          "2": "{count} heat {episodes} in one day is a lot to carry. Want a few things that help before bed?",
+          "3": "I noticed {count} hot flash {episodes} today. Let me suggest what can take the edge off tonight.",
+          "4": "{{firstName}}, {count} {episodes} today. Want to look at what's setting them off?"
+        },
+        "label": "Yes, show me",
+        "chatSeed": "I logged {count} hot flash {episodes} today. What can I do tonight to make it easier?"
+      },
+      "anxiety-cluster": {
+        "variants": {
+          "0": "You logged anxiety {count} times today. Want to try a two-minute settling exercise with me?",
+          "1": "That's {count} anxious moments today, {{firstName}}. Shall we look at what's underneath it?",
+          "2": "Anxiety came up {count} times today. Want me to walk you through something calming?",
+          "3": "{{firstName}}, {count} anxious waves today. Let me show you what helps in the moment."
+        },
+        "label": "Yes, help me",
+        "chatSeed": "I've felt anxious {count} times today. Can you help me settle?"
+      },
+      "sleep-mood-pair": {
+        "variants": {
+          "0": "Your sleep and your mood both sat below your usual today. They almost always move together. Want to look at the sleep side first?",
+          "1": "{{firstName}}, a harder night and a heavier day landed together. Shall we start with what happened overnight?",
+          "2": "Both your rest and your mood are under your own average today. That pairing is the most common one there is. Want to talk it through?"
+        },
+        "label": "Talk it through",
+        "chatSeed": "My sleep and my mood have both been worse than usual. Where do I start?"
+      },
+      "sleep-below-baseline": {
+        "variants": {
+          "0": "Last night came in below your usual sleep. Want a few things to try tonight?",
+          "1": "{{firstName}}, your rest dipped under your own average. Shall we look at what might be waking you?",
+          "2": "That was a harder night than most of your nights. Want me to suggest a wind-down?",
+          "3": "Your sleep sat below your usual last night. Worth a look at what changed?"
+        },
+        "label": "Yes, show me",
+        "chatSeed": "I slept worse than usual last night. What can I try tonight?"
+      },
+      "mood-below-baseline": {
+        "variants": {
+          "0": "Today reads lower than your usual, {{firstName}}. Want to tell me about it?",
+          "1": "Your mood sat under your own average today. I have time if you want to talk.",
+          "2": "That's a heavier day than most of yours. Shall we look at what is sitting on it?"
+        },
+        "label": "Talk to ANU",
+        "chatSeed": "I've been feeling low today. Can we talk about it?"
+      },
+      "period-late": {
+        "variants": {
+          "0": "Your period is {days} {dayWord} later than your usual cycle. Want to know whether that is expected right now?",
+          "1": "{{firstName}}, you are {days} {dayWord} past your predicted date. Cycles stretch in perimenopause. Shall I explain what is normal?",
+          "2": "{days} {dayWord} late, going by your own cycle length. Want to talk about what that can mean?"
+        },
+        "label": "Tell me more",
+        "chatSeed": "My period is {days} {dayWord} late. Is that normal in perimenopause?"
+      },
+      "period-due-soon": {
+        "variants": {
+          "0": "Going by your cycle, your period is due {when}. Want to log how you are feeling in the run-up?",
+          "1": "{{firstName}}, your next period should arrive {when}. Shall we track the days before it?",
+          "2": "Your period is expected {when}. The days before it are often the heaviest for symptoms. Want to keep an eye on them?"
+        },
+        "label": "Open my cycle"
+      },
+      "streak-win": {
+        "variants": {
+          "0": "{days} days logged in a row, {{firstName}}. That's enough history for your report to mean something. Want to see it?",
+          "1": "You've checked in {days} days running. Your patterns are starting to show. Shall we look?",
+          "2": "{days} days straight. This is exactly what makes the weekly report worth reading."
+        },
+        "label": "See my report"
+      },
+      "no-logs-today": {
+        "variants": {
+          "0": "I haven't heard from you today, {{firstName}}. One tap is enough. How has the day been?",
+          "1": "Nothing logged today. Even a single check-in keeps your week readable.",
+          "2": "No entries yet today. Want to take thirty seconds before the day closes?"
+        },
+        "label": "Log now"
+      },
+      "steady-day": {
+        "variants": {
+          "0": "Nothing is standing out in what you logged today, {{firstName}}. Steady days are what good weeks are made of. Anything you want to ask me?",
+          "1": "Everything you logged today sits inside your usual range. I am here if something is on your mind.",
+          "2": "A steady day so far. Ask me anything, no question is too small.",
+          "3": "{{firstName}}, your numbers look like your normal today. Want to ask me something?"
+        },
+        "label": "Ask ANU",
+        "chatSeed": "How am I doing overall?"
+      }
+    }
+  },
+  "push": {
+    "patient": {
+      "callReady": {
+        "title": "Doctor is ready",
+        "body": "{{doctor}} has started your consultation call."
+      },
+      "documents": {
+        "prescription": {
+          "title": "Your prescription is ready 💜",
+          "body": "{{doctor}} has shared your prescription. Tap to view it whenever you’re ready."
+        },
+        "diet_plan": {
+          "title": "Your diet plan is here 🌿",
+          "body": "{{doctor}} has shared your diet plan. Have a look when you have a moment."
+        },
+        "care_plan": {
+          "title": "Your care plan is ready 💜",
+          "body": "{{doctor}} has shared your care plan. Tap to view it whenever you’re ready."
+        },
+        "suggestion": {
+          "title": "A suggestion from your consultation",
+          "body": "{{doctor}} has shared a suggestion with you. Have a look when you have a moment."
+        }
+      }
+    },
+    "qaAnswered": {
+      "title": "Your question has an answer 💜",
+      "body": "{{doctor}} has replied to the question you asked. Tap to read it whenever you like.",
+      "fallbackDoctor": "One of our specialists"
+    }
+  },
+  "patient": {
+    "text": {
+      "bookingComingSoon": "Booking for this specialist is coming soon."
+    }
+  },
+  "privacy": {
+    "recipientRelationships": {
+      "partner": "your partner",
+      "child": "your son or daughter",
+      "parent": "your parent",
+      "sibling": "your sibling",
+      "friend": "a friend",
+      "other": "a family member"
+    },
+    "recipient": {
+      "name": "{{name}} ({{relationship}})",
+      "control": "Disconnect them from Profile → Family sharing. Access ends immediately."
+    },
+    "categories": {
+      "tracker": {
+        "label": "Tracked health entries",
+        "purpose": "Your symptom trends, weekly reports and the nudges Anu sends you."
+      },
+      "chat": {
+        "label": "Messages with Anu",
+        "purpose": "Answering your questions, and keeping follow-ups on the same topic."
+      },
+      "recordings": {
+        "label": "Consultation recordings",
+        "purpose": "So you and your doctor can revisit what was said."
+      },
+      "consultations": {
+        "label": "Consultation records",
+        "purpose": "The record of each consultation: when it happened and which doctor you saw.",
+        "retention": "Kept {{years}} years, because a doctor is required to hold consultation records for that long."
+      },
+      "documents": {
+        "label": "Prescriptions & diet plans",
+        "purpose": "Documents your doctor shared with you after a consultation.",
+        "retention": "Kept {{years}} years, for the same reason."
+      },
+      "assessments": {
+        "label": "Assessments",
+        "purpose": "Working out your stage, your score and which care path fits you."
+      },
+      "questions": {
+        "label": "Anonymous questions you asked",
+        "purpose": "Getting an expert answer back to you without your name attached to it."
+      },
+      "support": {
+        "label": "Support requests",
+        "purpose": "Answering what you wrote to us.",
+        "retention": "Deleted 6 months after you open the request."
+      },
+      "devices": {
+        "label": "Devices signed in",
+        "purpose": "Keeping you signed in, and delivering your notifications."
+      },
+      "family": {
+        "label": "Family sharing",
+        "purpose": "Who you invited to support you, and when they checked in on you. Never what they wrote.",
+        "retention": "Deleted with your account. Disconnecting someone ends their access at once."
+      }
+    }
+  },
+  "quickLog": {
+    "hot_flash": {
+      "0": "Hot flashes pass. Breathe slow and let this one move through you.",
+      "1": "Your body is just recalibrating. Sip some water and loosen a layer.",
+      "2": "This wave will crest and fade. You're handling it beautifully.",
+      "3": "A cool cloth on your wrists or neck can take the edge off.",
+      "4": "Nothing's wrong with you. This is your body adjusting, and it eases soon.",
+      "5": "Try a few slow exhales; the heat usually settles within minutes.",
+      "6": "You're not alone in this. So many move through the same wave.",
+      "7": "Find some air, drop your shoulders, and let it pass on its own time.",
+      "8": "Each one you ride through, you understand your body a little more.",
+      "9": "Be gentle with yourself right now. The flush will fade."
+    },
+    "anxiety": {
+      "0": "You're safe in this moment. Breathe in for four, out for six.",
+      "1": "Anxiety lies about how long it'll last. It always passes.",
+      "2": "Place a hand on your chest and feel it rise and fall. You're okay.",
+      "3": "Name five things you can see right now; let it pull you to the present.",
+      "4": "You don't have to fix anything this second. Just keep breathing.",
+      "5": "This feeling is a wave, not your whole ocean. It will recede.",
+      "6": "Be kind to yourself. You're carrying a lot and still showing up.",
+      "7": "Unclench your jaw, soften your hands. Your body can let go a little.",
+      "8": "You've moved through anxious moments before, and you will again.",
+      "9": "Slow your breath and the rest of you will follow. You're doing fine."
+    },
+    "chills": {
+      "0": "Wrap up warm and let your body find its temperature again.",
+      "1": "A warm drink and a soft blanket can help settle the shivers.",
+      "2": "This is your body regulating. It'll pass. Stay cozy.",
+      "3": "Warm socks and slow breaths; let the chill ease out of you.",
+      "4": "Nothing to fight here. Bundle up and give yourself a moment.",
+      "5": "Your body's just balancing out. Warmth and rest will help.",
+      "6": "Curl up somewhere snug; you deserve a little comfort right now.",
+      "7": "The cold wave will fade. Be patient and gentle with yourself.",
+      "8": "A warm shower or tea can coax the shivers away.",
+      "9": "Let yourself slow down and get warm. You're taking good care of you."
+    },
+    "irritability": {
+      "0": "Feeling on edge is valid. Your hormones are shifting, not failing you.",
+      "1": "Step away for a breath if you can. The sharp edge softens with space.",
+      "2": "You're allowed to feel irritable. Be as kind to yourself as you'd be to a friend.",
+      "3": "This isn't the real you slipping. It's a passing surge. Go easy.",
+      "4": "A short walk or a few deep breaths can loosen the tension.",
+      "5": "Name what you need right now: quiet, space, water, a pause. Then take it.",
+      "6": "Snapping doesn't make you a bad person. You're human and stretched thin.",
+      "7": "Drop your shoulders, unclench your hands. Let some of it go.",
+      "8": "This wave of irritation will settle. You don't have to act on it.",
+      "9": "Give yourself grace. You're managing more than anyone sees."
+    }
+  },
+  "report14": {
+    "domains": {
+      "A": {
+        "label": "Vasomotor Module",
+        "dominantDomain": "Hot flashes, night sweats, flushing, heart palpitations",
+        "trackerFocus": "Log hot flash frequency, duration, and time of day. Note triggers: food, stress, temperature, alcohol.",
+        "introTail": "Your most significant symptoms are vasomotor in nature. Hot flashes, night sweats, and related episodes are common in perimenopause and directly linked to fluctuating oestrogen. The good news: this domain responds well to both lifestyle and clinical interventions.",
+        "recommendations": {
+          "0": {
+            "title": "Immediate symptom relief",
+            "bullets": {
+              "0": "Keep sleep environment cool: 18–19°C is the evidence-backed optimal range",
+              "1": "Wear layered, breathable cotton or bamboo fabrics; dress for easy temperature adjustment",
+              "2": "Carry a small handheld fan for daytime episodes; cold water at onset (sip, don't gulp)",
+              "3": "A cold pack on the back of the neck can abort or shorten a flash episode"
+            }
+          },
+          "1": {
+            "title": "Lifestyle interventions",
+            "bullets": {
+              "0": "Identify and reduce personal triggers: spicy food, alcohol if you use it, caffeine, and hot drinks are the most common",
+              "1": "Regular moderate exercise reduces hot flash frequency within 8–12 weeks of consistent practice",
+              "2": "Stress management is non-negotiable. Cortisol amplifies vasomotor symptoms significantly",
+              "3": "Maintain a healthy weight; adipose tissue produces oestrone, and body weight affects symptom severity"
+            }
+          },
+          "2": {
+            "title": "Clinical options to discuss with your doctor",
+            "bullets": {
+              "0": "If symptoms are moderate to severe and disrupting daily life, ask your doctor about HRT eligibility",
+              "1": "Non-hormonal options: low-dose SSRIs, SNRIs (venlafaxine), or gabapentin have evidence for vasomotor relief",
+              "2": "Phytoestrogens (soy isoflavones, red clover): evidence is moderate; worth discussing with your doctor",
+              "3": "Stellate ganglion block: an emerging clinical option for severe, treatment-resistant hot flashes"
+            }
+          }
+        },
+        "anuNote": "ANU will prompt you to log hot flash episodes in real time. After 14 days, your pattern report will show peak times, average duration, and likely triggers. Many women are surprised to discover their triggers: the data often reveals what memory misses."
+      },
+      "B": {
+        "label": "Psychological Module",
+        "dominantDomain": "Irritability, mood swings, anxiety, depression, brain fog, memory difficulties",
+        "trackerFocus": "Log mood (1–10), anxiety episodes, brain fog days, and sleep quality every evening.",
+        "introTail": "Your most significant symptoms are in the psychological and cognitive domain. Mood changes, anxiety, and brain fog during perimenopause are neurological, driven by oestrogen's direct effect on serotonin, dopamine, and brain chemistry. This is not 'just stress.' It is real, it is hormonal, and it is addressable.",
+        "recommendations": {
+          "0": {
+            "title": "Mood and emotional regulation",
+            "bullets": {
+              "0": "Identify mood triggers: hormonal dips often follow cycle patterns even when cycles are irregular",
+              "1": "Mindfulness and breathwork: just 10 minutes daily has measurable, peer-reviewed effect on perimenopausal anxiety",
+              "2": "If you use alcohol, reduce it significantly. It is a central nervous system depressant and worsens perimenopausal mood",
+              "3": "Communicate your experience to your partner or family; isolation amplifies mood symptoms"
+            }
+          },
+          "1": {
+            "title": "Cognitive support (brain fog and memory)",
+            "bullets": {
+              "0": "Physical exercise is the single most evidence-based intervention for perimenopausal brain fog",
+              "1": "Sleep quality is non-negotiable. Cognitive symptoms worsen sharply and rapidly with poor sleep",
+              "2": "Omega-3 supplementation (EPA/DHA 1–2g/day) shows moderate benefit for mood and cognition",
+              "3": "Reduce cognitive load: write things down, use structured reminders, give yourself more recovery time"
+            }
+          },
+          "2": {
+            "title": "When to seek professional support",
+            "bullets": {
+              "0": "Persistent low mood lasting 2 or more weeks warrants a direct conversation with your GP",
+              "1": "Distinguish hormonal mood changes from clinical depression. Both can co-exist and both need treatment",
+              "2": "CBT (Cognitive Behavioural Therapy) has strong evidence specifically for perimenopausal anxiety and mood disruption",
+              "3": "HRT has documented benefit for mood symptoms linked to oestrogen deficiency. Ask your doctor if this applies to you"
+            }
+          }
+        },
+        "anuNote": "ANU will check in on your mood and anxiety levels every evening. After 14 days, your pattern report will reveal mood cycles, sleep correlations, and your statistically highest-risk days for mood dips. This data makes conversations with your doctor far more productive."
+      },
+      "C": {
+        "label": "Physical / GSM Module",
+        "dominantDomain": "Vaginal dryness, painful intercourse, urinary symptoms, joint pain, weight changes, skin and hair",
+        "trackerFocus": "Log physical discomfort levels, urinary frequency, and joint pain. Note week-to-week changes.",
+        "introTail": "Your most significant symptoms are physical, particularly in the genitourinary and musculoskeletal systems. GSM (Genitourinary Syndrome of Menopause) is underreported and undertreated. Joint pain, weight changes, and skin and hair changes are also common and often under-acknowledged. All of these are hormone-related and all are addressable.",
+        "recommendations": {
+          "0": {
+            "title": "Genitourinary health (GSM)",
+            "bullets": {
+              "0": "Non-prescription vaginal moisturisers (non-hormonal): use regularly 2–3 times per week, not only during discomfort",
+              "1": "Topical vaginal oestrogen is highly effective, has minimal systemic absorption, and is safe for most women. Ask your doctor",
+              "2": "Stay well-hydrated and reduce caffeine and alcohol if you use it, which both worsen urinary urgency and frequency",
+              "3": "Pelvic floor exercises (Kegels): 3 sets of 10 daily significantly improve urinary incontinence within 6–8 weeks"
+            }
+          },
+          "1": {
+            "title": "Musculoskeletal and weight management",
+            "bullets": {
+              "0": "Strength training 2–3 times per week is the most effective intervention for joint pain, bone density, and weight stability",
+              "1": "Anti-inflammatory diet: reduce refined carbohydrates and added sugars; increase omega-3, leafy greens, and turmeric",
+              "2": "Bone health protocol: calcium 1000–1200mg/day through food or supplement + Vitamin D3 1000–2000IU. Discuss dosage with your doctor",
+              "3": "Reduce ultra-processed food; perimenopausal metabolic changes mean diet quality matters more than it did in your 30s"
+            }
+          },
+          "2": {
+            "title": "Skin and hair",
+            "bullets": {
+              "0": "Collagen-supporting nutrients: Vitamin C (500mg), zinc, and biotin have evidence for skin and hair quality",
+              "1": "Gentle scalp massage and reduced heat styling help slow hair thinning; avoid harsh chemical treatments",
+              "2": "Topical retinoids (low-strength) for skin texture and tone. Seek dermatologist guidance before starting",
+              "3": "Sun protection is more important than ever; oestrogen loss increases UV sensitivity and skin thinning"
+            }
+          }
+        },
+        "anuNote": "ANU will track your physical symptom patterns across the month. GSM and urinary symptoms often have hormonal timing: they tend to worsen in the days following an oestrogen drop. Your 14-day report will surface this pattern and help your doctor understand the hormonal driver."
+      },
+      "D": {
+        "label": "Mixed / Complex Module",
+        "dominantDomain": "Multiple domains at moderate to severe: vasomotor + psychological + physical presenting simultaneously",
+        "trackerFocus": "Track all symptom domains daily. Primary goal: identify which domain is disrupting daily function most.",
+        "introTail": "Your symptom profile spans multiple domains simultaneously. This is more common than most women are told, and it reflects the systemic nature of hormonal change: oestrogen receptors exist throughout the body and brain. A multi-domain profile requires a structured approach: triage, foundation habits, and specialist consultation.",
+        "recommendations": {
+          "0": {
+            "title": "Triage your symptoms first",
+            "bullets": {
+              "0": "Identify your 2 most disruptive symptoms: not the most frequent, the most disruptive to daily function",
+              "1": "Do not attempt to address everything simultaneously; overwhelm worsens outcomes and reduces adherence",
+              "2": "Use your ANU daily log for 14 days before making changes. Let the data reveal your highest-impact symptom cluster",
+              "3": "Share your full symptom map (not just the most visible symptom) with your doctor at your next visit"
+            }
+          },
+          "1": {
+            "title": "Foundation interventions (benefit all domains simultaneously)",
+            "bullets": {
+              "0": "Sleep quality is the single lever that affects all symptom domains. Prioritise this above all other interventions",
+              "1": "Regular exercise: aerobic + strength combined reduces vasomotor, psychological, and physical symptoms in parallel",
+              "2": "Stress reduction: elevated cortisol dysregulates the HPA axis and worsens all three symptom clusters",
+              "3": "Nutrition audit: reduce alcohol if you use it, refined sugar, and ultra-processed food. Each worsens symptoms across domains"
+            }
+          },
+          "2": {
+            "title": "Clinical priority for complex symptom profiles",
+            "bullets": {
+              "0": "A multi-domain presentation warrants a dedicated menopause specialist consultation, not a general GP visit",
+              "1": "Request a comprehensive panel: FSH, LH, oestradiol, thyroid (TSH/FT4), Vitamin D, CBC, fasting lipids",
+              "2": "A structured care plan, rather than individual symptom treatments, produces significantly better outcomes",
+              "3": "HRT is most impactful for multi-domain perimenopause; discuss risk-benefit with a specialist, not just a general practitioner"
+            }
+          }
+        },
+        "anuNote": "Because your symptoms span multiple domains, ANU will use a daily wellness score rather than single-symptom tracking. After 14 days, your pattern report will rank your symptom domains by daily life impact and suggest a prioritised intervention sequence, so you and your doctor can focus on what matters most first."
+      }
+    },
+    "overlays": {
+      "GUT": {
+        "title": "Gut Health",
+        "lens": "Dietician + Menopause Coach lens",
+        "source": "Section 8: Digestive & Gut Health",
+        "intro": "Your responses indicate digestive symptoms that are worth addressing as part of your perimenopause care plan. Gut health is closely connected to hormonal balance. The gut microbiome plays a direct role in oestrogen metabolism through a mechanism called the estrobolome. Changes in perimenopause often disrupt gut flora, worsening digestive symptoms and amplifying hormonal effects.",
+        "recommendations": {
+          "0": {
+            "title": "Understanding your gut-hormone connection",
+            "bullets": {
+              "0": "Declining oestrogen alters gut motility. This is why bloating, constipation, and reflux often worsen in perimenopause",
+              "1": "The estrobolome (gut bacteria involved in oestrogen processing) directly influences circulating oestrogen levels",
+              "2": "Addressing gut health is not separate from managing perimenopause symptoms. It is part of it",
+              "3": "Keep a 7-day food and symptom diary to identify your personal digestive triggers before making changes"
+            }
+          },
+          "1": {
+            "title": "Dietary adjustments for gut health",
+            "bullets": {
+              "0": "Increase dietary fibre gradually to 25–30g per day: wholegrains, legumes, vegetables, and flaxseed",
+              "1": "Reduce ultra-processed foods, refined sugars, and artificial sweeteners. All disrupt gut microbiome diversity",
+              "2": "If bloating is significant, trial a low-FODMAP approach for 2–4 weeks with guidance from a dietician",
+              "3": "Identify and eliminate confirmed intolerances (gluten, dairy, FODMAPs) one at a time, not simultaneously",
+              "4": "Stay well-hydrated. 2–2.5 litres of water daily supports bowel regularity and reduces bloating"
+            }
+          },
+          "2": {
+            "title": "Microbiome and supplement support",
+            "bullets": {
+              "0": "Probiotic supplementation may support gut health in some women during perimenopause. Discuss suitable options with your dietician.",
+              "1": "Prebiotic foods feed beneficial bacteria: garlic, onion, banana, oats, asparagus. Introduce slowly if bloating is present",
+              "2": "If antibiotics were taken in the last 12 months, microbiome restoration should be a priority. Discuss with your dietician",
+              "3": "Digestive enzymes may support symptoms of bloating and incomplete digestion, particularly useful around meals",
+              "4": "Discuss magnesium supplementation with your doctor if constipation is persistent. It supports both gut motility and sleep"
+            }
+          }
+        },
+        "anuNote": "ANU will prompt you to log digestive symptoms alongside your main symptom tracking. After 14 days, your pattern report will correlate gut symptoms with your cycle phase, diet entries, and stress levels, revealing whether your gut symptoms are hormonally timed or food-driven. This distinction shapes your treatment direction significantly."
+      },
+      "FAMILY": {
+        "title": "Family & Relationship Support",
+        "lens": "Menopause Coach + Psychologist lens",
+        "source": "Section 14: Family & Relationship Context",
+        "intro": "Your responses suggest that perimenopause is affecting your relationships and home environment. This is one of the most underacknowledged dimensions of the transition, and one of the most important. When partners and family members don't understand what is happening, women feel more isolated, symptoms feel more overwhelming, and recovery takes longer. Anuva's family-inclusive model addresses this directly.",
+        "recommendations": {
+          "0": {
+            "title": "For you: navigating relationships during perimenopause",
+            "bullets": {
+              "0": "Name what is happening: telling your partner 'this is a hormonal transition, not a personality change' reframes the dynamic",
+              "1": "Choose calm moments (not the middle of a symptom) to have the conversation about what you are experiencing",
+              "2": "Be specific about what you need: 'I need you to understand this', 'I need more patience on difficult days', 'I need you to read this guide'",
+              "3": "Reduce the invisible load where possible. Perimenopausal fatigue is real and is worsened by carrying everything alone",
+              "4": "Give yourself permission to say no to social commitments when symptoms are high. This is not weakness, it is management"
+            }
+          },
+          "1": {
+            "title": "For your partner: what to understand",
+            "bullets": {
+              "0": "Perimenopause is a biological transition affecting the brain, body, and nervous system simultaneously. It is not mood or attitude",
+              "1": "Irritability, withdrawal, fatigue, and emotional sensitivity are symptoms, not character. They will not last permanently",
+              "2": "The most helpful thing a partner can do is listen without trying to fix, and show up with patience rather than solutions",
+              "3": "Physical intimacy may change during this time. Vaginal dryness, low libido, and body image changes are real and treatable",
+              "4": "Download the Anuva Family Guide for a structured conversation starter you can use together"
+            }
+          },
+          "2": {
+            "title": "For your family: creating a supportive home",
+            "bullets": {
+              "0": "Children (especially teenagers) can sense when something has changed. Naming it age-appropriately reduces anxiety for them",
+              "1": "Reduce sources of household conflict during high-symptom periods. Communicate needs clearly and early",
+              "2": "Enlist family support for practical load (meals, logistics) during difficult weeks. Asking is not a burden, it is communication",
+              "3": "Consider an Anuva family session or couples coaching session. Many families find a structured conversation more effective than ad hoc discussion",
+              "4": "Community matters: connecting with other women going through the same experience normalises the journey and reduces isolation"
+            }
+          }
+        },
+        "anuNote": "ANU includes a Family Awareness module that generates a personalised explainer you can share with your partner and family, written for people who are not going through perimenopause themselves. It translates your specific symptom profile into plain language, reducing the gap between what you are experiencing and what your family can understand. Access it from your ANU home screen under 'Share with Family.'"
+      }
+    },
+    "stages": {
+      "1": {
+        "label": "Early Perimenopause",
+        "stageContext": "Cycles still present. Hormonal fluctuation has begun, so oestrogen levels are starting to shift.",
+        "menstrualStatus": "Periods mostly regular. Cycle may show minor length variation (±3–5 days). Flow changes possible.",
+        "introLead": "You are in the early stage of perimenopause. Your cycles are still present, but hormonal shifts have begun. This is the ideal time to build habits and awareness that will support you through the transition ahead.",
+        "medicalFlags": {
+          "0": "Thyroid screening recommended if not done recently",
+          "1": "Baseline bone density not yet urgent unless risk factors present",
+          "2": "Establish a regular GP check-in cadence"
+        }
+      },
+      "2": {
+        "label": "Mid Perimenopause",
+        "stageContext": "Cycles increasingly irregular. Oestrogen declining more noticeably. Symptom intensity often peaks at this stage.",
+        "menstrualStatus": "Periods irregular: skipping cycles, variable flow, unpredictable timing. Spotting between periods possible.",
+        "introLead": "You are in mid perimenopause, the most hormonally active phase of the transition. Symptoms are often most pronounced at this stage. Your report reflects your current symptom profile and gives you a clear action plan.",
+        "medicalFlags": {
+          "0": "Bone density check recommended if not done in last 2 years",
+          "1": "Cardiovascular risk baseline advisable",
+          "2": "Thyroid panel if symptomatic",
+          "3": "Discuss HRT eligibility with your doctor now if symptoms are disruptive"
+        }
+      },
+      "3": {
+        "label": "Late Perimenopause",
+        "stageContext": "Approaching or at 12-month amenorrhoea threshold. Oestrogen at its lowest transitional levels.",
+        "menstrualStatus": "9–12 months without a period, or approaching this threshold. Any spotting should be discussed with your doctor.",
+        "introLead": "You are in late perimenopause, approaching the menopause threshold. This is a significant milestone in your health journey. Your report focuses on protecting your long-term health while managing current symptoms effectively.",
+        "medicalFlags": {
+          "0": "Bone density DXA scan strongly recommended",
+          "1": "Cardiovascular risk assessment",
+          "2": "Vaginal atrophy / GSM clinical assessment",
+          "3": "Review of cancer screening history (breast, cervical, ovarian)",
+          "4": "Discuss long-term HRT or alternatives with a specialist"
+        }
+      }
+    },
+    "document": {
+      "disclaimer": "This report is generated from the information you provided and is intended to support, not replace, a conversation with a qualified clinician. It is not a diagnosis. Do not start, stop or change any medication or treatment on the basis of this report. If you have urgent symptoms, contact your doctor or local emergency services.",
+      "title": "{{stage}} · {{domain}}",
+      "salutationNamed": "Dear {{name}},",
+      "salutation": "Hello,",
+      "recipientFallback": "there"
+    },
+    "labels": {
+      "fromAnu": "From ANU",
+      "pageTitle": "Your Assessment Report · Anuva Wellness",
+      "saveAsPdf": "Save as PDF",
+      "eyebrow": "Anuva Wellness · Assessment Report",
+      "menstrualStatus": "Your menstrual status",
+      "dominantDomain": "Dominant symptom domain",
+      "medicalFlags": "Medical flags to raise with your doctor",
+      "recommendations": "Your recommendations",
+      "trackerFocus": "What ANU will track with you"
+    }
+  }
+}

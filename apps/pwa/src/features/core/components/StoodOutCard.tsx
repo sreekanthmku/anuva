@@ -1,4 +1,5 @@
 import type { ReportDeltaTone, ReportRing, ReportRingKey } from '@anuva/shared';
+import { useTranslation } from 'react-i18next';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -24,28 +25,24 @@ const TAP_THROUGH = false;
  */
 const COLUMNS: {
   tone: Exclude<ReportDeltaTone, 'none'>;
-  title: string;
   emoji: string;
   tint: string;
   accent: string;
 }[] = [
   {
     tone: 'positive',
-    title: 'Improving',
     emoji: '🌱',
     tint: 'rgba(79, 157, 107, 0.12)',
     accent: '#3F7F56',
   },
   {
     tone: 'neutral',
-    title: 'Steady',
     emoji: '🍂',
     tint: 'rgba(184, 146, 60, 0.13)',
     accent: '#5A4716',
   },
   {
     tone: 'attention',
-    title: 'Needs attention',
     emoji: '⚠️',
     tint: '#F8DCE2',
     accent: '#C0405A',
@@ -71,6 +68,7 @@ export function StoodOutCard({
   rings: ReportRing[];
   onSelect: (key: ReportRingKey) => void;
 }) {
+  const { t } = useTranslation();
   const grouped = COLUMNS.map((column) => ({
     ...column,
     rings: rings.filter((ring) => ring.pct != null && ring.deltaTone === column.tone),
@@ -80,7 +78,7 @@ export function StoodOutCard({
 
   return (
     <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
-      <Eyebrow>What stood out</Eyebrow>
+      <Eyebrow>{t('report.whatStoodOut')}</Eyebrow>
 
       {/* Equal columns, sized to however many groups actually have something in
           them — a fixed three-up leaves a hole on a week where nothing worsened.
@@ -104,7 +102,7 @@ export function StoodOutCard({
                 className="min-w-0 text-[10.5px] font-semibold leading-[1.25]"
                 style={{ color: column.accent, fontFamily: MULISH }}
               >
-                {column.title}
+                {t(`report.stoodOut.${column.tone}`)}
               </span>
             </div>
 
@@ -134,7 +132,10 @@ export function StoodOutCard({
                       <button
                         type="button"
                         onClick={() => onSelect(ring.key)}
-                        aria-label={`${ring.label}, ${column.title.toLowerCase()}. See day by day`}
+                        aria-label={t('report.stoodOutAria', {
+                          label: ring.label,
+                          column: t(`report.stoodOut.${column.tone}`).toLocaleLowerCase(),
+                        })}
                         className={`${shell} transition-opacity active:opacity-60`}
                         style={{ fontFamily: MULISH }}
                       >

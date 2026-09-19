@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 process.env.FAMILY_INVITE_SECRET = 'test-secret-of-at-least-32-characters-long';
 
-const { arrowFor, metricValue, NOTHING_SHARED } = await import('../src/family/content.js');
+const { arrowFor, metricValue, FAMILY_TEXT } = await import('../src/family/content.js');
 const { buildFamilyLearn } = await import('../src/family/digest.js');
 const { familyArticle, familyArticleSections, readerFor, FAMILY_ARTICLE_COUNT } = await import(
   '../src/family/articles.js'
@@ -37,7 +37,7 @@ describe('arrowFor', () => {
 
 describe('metricValue', () => {
   it('says nothing was shared only when nothing was logged', () => {
-    expect(metricValue('sleep', 'none', null)).toBe(NOTHING_SHARED);
+    expect(metricValue('sleep', 'none', null)).toBe(FAMILY_TEXT.nothingShared);
   });
 
   it('falls back to the band when she logged but no direction exists yet', () => {

@@ -1,3 +1,4 @@
+import { copyList } from '../i18n/index.js';
 import type { FamilyArticleReader } from '@anuva/shared';
 
 /**
@@ -446,12 +447,15 @@ const HIGH_IMPACT_NUDGES: AuthoredNudge[] = [
   },
 ];
 
-export const FAMILY_NUDGES: AuthoredNudge[] = [
-  ...PARTNER_NUDGES,
-  ...TEEN_NUDGES,
-  ...ADULT_NUDGES,
-  ...HIGH_IMPACT_NUDGES,
-];
+/**
+ * The nudge corpus, with each `text` localised on read and keyed by the nudge id — so a translation
+ * follows its nudge through any reordering of the workbook.
+ */
+export const FAMILY_NUDGES: AuthoredNudge[] = copyList(
+  'family.nudges',
+  [...PARTNER_NUDGES, ...TEEN_NUDGES, ...ADULT_NUDGES, ...HIGH_IMPACT_NUDGES],
+  ['text'],
+);
 
 /** Lookup for rendering a logged nudge back out of its stored id. */
 const BY_ID = new Map(FAMILY_NUDGES.map((nudge) => [nudge.id, nudge]));

@@ -1,5 +1,6 @@
 import type { DetailedPractitioner } from '@anuva/shared';
 import type { prisma as prismaClient } from '@anuva/database';
+import { copy } from './i18n/index.js';
 
 type SeedSpecialist = {
   key: string;
@@ -95,6 +96,40 @@ const seedSpecialists: SeedSpecialist[] = [
     bookable: false,
   },
 ];
+
+/** The profile fields a patient reads; names and qualification credentials stay as written. */
+const TRANSLATABLE_FIELDS = ['subtitle', 'tag', 'role', 'specialization', 'summary', 'experience'] as const;
+type TranslatableField = (typeof TRANSLATABLE_FIELDS)[number];
+
+const SPECIALIST_TEXT = copy(
+  'specialists',
+  Object.fromEntries(
+    seedSpecialists.map((specialist) => [
+      specialist.key,
+      Object.fromEntries(
+        TRANSLATABLE_FIELDS.flatMap((field) =>
+          specialist[field] ? [[field, specialist[field] as string]] : [],
+        ),
+      ),
+    ]),
+  ) as Record<string, Partial<Record<TranslatableField, string>>>,
+);
+
+/**
+ * A specialist's profile text in the request's language. Translations are of the seeded English,
+ * so a profile an admin has since edited keeps the stored text rather than an outdated translation.
+ */
+export function localizeSpecialistField(
+  key: string,
+  field: TranslatableField,
+  stored: string | null,
+): string | null {
+  const seed = seedSpecialists.find((specialist) => specialist.key === key);
+  if (!stored || !seed || seed[field] !== stored) {
+    return stored;
+  }
+  return SPECIALIST_TEXT[key]?.[field] ?? stored;
+}
 
 let bookingCatalogReadyPromise: Promise<void> | null = null;
 

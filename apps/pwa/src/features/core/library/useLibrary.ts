@@ -6,6 +6,7 @@ import type {
   LibraryFeedResponse,
 } from '@anuva/shared';
 import { fetchDailyInsight, fetchLibraryArticle, fetchLibraryFeed } from './api';
+import i18n from '../../../i18n';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -30,7 +31,7 @@ export function useLibraryFeed() {
       setFeed(response);
       setState('ready');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load the library.');
+      setError(err instanceof Error ? err.message : i18n.t('errors.loadLibrary'));
       setState('error');
     }
   }, []);
@@ -59,7 +60,7 @@ export function useLibraryArticle(slug: string | undefined) {
 
   const load = useCallback(async () => {
     if (!slug) {
-      setError('Article not found.');
+      setError(i18n.t('errors.articleNotFound'));
       setState('error');
       return;
     }
@@ -71,7 +72,7 @@ export function useLibraryArticle(slug: string | undefined) {
       setData(await fetchLibraryArticle(slug));
       setState('ready');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load this article.');
+      setError(err instanceof Error ? err.message : i18n.t('errors.loadArticle'));
       setState('error');
     }
   }, [slug]);

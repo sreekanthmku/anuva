@@ -1,8 +1,10 @@
+import { copy, fill, withLanguage } from '../i18n/index.js';
+import { languageForUser } from '../i18n/recipients.js';
 import { prisma } from '@anuva/database';
 import type { FamilySupportActionKind } from '@anuva/shared';
 import { sendPushToAllTokens } from '../fcm.js';
 import { dayKey } from '../dayKey.js';
-import { ACTION_COMPLETION_MESSAGE, ACTION_COMPLETION_PROMPT } from './content.js';
+import { FAMILY_TEXT } from './content.js';
 import { attributeSupportAction } from './nudgeLog.js';
 import { FamilyError } from './errors.js';
 
@@ -11,12 +13,12 @@ import { FamilyError } from './errors.js';
  * "✓ Support action completed", and in a later phase what tells her someone checked in.
  */
 
-const TOASTS: Record<FamilySupportActionKind, string> = {
+const TOASTS: Record<FamilySupportActionKind, string> = copy('family.supportToasts', {
   message: '✓ Message sent. She will see that you thought of her.',
   call: '✓ Call logged. A voice helps more than a text on a hard day.',
   flowers: '✓ Flowers sent. They are on her phone now.',
   chocolates: '✓ Virtual chocolates sent. They are on her phone now.',
-};
+});
 
 /**
  * The two gestures that are *delivered* rather than merely recorded. Real flowers and chocolates
@@ -31,21 +33,24 @@ function isGiftKind(kind: FamilySupportActionKind): kind is FamilyGiftKind {
 }
 
 /** Phrased for her lock screen. Short — the whole gesture has to survive a notification preview. */
-const GIFT_PUSH: Record<FamilyGiftKind, { title: (first: string) => string; body: string }> = {
+const GIFT_PUSH: Record<FamilyGiftKind, { title: string; body: string }> = copy('family.giftPush', {
   flowers: {
-    title: (first) => `${first} sent you flowers 🌻`,
+    title: '{{name}} sent you flowers 🌻',
     body: 'Thinking of you today. Tap to open them.',
   },
   chocolates: {
-    title: (first) => `${first} sent you chocolates 🍫`,
+    title: '{{name}} sent you chocolates 🍫',
     body: 'Something sweet for a hard day. Tap to open it.',
   },
-};
+});
 
-const GIFT_UNDELIVERED_TOAST: Record<FamilyGiftKind, string> = {
-  flowers: 'Recorded for today, but her phone has no notifications set up, so she will not see them.',
-  chocolates: 'Recorded for today, but her phone has no notifications set up, so she will not see them.',
-};
+const GIFT_TEXT = copy('family.giftText', {
+  undelivered:
+    'Recorded for today, but her phone has no notifications set up, so she will not see them.',
+  alreadyFlowers: 'Already sent her flowers today. She has them.',
+  alreadyChocolates: 'Already sent her chocolates today. She has them.',
+  reminderSaved: 'Reminder saved for this evening.',
+});
 
 function firstNameOf(name: string): string {
   return name.trim().split(/\s+/)[0] || name;
@@ -69,12 +74,17 @@ async function deliverGift(input: {
   if (tokens.length === 0) return false;
 
   const first = firstNameOf(input.memberName);
-  const copy = GIFT_PUSH[input.kind];
   const deepLink = `/home#familyGift=${input.kind}&familyFrom=${encodeURIComponent(first)}`;
+
+  // Her lock screen, so her language — not the language of the family member who sent it.
+  const notification = withLanguage(await languageForUser(input.userId), () => ({
+    title: fill(GIFT_PUSH[input.kind].title, { name: first }),
+    body: GIFT_PUSH[input.kind].body,
+  }));
 
   const { successCount } = await sendPushToAllTokens(
     tokens,
-    { title: copy.title(first), body: copy.body },
+    notification,
     { url: deepLink, familyGift: input.kind, familyFrom: first },
   );
 
@@ -140,8 +150,8 @@ async function selectAction(input: {
   return {
     completedToday: false,
     pending: true,
-    prompt: ACTION_COMPLETION_PROMPT,
-    toast: ACTION_COMPLETION_PROMPT,
+    prompt: FAMILY_TEXT.actionCompletionPrompt,
+    toast: FAMILY_TEXT.actionCompletionPrompt,
   };
 }
 
@@ -180,7 +190,7 @@ export async function confirmPendingAction(input: {
 
   await attributeSupportAction({ familyMemberId: input.familyMemberId, kind, now });
 
-  return { completedToday: true, kind, toast: ACTION_COMPLETION_MESSAGE };
+  return { completedToday: true, kind, toast: FAMILY_TEXT.actionCompletionMessage };
 }
 
 export async function recordSupportAction(input: {
@@ -246,9 +256,7 @@ export async function recordSupportAction(input: {
       pending: false,
       prompt: null,
       toast:
-        input.kind === 'flowers'
-          ? 'Already sent her flowers today. She has them.'
-          : 'Already sent her chocolates today. She has them.',
+        input.kind === 'flowers' ? GIFT_TEXT.alreadyFlowers : GIFT_TEXT.alreadyChocolates,
       delivered: true,
     };
   }
@@ -265,7 +273,7 @@ export async function recordSupportAction(input: {
     completedToday: true,
     pending: false,
     prompt: null,
-    toast: delivered ? TOASTS[input.kind] : GIFT_UNDELIVERED_TOAST[input.kind],
+    toast: delivered ? TOASTS[input.kind] : GIFT_TEXT.undelivered,
     delivered,
   };
 }
@@ -290,5 +298,5 @@ export async function scheduleSupportReminder(
     data: { supportRemindAt: remindAt },
   });
 
-  return { remindAt: remindAt.toISOString(), toast: 'Reminder saved for this evening.' };
+  return { remindAt: remindAt.toISOString(), toast: GIFT_TEXT.reminderSaved };
 }

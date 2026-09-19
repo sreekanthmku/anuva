@@ -1,3 +1,4 @@
+import { copy } from '../i18n/index.js';
 import type { FamilyMetricKey } from '@anuva/shared';
 
 /**
@@ -14,12 +15,12 @@ import type { FamilyMetricKey } from '@anuva/shared';
 
 export const FAMILY_METRIC_KEYS: FamilyMetricKey[] = ['sleep', 'mood', 'stress', 'energy'];
 
-export const METRIC_NOUNS: Record<FamilyMetricKey, string> = {
+export const METRIC_NOUNS: Record<FamilyMetricKey, string> = copy('family.metricNouns', {
   sleep: 'Sleep',
   mood: 'Mood',
   stress: 'Stress',
   energy: 'Energy',
-};
+});
 
 /**
  * Whether a rising *score* should be drawn as a rising arrow.
@@ -44,14 +45,22 @@ export function arrowFor(key: FamilyMetricKey, tone: 'positive' | 'attention' | 
 }
 
 /** Direction words per metric. `none` covers "she has not logged this". */
-const METRIC_WORDS: Record<FamilyMetricKey, Record<'positive' | 'attention' | 'neutral', string>> = {
+const METRIC_WORDS: Record<FamilyMetricKey, Record<'positive' | 'attention' | 'neutral', string>> = copy('family.metricWords', {
   sleep: { positive: 'Sleeping better', attention: 'Sleeping less', neutral: 'About the same' },
   mood: { positive: 'More steady', attention: 'More up and down', neutral: 'Fairly steady' },
   stress: { positive: 'Easing off', attention: 'Running higher', neutral: 'Holding steady' },
   energy: { positive: 'Picking up', attention: 'Running low', neutral: 'About the same' },
-};
+});
 
-export const NOTHING_SHARED = 'Nothing shared yet';
+/**
+ * Single sentences, in one table so each can be localised on read. Named as before, just grouped.
+ */
+export const FAMILY_TEXT = copy('family.text', {
+  nothingShared: 'Nothing shared yet',
+  actionCompletionPrompt: 'Done? Tap ✓ when you’ve made her smile.',
+  actionCompletionMessage: 'Beautiful. ❤️ Sometimes the smallest actions are the ones she remembers.',
+  consultationFallback: 'Wellness consultation',
+});
 
 /**
  * Three cases, and collapsing any two of them tells the family something untrue.
@@ -76,7 +85,7 @@ export function metricValue(
   if (tone === 'attention') return METRIC_WORDS[key].attention;
   if (band) return band;
   if (tone === 'neutral') return METRIC_WORDS[key].neutral;
-  return NOTHING_SHARED;
+  return FAMILY_TEXT.nothingShared;
 }
 
 /**
@@ -84,7 +93,7 @@ export function metricValue(
  * concrete act — the point of this app is that a family member knows what would actually help,
  * rather than being told to be supportive in general.
  */
-export const SUPPORT_BY_METRIC: Record<FamilyMetricKey, { headline: string; body: string }> = {
+export const SUPPORT_BY_METRIC: Record<FamilyMetricKey, { headline: string; body: string }> = copy('family.supportByMetric', {
   sleep: {
     headline: 'Send her a thoughtful message',
     body: 'A small gesture may help after a difficult night’s sleep. Try to take something off her plate today.',
@@ -101,20 +110,20 @@ export const SUPPORT_BY_METRIC: Record<FamilyMetricKey, { headline: string; body
     headline: 'Keep today gentle',
     body: 'Low energy is a symptom, not reluctance. A slower plan and an early night will do more than encouragement.',
   },
-};
+});
 
-export const SUPPORT_STEADY = {
+export const SUPPORT_STEADY = copy('family.supportSteady', {
   headline: 'A good week to say so',
   body: 'Nothing looks difficult right now. Noticing the steady weeks out loud is its own kind of support.',
-};
+});
 
-export const SUPPORT_UNKNOWN = {
+export const SUPPORT_UNKNOWN = copy('family.supportUnknown', {
   headline: 'Let her know you are here',
   body: 'There is nothing to read yet. A short message saying you are around is a good place to start.',
-};
+});
 
 /** One short explainer per metric — why this is happening, so it reads as biology and not mood. */
-export const EDUCATION_BY_METRIC: Record<FamilyMetricKey, { headline: string; body: string }> = {
+export const EDUCATION_BY_METRIC: Record<FamilyMetricKey, { headline: string; body: string }> = copy('family.educationByMetric', {
   sleep: {
     headline: 'Poor sleep can affect energy and patience',
     body: 'Falling oestrogen interrupts sleep and raises night-time body temperature. The following day is harder for reasons that have nothing to do with willpower.',
@@ -131,12 +140,12 @@ export const EDUCATION_BY_METRIC: Record<FamilyMetricKey, { headline: string; bo
     headline: 'Fatigue here is physical',
     body: 'Broken sleep, hot flushes and hormonal change together produce a tiredness that rest alone does not fully clear.',
   },
-};
+});
 
-export const EDUCATION_GENERAL = {
+export const EDUCATION_GENERAL = copy('family.educationGeneral', {
   headline: 'Perimenopause is a physical transition',
   body: 'It can last years and affects sleep, mood, energy and memory. Knowing that helps everyone in the house take it less personally.',
-};
+});
 
 /**
  * The daily nudge's own label, by layer.
@@ -144,11 +153,11 @@ export const EDUCATION_GENERAL = {
  * Worded as what the reader is being asked for, not as the framework's internal name. "Connect" is a
  * product concept; "A moment with her" is an instruction. The layer name never reaches a screen.
  */
-export const NUDGE_LAYER_LABELS: Record<'understand' | 'connect' | 'act', string> = {
+export const NUDGE_LAYER_LABELS: Record<'understand' | 'connect' | 'act', string> = copy('family.nudgeLayerLabels', {
   understand: 'Worth knowing today',
   connect: 'A moment with her',
   act: 'One thing you can do',
-};
+});
 
 /**
  * The action flow's confirm step, from the workbook's "Action Nudges" sheet.
@@ -157,22 +166,20 @@ export const NUDGE_LAYER_LABELS: Record<'understand' | 'connect' | 'act', string
  * the app or is delivered by it, and asking someone to confirm something they just watched happen
  * reads as distrust.
  */
-export const ACTION_COMPLETION_PROMPT = 'Done? Tap ✓ when you’ve made her smile.';
-
-export const ACTION_COMPLETION_MESSAGE =
-  'Beautiful. ❤️ Sometimes the smallest actions are the ones she remembers.';
+// The confirm prompt and its reply live in `FAMILY_TEXT` above (`actionCompletionPrompt`,
+// `actionCompletionMessage`).
 
 /** Pushed when a selected action is still unconfirmed hours later. */
-export const ACTION_PENDING_REMINDER = {
+export const ACTION_PENDING_REMINDER = copy('family.actionPendingReminder', {
   title: 'Still on your list?',
   body: 'A small gesture can still make today better.',
-};
+});
 
 /**
  * Two nudges a week, rotated by week number so they change without needing a schedule or any stored
  * state. Deterministic: everyone sees the same pair in the same week.
  */
-export const LEARN_NUDGES: { headline: string; body: string }[] = [
+export const LEARN_NUDGES: { headline: string; body: string }[] = copy('family.learnNudges', [
   {
     headline: 'Mood changes aren’t always personal',
     body: 'Hormonal fluctuations can affect emotional regulation. Try not to read a difficult moment as a verdict on you.',
@@ -189,9 +196,9 @@ export const LEARN_NUDGES: { headline: string; body: string }[] = [
     headline: 'This is not a short phase',
     body: 'Perimenopause commonly runs four to eight years. Pacing your support matters more than an intense first month.',
   },
-];
+]);
 
-export const LEARN_TIPS: { headline: string; body: string }[] = [
+export const LEARN_TIPS: { headline: string; body: string }[] = copy('family.learnTips', [
   {
     headline: 'Listen before trying to solve',
     body: 'Ask: “Would you like me to listen, help, or give you space?” It works because it hands the choice back to her.',
@@ -208,7 +215,7 @@ export const LEARN_TIPS: { headline: string; body: string }[] = [
     headline: 'Do not diagnose out loud',
     body: 'Attributing every difficult moment to hormones is its own kind of dismissal. Believe the feeling first.',
   },
-];
+]);
 
 /**
  * A booked consultation, described softly.
@@ -219,11 +226,11 @@ export const LEARN_TIPS: { headline: string; body: string }[] = [
  * her. Nutrition is the exception because it is both harmless and actionable: it tells them meals
  * matter this week.
  */
-export const CONSULTATION_LABEL: Record<string, string> = {
+export const CONSULTATION_LABEL: Record<string, string> = copy('family.consultationLabel', {
   nutri: 'Nutrition consultation',
-};
+});
 
-export const CONSULTATION_LABEL_FALLBACK = 'Wellness consultation';
+// The generic label is `FAMILY_TEXT.consultationFallback`.
 
 /**
  * What a family member can see, in her words, for the privacy tab and /family/me.
@@ -232,19 +239,39 @@ export const CONSULTATION_LABEL_FALLBACK = 'Wellness consultation';
  * metric nouns rather than typed out separately, so adding a metric to the digest cannot leave this
  * list quietly under-promising — and anything not listed here has to stay out of the digest.
  */
-export const FAMILY_SHARED_SCOPES: string[] = [
+const SHARED_SCOPE_TEXT = copy('family.sharedScopes', {
   // Says "in words" rather than "direction only": a single logged day has no direction yet and is
   // shown as its band ("Stressful", "Tired"), so promising direction alone would be inaccurate.
-  `${FAMILY_METRIC_KEYS.map((key) => METRIC_NOUNS[key].toLowerCase()).join(', ')}: in words only ("sleeping less", "manageable"), never scores`,
+  metrics: '{{metrics}}: in words only ("sleeping less", "manageable"), never scores',
   // The daily nudge is chosen from her week, so the choice itself carries information even though
   // the sentence names no measurement. Saying so is the price of using her data to pick it — and
   // the reason `SIGNAL_BY_RING` in digest.ts is a short, argued list rather than every tracker.
-  'A daily suggestion, chosen from how her week is going — including whether she has been having heat episodes. It never shows a symptom, a count or a score.',
-  'How many days this week she has tracked',
-  'That a consultation is booked, and when. Never which specialist or why.',
-];
+  nudge:
+    'A daily suggestion, chosen from how her week is going — including whether she has been having heat episodes. It never shows a symptom, a count or a score.',
+  tracking: 'How many days this week she has tracked',
+  consultation: 'That a consultation is booked, and when. Never which specialist or why.',
+});
 
-export const FAMILY_PRIVATE_ITEMS: string[] = [
+/**
+ * What a family member can see, in the current language, for the join screen, the privacy tab and
+ * the data export. A function rather than a constant: the first line is built from the metric nouns,
+ * which only have wording once there is a language to word them in.
+ */
+export function familySharedScopes(): string[] {
+  return [
+    interpolateMetrics(SHARED_SCOPE_TEXT.metrics),
+    SHARED_SCOPE_TEXT.nudge,
+    SHARED_SCOPE_TEXT.tracking,
+    SHARED_SCOPE_TEXT.consultation,
+  ];
+}
+
+function interpolateMetrics(template: string): string {
+  const metrics = FAMILY_METRIC_KEYS.map((key) => METRIC_NOUNS[key].toLocaleLowerCase()).join(', ');
+  return template.replace('{{metrics}}', metrics);
+}
+
+export const FAMILY_PRIVATE_ITEMS: string[] = copy('family.privateItems', [
   'Medical records, notes and prescriptions',
   'Her conversations with Anu',
   // Qualified rather than dropped. A nudge may allude to a rough patch; what stays private is the
@@ -253,4 +280,4 @@ export const FAMILY_PRIVATE_ITEMS: string[] = [
   'Her symptom logs — which symptoms, how often, and how severe',
   'Anything she writes in the app',
   'Which specialist she is seeing, and why',
-];
+]);

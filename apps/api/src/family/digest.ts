@@ -1,3 +1,4 @@
+import { copy, currentLanguage, dateLocale, fill } from '../i18n/index.js';
 import { prisma } from '@anuva/database';
 import type {
   FamilyLearnResponse,
@@ -15,15 +16,14 @@ import { buildSummary } from '../report/build.js';
 import { summaryAnchor } from '../report/calendar.js';
 import {
   CONSULTATION_LABEL,
-  CONSULTATION_LABEL_FALLBACK,
   EDUCATION_BY_METRIC,
   EDUCATION_GENERAL,
   FAMILY_METRIC_KEYS,
   FAMILY_PRIVATE_ITEMS,
-  FAMILY_SHARED_SCOPES,
+  familySharedScopes,
   LEARN_NUDGES,
   LEARN_TIPS,
-  ACTION_COMPLETION_PROMPT,
+  FAMILY_TEXT,
   METRIC_NOUNS,
   NUDGE_LAYER_LABELS,
   SUPPORT_BY_METRIC,
@@ -73,7 +73,10 @@ export function clearDigestCache(): void {
 }
 
 async function loadSummary(userId: string): Promise<SummaryResult> {
-  const cached = summaryCache.get(userId);
+  // Keyed by language as well as patient: the summary carries worded bands and deltas, and two
+  // family members reading in different languages must each get their own.
+  const cacheKey = `${userId}:${currentLanguage()}`;
+  const cached = summaryCache.get(cacheKey);
   if (cached && Date.now() - cached.at < DIGEST_CACHE_TTL_MS) {
     return cached.summary;
   }
@@ -92,7 +95,7 @@ async function loadSummary(userId: string): Promise<SummaryResult> {
   }
 
   const summary = await buildSummary(userId, summaryAnchor(user), 'weekly', 0);
-  summaryCache.set(userId, { at: Date.now(), summary });
+  summaryCache.set(cacheKey, { at: Date.now(), summary });
   return summary;
 }
 
@@ -202,14 +205,63 @@ export function familySignals(summary: SummaryResult): FamilyNudgeSignalMoment[]
   return signals;
 }
 
+/**
+ * The digest's own wording. Localised on read (see `copy()`); `{{metric}}`, `{{name}}` and the counts
+ * are filled in at the call site.
+ */
+const DIGEST = copy('family.digest', {
+  statusLabel: 'Overall status',
+  emptyHeadline: 'Nothing shared yet this week',
+  emptyBody:
+    'When she logs how she is feeling, you will see the direction things are moving. Nothing appears here until she does.',
+  earlyHeadline: 'Still early days',
+  earlyBody:
+    'Only a few days logged so far, so there is no pattern to read yet. {{metric}} is the lowest of them today.',
+  okayHeadline: 'She is doing okay this week',
+  okayBody: 'Nothing stands out as difficult. Steady weeks are worth noticing too.',
+  supportHeadline: 'She may need support',
+  supportBodyImproving:
+    '{{metric}} has been the hardest part of her week, though it is moving in the right direction. Small, practical help still goes a long way.',
+  supportBody:
+    '{{metric}} has been the hardest part of her week. Small, practical help lands better than advice right now.',
+  progressLabel: 'Positive progress',
+  progressHeadline: '{{logged}} of {{total}} days tracked',
+  progressAllBody:
+    'She has tracked every day this week. That consistency is what makes the picture reliable.',
+  progressSomeBody: 'Every day she logs makes the picture clearer. No need to chase her about it.',
+  upcomingLabel: 'Upcoming care',
+  greeting: {
+    morning: 'Good morning, {{name}}',
+    afternoon: 'Good afternoon, {{name}}',
+    evening: 'Good evening, {{name}}',
+  },
+  todayEyebrow: 'Her wellness this week',
+  supportLabel: 'How you can support her',
+  supportCta: 'Choose a supportive action',
+  supportCompletedCta: '✓ Support action completed',
+  metricsLabel: 'This week · shared with you',
+  educationLabel: 'Understand her experience',
+  learnEyebrow: 'Family learning',
+  learnTitle: 'Know what she’s going through',
+  learnSubline: 'Two supportive nudges each week',
+  learnNudgeLabel: 'This week’s nudge',
+  learnTipLabel: 'Communication tip',
+  learnArticlesLabel: 'Explore topics',
+  privacyEyebrow: 'Privacy & consent',
+  privacyTitle: 'She stays in control',
+  privacySubline: 'Only what {{name}} chooses to share reaches this app.',
+  privacySharedLabel: 'Currently shared with you',
+  privacyPrivateLabel: 'Never shared',
+});
+
 function buildStatus(summary: SummaryResult, weakest: FamilyMetricKey | null) {
-  const label = 'Overall status';
+  const label = DIGEST.statusLabel;
 
   if (summary.dataState === 'empty' || weakest === null) {
     return {
       label,
-      headline: 'Nothing shared yet this week',
-      body: 'When she logs how she is feeling, you will see the direction things are moving. Nothing appears here until she does.',
+      headline: DIGEST.emptyHeadline,
+      body: DIGEST.emptyBody,
     };
   }
 
@@ -218,8 +270,8 @@ function buildStatus(summary: SummaryResult, weakest: FamilyMetricKey | null) {
     // hardest metric is still useful and still true, so it is named without being extrapolated.
     return {
       label,
-      headline: 'Still early days',
-      body: `Only a few days logged so far, so there is no pattern to read yet. ${METRIC_NOUNS[weakest]} is the lowest of them today.`,
+      headline: DIGEST.earlyHeadline,
+      body: fill(DIGEST.earlyBody, { metric: METRIC_NOUNS[weakest] }),
     };
   }
 
@@ -231,8 +283,8 @@ function buildStatus(summary: SummaryResult, weakest: FamilyMetricKey | null) {
   if (!struggling) {
     return {
       label,
-      headline: 'She is doing okay this week',
-      body: 'Nothing stands out as difficult. Steady weeks are worth noticing too.',
+      headline: DIGEST.okayHeadline,
+      body: DIGEST.okayBody,
     };
   }
 
@@ -243,10 +295,10 @@ function buildStatus(summary: SummaryResult, weakest: FamilyMetricKey | null) {
 
   return {
     label,
-    headline: 'She may need support',
-    body: improving
-      ? `${METRIC_NOUNS[weakest]} has been the hardest part of her week, though it is moving in the right direction. Small, practical help still goes a long way.`
-      : `${METRIC_NOUNS[weakest]} has been the hardest part of her week. Small, practical help lands better than advice right now.`,
+    headline: DIGEST.supportHeadline,
+    body: fill(improving ? DIGEST.supportBodyImproving : DIGEST.supportBody, {
+      metric: METRIC_NOUNS[weakest],
+    }),
   };
 }
 
@@ -261,12 +313,9 @@ function buildProgress(summary: SummaryResult) {
   }
 
   return {
-    label: 'Positive progress',
-    headline: `${loggedDays} of ${totalDays} days tracked`,
-    body:
-      loggedDays >= totalDays
-        ? 'She has tracked every day this week. That consistency is what makes the picture reliable.'
-        : 'Every day she logs makes the picture clearer. No need to chase her about it.',
+    label: DIGEST.progressLabel,
+    headline: fill(DIGEST.progressHeadline, { logged: loggedDays, total: totalDays }),
+    body: loggedDays >= totalDays ? DIGEST.progressAllBody : DIGEST.progressSomeBody,
     loggedDays,
     totalDays,
   };
@@ -288,9 +337,9 @@ async function buildUpcoming(userId: string) {
   const key = consultation.specialist?.key ?? '';
 
   return {
-    label: 'Upcoming care',
-    headline: CONSULTATION_LABEL[key] ?? CONSULTATION_LABEL_FALLBACK,
-    body: consultation.scheduledAt.toLocaleString('en-IN', {
+    label: DIGEST.upcomingLabel,
+    headline: CONSULTATION_LABEL[key] ?? FAMILY_TEXT.consultationFallback,
+    body: consultation.scheduledAt.toLocaleString(dateLocale(), {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -307,7 +356,7 @@ function greetingFor(firstName: string, now: Date): string {
     now.toLocaleString('en-IN', { hour: 'numeric', hour12: false, timeZone: 'Asia/Kolkata' }),
   );
   const part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-  return `Good ${part}, ${firstName}`;
+  return fill(DIGEST.greeting[part], { name: firstName });
 }
 
 /**
@@ -386,9 +435,9 @@ export async function buildFamilyToday(input: {
   const education = weakest ? EDUCATION_BY_METRIC[weakest] : EDUCATION_GENERAL;
 
   return {
-    eyebrow: 'Her wellness this week',
+    eyebrow: DIGEST.todayEyebrow,
     greeting: greetingFor(input.memberFirstName, now),
-    dateLine: now.toLocaleDateString('en-IN', {
+    dateLine: now.toLocaleDateString(dateLocale(), {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -397,20 +446,20 @@ export async function buildFamilyToday(input: {
     status: buildStatus(summary, weakest),
     nudge,
     support: {
-      label: 'How you can support her',
+      label: DIGEST.supportLabel,
       headline: support.headline,
       body: support.body,
-      cta: 'Choose a supportive action',
-      completedCta: '✓ Support action completed',
+      cta: DIGEST.supportCta,
+      completedCta: DIGEST.supportCompletedCta,
       completedToday: input.completedKinds.length > 0,
       completedKinds: input.completedKinds,
       pendingKind: input.pendingKind,
-      pendingPrompt: input.pendingKind ? ACTION_COMPLETION_PROMPT : null,
+      pendingPrompt: input.pendingKind ? FAMILY_TEXT.actionCompletionPrompt : null,
     },
-    metricsLabel: 'This week · shared with you',
+    metricsLabel: DIGEST.metricsLabel,
     metrics: buildMetrics(summary),
     education: {
-      label: 'Understand her experience',
+      label: DIGEST.educationLabel,
       headline: education.headline,
       body: education.body,
     },
@@ -454,24 +503,25 @@ export function buildFamilyLearn(
   const tip = LEARN_TIPS[weekIndex(now) % LEARN_TIPS.length]!;
 
   return {
-    eyebrow: 'Family learning',
-    title: 'Know what she’s going through',
-    subline: 'Two supportive nudges each week',
-    nudge: { label: 'This week’s nudge', headline: nudge.headline, body: nudge.body },
-    tip: { label: 'Communication tip', headline: tip.headline, body: tip.body },
-    articlesLabel: 'Explore topics',
+    eyebrow: DIGEST.learnEyebrow,
+    title: DIGEST.learnTitle,
+    subline: DIGEST.learnSubline,
+    nudge: { label: DIGEST.learnNudgeLabel, headline: nudge.headline, body: nudge.body },
+    tip: { label: DIGEST.learnTipLabel, headline: tip.headline, body: tip.body },
+    articlesLabel: DIGEST.learnArticlesLabel,
     sections: familyArticleSections(relationship),
   };
 }
 
 export function buildFamilyPrivacy(patientFirstName: string): FamilyPrivacyResponse {
   return {
-    eyebrow: 'Privacy & consent',
-    title: 'She stays in control',
-    subline: `Only what ${patientFirstName} chooses to share reaches this app.`,
-    sharedLabel: 'Currently shared with you',
-    shared: FAMILY_SHARED_SCOPES,
-    privateLabel: 'Never shared',
-    privateItems: FAMILY_PRIVATE_ITEMS,
+    eyebrow: DIGEST.privacyEyebrow,
+    title: DIGEST.privacyTitle,
+    subline: fill(DIGEST.privacySubline, { name: patientFirstName }),
+    sharedLabel: DIGEST.privacySharedLabel,
+    shared: familySharedScopes(),
+    privateLabel: DIGEST.privacyPrivateLabel,
+    // Copied out of the localising proxy, so the response carries a plain array.
+    privateItems: [...FAMILY_PRIVATE_ITEMS],
   };
 }

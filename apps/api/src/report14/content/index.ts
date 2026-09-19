@@ -7,6 +7,7 @@
  * classification receives identical content.
  */
 
+import { copy, dateLocale, fill } from '../../i18n/index.js';
 import { REPORT14_CONFIG as CFG } from '../config.js';
 import type { Classification } from '../types.js';
 import { DOMAIN_BLOCKS } from './domains.js';
@@ -52,14 +53,25 @@ export interface ReportDocument {
  * by the approved version before the feature ships to users. Tracked in
  * READINESS_FINDINGS §7.10.
  */
-const DISCLAIMER_PLACEHOLDER =
-  'This report is generated from the information you provided and is intended to support, ' +
-  'not replace, a conversation with a qualified clinician. It is not a diagnosis. ' +
-  'Do not start, stop or change any medication or treatment on the basis of this report. ' +
-  'If you have urgent symptoms, contact your doctor or local emergency services.';
+const REPORT_TEXT = copy('report14.document', {
+  disclaimer:
+    'This report is generated from the information you provided and is intended to support, ' +
+    'not replace, a conversation with a qualified clinician. It is not a diagnosis. ' +
+    'Do not start, stop or change any medication or treatment on the basis of this report. ' +
+    'If you have urgent symptoms, contact your doctor or local emergency services.',
+  title: '{{stage}} · {{domain}}',
+  salutationNamed: 'Dear {{name}},',
+  salutation: 'Hello,',
+  recipientFallback: 'there',
+});
 
 function formatDate(d: Date): string {
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  return d.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+/** Copies out of the localising tables, so the document is plain data in one language. */
+function plainRecommendations(blocks: RecommendationBlock[]): RecommendationBlock[] {
+  return blocks.map((block) => ({ title: block.title, bullets: [...block.bullets] }));
 }
 
 export function buildDocument(
@@ -73,10 +85,10 @@ export function buildDocument(
 
   return {
     reportId: classification.reportId,
-    title: `${stage.label} · ${domain.label}`,
-    recipientName: name ?? 'there',
+    title: fill(REPORT_TEXT.title, { stage: stage.label, domain: domain.label }),
+    recipientName: name ?? REPORT_TEXT.recipientFallback,
     // The only variable content in the entire document.
-    salutation: name ? `Dear ${name},` : 'Hello,',
+    salutation: name ? fill(REPORT_TEXT.salutationNamed, { name }) : REPORT_TEXT.salutation,
     stageLabel: stage.label,
     domainLabel: domain.label,
     stageContext: stage.stageContext,
@@ -85,22 +97,22 @@ export function buildDocument(
     trackerFocus: domain.trackerFocus,
     // Per the brief: the stage supplies the lead, the domain the tail.
     introduction: `${stage.introLead} ${domain.introTail}`,
-    medicalFlags: stage.medicalFlags,
-    recommendations: domain.recommendations,
+    medicalFlags: [...stage.medicalFlags],
+    recommendations: plainRecommendations(domain.recommendations),
     anuNote: domain.anuNote,
     overlays: classification.overlays.map((id) => {
       const block = OVERLAY_BLOCKS[id];
       return {
-        id: block.id,
+        id,
         title: block.title,
         lens: block.lens,
         source: block.source,
         intro: block.intro,
-        recommendations: block.recommendations,
+        recommendations: plainRecommendations(block.recommendations),
         anuNote: block.anuNote,
       };
     }),
-    disclaimer: DISCLAIMER_PLACEHOLDER,
+    disclaimer: REPORT_TEXT.disclaimer,
     templateVersion: CFG.templateVersion,
     generatedOn: formatDate(classification.generatedAt),
   };

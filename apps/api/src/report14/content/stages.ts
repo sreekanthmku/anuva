@@ -10,6 +10,7 @@
  * ./domains.ts rather than being duplicated twelve times.
  */
 
+import { copy } from '../../i18n/index.js';
 import type { Stage } from '../types.js';
 
 export interface StageBlock {
@@ -21,7 +22,8 @@ export interface StageBlock {
   medicalFlags: string[];
 }
 
-export const STAGE_BLOCKS: Record<Stage, StageBlock> = {
+// Localised on read; translations must carry the same medical-advisor sign-off as the English.
+export const STAGE_BLOCKS: Record<Stage, StageBlock> = copy('report14.stages', {
   1: {
     label: 'Early Perimenopause',
     stageContext:
@@ -67,4 +69,4 @@ export const STAGE_BLOCKS: Record<Stage, StageBlock> = {
       'Discuss long-term HRT or alternatives with a specialist',
     ],
   },
-};
+});

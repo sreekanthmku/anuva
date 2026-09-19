@@ -1,3 +1,4 @@
+import { copy, dateLocale, fill } from '../i18n/index.js';
 // The 40 symptoms in the Q&A bank, and the follow-up questions that belong to
 // each of them.
 //
@@ -64,11 +65,34 @@ export const ANU_SYMPTOMS: AnuSymptom[] = [
 /// The last two drop the symptom name — in the bank they read "What can I do
 /// today to manage {symptom}?", which is too long to sit in a chip once the
 /// label is something like "Spotting or bleeding between periods".
+/**
+ * The chip wording, localised on read. `{{symptom}}` is the symptom's name in the same language
+ * (`SYMPTOM_NAMES`). A tapped chip comes back as her next message, so it has to read as something
+ * she would say — which is why the whole sentence is translated rather than just the name.
+ */
+const CHIP_TEXT = copy('anu.chips', {
+  why: 'Why does {{symptom}} happen?',
+  triggers: 'What triggers or worsens {{symptom}}?',
+  today: 'What can I do today?',
+  doctor: 'When should I see a doctor?',
+  log: 'Log {{symptom}}',
+});
+
+/** Symptom names for chips, in the current language, keyed by bank key. */
+const SYMPTOM_NAMES = copy(
+  'anu.symptoms',
+  Object.fromEntries(ANU_SYMPTOMS.map((symptom) => [symptom.key, symptom.label])),
+);
+
+function chipName(symptom: AnuSymptom): string {
+  return (SYMPTOM_NAMES[symptom.key] ?? symptom.label).toLocaleLowerCase(dateLocale());
+}
+
 const FOLLOW_UP_TEMPLATES: ((symptom: string) => string)[] = [
-  (s) => `Why does ${s} happen?`,
-  (s) => `What triggers or worsens ${s}?`,
-  () => 'What can I do today?',
-  () => 'When should I see a doctor?',
+  (s) => fill(CHIP_TEXT.why, { symptom: s }),
+  (s) => fill(CHIP_TEXT.triggers, { symptom: s }),
+  () => CHIP_TEXT.today,
+  () => CHIP_TEXT.doctor,
 ];
 
 const BY_LABEL = new Map(ANU_SYMPTOMS.map((s) => [s.label.toLowerCase(), s]));
@@ -92,12 +116,12 @@ export function findSymptomByKey(key: string | null | undefined): AnuSymptom | n
 /// string, but a typed question will not.
 export function followUpChips(symptom: AnuSymptom, asked: string[]): string[] {
   const seen = asked.map((a) => a.trim().toLowerCase());
-  return FOLLOW_UP_TEMPLATES.map((t) => t(symptom.label.toLowerCase()))
+  return FOLLOW_UP_TEMPLATES.map((t) => t(chipName(symptom)))
     .filter((chip) => !seen.includes(chip.toLowerCase()))
     .slice(0, 3);
 }
 
 /// Offered on the turn a symptom is first raised — the bank's own CTA for it.
 export function logChip(symptom: AnuSymptom): string {
-  return `Log ${symptom.label.toLowerCase()}`;
+  return fill(CHIP_TEXT.log, { symptom: chipName(symptom) });
 }

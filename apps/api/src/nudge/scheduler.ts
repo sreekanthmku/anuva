@@ -4,6 +4,7 @@
 // the resulting card. NudgeDailyState is keyed by date, so each new day starts a
 // fresh row with count 0 — no separate midnight-reset job is needed.
 
+import { withLanguage } from '../i18n/index.js';
 import cron from 'node-cron';
 import { prisma } from '@anuva/database';
 import type { NudgeSlot } from '@anuva/shared';
@@ -33,6 +34,7 @@ export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<D
     where: { fcmTokens: { some: { status: 'ACTIVE' } } },
     select: {
       id: true,
+      preferredLanguage: true,
       fcmTokens: { where: { status: 'ACTIVE' }, select: { token: true } },
     },
   });
@@ -44,7 +46,9 @@ export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<D
 
   for (const u of users) {
     try {
-      const dispatch = await buildDispatch(u.id, slot, now);
+      // Built in her language — the push, and the cards she opens from it, speak the language she
+      // last chose in the app. No stored choice means English.
+      const dispatch = await withLanguage(u.preferredLanguage, () => buildDispatch(u.id, slot, now));
       if (!dispatch.cards.length || !dispatch.primaryNudgeId) {
         const reason = dispatch.suppressedReason ?? 'UNKNOWN';
         const nudgeId = dispatch.suppressedNudgeId ?? dispatch.primaryNudgeId ?? 'UNKNOWN';

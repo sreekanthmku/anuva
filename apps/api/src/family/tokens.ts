@@ -1,3 +1,4 @@
+import { copy, fill } from '../i18n/index.js';
 import crypto from 'node:crypto';
 import { FAMILY_PWA_BASE_URL, familyInviteSecret } from './config.js';
 
@@ -62,15 +63,18 @@ export function buildShareUrl(token: string): string {
  * one string; `shareUrl` is served alongside it for the copy-link path.
  */
 export function buildShareMessage(firstName: string | null, shareUrl: string): string {
-  const name = firstName?.trim() || 'I';
-  const opener =
-    name === 'I'
-      ? 'I have started using Anuva to understand what my body is going through.'
-      : `${name} here. I have started using Anuva to understand what my body is going through.`;
-
+  // Written in her language — she is the one sending it, from her own phone.
+  const name = firstName?.trim();
   return [
-    opener,
-    'This link lets you see how I am doing and how you can help. It only works for you, and it expires.',
+    name ? fill(SHARE_TEXT.openerNamed, { name }) : SHARE_TEXT.opener,
+    SHARE_TEXT.explainer,
     shareUrl,
   ].join('\n\n');
 }
+
+const SHARE_TEXT = copy('family.shareMessage', {
+  opener: 'I have started using Anuva to understand what my body is going through.',
+  openerNamed: '{{name}} here. I have started using Anuva to understand what my body is going through.',
+  explainer:
+    'This link lets you see how I am doing and how you can help. It only works for you, and it expires.',
+});

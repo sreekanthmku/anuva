@@ -9,6 +9,7 @@
  * is why it is stored once here rather than twelve times.
  */
 
+import { copy } from '../../i18n/index.js';
 import type { Domain } from '../types.js';
 
 export interface RecommendationBlock {
@@ -26,7 +27,8 @@ export interface DomainBlock {
   anuNote: string;
 }
 
-export const DOMAIN_BLOCKS: Record<Domain, DomainBlock> = {
+// Localised on read; translations must carry the same medical-advisor sign-off as the English.
+export const DOMAIN_BLOCKS: Record<Domain, DomainBlock> = copy('report14.domains', {
   A: {
     label: 'Vasomotor Module',
     dominantDomain: 'Hot flashes, night sweats, flushing, heart palpitations',
@@ -189,4 +191,4 @@ export const DOMAIN_BLOCKS: Record<Domain, DomainBlock> = {
     anuNote:
       'Because your symptoms span multiple domains, ANU will use a daily wellness score rather than single-symptom tracking. After 14 days, your pattern report will rank your symptom domains by daily life impact and suggest a prioritised intervention sequence, so you and your doctor can focus on what matters most first.',
   },
-};
+});

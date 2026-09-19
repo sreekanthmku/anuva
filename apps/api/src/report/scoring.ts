@@ -1,3 +1,4 @@
+import { copy } from '../i18n/index.js';
 /**
  * Option string -> 0-100 wellness score, higher is better.
  *
@@ -126,6 +127,26 @@ export const RING_BANDS: Record<string, { min: number; label: string }[]> = {
     { min: 0, label: 'High' },
   ],
 };
+
+/**
+ * Band words in the current language. `RING_BANDS` itself stays English because other tables are
+ * keyed by those words (`RING_CLAUSE` in build.ts); this is only for text that reaches a screen.
+ */
+const BAND_TEXT = copy(
+  'report.bands',
+  Object.fromEntries(
+    Object.entries(RING_BANDS).map(([key, bands]) => [
+      key,
+      Object.fromEntries(bands.map((band) => [band.label, band.label])),
+    ]),
+  ),
+);
+
+/** An English band label from `bandFor`, for display. Unknown labels pass through unchanged. */
+export function localizedBand(key: string, band: string | null): string | null {
+  if (band == null) return null;
+  return BAND_TEXT[key]?.[band] ?? band;
+}
 
 export function bandFor(key: string, score: number | null): string | null {
   if (score == null) return null;

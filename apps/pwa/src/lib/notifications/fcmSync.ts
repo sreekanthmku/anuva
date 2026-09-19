@@ -29,11 +29,12 @@ export function needsPushRegistrationRetry(): boolean {
 }
 
 import { ApiError } from '../../shared/lib/api';
+import i18n from '../../i18n';
 
 export function toSyncErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 401) {
-      return 'You are not signed in. Please log in again, then retry.';
+      return i18n.t('errors.notSignedIn');
     }
     return error.message;
   }
@@ -42,5 +43,5 @@ export function toSyncErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Could not save your notification settings. Please try again.';
+  return i18n.t('errors.saveNotificationSettings');
 }

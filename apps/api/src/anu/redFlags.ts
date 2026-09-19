@@ -1,3 +1,4 @@
+import { copyList } from '../i18n/index.js';
 // Deterministic red-flag gate. Runs on every message BEFORE the model sees it.
 //
 // This is not an optimisation and must not be replaced by a model call. Eval on
@@ -29,7 +30,11 @@ const HELPLINES = [
 
 // Ordered by severity — the first match wins, so crisis and emergency rules
 // are declared before the softer "prompt review" ones.
-export const RED_FLAG_RULES: RedFlagRule[] = [
+//
+// `response` is localised on read, keyed by area and urgency (unique per rule). The *patterns* are
+// not: they match English wording only. A message written in another language reaches the model
+// without this gate — see the note on `matchRedFlag`.
+const AUTHORED_RULES: RedFlagRule[] = [
   {
     area: 'Mental health',
     urgency: 'Urgent',
@@ -172,6 +177,13 @@ export const RED_FLAG_RULES: RedFlagRule[] = [
   },
 ];
 
+export const RED_FLAG_RULES: RedFlagRule[] = copyList(
+  'anu.redFlags',
+  AUTHORED_RULES,
+  ['response'],
+  (rule) => `${rule.area}-${rule.urgency}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+);
+
 export type RedFlagMatch = {
   rule: RedFlagRule;
   helplines: { name: string; number: string }[];
@@ -179,6 +191,10 @@ export type RedFlagMatch = {
 
 /// Returns the first (most severe) matching rule, or null when the message is
 /// safe to hand to the model.
+///
+/// English only. A message in another language does not match these patterns and goes to the model,
+/// whose own prompt carries the crisis and emergency guidance — a weaker gate than this one. Adding
+/// patterns per language is the fix, and it needs clinical review, not translation.
 export function matchRedFlag(message: string): RedFlagMatch | null {
   for (const rule of RED_FLAG_RULES) {
     if (rule.patterns.some((p) => p.test(message))) {

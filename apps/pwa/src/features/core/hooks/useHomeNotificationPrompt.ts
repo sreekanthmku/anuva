@@ -10,6 +10,7 @@ import {
   dismissNotificationPrompt,
   syncNotificationPermissionState,
 } from '../../../lib/notifications/notificationPrompt';
+import i18n from '../../../i18n';
 
 const PROMPT_DELAY_MS = 1500;
 
@@ -59,7 +60,7 @@ export function useHomeNotificationPrompt() {
     if (needsPushRegistrationRetry()) {
       setSyncMessage(
         (current) =>
-          current ?? 'Notifications are on, but this device is not registered yet. Tap retry.'
+          current ?? i18n.t('errors.notificationsNotRegistered')
       );
     }
   }, [status, runSync]);
@@ -98,14 +99,14 @@ export function useHomeNotificationPrompt() {
       if (permission !== 'granted') {
         setOpen(false);
         if (permission === 'denied') {
-          setSyncMessage('Notifications were blocked. Enable them in your browser site settings.');
+          setSyncMessage(i18n.t('errors.notificationsBlocked'));
         }
         return;
       }
 
       if (!sync?.ok) {
         setOpen(false);
-        setSyncMessage(sync?.message ?? 'Could not register this device. Tap retry on Home.');
+        setSyncMessage(sync?.message ?? i18n.t('errors.deviceRegisterFailed'));
         return;
       }
 

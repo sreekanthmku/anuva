@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { LogQuickSymptomResponse, QuickLogStateResponse, QuickSymptom } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 type QuickLogState = {
   data: QuickLogStateResponse | null;
@@ -17,7 +18,7 @@ export function useQuickLog() {
       const data = await apiFetch<QuickLogStateResponse>('/api/quick-log');
       setState({ data, loading: false, error: null });
     } catch {
-      setState({ data: null, loading: false, error: 'Failed to load quick log' });
+      setState({ data: null, loading: false, error: i18n.t('errors.loadQuickLog') });
     }
   }, []);
 

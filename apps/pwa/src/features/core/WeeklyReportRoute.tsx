@@ -585,7 +585,7 @@ function TrackerListCard({
         className="mt-2 rounded-starchart-lg bg-surface px-3 py-1.5 text-center text-[10.5px] leading-[1.35] text-on-surface-variant"
         style={{ fontFamily: MULISH }}
       >
-        Scored 0–100, higher is always better. {report.referenceNote}
+        {t('report.scoredNote', { note: report.referenceNote })}
       </p>
     </article>
   );
@@ -601,12 +601,13 @@ function TrackerListCard({
  * series, at a size it can be read at.
  */
 function ByTheNumbers({ report }: { report: WeeklyReportResponse }) {
+  const { t } = useTranslation();
   const stats = report.stats.filter((stat) => stat.key !== 'wellness');
   if (stats.length === 0) return null;
 
   return (
     <section>
-      <Eyebrow tone="gold">By the numbers</Eyebrow>
+      <Eyebrow tone="gold">{t('report.byTheNumbers')}</Eyebrow>
       <div className="grid grid-cols-2 gap-2.5">
         {stats.map((stat, i) => (
           <StatCard key={stat.key} stat={stat} report={report} first={i === 0} />

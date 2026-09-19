@@ -6,10 +6,11 @@
   "scripts": {
     "check:family": "node scripts/check-family-invites.mjs",
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.build.json && rm -rf dist/data && cp -R src/data dist/data",
+    "build": "tsc -p tsconfig.build.json && rm -rf dist/data dist/i18n/locales && cp -R src/data dist/data && mkdir -p dist/i18n && cp -R src/i18n/locales dist/i18n/locales",
     "start": "node dist/index.js",
     "lint": "eslint .",
-    "test": "vitest run --config tests/vitest.config.ts"
+    "test": "vitest run --config tests/vitest.config.ts",
+    "i18n:extract": "tsx scripts/extract-i18n.ts"
   },
   "dependencies": {
     "@anuva/database": "workspace:*",

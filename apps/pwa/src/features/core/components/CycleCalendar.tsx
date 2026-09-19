@@ -162,14 +162,14 @@ export function CycleCalendar({ cycleData, selectedDate, onSelectDate }: Props) 
       </div>
 
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-        <LegendDot label="Period" style={{ background: CYCLE_MARK_COLORS.period }} />
+        <LegendDot label={t('calendar.legendPeriod')} style={{ background: CYCLE_MARK_COLORS.period }} />
         <LegendDot
-          label="Predicted"
+          label={t('calendar.legendPredicted')}
           style={{ border: `1px dashed ${CYCLE_MARK_COLORS.predictedPeriod}` }}
         />
-        <LegendDot label="Fertile" style={{ background: 'rgba(122,158,126,0.35)' }} />
+        <LegendDot label={t('calendar.legendFertile')} style={{ background: 'rgba(122,158,126,0.35)' }} />
         <LegendDot
-          label="Ovulation"
+          label={t('calendar.legendOvulation')}
           style={{ border: `1.5px solid ${CYCLE_MARK_COLORS.fertile}` }}
         />
       </div>

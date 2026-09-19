@@ -107,7 +107,12 @@ export async function requestSignInOtp(
       ),
     );
     if (retryIn > 0) {
-      throw new FamilyError(429, 'otp_cooldown', `Please wait ${retryIn} seconds before asking for another code.`);
+      throw new FamilyError(
+        429,
+        'otp_cooldown',
+        `Please wait ${retryIn} seconds before asking for another code.`,
+        { key: 'errors.family.codeCooldown', vars: { count: retryIn } },
+      );
     }
   }
 

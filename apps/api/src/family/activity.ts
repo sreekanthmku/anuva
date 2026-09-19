@@ -1,3 +1,4 @@
+import { copy, dateLocale, fill } from '../i18n/index.js';
 import { prisma } from '@anuva/database';
 import type { FamilyActivityResponse, FamilySupportActionKind } from '@anuva/shared';
 import { FAMILY_MAX_MEMBERS } from './config.js';
@@ -14,29 +15,43 @@ import { dayKey } from '../dayKey.js';
  */
 
 /** Phrased from her side — she is the one reading it. */
-const ACTION_PHRASES: Record<FamilySupportActionKind, string> = {
+const ACTION_PHRASES: Record<FamilySupportActionKind, string> = copy('family.activityPhrases', {
   message: 'messaged you',
   call: 'called you',
   flowers: 'sent you flowers 🌻',
   chocolates: 'sent you chocolates 🍫',
-};
+});
 
 /**
  * The same gestures again, as standalone lines rather than clauses in a sentence — what the card
  * expands into when she taps it. Sentence-shaped, because in the detail view each one is a row of
  * its own rather than part of a list.
  */
-const ACTION_LINES: Record<FamilySupportActionKind, string> = {
+const ACTION_LINES: Record<FamilySupportActionKind, string> = copy('family.activityLines', {
   message: 'Sent you a message',
   call: 'Called you',
   flowers: 'Sent you flowers',
   chocolates: 'Sent you chocolates',
-};
+});
 
+const ACTIVITY_TEXT = copy('family.activityText', {
+  someone: 'Someone',
+  checkedIn: '{{names}} checked in on you',
+  oneActor: '{{name}} {{actions}} today.',
+  manyActors: '{{count}} people thought of you today.',
+  familyWeek: 'Your family has shown up {{days}} this week.',
+  memberWeek: '{{name}} has shown up {{days}} this week.',
+  once: 'once',
+  days: '{{count}} days',
+});
+
+/** "A", "A and B", "A, B and C" — in the current language's own list grammar. */
 function joinWords(words: string[]): string {
-  if (words.length === 1) return words[0]!;
-  if (words.length === 2) return `${words[0]} and ${words[1]}`;
-  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+  try {
+    return new Intl.ListFormat(dateLocale(), { style: 'long', type: 'conjunction' }).format(words);
+  } catch {
+    return words.join(', ');
+  }
 }
 
 function firstNameOf(name: string): string {
@@ -109,10 +124,11 @@ export async function buildFamilyActivity(userId: string): Promise<FamilyActivit
 
   // Deduplicated in first-action order, so the headline names people in the order they showed up.
   const actorsToday = [...new Set(todayActions.map((action) => action.familyMemberId))].map(
-    (id) => firstNames.get(id) ?? 'Someone',
+    (id) => firstNames.get(id) ?? ACTIVITY_TEXT.someone,
   );
 
-  const dayCount = daysThisWeek === 1 ? 'once' : `${daysThisWeek} days`;
+  const dayCount =
+    daysThisWeek === 1 ? ACTIVITY_TEXT.once : fill(ACTIVITY_TEXT.days, { count: daysThisWeek });
 
   return {
     member: summaries[0] ?? null,
@@ -122,23 +138,26 @@ export async function buildFamilyActivity(userId: string): Promise<FamilyActivit
           items: todayActions.map((action) => ({
             kind: action.kind,
             label: ACTION_LINES[action.kind],
-            memberFirstName: firstNames.get(action.familyMemberId) ?? 'Someone',
+            memberFirstName: firstNames.get(action.familyMemberId) ?? ACTIVITY_TEXT.someone,
           })),
-          headline: `${joinWords(actorsToday)} checked in on you`,
+          headline: fill(ACTIVITY_TEXT.checkedIn, { names: joinWords(actorsToday) }),
           // One person keeps the original sentence naming what they did. Several would run to a
           // paragraph if every gesture were attributed inline, so the body counts people instead and
           // the expanded items carry who did what — which is what `memberFirstName` is for.
           body:
             actorsToday.length === 1
-              ? `${actorsToday[0]} ${joinWords(todayActions.map((action) => ACTION_PHRASES[action.kind]))} today.`
-              : `${actorsToday.length} people thought of you today.`,
+              ? fill(ACTIVITY_TEXT.oneActor, {
+                  name: actorsToday[0],
+                  actions: joinWords(todayActions.map((action) => ACTION_PHRASES[action.kind])),
+                })
+              : fill(ACTIVITY_TEXT.manyActors, { count: actorsToday.length }),
         }
       : null,
     daysThisWeek,
     weekLine: daysThisWeek
       ? members.length > 1
-        ? `Your family has shown up ${dayCount} this week.`
-        : `${firstNames.get(members[0]!.id)} has shown up ${dayCount} this week.`
+        ? fill(ACTIVITY_TEXT.familyWeek, { days: dayCount })
+        : fill(ACTIVITY_TEXT.memberWeek, { name: firstNames.get(members[0]!.id), days: dayCount })
       : null,
   };
 }

@@ -7,6 +7,7 @@
 
 import type { AnuChatResponse } from '@anuva/shared';
 import { chatMode } from './config.js';
+import { currentLanguage } from '../i18n/index.js';
 import { answer as classicAnswer } from './engine.js';
 import { answer as probeAnswer } from './probe/engine.js';
 
@@ -18,7 +19,13 @@ export function answer(
   userMessage: string,
   userName?: string | null,
 ): Promise<AnuChatResponse> {
-  return chatMode(userId) === 'probe'
+  const mode = chatMode(userId);
+  if (mode !== 'probe') return classicAnswer(userId, userMessage, userName);
+
+  // The ladder is authored English — its questions, options and the patterns that enter it — and is
+  // not yet clinician-reviewed, so it is not translated. In any other language she gets the model,
+  // which replies in her language, written to the same probe thread so her history stays whole.
+  return currentLanguage() === 'en'
     ? probeAnswer(userId, userMessage, userName)
-    : classicAnswer(userId, userMessage, userName);
+    : classicAnswer(userId, userMessage, userName, 'probe');
 }

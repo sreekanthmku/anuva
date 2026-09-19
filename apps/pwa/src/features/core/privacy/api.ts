@@ -9,6 +9,7 @@ import type {
   PrivacySummaryResponse,
 } from '@anuva/shared';
 import { ApiError, apiFetch, apiUrl } from '../../../shared/lib/api';
+import i18n from '../../../i18n';
 
 export async function fetchPrivacySummary(): Promise<PrivacySummaryResponse> {
   return apiFetch<PrivacySummaryResponse>('/api/privacy/summary');
@@ -59,8 +60,8 @@ export async function downloadDataExport(downloadUrl: string, filename: string):
     throw new ApiError(
       response.status,
       response.status === 410
-        ? 'That download has already been used. Ask for your data again.'
-        : 'Could not download your data. Please try again.',
+        ? i18n.t('errors.downloadUsed')
+        : i18n.t('errors.downloadFailed'),
     );
   }
 

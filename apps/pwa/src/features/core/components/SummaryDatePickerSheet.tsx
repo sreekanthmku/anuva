@@ -180,7 +180,15 @@ export function SummaryDatePickerSheet({
                 type="button"
                 disabled={!selectable}
                 onClick={() => onSelectDate(date)}
-                aria-label={`${date}${day && day.metrics > 0 ? `, ${day.metrics} of ${metricCount} metrics logged` : ', nothing logged'}`}
+                aria-label={
+                  day && day.metrics > 0
+                    ? t('charts.dayMetricsLogged', {
+                        date,
+                        count: day.metrics,
+                        total: metricCount,
+                      })
+                    : t('charts.dayNothingLogged', { date })
+                }
                 aria-current={isToday ? 'date' : undefined}
                 className="relative flex h-11 w-full flex-col items-center justify-center rounded-full text-[13px] disabled:opacity-25"
                 style={{

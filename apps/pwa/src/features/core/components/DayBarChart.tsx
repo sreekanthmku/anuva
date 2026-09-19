@@ -136,11 +136,18 @@ export function DayBarChart({
                 type="button"
                 onClick={() => setSelected(i)}
                 disabled={isInactive}
-                aria-label={`${dates[i]!.toLocaleDateString(undefined, {
-                  weekday: 'long',
-                  month: 'short',
-                  day: 'numeric',
-                })}: ${logged ? Math.round(v) : isInactive ? 'outside this window' : 'not logged'}`}
+                aria-label={t('charts.barAria', {
+                  date: dates[i]!.toLocaleDateString(i18n.language, {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric',
+                  }),
+                  value: logged
+                    ? Math.round(v)
+                    : isInactive
+                      ? t('charts.outsideWindow')
+                      : t('charts.notLogged'),
+                })}
                 aria-pressed={isSelected}
                 className="group flex h-full flex-1 items-end justify-center"
               >
@@ -194,7 +201,7 @@ export function DayBarChart({
             {axisTicks.has(i)
               ? period === 'monthly'
                 ? dates[i]!.getDate()
-                : dates[i]!.toLocaleDateString(undefined, { weekday: 'narrow' })
+                : dates[i]!.toLocaleDateString(i18n.language, { weekday: 'narrow' })
               : ' '}
           </span>
         ))}

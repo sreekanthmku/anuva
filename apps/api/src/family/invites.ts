@@ -296,6 +296,7 @@ export async function rotateInvite(userId: string): Promise<FamilyInvite> {
       409,
       'member_slots_full',
       `You can have ${FAMILY_MAX_MEMBERS} people connected at a time. Remove someone first to invite anyone else.`,
+      { key: 'errors.family.memberSlotsFull', vars: { count: FAMILY_MAX_MEMBERS } },
     );
   }
 

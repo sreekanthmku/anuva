@@ -1,3 +1,4 @@
+import { currentLanguage } from '../i18n/index.js';
 // ANU chat orchestration.
 //
 //   1. Red-flag gate   deterministic, pre-model, verbatim clinician text
@@ -272,7 +273,10 @@ export async function answer(
   }
 
   const history = await loadHistory(userId, mode);
-  const cacheable = isCacheable(history);
+  // The response cache holds English replies and is searched by meaning, so a question asked in
+  // another language could land on an English answer. Until the cache is keyed by language, it
+  // serves English sessions only; other languages always go to the model.
+  const cacheable = isCacheable(history) && currentLanguage() === 'en';
 
   // 2 + 3. Only self-contained questions touch the cache — both to read and to
   // write. Embedding is charged on those turns (a lookup needs a vector), but

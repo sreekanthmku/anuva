@@ -21,6 +21,18 @@ import * as Sentry from '@sentry/node';
 
 import cors from 'cors';
 import express from 'express';
+import { JOINT_TEXT } from './i18n/joints.js';
+import {
+  fill,
+  languageMiddleware,
+  requestedLanguage,
+  t,
+  translateMessage,
+  withLanguage,
+  type Vars,
+} from './i18n/index.js';
+import { languageForUser } from './i18n/recipients.js';
+import { PATIENT_PUSH, PATIENT_TEXT } from './patientCopy.js';
 import type { NextFunction, Request, Response } from 'express';
 import { MulterError } from 'multer';
 import { prisma } from '@anuva/database';
@@ -85,7 +97,6 @@ import {
   jointLogSchema,
   jointStateResponseSchema,
   jointDiscomfortScore,
-  JOINT_SEVERITY_LABELS,
   type JointSeverity,
   logPeriodBodySchema,
   updatePeriodBodySchema,
@@ -164,7 +175,12 @@ import {
   type ConsultationCallState,
 } from '@anuva/shared';
 import { ZodError } from 'zod';
-import { BOOKABLE_DOCTOR_KEYS, ensureBookingCatalog, lensesForSpecialist } from './bookingCatalog.js';
+import {
+  BOOKABLE_DOCTOR_KEYS,
+  ensureBookingCatalog,
+  lensesForSpecialist,
+  localizeSpecialistField,
+} from './bookingCatalog.js';
 import {
   CONSULTATION_DOC_DIR,
   UnsupportedDocumentTypeError,
@@ -348,6 +364,12 @@ app.post('/livekit/webhook', express.raw({ type: '*/*', limit: '1mb' }), async (
 // at DETAILED_SIGNATURE_VALUE_MAX and requires it to parse as a PNG data URL.
 app.use(express.json({ limit: '512kb' }));
 
+// After the body parser, not before: AsyncLocalStorage context does not survive body-parser's stream
+// callbacks, so a language set earlier would be gone by the time the handler runs. Every route
+// below — family and report14 included — sees the request's language through `t()`. Optional: no
+// header, or a language we don't serve, is English.
+app.use(languageMiddleware);
+
 // Dedicated Admin API — completely separate from patient and doctor routes.
 // Auth, validation, and CRUD live under apps/api/src/admin/.
 app.use('/admin', createAdminRouter({ prisma }));
@@ -389,10 +411,22 @@ app.use('/doctor', (req, res, next) => {
 
 class HttpError extends Error {
   status: number;
+  /**
+   * For a message with a value in it, the key and values to localise it with. Plain messages need
+   * neither: the error handler finds them in the `errors` bundle by their English text, so the
+   * throw sites — and the English in the logs — stay as they are.
+   */
+  i18n?: { key: string; vars?: Vars };
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, i18n?: { key: string; vars?: Vars }) {
     super(message);
     this.status = status;
+    this.i18n = i18n;
+  }
+
+  /** The body text in the request's language; English when no translation exists. */
+  localized(): string {
+    return this.i18n ? t(this.i18n.key, this.i18n.vars, { fallback: this.message }) : translateMessage(this.message);
   }
 }
 
@@ -527,6 +561,8 @@ type UserWithSubscription = {
   email: string | null;
   onboardingCompleted: boolean;
   phoneVerifiedAt: Date | null;
+  /** Null for English; see the schema. */
+  preferredLanguage?: string | null;
   createdAt: Date;
   subscription?: {
     plan: 'monthly' | 'annual' | null;
@@ -725,7 +761,19 @@ async function requireCurrentUser(req: Request) {
   // carries the user it belonged to.
   req.log = req.log.child({ userId: session.userId });
 
-  return loadUserWithSubscription(session.userId);
+  const user = await loadUserWithSubscription(session.userId);
+
+  // Remember the language she chose, so pushes and background jobs — which have no request to
+  // read it from — can use it. Only an explicit header counts (a client that sends none leaves the
+  // stored choice alone), and only a change is written.
+  const requested = requestedLanguage(req.headers);
+  if (requested && requested !== user.preferredLanguage) {
+    await prisma.user
+      .update({ where: { id: user.id }, data: { preferredLanguage: requested } })
+      .catch((error) => req.log.warn({ err: error }, 'Could not store preferred language'));
+  }
+
+  return user;
 }
 
 function requireBroadcastSecret(req: Request) {
@@ -1669,10 +1717,11 @@ async function notifyPatientCallStarted(consultationId: string, patientId: strin
   try {
     await sendPushToAllTokens(
       tokens,
-      {
-        title: 'Doctor is ready',
-        body: `${doctorName} has started your consultation call.`,
-      },
+      // Her language, not the doctor's — the doctor's request is what triggers this.
+      withLanguage(await languageForUser(patientId), () => ({
+        title: PATIENT_PUSH.callReady.title,
+        body: fill(PATIENT_PUSH.callReady.body, { doctor: doctorName }),
+      })),
       {
         url: `/consultations/${consultationId}/call`,
         type: 'consultation-call',
@@ -1711,16 +1760,16 @@ function serializeSpecialist(specialist: {
   return {
     key: specialist.key,
     name: specialist.name,
-    subtitle: specialist.subtitle,
-    role: specialist.role,
-    specialization: specialist.specialization,
-    summary: specialist.summary,
-    experience: specialist.experience,
-    tag: specialist.tag,
+    subtitle: localizeSpecialistField(specialist.key, 'subtitle', specialist.subtitle),
+    role: localizeSpecialistField(specialist.key, 'role', specialist.role),
+    specialization: localizeSpecialistField(specialist.key, 'specialization', specialist.specialization),
+    summary: localizeSpecialistField(specialist.key, 'summary', specialist.summary),
+    experience: localizeSpecialistField(specialist.key, 'experience', specialist.experience),
+    tag: localizeSpecialistField(specialist.key, 'tag', specialist.tag),
     imageUrl: specialist.imageUrl,
     qualifications: specialist.qualifications.map((qualification) => qualification.label),
     bookable,
-    bookingDisabledReason: bookable ? null : 'Booking for this specialist is coming soon.',
+    bookingDisabledReason: bookable ? null : PATIENT_TEXT.bookingComingSoon,
   };
 }
 
@@ -2220,28 +2269,11 @@ async function notifyPatientDocumentShared(args: {
 
   // Warm, plain-language copy: this lands on a phone right after a consultation, so it says what
   // arrived and who sent it without sounding like a system alert.
-  const copyByKind: Record<
-    typeof args.kind,
-    { title: string; body: string }
-  > = {
-    prescription: {
-      title: 'Your prescription is ready 💜',
-      body: `${args.doctorName} has shared your prescription. Tap to view it whenever you're ready.`,
-    },
-    diet_plan: {
-      title: 'Your diet plan is here 🌿',
-      body: `${args.doctorName} has shared your diet plan. Have a look when you have a moment.`,
-    },
-    care_plan: {
-      title: 'Your care plan is ready 💜',
-      body: `${args.doctorName} has shared your care plan. Tap to view it whenever you're ready.`,
-    },
-    suggestion: {
-      title: 'A suggestion from your consultation',
-      body: `${args.doctorName} has shared a suggestion with you. Have a look when you have a moment.`,
-    },
-  };
-  const copy = copyByKind[args.kind];
+  // In her language — this is sent from the doctor's request, not hers. See PATIENT_PUSH.
+  const copy = withLanguage(await languageForUser(args.patientId), () => ({
+    title: PATIENT_PUSH.documents[args.kind].title,
+    body: fill(PATIENT_PUSH.documents[args.kind].body, { doctor: args.doctorName }),
+  }));
 
   try {
     await sendPushToAllTokens(
@@ -3494,7 +3526,10 @@ app.post('/auth/request-otp', async (req, res, next) => {
       const retryInSeconds = Math.max(0, Math.ceil((availableAt.getTime() - now.getTime()) / 1000));
 
       if (retryInSeconds > 0) {
-        throw new HttpError(429, `Please wait ${retryInSeconds} seconds before requesting another OTP.`);
+        throw new HttpError(429, `Please wait ${retryInSeconds} seconds before requesting another OTP.`, {
+          key: 'errors.otpWaitSeconds',
+          vars: { count: retryInSeconds },
+        });
       }
     }
 
@@ -4269,10 +4304,7 @@ app.post('/cycle/period', async (req, res, next) => {
       // an ongoing period could be logged a second time and become the anchor
       // for every date the app shows her.
       if (startDate <= previousEnd) {
-        throw new HttpError(
-          409,
-          `That day falls inside your period starting ${previous.startDate}. Change that period's dates instead.`,
-        );
+        throw new HttpError(409, `That day falls inside your period starting ${previous.startDate}. Change that period's dates instead.`, { key: 'errors.dayInsidePeriod', vars: { date: previous.startDate } });
       }
     }
 
@@ -4396,7 +4428,10 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
       }
       const span = diffDaysISO(nextStart, nextEnd) + 1;
       if (span > PERIOD_LENGTH_MAX) {
-        throw new HttpError(400, `A period cannot run longer than ${PERIOD_LENGTH_MAX} days.`);
+        throw new HttpError(400, `A period cannot run longer than ${PERIOD_LENGTH_MAX} days.`, {
+          key: 'errors.periodTooLong',
+          vars: { count: PERIOD_LENGTH_MAX },
+        });
       }
       if (span < PERIOD_LENGTH_MIN) {
         throw new HttpError(400, 'A period must cover at least one day.');
@@ -4406,10 +4441,7 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
     const effectivePeriodLength = currentPeriodLength;
     const previous = previousPeriodOf(serializedPeriods, nextStart, id);
     if (previous && nextStart <= effectiveEndOf(previous, effectivePeriodLength)) {
-      throw new HttpError(
-        409,
-        `Those dates overlap your period starting ${previous.startDate}.`,
-      );
+      throw new HttpError(409, `Those dates overlap your period starting ${previous.startDate}.`, { key: 'errors.datesOverlapPeriod', vars: { date: previous.startDate } });
     }
     if (serializedPeriods.some((p) => p.id !== id && p.startDate === nextStart)) {
       throw new HttpError(409, 'You already have a period recorded on that day.');
@@ -4720,7 +4752,7 @@ function serializeJointLog(j: {
     timeOfDay: j.timeOfDay,
     triggers: j.triggers,
     score: j.score,
-    summary: JOINT_SEVERITY_LABELS[severity],
+    summary: JOINT_TEXT.severity[severity],
   });
 }
 
@@ -5005,7 +5037,7 @@ app.post('/detailed-assessment/submit', async (req, res, next) => {
     if (missing.length > 0) {
       req.log.warn({ missing: missing.length }, 'Detailed assessment submit rejected: incomplete');
       res.status(400).json({
-        error: 'Some required questions are still unanswered.',
+        error: translateMessage('Some required questions are still unanswered.'),
         missing,
       });
       return;
@@ -5163,10 +5195,7 @@ app.post('/questions', async (req, res, next) => {
     const { topic, body } = createAnonymousQuestionBodySchema.parse(req.body);
 
     if ((await remainingQuestionsToday(user.id)) <= 0) {
-      throw new HttpError(
-        429,
-        `You can ask up to ${ANONYMOUS_QA_DAILY_LIMIT} questions a day. Please come back tomorrow.`,
-      );
+      throw new HttpError(429, `You can ask up to ${ANONYMOUS_QA_DAILY_LIMIT} questions a day. Please come back tomorrow.`, { key: 'errors.questionsDailyLimit', vars: { count: ANONYMOUS_QA_DAILY_LIMIT } });
     }
 
     const question = await prisma.anonymousQuestion.create({
@@ -5434,10 +5463,7 @@ app.post('/support/tickets', async (req, res, next) => {
     const body = createSupportTicketBodySchema.parse(req.body);
 
     if ((await remainingSupportTicketsToday(user.id)) <= 0) {
-      throw new HttpError(
-        429,
-        `You can open up to ${SUPPORT_TICKET_DAILY_LIMIT} requests a day. We are already looking at the ones you sent.`,
-      );
+      throw new HttpError(429, `You can open up to ${SUPPORT_TICKET_DAILY_LIMIT} requests a day. We are already looking at the ones you sent.`, { key: 'errors.ticketsDailyLimit', vars: { count: SUPPORT_TICKET_DAILY_LIMIT } });
     }
 
     const contactEmail = body.contactEmail?.trim() ? body.contactEmail.trim().toLowerCase() : null;
@@ -5783,10 +5809,7 @@ app.post('/privacy/otp', async (req, res, next) => {
         ),
       );
       if (retryInSeconds > 0) {
-        throw new HttpError(
-          429,
-          `Please wait ${retryInSeconds} seconds before requesting another OTP.`,
-        );
+        throw new HttpError(429, `Please wait ${retryInSeconds} seconds before requesting another OTP.`, { key: 'errors.otpWaitSeconds', vars: { count: retryInSeconds } });
       }
     }
 
@@ -5969,10 +5992,7 @@ app.post('/privacy/exports', async (req, res, next) => {
     });
 
     if (recent) {
-      throw new HttpError(
-        429,
-        `You can download your data once every ${DATA_EXPORT_COOLDOWN_HOURS} hours. Please try again later.`,
-      );
+      throw new HttpError(429, `You can download your data once every ${DATA_EXPORT_COOLDOWN_HOURS} hours. Please try again later.`, { key: 'errors.exportCooldown', vars: { count: DATA_EXPORT_COOLDOWN_HOURS } });
     }
 
     await consumePrivacyOtp(user.id, user.phone, body.challengeId, body.otp, 'data_export');
@@ -6097,7 +6117,7 @@ app.use(
     // invisible — the request line alone never explained why the client was turned away.
     if (err instanceof ZodError) {
       req.log.warn({ issues: err.flatten() }, 'Request rejected: validation failed');
-      res.status(400).json({ error: 'Validation failed', issues: err.flatten() });
+      res.status(400).json({ error: translateMessage('Validation failed'), issues: err.flatten() });
       return;
     }
 
@@ -6113,7 +6133,7 @@ app.use(
 
     if (err instanceof HttpError) {
       req.log.warn({ status: err.status }, `Request rejected: ${err.message}`);
-      res.status(err.status).json({ error: err.message });
+      res.status(err.status).json({ error: err.localized() });
       return;
     }
 
@@ -6121,7 +6141,9 @@ app.use(
     // falls through to the 500 below and reads as a server fault rather than an over-large request.
     if (isPayloadTooLarge(err)) {
       req.log.warn('Request rejected: body exceeds the JSON size limit');
-      res.status(413).json({ error: 'That request was too large. Try again with less data.' });
+      res.status(413).json({
+        error: translateMessage('That request was too large. Try again with less data.'),
+      });
       return;
     }
 
@@ -6130,9 +6152,11 @@ app.use(
       const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
       const message =
         err.code === 'LIMIT_FILE_SIZE'
-          ? 'That file is larger than 10MB. Retake the photo or compress the PDF.'
-          : `Upload rejected: ${err.message}`;
-      req.log.warn({ code: err.code }, `Request rejected: ${message}`);
+          ? translateMessage('That file is larger than 10MB. Retake the photo or compress the PDF.')
+          : t('errors.uploadRejected', { reason: err.message }, {
+              fallback: `Upload rejected: ${err.message}`,
+            });
+      req.log.warn({ code: err.code }, `Request rejected: ${err.message}`);
       res.status(status).json({ error: message });
       return;
     }
@@ -6144,7 +6168,7 @@ app.use(
     }
 
     req.log.error({ err }, 'Unhandled error');
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: translateMessage('Internal server error') });
   }
 );
 
