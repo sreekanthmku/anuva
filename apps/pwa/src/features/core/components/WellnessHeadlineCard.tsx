@@ -1,7 +1,7 @@
 import type { SummaryHeadline, SummaryPeriod } from '@anuva/shared';
 import { useTranslation } from 'react-i18next';
 import { RING_EMPTY_COLOR } from '../ringColors';
-import { wellnessColor } from '../wellnessDisplay';
+import { BAND_NAME_KEYS, wellnessColor } from '../wellnessDisplay';
 import { WellnessScene } from './WellnessScene';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -22,15 +22,6 @@ const CARD_WASH: Record<string, string> = {
   Okay: 'linear-gradient(103deg, #FFFFFF 0%, #FBEFEA 46%, #F4DDE0 100%)',
   Hard: 'linear-gradient(103deg, #FFFFFF 0%, #F9EDEA 46%, #EDDCE3 100%)',
   'Very hard': 'linear-gradient(103deg, #FFFFFF 0%, #F6EFF2 46%, #E5DAEA 100%)',
-};
-
-/** The server sends the band as its English key (it also picks the wash); only its display is translated. */
-const BAND_NAME_KEYS: Record<string, string> = {
-  Great: 'wellness.bandNames.great',
-  Good: 'wellness.bandNames.good',
-  Okay: 'wellness.bandNames.okay',
-  Hard: 'wellness.bandNames.hard',
-  'Very hard': 'wellness.bandNames.veryHard',
 };
 
 const EMPTY_WASH = 'linear-gradient(103deg, #FFFFFF 0%, #F9F5F1 50%, #F2EBE6 100%)';

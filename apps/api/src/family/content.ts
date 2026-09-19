@@ -1,5 +1,6 @@
 import { copy } from '../i18n/index.js';
 import type { FamilyMetricKey } from '@anuva/shared';
+import { localizedBand } from '../report/scoring.js';
 
 /**
  * Every user-visible string the family app renders.
@@ -83,7 +84,8 @@ export function metricValue(
 ): string {
   if (tone === 'positive') return METRIC_WORDS[key].positive;
   if (tone === 'attention') return METRIC_WORDS[key].attention;
-  if (band) return band;
+  // `band` arrives as the English RING_BANDS label; only what the family member reads is translated.
+  if (band) return localizedBand(key, band) ?? band;
   if (tone === 'neutral') return METRIC_WORDS[key].neutral;
   return FAMILY_TEXT.nothingShared;
 }

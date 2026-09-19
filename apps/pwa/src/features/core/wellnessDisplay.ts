@@ -34,6 +34,15 @@ export const GROUP_COLOR: Record<WellnessGroup, string> = {
   hard: GAUGE_BANDS[1],
 };
 
+/** i18n keys for the shared English band labels (`WELLNESS_BANDS`, and the report's `headline.band`). */
+export const BAND_NAME_KEYS: Record<string, string> = {
+  Great: 'wellness.bandNames.great',
+  Good: 'wellness.bandNames.good',
+  Okay: 'wellness.bandNames.okay',
+  Hard: 'wellness.bandNames.hard',
+  'Very hard': 'wellness.bandNames.veryHard',
+};
+
 export function groupLabel(group: WellnessGroup): string {
   return i18n.t(`wellness.groups.${group}`);
 }
@@ -41,7 +50,8 @@ export function groupLabel(group: WellnessGroup): string {
 /** Screen-reader sentence for one point on the wellness chart. */
 export function wellnessAriaLabel(label: string, score: number | null): string {
   if (score == null) return i18n.t('wellness.ariaNothingLogged', { label });
-  const band = WELLNESS_BANDS.find((b) => score >= b.min)?.label ?? '';
+  const english = WELLNESS_BANDS.find((b) => score >= b.min)?.label ?? '';
+  const band = BAND_NAME_KEYS[english] ? i18n.t(BAND_NAME_KEYS[english]) : english;
   return i18n.t('wellness.ariaScore', { label, band, score: Math.round(score) });
 }
 

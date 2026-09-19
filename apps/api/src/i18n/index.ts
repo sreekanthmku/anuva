@@ -211,8 +211,17 @@ export function t(key: string, vars?: Vars, options?: { language?: string | null
     (language === DEFAULT_LANGUAGE ? undefined : resolve(DEFAULT_LANGUAGE, key, vars)) ??
     options?.fallback ??
     key;
-  return interpolate(text, vars);
+  const result = interpolate(text, vars);
+  return PSEUDO ? `⟪${result}⟫` : result;
 }
+
+/**
+ * Pseudo-localisation, for finding copy that never passes through here. With `I18N_PSEUDO=1` every
+ * localised string comes back wrapped as `⟪…⟫` — so, in the app or in a test, any English on screen
+ * *without* the brackets is text that no language will ever translate. Diagnostic only; never set it
+ * in production.
+ */
+const PSEUDO = process.env.I18N_PSEUDO === '1';
 
 /** True when the English bundle defines `key` (plural forms included). */
 export function hasKey(key: string): boolean {
