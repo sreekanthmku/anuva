@@ -19,6 +19,7 @@ const PRISMA_MODELS = [
   'subscription',
   'wellnessSnapshot',
   'dailyInsight',
+  'translation',
   'symptom',
   'symptomLog',
   'symptomLogEntry',

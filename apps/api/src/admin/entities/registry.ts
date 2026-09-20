@@ -443,6 +443,30 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     ),
   }),
   def({
+    resource: 'translations',
+    label: 'Translations',
+    prismaModel: 'translation',
+    group: 'Content',
+    searchFields: ['key', 'value', 'note', 'id'],
+    filterFields: ['language'],
+    sortableFields: ['language', 'key', 'updatedAt'],
+    defaultSort: 'key',
+    createSchema: objectSchema({
+      language: z.string().trim().length(2),
+      key: z.string().trim().min(1).max(200),
+      value: z.string().min(1),
+      note: z.string().nullable().optional(),
+    }),
+    updateSchema: objectSchema(
+      {
+        // `language` and `key` identify the string; editing them would silently retarget the row.
+        value: z.string().min(1),
+        note: z.string().nullable(),
+      },
+      true,
+    ),
+  }),
+  def({
     resource: 'daily-insights',
     label: 'Daily Insights',
     prismaModel: 'dailyInsight',

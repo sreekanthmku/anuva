@@ -66,6 +66,36 @@ function loadBundles(): Partial<Record<Language, Bundle>> {
 
 const bundles = loadBundles();
 
+/**
+ * Admin overrides from the `Translation` table, flat: `hi` → `nudges.items.L1-001.options.0` → text.
+ *
+ * Held separately from the file bundles rather than merged into them, so a reload is a swap of this
+ * map and the files stay exactly as shipped. `./store.ts` fills it; nothing here talks to the
+ * database, which keeps this module importable by the extract script and the tests.
+ */
+const overrides: Partial<Record<Language, Map<string, string>>> = {};
+
+/** Swaps in a fresh set of overrides. Rows for unsupported languages are ignored. */
+export function applyTranslationOverrides(rows: Iterable<{ language: string; key: string; value: string }>): number {
+  const next: Partial<Record<Language, Map<string, string>>> = {};
+  let count = 0;
+  for (const row of rows) {
+    if (!isLanguage(row.language) || typeof row.value !== 'string') continue;
+    (next[row.language] ??= new Map()).set(row.key, row.value);
+    count += 1;
+  }
+  for (const code of SUPPORTED_LANGUAGES) delete overrides[code];
+  Object.assign(overrides, next);
+  return count;
+}
+
+/** How many overrides are loaded, per language — for the boot log and the admin status endpoint. */
+export function overrideCounts(): Record<string, number> {
+  return Object.fromEntries(
+    Object.entries(overrides).map(([code, map]) => [code, map?.size ?? 0]),
+  );
+}
+
 /** Replaces one language's bundle (`null` removes it). Tests only — production reads files at boot. */
 export function setBundleForTests(language: Language, bundle: Bundle | null): void {
   if (language === DEFAULT_LANGUAGE) throw new Error('The English bundle is built from the code.');
@@ -75,7 +105,9 @@ export function setBundleForTests(language: Language, bundle: Bundle | null): vo
 
 /** Languages that actually have a bundle — what `resolveLanguage` is allowed to pick. */
 export function availableLanguages(): Language[] {
-  return SUPPORTED_LANGUAGES.filter((code) => code === DEFAULT_LANGUAGE || bundles[code]);
+  return SUPPORTED_LANGUAGES.filter(
+    (code) => code === DEFAULT_LANGUAGE || bundles[code] || (overrides[code]?.size ?? 0) > 0,
+  );
 }
 
 /**
@@ -193,8 +225,11 @@ function resolve(language: Language, key: string, vars?: Vars): string | undefin
     candidates.push(`${key}_${category}`, `${key}_other`);
   }
   candidates.push(key);
+  const edited = overrides[language];
   for (const candidate of candidates) {
-    const hit = lookup(bundles[language], candidate);
+    // The database wins over the file, so a correction made in the admin panel takes effect
+    // without a deploy.
+    const hit = edited?.get(candidate) ?? lookup(bundles[language], candidate);
     if (hit !== undefined) return hit;
   }
   return undefined;

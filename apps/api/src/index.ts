@@ -32,6 +32,7 @@ import {
   type Vars,
 } from './i18n/index.js';
 import { languageForUser } from './i18n/recipients.js';
+import { startTranslationOverrides } from './i18n/store.js';
 import { PATIENT_PUSH, PATIENT_TEXT } from './patientCopy.js';
 import type { NextFunction, Request, Response } from 'express';
 import { MulterError } from 'multer';
@@ -6192,6 +6193,10 @@ async function startServer() {
   } else {
     logger.warn('OPENAI_API_KEY is not set — POST /anu/chat will return 503');
   }
+
+  // Admin-edited copy, over the bundled JSON. Optional: if the table cannot be read the API serves
+  // the files, so translations never gate the boot.
+  await startTranslationOverrides();
 
   const server = app.listen(port, () => {
     logger.info(

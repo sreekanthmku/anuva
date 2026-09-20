@@ -1711,3 +1711,28 @@ model SupportTicket {
   @@index([createdAt])
   @@index([purgeAfter])
 }
+
+/// One translated string, overriding the same key in `apps/api/src/i18n/locales/<language>.json`.
+///
+/// The JSON files remain the source of truth and ship with the build; a row here wins over the file
+/// so copy can be corrected from the admin panel without a deploy. Seeded from the files by
+/// `pnpm --filter @anuva/api i18n:seed`, and written back to them by `i18n:export`, so an edit made
+/// here can be committed rather than living only in the database.
+///
+/// `key` is the dotted path into the bundle, e.g. `nudges.items.L1-001.options.0`. A language with
+/// rows here needs no file at all, and a key with no row simply falls through to the file, then to
+/// English — a missing translation is never an error.
+model Translation {
+  id        String   @id @default(cuid())
+  language  String
+  key       String
+  value     String
+  /// Free-text note for whoever edits this in the admin panel.
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([language, key])
+  @@index([language])
+  @@index([updatedAt])
+}
