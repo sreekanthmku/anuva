@@ -660,7 +660,12 @@
     "editSettingsTitle": "சுழற்சி & பீரியட் காலம்",
     "settingIsStartingPoint": ". போதுமான சுழற்சிகள் பதிவு செய்யப்படும் வரை உங்கள் அமைப்பு ஒரு தொடக்க புள்ளி.",
     "cycleLengthLabel": "சுழற்சி காலம்",
-    "periodLengthLabel": "பீரியட் காலம்"
+    "periodLengthLabel": "பீரியட் காலம்",
+    "avgCycle": "சராசரி சுழற்சி",
+    "avgPeriod": "சராசரி பீரியட்",
+    "daysValue": "{{count}} நாட்கள்",
+    "loggedCycles_one": "{{count}} பதிவு செய்த சுழற்சி",
+    "loggedCycles_other": "{{count}} பதிவு செய்த சுழற்சிகள்"
   },
   "profile": {
     "backHome": "← முகப்பு",
@@ -887,7 +892,8 @@
       "chocolatesBody": "சில நாட்கள் உங்களிடம் அதிகம் கேட்கும். {{name}} இந்த நாளுக்கு குறைந்தபட்சம் ஒரு சிறிய நல்ல விஷயம் இருக்க வேண்டும் என விரும்பினார்.",
       "thankYou": "நன்றி 💛",
       "getsSmiley": "{{name}} இன் ஃபோனில் ஒரு ஸ்மைலி கிடைக்கும்."
-    }
+    },
+    "fromFallback": "உங்கள் குடும்பம்"
   },
   "install": {
     "homeScreenNote": "உங்கள் ஹோம் ஸ்கிரீனில் <1>Anuva Wellness</1> ஐகானைப் பாருங்கள்.",
@@ -953,7 +959,11 @@
   "calendar": {
     "previousMonth": "முந்தைய மாதம்",
     "nextMonth": "அடுத்த மாதம்",
-    "predicted": "கணிக்கப்பட்டது"
+    "predicted": "கணிக்கப்பட்டது",
+    "legendPeriod": "பீரியட்",
+    "legendPredicted": "கணிக்கப்பட்டது",
+    "legendFertile": "கருவுறும் நாட்கள்",
+    "legendOvulation": "அண்டவிடுப்பு"
   },
   "summary": {
     "periods": {
@@ -989,7 +999,15 @@
     "ariaThroughout": "முழுவதும் {{value}} {{unit}}",
     "ariaRanged": "{{low}} முதல் {{high}} {{unit}} வரை, சமீபத்தியது {{latest}} {{unit}}",
     "ariaMissingNote": " {{count}} பதிவு செய்யப்படவில்லை.",
-    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}}-இல் {{logged}} நாட்கள் பதிவு செய்யப்பட்டது.{{missingNote}}"
+    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}}-இல் {{logged}} நாட்கள் பதிவு செய்யப்பட்டது.{{missingNote}}",
+    "barAria": "{{date}}: {{value}}",
+    "outsideWindow": "இந்த காலத்திற்கு வெளியே",
+    "notLogged": "பதிவு செய்யப்படவில்லை",
+    "seeDayByDay": "{{label}}. நாளுக்கு நாள் பார்",
+    "glanceAria": "{{eyebrow}}: {{label}}{{value}} {{note}}. நாளுக்கு நாள் பார்",
+    "glanceValue": ", {{value}}",
+    "dayMetricsLogged": "{{date}}, {{total}}-இல் {{count}} மெட்ரிக்குகள் பதிவு செய்யப்பட்டுள்ளன",
+    "dayNothingLogged": "{{date}}, எதுவும் பதிவு செய்யப்படவில்லை"
   },
   "metric": {
     "backToSummary": "சுருக்கம்",
@@ -1066,6 +1084,38 @@
         "steady": "நிலையானது",
         "worsening": "முன்பை விட அதிகம்"
       }
+    },
+    "dayBalance": "நாட்களின் சமநிலை",
+    "untrackedDays": "பதிவு செய்யாத நாட்கள்",
+    "scoredNote": "0–100 மதிப்பெண், அதிகமாக இருப்பது எப்போதும் சிறந்தது. {{note}}",
+    "byTheNumbers": "எண்களில்",
+    "whatStoodOut": "தனித்துத் தெரிந்தவை",
+    "stoodOut": {
+      "positive": "முன்னேறுகிறது",
+      "neutral": "நிலையாக",
+      "attention": "கவனம் தேவை"
+    },
+    "stoodOutAria": "{{label}}, {{column}}. நாளுக்கு நாள் பார்",
+    "delta": {
+      "positive": "மேம்பட்டது",
+      "attention": "மோசமானது",
+      "neutral": "கிட்டத்தட்ட அப்படியே"
+    },
+    "points": "{{value}} புள்ளிகள்",
+    "notLogged": "பதிவு செய்யப்படவில்லை",
+    "seriesToChart": "வரைபடத்தில் காட்ட வேண்டியது",
+    "overallTrend": "ஒட்டுமொத்தப் போக்கு",
+    "trendNoteWeekly": "வாரத்திற்கு ஒரு புள்ளி, அந்த வாரத்தில் நீங்கள் பதிவு செய்த நாட்களின் சராசரி.",
+    "trendNoteDaily": "ஒரு நாளுக்கு ஒரு புள்ளி. அச்சுக்கு கீழே உள்ள கீற்றுகள் பதிவு இல்லாத நாட்கள்.",
+    "balanceColumn": {
+      "good_one": "நல்ல நாள்",
+      "good_other": "நல்ல நாட்கள்",
+      "okay_one": "பரவாயில்லாத நாள்",
+      "okay_other": "பரவாயில்லாத நாட்கள்",
+      "hard_one": "கடினமான நாள்",
+      "hard_other": "கடினமான நாட்கள்",
+      "untracked_one": "பதிவு செய்யாத நாள்",
+      "untracked_other": "பதிவு செய்யாத நாட்கள்"
     }
   },
   "wellness": {
@@ -1101,7 +1151,14 @@
       "day": "நாள்",
       "week": "வாரம்"
     },
-    "trendAriaSummary": "{{series}}, ஒரு {{unit}}க்கு ஒரு புள்ளி. {{points}}.{{missingNote}}"
+    "trendAriaSummary": "{{series}}, ஒரு {{unit}}க்கு ஒரு புள்ளி. {{points}}.{{missingNote}}",
+    "bandNames": {
+      "great": "சிறப்பு",
+      "good": "நன்று",
+      "okay": "பரவாயில்லை",
+      "hard": "கடினம்",
+      "veryHard": "மிகக் கடினம்"
+    }
   },
   "booking": {
     "freeBadge": "★ இலவசமாக சேர்க்கப்பட்டுள்ளது · முதல் ஆலோசனை",
@@ -1424,6 +1481,16 @@
       "dietician": "உணவியல் நிபுணர்",
       "coach": "மெனோபாஸ் பயிற்சியாளர்",
       "all": "அனைத்து பயிற்சியாளர்கள்"
+    },
+    "answerHighlightedMany": "தொடரும் முன், குறிக்கப்பட்ட {{count}} கேள்விகளுக்குப் பதில் அளியுங்கள்.",
+    "auto": "தானாக",
+    "listItem": "{{number}}.",
+    "medicationRow": "மருந்து {{number}}",
+    "progress": "{{current}} / {{total}}",
+    "columns": {
+      "medication_supplement": "மருந்து / சப்ளிமெண்ட்",
+      "dosage": "அளவு",
+      "duration_frequency": "காலம் / அடிக்கடி"
     }
   },
   "help": {
@@ -1545,7 +1612,10 @@
     "downloaded": "உங்கள் தரவு பதிவிறக்கப்பட்டது. இணைப்பு இப்போது பயன்படுத்தப்பட்டது, மீண்டும் திறக்க முடியாது.",
     "deletionCancelled": "உங்கள் கணக்கு நீக்கப்படாது. எதுவும் அகற்றப்படவில்லை.",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "accountScheduled": "உங்கள் கணக்கு {{date}} அன்று நீக்கப்பட உள்ளது. அதற்கு முன் எந்த நேரத்திலும் ரத்து செய்யலாம்.",
+    "deletedItems_one": "{{count}} உருப்படி நீக்கப்பட்டது. {{scope}}: முடிந்தது.",
+    "deletedItems_other": "{{count}} உருப்படிகள் நீக்கப்பட்டன. {{scope}}: முடிந்தது."
   },
   "bookings": {
     "backHome": "← முகப்பு",
@@ -1634,7 +1704,8 @@
     "openFailed": "உங்கள் அறிக்கையைத் திறக்க முடியவில்லை.",
     "backToProfile": "← சுயவிவரம்",
     "eyebrow": "உங்கள் மதிப்பீட்டு அறிக்கை",
-    "preparing": "உங்கள் அறிக்கையை தயார் செய்கிறது…"
+    "preparing": "உங்கள் அறிக்கையை தயார் செய்கிறது…",
+    "additionalFocus": "கூடுதல் கவனம்"
   },
   "datePicker": {
     "close": "தேதி தேர்வியை மூடு",
@@ -1644,5 +1715,50 @@
     "previousMonth": "முந்தைய மாதம்",
     "nextMonth": "அடுத்த மாதம்",
     "backToToday": "இன்றைக்குத் திரும்பு"
+  },
+  "time": {
+    "justNow": "இப்போதுதான்",
+    "hoursAgo": "{{count}} மணி நேரம் முன்பு",
+    "daysAgo": "{{count}} நாட்கள் முன்பு"
+  },
+  "errors": {
+    "requestFailed": "கோரிக்கை தோல்வியடைந்தது, நிலை {{status}}",
+    "loadCycle": "சுழற்சி தரவை ஏற்ற முடியவில்லை",
+    "loadToday": "இன்றைய ஆரோக்கியத்தை ஏற்ற முடியவில்லை",
+    "loadAssessment": "மதிப்பீட்டை ஏற்ற முடியவில்லை",
+    "loadJoints": "மூட்டு தரவை ஏற்ற முடியவில்லை",
+    "loadMood": "மனநிலை தரவை ஏற்ற முடியவில்லை",
+    "loadDay": "உங்கள் நாளை ஏற்ற முடியவில்லை",
+    "loadCheckIn": "உங்கள் பதிவை ஏற்ற முடியவில்லை",
+    "loadQuickLog": "விரைவு பதிவை ஏற்ற முடியவில்லை",
+    "loadSleep": "தூக்க தரவை ஏற்ற முடியவில்லை",
+    "loadCalendar": "உங்கள் காலெண்டரை ஏற்ற முடியவில்லை",
+    "loadSummary": "உங்கள் சுருக்கத்தை ஏற்ற முடியவில்லை",
+    "loadLibrary": "நூலகத்தை ஏற்ற முடியவில்லை.",
+    "articleNotFound": "கட்டுரை கிடைக்கவில்லை.",
+    "loadArticle": "இந்தக் கட்டுரையை ஏற்ற முடியவில்லை.",
+    "downloadUsed": "அந்தப் பதிவிறக்கம் ஏற்கனவே பயன்படுத்தப்பட்டுவிட்டது. உங்கள் தரவை மீண்டும் கேளுங்கள்.",
+    "downloadFailed": "உங்கள் தரவைப் பதிவிறக்க முடியவில்லை. மீண்டும் முயற்சியுங்கள்.",
+    "loadQuestions": "கேள்விகளை ஏற்ற முடியவில்லை.",
+    "sendQuestion": "உங்கள் கேள்வியை அனுப்ப முடியவில்லை.",
+    "checkFamilyInvite": "உங்கள் குடும்ப அழைப்பைச் சரிபார்க்க முடியவில்லை.",
+    "shareRecordFailedWithReason": "{{reason}} நீங்கள் ஏற்கனவே இணைப்பை அனுப்பியிருந்தால், மீண்டும் பகிர் என்பதைத் தட்டுங்கள்.",
+    "shareRecordFailed": "நீங்கள் இணைப்பைப் பகிர்ந்ததைப் பதிவு செய்ய முடியவில்லை.",
+    "recordingUnavailable": "பதிவு இன்னும் கிடைக்கவில்லை.",
+    "documentUnavailable": "இந்த ஆவணத்தைத் திறக்க முடியவில்லை.",
+    "notificationsNotRegistered": "அறிவிப்புகள் இயக்கத்தில் உள்ளன, ஆனால் இந்த சாதனம் இன்னும் பதிவு செய்யப்படவில்லை. மீண்டும் முயற்சி என்பதைத் தட்டுங்கள்.",
+    "deviceRegisterFailed": "இந்த சாதனத்தைப் பதிவு செய்ய முடியவில்லை. ஹோமில் மீண்டும் முயற்சி என்பதைத் தட்டுங்கள்.",
+    "firebaseNotConfigured": "Firebase அமைக்கப்படவில்லை.",
+    "serviceWorkerUnsupported": "சர்வீஸ் வொர்க்கர்களுக்கு ஆதரவு இல்லை.",
+    "pushNotConfigured": "இந்த பில்டில் புஷ் அறிவிப்புகள் அமைக்கப்படவில்லை.",
+    "pushUnsupported": "இந்த பிரௌசர் புஷ் அறிவிப்புகளை ஆதரிக்கவில்லை.",
+    "permissionNotGranted": "அறிவிப்பு அனுமதி வழங்கப்படவில்லை.",
+    "messagingInitFailed": "இந்த பிரௌசரில் மெசேஜிங்கைத் தொடங்க முடியவில்லை.",
+    "noDeviceToken": "Firebase இடமிருந்து சாதன டோக்கன் பெற முடியவில்லை. பக்கத்தை முழுமையாக புதுப்பித்துப் பாருங்கள்.",
+    "permissionWasNotGranted": "அறிவிப்பு அனுமதி வழங்கப்படவில்லை.",
+    "notSignedIn": "நீங்கள் உள்நுழையவில்லை. மீண்டும் உள்நுழைந்து, பிறகு முயற்சியுங்கள்.",
+    "saveNotificationSettings": "உங்கள் அறிவிப்பு அமைப்புகளைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சியுங்கள்.",
+    "serverUnreachable": "சர்வரைத் தொடர்பு கொள்ள முடியவில்லை. API இயங்குகிறதா?",
+    "notificationsBlocked": "அறிவிப்புகள் தடுக்கப்பட்டுள்ளன. உங்கள் பிரௌசரின் தள அமைப்புகளில் அவற்றை இயக்குங்கள்."
   }
 }

@@ -454,7 +454,7 @@
     "areas": {
       "neck": "ବେକ",
       "shoulders": "କାନ୍ଧ",
-      "elbows": "କାନି",
+      "elbows": "କହୁଣି",
       "hands_wrists_fingers": "ହାତ / କବଜି / ଆଙ୍ଗୁଠି",
       "lower_back": "ତଳ ପିଠି",
       "hips": "କଟି",
@@ -660,7 +660,12 @@
     "editSettingsTitle": "ଚକ୍ର ଓ ପିରିୟଡ୍ ଲମ୍ବ",
     "settingIsStartingPoint": "। ଯଥେଷ୍ଟ ଚକ୍ର ଲଗ୍ ହେବା ପର୍ଯ୍ୟନ୍ତ ଆପଣଙ୍କ ସେଟିଂ ଏକ ଆରମ୍ଭ ବିନ୍ଦୁ ଅଟେ।",
     "cycleLengthLabel": "ଚକ୍ର ଲମ୍ବ",
-    "periodLengthLabel": "ପିରିୟଡ୍ ଲମ୍ବ"
+    "periodLengthLabel": "ପିରିୟଡ୍ ଲମ୍ବ",
+    "avgCycle": "ହାରାହାରି ଚକ୍ର",
+    "avgPeriod": "ହାରାହାରି ପିରିୟଡ୍",
+    "daysValue": "{{count}} ଦିନ",
+    "loggedCycles_one": "{{count}} ଲଗ୍ ହୋଇଥିବା ଚକ୍ର",
+    "loggedCycles_other": "{{count}} ଲଗ୍ ହୋଇଥିବା ଚକ୍ର"
   },
   "profile": {
     "backHome": "← ହୋମ୍",
@@ -887,7 +892,8 @@
       "chocolatesBody": "କିଛି ଦିନ ଆପଣଙ୍କଠାରୁ ବହୁତ ମାଗନ୍ତି। {{name}} ଚାହୁଁଥିଲେ ଆଜି ଅତି କମରେ ଗୋଟିଏ ଛୋଟ ଭଲ କଥା ରହୁ।",
       "thankYou": "ଧନ୍ୟବାଦ 💛",
       "getsSmiley": "{{name}}ଙ୍କ ଫୋନରେ ଏକ ସ୍ମାଇଲି ମିଳେ।"
-    }
+    },
+    "fromFallback": "ଆପଣଙ୍କ ପରିବାର"
   },
   "install": {
     "homeScreenNote": "ଆପଣଙ୍କ ହୋମ୍ ସ୍କ୍ରିନରେ <1>Anuva Wellness</1> ଆଇକନ୍ ଖୋଜନ୍ତୁ।",
@@ -953,7 +959,11 @@
   "calendar": {
     "previousMonth": "ପୂର୍ବ ମାସ",
     "nextMonth": "ପରବର୍ତ୍ତୀ ମାସ",
-    "predicted": "ପୂର୍ବାନୁମାନିତ"
+    "predicted": "ପୂର୍ବାନୁମାନିତ",
+    "legendPeriod": "ପିରିୟଡ୍",
+    "legendPredicted": "ପୂର୍ବାନୁମାନିତ",
+    "legendFertile": "ଉର୍ବର",
+    "legendOvulation": "ଓଭ୍ୟୁଲେସନ୍"
   },
   "summary": {
     "periods": {
@@ -989,7 +999,15 @@
     "ariaThroughout": "ସାରା ସମୟ {{value}} {{unit}}",
     "ariaRanged": "{{low}}ରୁ {{high}} {{unit}} ମଧ୍ୟରେ, ସର୍ବଶେଷ {{latest}} {{unit}}",
     "ariaMissingNote": " {{count}} ଲଗ୍ ହୋଇନାହିଁ।",
-    "ariaSummary": "{{label}}, {{span}}: {{shape}}। {{total}} ମଧ୍ୟରୁ {{logged}} ଦିନ ଲଗ୍ ହୋଇଛି।{{missingNote}}"
+    "ariaSummary": "{{label}}, {{span}}: {{shape}}। {{total}} ମଧ୍ୟରୁ {{logged}} ଦିନ ଲଗ୍ ହୋଇଛି।{{missingNote}}",
+    "barAria": "{{date}}: {{value}}",
+    "outsideWindow": "ଏହି ସମୟ ବାହାରେ",
+    "notLogged": "ଲଗ୍ ହୋଇନାହିଁ",
+    "seeDayByDay": "{{label}}। ଦିନ ଅନୁଯାୟୀ ଦେଖନ୍ତୁ",
+    "glanceAria": "{{eyebrow}}: {{label}}{{value}} {{note}}। ଦିନ ଅନୁଯାୟୀ ଦେଖନ୍ତୁ",
+    "glanceValue": ", {{value}}",
+    "dayMetricsLogged": "{{date}}, {{total}} ମଧ୍ୟରୁ {{count}}ଟି ମେଟ୍ରିକ୍ ଲଗ୍ ହୋଇଛି",
+    "dayNothingLogged": "{{date}}, କିଛି ଲଗ୍ ହୋଇନାହିଁ"
   },
   "metric": {
     "backToSummary": "ସାରାଂଶ",
@@ -1066,6 +1084,38 @@
         "steady": "ସ୍ଥିର",
         "worsening": "ଆଗ ଠାରୁ ଅଧିକ"
       }
+    },
+    "dayBalance": "ଦିନର ସନ୍ତୁଳନ",
+    "untrackedDays": "ଟ୍ରାକ୍ ହୋଇନଥିବା ଦିନ",
+    "scoredNote": "0–100ରେ ସ୍କୋର, ଅଧିକ ସବୁବେଳେ ଭଲ। {{note}}",
+    "byTheNumbers": "ସଂଖ୍ୟାରେ",
+    "whatStoodOut": "କଣ ଅଲଗା ଦେଖାଗଲା",
+    "stoodOut": {
+      "positive": "ଭଲ ହେଉଛି",
+      "neutral": "ସ୍ଥିର",
+      "attention": "ଧ୍ୟାନ ଦରକାର"
+    },
+    "stoodOutAria": "{{label}}, {{column}}। ଦିନ ଅନୁଯାୟୀ ଦେଖନ୍ତୁ",
+    "delta": {
+      "positive": "ଭଲ",
+      "attention": "ଖରାପ",
+      "neutral": "ପ୍ରାୟ ସମାନ"
+    },
+    "points": "{{value}} ପଏଣ୍ଟ",
+    "notLogged": "ଲଗ୍ ହୋଇନାହିଁ",
+    "seriesToChart": "ଚାର୍ଟ ପାଇଁ ସିରିଜ୍",
+    "overallTrend": "ସାମଗ୍ରିକ ଧାରା",
+    "trendNoteWeekly": "ପ୍ରତି ସପ୍ତାହକୁ ଗୋଟିଏ ବିନ୍ଦୁ, ସେହି ସପ୍ତାହରେ ଆପଣ ଲଗ୍ କରିଥିବା ଦିନଗୁଡ଼ିକର ହାରାହାରି।",
+    "trendNoteDaily": "ପ୍ରତି ଦିନକୁ ଗୋଟିଏ ବିନ୍ଦୁ। ଅକ୍ଷ ତଳେ ଥିବା ଟିକ୍ ସେହି ଦିନ ଯେବେ କୌଣସି ଚେକ୍-ଇନ୍ ନାହିଁ।",
+    "balanceColumn": {
+      "good_one": "ଭଲ ଦିନ",
+      "good_other": "ଭଲ ଦିନ",
+      "okay_one": "ଠିକ୍ ଦିନ",
+      "okay_other": "ଠିକ୍ ଦିନ",
+      "hard_one": "କଠିନ ଦିନ",
+      "hard_other": "କଠିନ ଦିନ",
+      "untracked_one": "ଟ୍ରାକ୍ ହୋଇନଥିବା ଦିନ",
+      "untracked_other": "ଟ୍ରାକ୍ ହୋଇନଥିବା ଦିନ"
     }
   },
   "wellness": {
@@ -1101,7 +1151,14 @@
       "day": "ଦିନ",
       "week": "ସପ୍ତାହ"
     },
-    "trendAriaSummary": "{{series}}, ପ୍ରତି {{unit}}କୁ ଏକ ବିନ୍ଦୁ। {{points}}।{{missingNote}}"
+    "trendAriaSummary": "{{series}}, ପ୍ରତି {{unit}}କୁ ଏକ ବିନ୍ଦୁ। {{points}}।{{missingNote}}",
+    "bandNames": {
+      "great": "ବହୁତ ଭଲ",
+      "good": "ଭଲ",
+      "okay": "ଠିକ୍",
+      "hard": "କଠିନ",
+      "veryHard": "ବହୁତ କଠିନ"
+    }
   },
   "booking": {
     "freeBadge": "★ ମାଗଣା ଅନ୍ତର୍ଭୁକ୍ତ · ପ୍ରଥମ ପରାମର୍ଶ",
@@ -1424,6 +1481,16 @@
       "dietician": "ପୋଷଣବିତ୍",
       "coach": "ମେନୋପଜ୍ କୋଚ୍",
       "all": "ସମସ୍ତ ବିଶେଷଜ୍ଞ"
+    },
+    "answerHighlightedMany": "ଆଗକୁ ବଢ଼ିବା ପୂର୍ବରୁ ଦୟାକରି ଚିହ୍ନିତ {{count}}ଟି ପ୍ରଶ୍ନର ଉତ୍ତର ଦିଅନ୍ତୁ।",
+    "auto": "ଅଟୋ",
+    "listItem": "{{number}}.",
+    "medicationRow": "ଔଷଧ {{number}}",
+    "progress": "{{current}} / {{total}}",
+    "columns": {
+      "medication_supplement": "ଔଷଧ / ସପ୍ଲିମେଣ୍ଟ",
+      "dosage": "ମାତ୍ରା",
+      "duration_frequency": "ଅବଧି / କେତେ ଥର"
     }
   },
   "help": {
@@ -1545,7 +1612,10 @@
     "downloaded": "ଆପଣଙ୍କ ତଥ୍ୟ ଡାଉନଲୋଡ୍ ହୋଇଗଲା। ଲିଙ୍କ ବର୍ତ୍ତମାନ ବ୍ୟବହୃତ ହୋଇଛି ଆଉ ପୁଣି ଖୋଲିହେବ ନାହିଁ।",
     "deletionCancelled": "ଆପଣଙ୍କ ଆକାଉଣ୍ଟ ଡିଲିଟ୍ ହେବ ନାହିଁ। କିଛି ହଟା ଯାଇନାହିଁ।",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "accountScheduled": "ଆପଣଙ୍କ ଆକାଉଣ୍ଟ {{date}}ରେ ଡିଲିଟ୍ ହେବାକୁ ନିର୍ଧାରିତ। ତା ଆଗରୁ ଆପଣ ଯେକୌଣସି ସମୟରେ ବାତିଲ୍ କରିପାରିବେ।",
+    "deletedItems_one": "{{count}}ଟି ଆଇଟମ୍ ଡିଲିଟ୍ ହେଲା। {{scope}}: ହୋଇଗଲା।",
+    "deletedItems_other": "{{count}}ଟି ଆଇଟମ୍ ଡିଲିଟ୍ ହେଲା। {{scope}}: ହୋଇଗଲା।"
   },
   "bookings": {
     "backHome": "← ହୋମ୍",
@@ -1634,7 +1704,8 @@
     "openFailed": "ଆପଣଙ୍କ ରିପୋର୍ଟ ଖୋଲିହେଲା ନାହିଁ।",
     "backToProfile": "← ପ୍ରୋଫାଇଲ୍",
     "eyebrow": "ଆପଣଙ୍କ ମୂଲ୍ୟାଙ୍କନ ରିପୋର୍ଟ",
-    "preparing": "ଆପଣଙ୍କ ରିପୋର୍ଟ ପ୍ରସ୍ତୁତ ହେଉଛି…"
+    "preparing": "ଆପଣଙ୍କ ରିପୋର୍ଟ ପ୍ରସ୍ତୁତ ହେଉଛି…",
+    "additionalFocus": "ଅତିରିକ୍ତ ଧ୍ୟାନ"
   },
   "datePicker": {
     "close": "ତାରିଖ ପିକର୍ ବନ୍ଦ କରନ୍ତୁ",
@@ -1644,5 +1715,50 @@
     "previousMonth": "ପୂର୍ବ ମାସ",
     "nextMonth": "ପରବର୍ତ୍ତୀ ମାସ",
     "backToToday": "ଆଜିକୁ ଫେରନ୍ତୁ"
+  },
+  "time": {
+    "justNow": "ଏବେ ହିଁ",
+    "hoursAgo": "{{count}} ଘଣ୍ଟା ପୂର୍ବେ",
+    "daysAgo": "{{count}} ଦିନ ପୂର୍ବେ"
+  },
+  "errors": {
+    "requestFailed": "ଅନୁରୋଧ ବିଫଳ ହେଲା, ଷ୍ଟାଟସ୍ {{status}}",
+    "loadCycle": "ଚକ୍ର ତଥ୍ୟ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadToday": "ଆଜିର ୱେଲନେସ୍ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadAssessment": "ମୂଲ୍ୟାଙ୍କନ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadJoints": "ଗଣ୍ଠି ତଥ୍ୟ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadMood": "ମନଃସ୍ଥିତି ତଥ୍ୟ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadDay": "ଆପଣଙ୍କ ଦିନ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadCheckIn": "ଆପଣଙ୍କ ଚେକ୍-ଇନ୍ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadQuickLog": "କୁଇକ୍ ଲଗ୍ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadSleep": "ନିଦ୍ରା ତଥ୍ୟ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadCalendar": "ଆପଣଙ୍କ କ୍ୟାଲେଣ୍ଡର ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadSummary": "ଆପଣଙ୍କ ସାରାଂଶ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ",
+    "loadLibrary": "ଲାଇବ୍ରେରୀ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ।",
+    "articleNotFound": "ଆର୍ଟିକଲ୍ ମିଳିଲା ନାହିଁ।",
+    "loadArticle": "ଏହି ଆର୍ଟିକଲ୍ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ।",
+    "downloadUsed": "ସେହି ଡାଉନଲୋଡ୍ ପୂର୍ବରୁ ବ୍ୟବହାର ହୋଇଯାଇଛି। ଆପଣଙ୍କ ତଥ୍ୟ ପୁଣି ମଗାନ୍ତୁ।",
+    "downloadFailed": "ଆପଣଙ୍କ ତଥ୍ୟ ଡାଉନଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
+    "loadQuestions": "ପ୍ରଶ୍ନ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ।",
+    "sendQuestion": "ଆପଣଙ୍କ ପ୍ରଶ୍ନ ପଠାଇ ହେଲା ନାହିଁ।",
+    "checkFamilyInvite": "ଆପଣଙ୍କ ପରିବାର ନିମନ୍ତ୍ରଣ ଯାଞ୍ଚ ହୋଇପାରିଲା ନାହିଁ।",
+    "shareRecordFailedWithReason": "{{reason}} ଆପଣ ପୂର୍ବରୁ ଲିଙ୍କ୍ ପଠାଇସାରିଥିଲେ, ପୁଣି ଥରେ ସେୟାର୍ ଟ୍ୟାପ୍ କରନ୍ତୁ।",
+    "shareRecordFailed": "ଆପଣ ଲିଙ୍କ୍ ସେୟାର୍ କରିଛନ୍ତି ବୋଲି ଲେଖି ହେଲା ନାହିଁ।",
+    "recordingUnavailable": "ରେକର୍ଡିଂ ଏବେ ପର୍ଯ୍ୟନ୍ତ ଉପଲବ୍ଧ ନାହିଁ।",
+    "documentUnavailable": "ଏହି ଡକ୍ୟୁମେଣ୍ଟ ଖୋଲି ହେଲା ନାହିଁ।",
+    "notificationsNotRegistered": "ନୋଟିଫିକେସନ୍ ଚାଲୁ ଅଛି, କିନ୍ତୁ ଏହି ଡିଭାଇସ୍ ଏବେ ପର୍ଯ୍ୟନ୍ତ ପଞ୍ଜୀକୃତ ହୋଇନାହିଁ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ ଟ୍ୟାପ୍ କରନ୍ତୁ।",
+    "deviceRegisterFailed": "ଏହି ଡିଭାଇସ୍ ପଞ୍ଜୀକୃତ ହୋଇପାରିଲା ନାହିଁ। ହୋମ୍‌ରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ ଟ୍ୟାପ୍ କରନ୍ତୁ।",
+    "firebaseNotConfigured": "Firebase ସେଟ୍ ହୋଇନାହିଁ।",
+    "serviceWorkerUnsupported": "ସର୍ଭିସ୍ ୱାର୍କର୍ ସମର୍ଥିତ ନୁହେଁ।",
+    "pushNotConfigured": "ଏହି ବିଲ୍ଡରେ ପୁସ୍ ନୋଟିଫିକେସନ୍ ସେଟ୍ ହୋଇନାହିଁ।",
+    "pushUnsupported": "ଏହି ବ୍ରାଉଜର୍ ପୁସ୍ ନୋଟିଫିକେସନ୍ ସମର୍ଥନ କରେ ନାହିଁ।",
+    "permissionNotGranted": "ନୋଟିଫିକେସନ୍ ଅନୁମତି ଦିଆଯାଇନାହିଁ।",
+    "messagingInitFailed": "ଏହି ବ୍ରାଉଜରରେ ମେସେଜିଂ ଆରମ୍ଭ ହୋଇପାରିଲା ନାହିଁ।",
+    "noDeviceToken": "Firebaseରୁ ଡିଭାଇସ୍ ଟୋକେନ୍ ମିଳିଲା ନାହିଁ। ଏକ ହାର୍ଡ ରିଫ୍ରେସ୍ କରି ଦେଖନ୍ତୁ।",
+    "permissionWasNotGranted": "ନୋଟିଫିକେସନ୍ ଅନୁମତି ଦିଆଯାଇନଥିଲା।",
+    "notSignedIn": "ଆପଣ ସାଇନ୍ ଇନ୍ ହୋଇନାହାନ୍ତି। ଦୟାକରି ପୁଣି ଲଗ୍ ଇନ୍ କରି ଚେଷ୍ଟା କରନ୍ତୁ।",
+    "saveNotificationSettings": "ଆପଣଙ୍କ ନୋଟିଫିକେସନ୍ ସେଟିଂ ସେଭ୍ ହୋଇପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
+    "serverUnreachable": "ସର୍ଭର ପାଖରେ ପହଞ୍ଚି ହେଲା ନାହିଁ। API ଚାଲୁଛି କି?",
+    "notificationsBlocked": "ନୋଟିଫିକେସନ୍ ବ୍ଲକ୍ ହୋଇଥିଲା। ଆପଣଙ୍କ ବ୍ରାଉଜରର ସାଇଟ୍ ସେଟିଂରେ ଏହାକୁ ଚାଲୁ କରନ୍ତୁ।"
   }
 }

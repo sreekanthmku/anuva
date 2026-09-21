@@ -660,7 +660,12 @@
     "editSettingsTitle": "સાયકલ અને પિરિયડ લંબાઈ",
     "settingIsStartingPoint": ". પૂરતી સાયકલ લોગ ન થાય ત્યાં સુધી તમારી સેટિંગ એક શરૂઆતનો બિંદુ છે.",
     "cycleLengthLabel": "સાયકલ લંબાઈ",
-    "periodLengthLabel": "પિરિયડ લંબાઈ"
+    "periodLengthLabel": "પિરિયડ લંબાઈ",
+    "avgCycle": "સરેરાશ સાયકલ",
+    "avgPeriod": "સરેરાશ પિરિયડ",
+    "daysValue": "{{count}} દિવસ",
+    "loggedCycles_one": "{{count}} લોગ કરેલી સાયકલ",
+    "loggedCycles_other": "{{count}} લોગ કરેલી સાયકલ"
   },
   "profile": {
     "backHome": "← હોમ",
@@ -887,7 +892,8 @@
       "chocolatesBody": "કેટલાક દિવસો તમારી પાસેથી ઘણું માંગે છે. {{name}} ઇચ્છતા હતા કે આજના દિવસમાં ઓછામાં ઓછી એક નાની સારી વાત હોય.",
       "thankYou": "થેંક યુ 💛",
       "getsSmiley": "{{name}}ના ફોન પર સ્માઇલી મળે છે."
-    }
+    },
+    "fromFallback": "તમારો પરિવાર"
   },
   "install": {
     "homeScreenNote": "તમારી હોમ સ્ક્રીન પર <1>Anuva Wellness</1> આઇકન શોધો.",
@@ -953,7 +959,11 @@
   "calendar": {
     "previousMonth": "પાછલો મહિનો",
     "nextMonth": "આગામી મહિનો",
-    "predicted": "અંદાજિત"
+    "predicted": "અંદાજિત",
+    "legendPeriod": "પિરિયડ",
+    "legendPredicted": "અંદાજિત",
+    "legendFertile": "ફર્ટાઇલ",
+    "legendOvulation": "ઓવ્યુલેશન"
   },
   "summary": {
     "periods": {
@@ -989,7 +999,15 @@
     "ariaThroughout": "આખા સમય દરમિયાન {{value}} {{unit}}",
     "ariaRanged": "{{low}}થી {{high}} {{unit}} વચ્ચે, નવીનતમ {{latest}} {{unit}}",
     "ariaMissingNote": " {{count}} લોગ થયા નથી.",
-    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}}માંથી {{logged}} દિવસ લોગ થયા.{{missingNote}}"
+    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}}માંથી {{logged}} દિવસ લોગ થયા.{{missingNote}}",
+    "barAria": "{{date}}: {{value}}",
+    "outsideWindow": "આ સમયગાળાની બહાર",
+    "notLogged": "લોગ થયું નથી",
+    "seeDayByDay": "{{label}}. દિવસ-દર-દિવસ જુઓ",
+    "glanceAria": "{{eyebrow}}: {{label}}{{value}} {{note}}. દિવસ-દર-દિવસ જુઓ",
+    "glanceValue": ", {{value}}",
+    "dayMetricsLogged": "{{date}}, {{total}}માંથી {{count}} માપ લોગ થયાં",
+    "dayNothingLogged": "{{date}}, કંઈ લોગ થયું નથી"
   },
   "metric": {
     "backToSummary": "સારાંશ",
@@ -1066,6 +1084,38 @@
         "steady": "સ્થિર",
         "worsening": "પહેલાં કરતાં વધુ"
       }
+    },
+    "dayBalance": "દિવસોનું સંતુલન",
+    "untrackedDays": "ટ્રેક ન થયેલા દિવસો",
+    "scoredNote": "0–100માં સ્કોર, વધુ હંમેશા સારું. {{note}}",
+    "byTheNumbers": "આંકડામાં",
+    "whatStoodOut": "શું તરી આવ્યું",
+    "stoodOut": {
+      "positive": "સુધરી રહ્યું છે",
+      "neutral": "સ્થિર",
+      "attention": "ધ્યાન આપવાની જરૂર છે"
+    },
+    "stoodOutAria": "{{label}}, {{column}}. દિવસ-દર-દિવસ જુઓ",
+    "delta": {
+      "positive": "વધુ સારું",
+      "attention": "વધુ ખરાબ",
+      "neutral": "લગભગ સરખું"
+    },
+    "points": "{{value}} પોઇન્ટ",
+    "notLogged": "લોગ થયું નથી",
+    "seriesToChart": "ચાર્ટ માટેની શ્રેણી",
+    "overallTrend": "એકંદર વલણ",
+    "trendNoteWeekly": "દર અઠવાડિયે એક પોઇન્ટ, તમે જે દિવસો લોગ કર્યા તેની સરેરાશ.",
+    "trendNoteDaily": "દરરોજ એક પોઇન્ટ. અક્ષની નીચેની નિશાનીઓ એ દિવસો છે જેમાં કોઈ ચેક-ઇન નથી.",
+    "balanceColumn": {
+      "good_one": "સારો દિવસ",
+      "good_other": "સારા દિવસો",
+      "okay_one": "ઠીક દિવસ",
+      "okay_other": "ઠીક દિવસો",
+      "hard_one": "કઠિન દિવસ",
+      "hard_other": "કઠિન દિવસો",
+      "untracked_one": "ટ્રેક ન થયેલો દિવસ",
+      "untracked_other": "ટ્રેક ન થયેલા દિવસો"
     }
   },
   "wellness": {
@@ -1101,7 +1151,14 @@
       "day": "દિવસ",
       "week": "અઠવાડિયું"
     },
-    "trendAriaSummary": "{{series}}, દરેક {{unit}} માટે એક પોઇન્ટ. {{points}}.{{missingNote}}"
+    "trendAriaSummary": "{{series}}, દરેક {{unit}} માટે એક પોઇન્ટ. {{points}}.{{missingNote}}",
+    "bandNames": {
+      "great": "ખૂબ સરસ",
+      "good": "સારું",
+      "okay": "ઠીક",
+      "hard": "કઠિન",
+      "veryHard": "ખૂબ કઠિન"
+    }
   },
   "booking": {
     "freeBadge": "★ ફ્રી સામેલ · પહેલો કન્સલ્ટ",
@@ -1424,6 +1481,16 @@
       "dietician": "ડાયટિશિયન",
       "coach": "મેનોપોઝ કોચ",
       "all": "તમામ પ્રેક્ટિશનર્સ"
+    },
+    "answerHighlightedMany": "આગળ વધતા પહેલાં કૃપા કરી હાઇલાઇટ કરેલા {{count}} પ્રશ્નોના જવાબ આપો.",
+    "auto": "ઑટો",
+    "listItem": "{{number}}.",
+    "medicationRow": "દવા {{number}}",
+    "progress": "{{current}} / {{total}}",
+    "columns": {
+      "medication_supplement": "દવા / સપ્લિમેન્ટ",
+      "dosage": "માત્રા",
+      "duration_frequency": "સમયગાળો / કેટલી વાર"
     }
   },
   "help": {
@@ -1545,7 +1612,10 @@
     "downloaded": "તમારો ડેટા ડાઉનલોડ થઈ ગયો છે. લિંક હવે વપરાઈ ગઈ છે અને ફરી ખોલી શકાશે નહીં.",
     "deletionCancelled": "તમારું ખાતું ડિલીટ થશે નહીં. કંઈ કાઢવામાં આવ્યું નથી.",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "accountScheduled": "તમારું ખાતું {{date}}એ ડિલીટ કરવા માટે શેડ્યુલ થયેલું છે. તે પહેલાં તમે કોઈપણ સમયે રદ કરી શકો છો.",
+    "deletedItems_one": "{{count}} વસ્તુ ડિલીટ થઈ. {{scope}}: થઈ ગયું.",
+    "deletedItems_other": "{{count}} વસ્તુઓ ડિલીટ થઈ. {{scope}}: થઈ ગયું."
   },
   "bookings": {
     "backHome": "← હોમ",
@@ -1634,7 +1704,8 @@
     "openFailed": "તમારો રિપોર્ટ ખોલી શકાયો નહીં.",
     "backToProfile": "← પ્રોફાઇલ",
     "eyebrow": "તમારો એસેસમેન્ટ રિપોર્ટ",
-    "preparing": "તમારો રિપોર્ટ તૈયાર કરી રહ્યા છીએ…"
+    "preparing": "તમારો રિપોર્ટ તૈયાર કરી રહ્યા છીએ…",
+    "additionalFocus": "વધારાનું ધ્યાન"
   },
   "datePicker": {
     "close": "ડેટ પિકર બંધ કરો",
@@ -1644,5 +1715,50 @@
     "previousMonth": "પાછલો મહિનો",
     "nextMonth": "આગામી મહિનો",
     "backToToday": "આજે પર પાછા"
+  },
+  "time": {
+    "justNow": "હમણાં જ",
+    "hoursAgo": "{{count}} કલાક પહેલાં",
+    "daysAgo": "{{count}} દિવસ પહેલાં"
+  },
+  "errors": {
+    "requestFailed": "વિનંતી નિષ્ફળ ગઈ, સ્ટેટસ {{status}}",
+    "loadCycle": "સાયકલ ડેટા લોડ કરી શકાયો નહીં",
+    "loadToday": "આજની વેલનેસ લોડ કરી શકાઈ નહીં",
+    "loadAssessment": "એસેસમેન્ટ લોડ કરી શકાયું નહીં",
+    "loadJoints": "સાંધાનો ડેટા લોડ કરી શકાયો નહીં",
+    "loadMood": "મૂડનો ડેટા લોડ કરી શકાયો નહીં",
+    "loadDay": "તમારો દિવસ લોડ કરી શકાયો નહીં",
+    "loadCheckIn": "તમારું ચેક-ઇન લોડ કરી શકાયું નહીં",
+    "loadQuickLog": "ઝડપી લોગ લોડ કરી શકાયો નહીં",
+    "loadSleep": "ઊંઘનો ડેટા લોડ કરી શકાયો નહીં",
+    "loadCalendar": "તમારું કેલેન્ડર લોડ કરી શકાયું નહીં",
+    "loadSummary": "તમારો સારાંશ લોડ કરી શકાયો નહીં",
+    "loadLibrary": "લાઇબ્રેરી લોડ કરી શકાઈ નહીં.",
+    "articleNotFound": "લેખ મળ્યો નહીં.",
+    "loadArticle": "આ લેખ લોડ કરી શકાયો નહીં.",
+    "downloadUsed": "તે ડાઉનલોડ પહેલેથી વપરાઈ ગયું છે. તમારો ડેટા ફરી માંગો.",
+    "downloadFailed": "તમારો ડેટા ડાઉનલોડ કરી શકાયો નહીં. કૃપા કરી ફરી પ્રયત્ન કરો.",
+    "loadQuestions": "પ્રશ્નો લોડ કરી શકાયા નહીં.",
+    "sendQuestion": "તમારો પ્રશ્ન મોકલી શકાયો નહીં.",
+    "checkFamilyInvite": "તમારું ફેમિલી આમંત્રણ ચકાસી શકાયું નહીં.",
+    "shareRecordFailedWithReason": "{{reason}} જો તમે લિંક મોકલી દીધી હોય, તો ફરી શેર પર ટૅપ કરો.",
+    "shareRecordFailed": "તમે લિંક શેર કરી એ નોંધી શકાયું નહીં.",
+    "recordingUnavailable": "રેકોર્ડિંગ હજુ ઉપલબ્ધ નથી.",
+    "documentUnavailable": "આ દસ્તાવેજ ખોલી શકાયો નહીં.",
+    "notificationsNotRegistered": "નોટિફિકેશન ચાલુ છે, પણ આ ડિવાઇસ હજુ રજિસ્ટર થયું નથી. ફરી પ્રયત્ન પર ટૅપ કરો.",
+    "deviceRegisterFailed": "આ ડિવાઇસ રજિસ્ટર કરી શકાયું નહીં. હોમ પર ફરી પ્રયત્ન પર ટૅપ કરો.",
+    "firebaseNotConfigured": "Firebase કન્ફિગર થયેલું નથી.",
+    "serviceWorkerUnsupported": "સર્વિસ વર્કર્સ સપોર્ટેડ નથી.",
+    "pushNotConfigured": "આ બિલ્ડ પર પુશ નોટિફિકેશન કન્ફિગર થયેલાં નથી.",
+    "pushUnsupported": "આ બ્રાઉઝર પુશ નોટિફિકેશનને સપોર્ટ કરતું નથી.",
+    "permissionNotGranted": "નોટિફિકેશનની પરવાનગી આપેલી નથી.",
+    "messagingInitFailed": "આ બ્રાઉઝરમાં મેસેજિંગ શરૂ કરી શકાયું નહીં.",
+    "noDeviceToken": "Firebase પાસેથી ડિવાઇસ ટોકન મળ્યું નહીં. હાર્ડ રિફ્રેશ કરી જુઓ.",
+    "permissionWasNotGranted": "નોટિફિકેશનની પરવાનગી આપવામાં આવી ન હતી.",
+    "notSignedIn": "તમે સાઇન ઇન થયેલા નથી. કૃપા કરી ફરી લોગિન કરો, પછી ફરી પ્રયત્ન કરો.",
+    "saveNotificationSettings": "તમારી નોટિફિકેશન સેટિંગ્સ સાચવી શકાઈ નહીં. કૃપા કરી ફરી પ્રયત્ન કરો.",
+    "serverUnreachable": "સર્વર સુધી પહોંચી શકાયું નહીં. શું API ચાલુ છે?",
+    "notificationsBlocked": "નોટિફિકેશન બ્લોક થયેલાં છે. તમારા બ્રાઉઝરની સાઇટ સેટિંગ્સમાં એ ચાલુ કરો."
   }
 }

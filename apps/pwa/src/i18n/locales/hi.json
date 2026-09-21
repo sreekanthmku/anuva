@@ -660,7 +660,12 @@
     "editSettingsTitle": "साइकिल और पीरियड की लंबाई",
     "settingIsStartingPoint": "। जब तक पर्याप्त साइकिल लॉग नहीं होतीं, आपकी सेटिंग एक शुरुआती बिंदु है।",
     "cycleLengthLabel": "साइकिल की लंबाई",
-    "periodLengthLabel": "पीरियड की लंबाई"
+    "periodLengthLabel": "पीरियड की लंबाई",
+    "avgCycle": "औसत साइकिल",
+    "avgPeriod": "औसत पीरियड",
+    "daysValue": "{{count}} दिन",
+    "loggedCycles_one": "{{count}} लॉग की गई साइकिल",
+    "loggedCycles_other": "{{count}} लॉग की गई साइकिल"
   },
   "profile": {
     "backHome": "← होम",
@@ -887,7 +892,8 @@
       "chocolatesBody": "कुछ दिन काफ़ी मुश्किल होते हैं। {{name}} चाहते थे कि आज के दिन में कम से कम एक छोटी सी अच्छी बात तो हो।",
       "thankYou": "धन्यवाद 💛",
       "getsSmiley": "{{name}} के फोन पर एक स्माइली पहुँचेगी।"
-    }
+    },
+    "fromFallback": "आपका परिवार"
   },
   "install": {
     "homeScreenNote": "अपनी होम स्क्रीन पर <1>Anuva Wellness</1> आइकन ढूँढें।",
@@ -953,7 +959,11 @@
   "calendar": {
     "previousMonth": "पिछला महीना",
     "nextMonth": "अगला महीना",
-    "predicted": "अनुमानित"
+    "predicted": "अनुमानित",
+    "legendPeriod": "पीरियड",
+    "legendPredicted": "अनुमानित",
+    "legendFertile": "फर्टाइल",
+    "legendOvulation": "ओव्यूलेशन"
   },
   "summary": {
     "periods": {
@@ -989,7 +999,15 @@
     "ariaThroughout": "पूरे समय {{value}} {{unit}}",
     "ariaRanged": "{{low}} से {{high}} {{unit}} के बीच रहा, नवीनतम {{latest}} {{unit}}",
     "ariaMissingNote": " {{count}} लॉग नहीं हुआ।",
-    "ariaSummary": "{{label}}, {{span}}: {{shape}}। {{total}} में से {{logged}} दिन लॉग हुए।{{missingNote}}"
+    "ariaSummary": "{{label}}, {{span}}: {{shape}}। {{total}} में से {{logged}} दिन लॉग हुए।{{missingNote}}",
+    "barAria": "{{date}}: {{value}}",
+    "outsideWindow": "इस अवधि के बाहर",
+    "notLogged": "लॉग नहीं हुआ",
+    "seeDayByDay": "{{label}}। दिन-दर-दिन देखें",
+    "glanceAria": "{{eyebrow}}: {{label}}{{value}} {{note}}। दिन-दर-दिन देखें",
+    "glanceValue": ", {{value}}",
+    "dayMetricsLogged": "{{date}}, {{total}} में से {{count}} मेट्रिक लॉग हुईं",
+    "dayNothingLogged": "{{date}}, कुछ भी लॉग नहीं हुआ"
   },
   "metric": {
     "backToSummary": "सारांश",
@@ -1066,6 +1084,38 @@
         "steady": "स्थिर",
         "worsening": "पहले से ज़्यादा"
       }
+    },
+    "dayBalance": "दिन का संतुलन",
+    "untrackedDays": "ट्रैक न हुए दिन",
+    "scoredNote": "स्कोर 0–100, ज़्यादा हमेशा बेहतर। {{note}}",
+    "byTheNumbers": "आंकड़ों में",
+    "whatStoodOut": "क्या खास रहा",
+    "stoodOut": {
+      "positive": "सुधार हो रहा है",
+      "neutral": "स्थिर",
+      "attention": "ध्यान देने की ज़रूरत"
+    },
+    "stoodOutAria": "{{label}}, {{column}}। दिन-दर-दिन देखें",
+    "delta": {
+      "positive": "बेहतर",
+      "attention": "खराब",
+      "neutral": "लगभग वही"
+    },
+    "points": "{{value}} अंक",
+    "notLogged": "लॉग नहीं हुआ",
+    "seriesToChart": "चार्ट के लिए सीरीज़",
+    "overallTrend": "कुल रुझान",
+    "trendNoteWeekly": "हर हफ़्ते एक बिंदु, उस हफ़्ते में आपने जिन दिनों लॉग किया उनका औसत।",
+    "trendNoteDaily": "हर दिन एक बिंदु। धुरी के नीचे के निशान वे दिन हैं जिनमें कोई चेक-इन नहीं हुआ।",
+    "balanceColumn": {
+      "good_one": "अच्छा दिन",
+      "good_other": "अच्छे दिन",
+      "okay_one": "ठीक-ठाक दिन",
+      "okay_other": "ठीक-ठाक दिन",
+      "hard_one": "मुश्किल दिन",
+      "hard_other": "मुश्किल दिन",
+      "untracked_one": "ट्रैक न हुआ दिन",
+      "untracked_other": "ट्रैक न हुए दिन"
     }
   },
   "wellness": {
@@ -1101,7 +1151,14 @@
       "day": "दिन",
       "week": "हफ़्ता"
     },
-    "trendAriaSummary": "{{series}}, हर {{unit}} में एक बिंदु। {{points}}।{{missingNote}}"
+    "trendAriaSummary": "{{series}}, हर {{unit}} में एक बिंदु। {{points}}।{{missingNote}}",
+    "bandNames": {
+      "great": "बहुत बढ़िया",
+      "good": "अच्छा",
+      "okay": "ठीक-ठाक",
+      "hard": "मुश्किल",
+      "veryHard": "बहुत मुश्किल"
+    }
   },
   "booking": {
     "freeBadge": "★ मुफ़्त शामिल · पहला परामर्श",
@@ -1424,6 +1481,16 @@
       "dietician": "डाइटीशियन",
       "coach": "मेनोपॉज़ कोच",
       "all": "सभी विशेषज्ञ"
+    },
+    "answerHighlightedMany": "आगे बढ़ने से पहले कृपया हाइलाइट किए गए {{count}} सवालों के जवाब दें।",
+    "auto": "अपने आप",
+    "listItem": "{{number}}.",
+    "medicationRow": "दवा {{number}}",
+    "progress": "{{current}} / {{total}}",
+    "columns": {
+      "medication_supplement": "दवा / सप्लीमेंट",
+      "dosage": "खुराक",
+      "duration_frequency": "अवधि / कितनी बार"
     }
   },
   "help": {
@@ -1545,7 +1612,10 @@
     "downloaded": "आपका डेटा डाउनलोड हो गया है। लिंक अब इस्तेमाल हो चुका है और दोबारा नहीं खुलेगा।",
     "deletionCancelled": "आपका अकाउंट डिलीट नहीं होगा। कुछ भी नहीं हटाया गया है।",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "accountScheduled": "आपका अकाउंट {{date}} को डिलीट होने के लिए तय है। उससे पहले आप कभी भी इसे रद्द कर सकती हैं।",
+    "deletedItems_one": "{{count}} चीज़ डिलीट हुई। {{scope}}: हो गया।",
+    "deletedItems_other": "{{count}} चीज़ें डिलीट हुईं। {{scope}}: हो गया।"
   },
   "bookings": {
     "backHome": "← होम",
@@ -1634,7 +1704,8 @@
     "openFailed": "आपकी रिपोर्ट नहीं खुल सकी।",
     "backToProfile": "← प्रोफ़ाइल",
     "eyebrow": "आपकी मूल्यांकन रिपोर्ट",
-    "preparing": "आपकी रिपोर्ट तैयार हो रही है…"
+    "preparing": "आपकी रिपोर्ट तैयार हो रही है…",
+    "additionalFocus": "अतिरिक्त ध्यान"
   },
   "datePicker": {
     "close": "डेट पिकर बंद करें",
@@ -1644,5 +1715,50 @@
     "previousMonth": "पिछला महीना",
     "nextMonth": "अगला महीना",
     "backToToday": "आज पर वापस"
+  },
+  "time": {
+    "justNow": "अभी-अभी",
+    "hoursAgo": "{{count}}h पहले",
+    "daysAgo": "{{count}}d पहले"
+  },
+  "errors": {
+    "requestFailed": "अनुरोध पूरा नहीं हुआ, स्टेटस {{status}}",
+    "loadCycle": "साइकिल का डेटा लोड नहीं हो सका",
+    "loadToday": "आज का वेलनेस लोड नहीं हो सका",
+    "loadAssessment": "मूल्यांकन लोड नहीं हो सका",
+    "loadJoints": "जोड़ों का डेटा लोड नहीं हो सका",
+    "loadMood": "मूड का डेटा लोड नहीं हो सका",
+    "loadDay": "आपका दिन लोड नहीं हो सका",
+    "loadCheckIn": "आपका चेक-इन लोड नहीं हो सका",
+    "loadQuickLog": "क्विक लॉग लोड नहीं हो सका",
+    "loadSleep": "नींद का डेटा लोड नहीं हो सका",
+    "loadCalendar": "आपका कैलेंडर लोड नहीं हो सका",
+    "loadSummary": "आपका सारांश लोड नहीं हो सका",
+    "loadLibrary": "लाइब्रेरी लोड नहीं हो सकी।",
+    "articleNotFound": "लेख नहीं मिला।",
+    "loadArticle": "यह लेख लोड नहीं हो सका।",
+    "downloadUsed": "वह डाउनलोड पहले ही इस्तेमाल हो चुका है। अपना डेटा दोबारा माँगें।",
+    "downloadFailed": "आपका डेटा डाउनलोड नहीं हो सका। कृपया फिर कोशिश करें।",
+    "loadQuestions": "सवाल लोड नहीं हो सके।",
+    "sendQuestion": "आपका सवाल भेजा नहीं जा सका।",
+    "checkFamilyInvite": "आपका फ़ैमिली इनवाइट जाँचा नहीं जा सका।",
+    "shareRecordFailedWithReason": "{{reason}} अगर आप लिंक भेज चुकी हैं, तो शेयर फिर से टैप करें।",
+    "shareRecordFailed": "आपने लिंक शेयर किया, यह दर्ज नहीं हो सका।",
+    "recordingUnavailable": "रिकॉर्डिंग अभी उपलब्ध नहीं है।",
+    "documentUnavailable": "यह दस्तावेज़ नहीं खुल सका।",
+    "notificationsNotRegistered": "नोटिफिकेशन चालू हैं, लेकिन यह डिवाइस अभी रजिस्टर नहीं हुआ है। फिर कोशिश करें पर टैप करें।",
+    "deviceRegisterFailed": "यह डिवाइस रजिस्टर नहीं हो सका। होम पर जाकर फिर कोशिश करें पर टैप करें।",
+    "firebaseNotConfigured": "Firebase सेट नहीं है।",
+    "serviceWorkerUnsupported": "सर्विस वर्कर यहाँ काम नहीं करते।",
+    "pushNotConfigured": "इस बिल्ड में पुश नोटिफिकेशन सेट नहीं हैं।",
+    "pushUnsupported": "यह ब्राउज़र पुश नोटिफिकेशन नहीं चला सकता।",
+    "permissionNotGranted": "नोटिफिकेशन की अनुमति नहीं मिली है।",
+    "messagingInitFailed": "इस ब्राउज़र में मैसेजिंग शुरू नहीं हो सकी।",
+    "noDeviceToken": "Firebase से डिवाइस टोकन नहीं मिल सका। पेज को पूरी तरह रिफ़्रेश करके देखें।",
+    "permissionWasNotGranted": "नोटिफिकेशन की अनुमति नहीं दी गई थी।",
+    "notSignedIn": "आप साइन इन नहीं हैं। कृपया फिर से लॉगिन करें, फिर कोशिश करें।",
+    "saveNotificationSettings": "आपकी नोटिफिकेशन सेटिंग्स सेव नहीं हो सकीं। कृपया फिर कोशिश करें।",
+    "serverUnreachable": "सर्वर तक नहीं पहुँचा जा सका। क्या API चल रही है?",
+    "notificationsBlocked": "नोटिफिकेशन ब्लॉक कर दिए गए थे। इन्हें अपने ब्राउज़र की साइट सेटिंग्स में चालू करें।"
   }
 }

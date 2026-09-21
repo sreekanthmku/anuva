@@ -660,7 +660,12 @@
     "editSettingsTitle": "సైకిల్ & పీరియడ్ పొడవు",
     "settingIsStartingPoint": ". తగినన్ని సైకిళ్లు లాగ్ అయ్యేవరకు మీ సెట్టింగ్ ఒక ప్రారంభ బిందువు.",
     "cycleLengthLabel": "సైకిల్ పొడవు",
-    "periodLengthLabel": "పీరియడ్ పొడవు"
+    "periodLengthLabel": "పీరియడ్ పొడవు",
+    "avgCycle": "సగటు సైకిల్",
+    "avgPeriod": "సగటు పీరియడ్",
+    "daysValue": "{{count}} రోజులు",
+    "loggedCycles_one": "{{count}} లాగ్ చేసిన సైకిల్",
+    "loggedCycles_other": "{{count}} లాగ్ చేసిన సైకిళ్లు"
   },
   "profile": {
     "backHome": "← హోమ్",
@@ -887,7 +892,8 @@
       "chocolatesBody": "కొన్ని రోజులు మీ నుండి చాలా అడుగుతాయి. ఈ రోజుకు కనీసం ఒక చిన్న మంచి విషయం ఉండాలని {{name}} కోరుకున్నారు.",
       "thankYou": "థాంక్యూ 💛",
       "getsSmiley": "{{name}} ఫోన్‌లో ఒక స్మైలీ వస్తుంది."
-    }
+    },
+    "fromFallback": "మీ కుటుంబం"
   },
   "install": {
     "homeScreenNote": "మీ హోమ్ స్క్రీన్‌పై <1>Anuva Wellness</1> ఐకాన్ కోసం చూడండి.",
@@ -953,7 +959,11 @@
   "calendar": {
     "previousMonth": "గత నెల",
     "nextMonth": "తర్వాతి నెల",
-    "predicted": "అంచనా వేయబడింది"
+    "predicted": "అంచనా వేయబడింది",
+    "legendPeriod": "పీరియడ్",
+    "legendPredicted": "అంచనా",
+    "legendFertile": "ఫలవంతమైన రోజులు",
+    "legendOvulation": "అండోత్సర్గం"
   },
   "summary": {
     "periods": {
@@ -989,7 +999,15 @@
     "ariaThroughout": "{{value}} {{unit}} అంతటా",
     "ariaRanged": "{{low}} నుండి {{high}} {{unit}} వరకు, ఇటీవలి {{latest}} {{unit}}",
     "ariaMissingNote": " {{count}} లాగ్ చేయలేదు.",
-    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}}లో {{logged}} రోజులు లాగ్ అయ్యాయి.{{missingNote}}"
+    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}}లో {{logged}} రోజులు లాగ్ అయ్యాయి.{{missingNote}}",
+    "barAria": "{{date}}: {{value}}",
+    "outsideWindow": "ఈ విండో బయట",
+    "notLogged": "లాగ్ చేయలేదు",
+    "seeDayByDay": "{{label}}. రోజు వారీగా చూడండి",
+    "glanceAria": "{{eyebrow}}: {{label}}{{value}} {{note}}. రోజు వారీగా చూడండి",
+    "glanceValue": ", {{value}}",
+    "dayMetricsLogged": "{{date}}, {{total}}లో {{count}} మెట్రిక్‌లు లాగ్ అయ్యాయి",
+    "dayNothingLogged": "{{date}}, ఏమీ లాగ్ చేయలేదు"
   },
   "metric": {
     "backToSummary": "సారాంశం",
@@ -1066,6 +1084,38 @@
         "steady": "స్థిరంగా",
         "worsening": "ఇంతకుముందు కంటే ఎక్కువ"
       }
+    },
+    "dayBalance": "రోజుల సమతుల్యం",
+    "untrackedDays": "ట్రాక్ చేయని రోజులు",
+    "scoredNote": "0–100 స్కేల్‌లో, ఎక్కువ ఎప్పుడూ మంచిది. {{note}}",
+    "byTheNumbers": "సంఖ్యల్లో",
+    "whatStoodOut": "ఏది ప్రత్యేకంగా కనిపించింది",
+    "stoodOut": {
+      "positive": "మెరుగుపడుతోంది",
+      "neutral": "స్థిరంగా",
+      "attention": "శ్రద్ధ అవసరం"
+    },
+    "stoodOutAria": "{{label}}, {{column}}. రోజు వారీగా చూడండి",
+    "delta": {
+      "positive": "మెరుగు",
+      "attention": "తక్కువ",
+      "neutral": "దాదాపు ఇంతే"
+    },
+    "points": "{{value}} పాయింట్లు",
+    "notLogged": "లాగ్ చేయలేదు",
+    "seriesToChart": "చార్ట్ చేయాల్సిన సిరీస్",
+    "overallTrend": "మొత్తం ధోరణి",
+    "trendNoteWeekly": "వారానికి ఒక పాయింట్, ఆ వారంలో మీరు లాగ్ చేసిన రోజుల సగటు.",
+    "trendNoteDaily": "రోజుకు ఒక పాయింట్. యాక్సిస్ కింద ఉన్న టిక్‌లు చెక్-ఇన్ లేని రోజులు.",
+    "balanceColumn": {
+      "good_one": "మంచి రోజు",
+      "good_other": "మంచి రోజులు",
+      "okay_one": "పర్వాలేదు రోజు",
+      "okay_other": "పర్వాలేదు రోజులు",
+      "hard_one": "కష్టమైన రోజు",
+      "hard_other": "కష్టమైన రోజులు",
+      "untracked_one": "ట్రాక్ చేయని రోజు",
+      "untracked_other": "ట్రాక్ చేయని రోజులు"
     }
   },
   "wellness": {
@@ -1101,7 +1151,14 @@
       "day": "రోజు",
       "week": "వారం"
     },
-    "trendAriaSummary": "{{series}}, ప్రతి {{unit}}కి ఒక పాయింట్. {{points}}.{{missingNote}}"
+    "trendAriaSummary": "{{series}}, ప్రతి {{unit}}కి ఒక పాయింట్. {{points}}.{{missingNote}}",
+    "bandNames": {
+      "great": "చాలా బాగుంది",
+      "good": "బాగుంది",
+      "okay": "పర్వాలేదు",
+      "hard": "కష్టం",
+      "veryHard": "చాలా కష్టం"
+    }
   },
   "booking": {
     "freeBadge": "★ ఉచితంగా చేర్చబడింది · మొదటి కన్సల్ట్",
@@ -1424,6 +1481,16 @@
       "dietician": "డైటీషియన్",
       "coach": "మెనోపాజ్ కోచ్",
       "all": "అన్ని ప్రాక్టిషనర్లు"
+    },
+    "answerHighlightedMany": "కొనసాగించే ముందు దయచేసి హైలైట్ చేసిన {{count}} ప్రశ్నలకు సమాధానం ఇవ్వండి.",
+    "auto": "ఆటో",
+    "listItem": "{{number}}.",
+    "medicationRow": "మందు {{number}}",
+    "progress": "{{current}} / {{total}}",
+    "columns": {
+      "medication_supplement": "మందు / సప్లిమెంట్",
+      "dosage": "మోతాదు",
+      "duration_frequency": "వ్యవధి / ఎంత తరచుగా"
     }
   },
   "help": {
@@ -1545,7 +1612,10 @@
     "downloaded": "మీ డేటా డౌన్‌లోడ్ అయింది. లింక్ ఇప్పుడు వాడబడింది, మళ్ళీ తెరవలేరు.",
     "deletionCancelled": "మీ ఖాతా తొలగించబడదు. ఏమీ తీసివేయబడలేదు.",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "accountScheduled": "మీ ఖాతా {{date}}న తొలగింపు కోసం షెడ్యూల్ అయింది. అంతకుముందు ఎప్పుడైనా మీరు దీన్ని రద్దు చేసుకోవచ్చు.",
+    "deletedItems_one": "{{count}} అంశం తొలగించబడింది. {{scope}}: పూర్తయింది.",
+    "deletedItems_other": "{{count}} అంశాలు తొలగించబడ్డాయి. {{scope}}: పూర్తయింది."
   },
   "bookings": {
     "backHome": "← హోమ్",
@@ -1634,7 +1704,8 @@
     "openFailed": "మీ రిపోర్ట్‌ను తెరవలేకపోయాం.",
     "backToProfile": "← ప్రొఫైల్",
     "eyebrow": "మీ అసెస్‌మెంట్ రిపోర్ట్",
-    "preparing": "మీ రిపోర్ట్ సిద్ధం చేస్తోంది…"
+    "preparing": "మీ రిపోర్ట్ సిద్ధం చేస్తోంది…",
+    "additionalFocus": "అదనపు దృష్టి"
   },
   "datePicker": {
     "close": "తేదీ పికర్ మూసివేయి",
@@ -1644,5 +1715,50 @@
     "previousMonth": "గత నెల",
     "nextMonth": "తర్వాతి నెల",
     "backToToday": "ఈ రోజుకు వెనుకకు"
+  },
+  "time": {
+    "justNow": "ఇప్పుడే",
+    "hoursAgo": "{{count}}గం క్రితం",
+    "daysAgo": "{{count}}రో క్రితం"
+  },
+  "errors": {
+    "requestFailed": "రిక్వెస్ట్ విఫలమైంది, స్టేటస్ {{status}}",
+    "loadCycle": "సైకిల్ డేటా లోడ్ చేయలేకపోయాం",
+    "loadToday": "ఈ రోజు వెల్‌నెస్ లోడ్ చేయలేకపోయాం",
+    "loadAssessment": "అసెస్‌మెంట్ లోడ్ చేయలేకపోయాం",
+    "loadJoints": "కీళ్ల డేటా లోడ్ చేయలేకపోయాం",
+    "loadMood": "మూడ్ డేటా లోడ్ చేయలేకపోయాం",
+    "loadDay": "మీ రోజును లోడ్ చేయలేకపోయాం",
+    "loadCheckIn": "మీ చెక్-ఇన్ లోడ్ చేయలేకపోయాం",
+    "loadQuickLog": "క్విక్ లాగ్ లోడ్ చేయలేకపోయాం",
+    "loadSleep": "నిద్ర డేటా లోడ్ చేయలేకపోయాం",
+    "loadCalendar": "మీ క్యాలెండర్ లోడ్ చేయలేకపోయాం",
+    "loadSummary": "మీ సారాంశం లోడ్ చేయలేకపోయాం",
+    "loadLibrary": "లైబ్రరీ లోడ్ చేయలేకపోయాం.",
+    "articleNotFound": "ఆర్టికల్ కనిపించలేదు.",
+    "loadArticle": "ఈ ఆర్టికల్ లోడ్ చేయలేకపోయాం.",
+    "downloadUsed": "ఆ డౌన్‌లోడ్ ఇప్పటికే వాడబడింది. మీ డేటాను మళ్ళీ అడగండి.",
+    "downloadFailed": "మీ డేటాను డౌన్‌లోడ్ చేయలేకపోయాం. దయచేసి మళ్ళీ ప్రయత్నించండి.",
+    "loadQuestions": "ప్రశ్నలు లోడ్ చేయలేకపోయాం.",
+    "sendQuestion": "మీ ప్రశ్నను పంపలేకపోయాం.",
+    "checkFamilyInvite": "మీ ఫ్యామిలీ ఇన్వైట్‌ను చెక్ చేయలేకపోయాం.",
+    "shareRecordFailedWithReason": "{{reason}} మీరు ఇప్పటికే లింక్ పంపి ఉంటే, మళ్ళీ షేర్ నొక్కండి.",
+    "shareRecordFailed": "మీరు లింక్ షేర్ చేశారని నమోదు చేయలేకపోయాం.",
+    "recordingUnavailable": "రికార్డింగ్ ఇంకా అందుబాటులో లేదు.",
+    "documentUnavailable": "ఈ డాక్యుమెంట్‌ను తెరవలేకపోయాం.",
+    "notificationsNotRegistered": "నోటిఫికేషన్‌లు ఆన్‌లో ఉన్నాయి, కానీ ఈ డివైస్ ఇంకా రిజిస్టర్ కాలేదు. రీట్రై నొక్కండి.",
+    "deviceRegisterFailed": "ఈ డివైస్‌ను రిజిస్టర్ చేయలేకపోయాం. హోమ్‌లో రీట్రై నొక్కండి.",
+    "firebaseNotConfigured": "Firebase సెటప్ చేయబడలేదు.",
+    "serviceWorkerUnsupported": "సర్వీస్ వర్కర్లకు మద్దతు లేదు.",
+    "pushNotConfigured": "ఈ బిల్డ్‌లో పుష్ నోటిఫికేషన్‌లు సెటప్ చేయబడలేదు.",
+    "pushUnsupported": "ఈ బ్రౌజర్ పుష్ నోటిఫికేషన్‌లకు మద్దతు ఇవ్వదు.",
+    "permissionNotGranted": "నోటిఫికేషన్ అనుమతి ఇవ్వబడలేదు.",
+    "messagingInitFailed": "ఈ బ్రౌజర్‌లో మెసేజింగ్‌ను మొదలుపెట్టలేకపోయాం.",
+    "noDeviceToken": "Firebase నుండి డివైస్ టోకెన్ పొందలేకపోయాం. ఒకసారి పేజీని పూర్తిగా రిఫ్రెష్ చేయండి.",
+    "permissionWasNotGranted": "నోటిఫికేషన్ అనుమతి ఇవ్వబడలేదు.",
+    "notSignedIn": "మీరు సైన్ ఇన్ అయి లేరు. దయచేసి మళ్ళీ లాగిన్ చేసి, ఆ తర్వాత ప్రయత్నించండి.",
+    "saveNotificationSettings": "మీ నోటిఫికేషన్ సెట్టింగ్‌లు సేవ్ చేయలేకపోయాం. దయచేసి మళ్ళీ ప్రయత్నించండి.",
+    "serverUnreachable": "సర్వర్‌ను చేరుకోలేకపోయాం. API రన్ అవుతోందా?",
+    "notificationsBlocked": "నోటిఫికేషన్‌లు బ్లాక్ అయ్యాయి. మీ బ్రౌజర్ సైట్ సెట్టింగ్‌లలో వాటిని ఎనేబుల్ చేయండి."
   }
 }

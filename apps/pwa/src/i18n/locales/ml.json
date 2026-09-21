@@ -660,7 +660,12 @@
     "editSettingsTitle": "സൈക്കിളും പിരീഡ് ദൈർഘ്യവും",
     "settingIsStartingPoint": ". മതിയായ സൈക്കിളുകൾ ലോഗ് ചെയ്യുന്നത് വരെ നിങ്ങളുടെ സെറ്റിംഗ് ഒരു തുടക്കബിന്ദു മാത്രമാണ്.",
     "cycleLengthLabel": "സൈക്കിൾ ദൈർഘ്യം",
-    "periodLengthLabel": "പിരീഡ് ദൈർഘ്യം"
+    "periodLengthLabel": "പിരീഡ് ദൈർഘ്യം",
+    "avgCycle": "ശരാശരി സൈക്കിൾ",
+    "avgPeriod": "ശരാശരി പിരീഡ്",
+    "daysValue": "{{count}} ദിവസം",
+    "loggedCycles_one": "{{count}} സൈക്കിൾ ലോഗ് ചെയ്തു",
+    "loggedCycles_other": "{{count}} സൈക്കിളുകൾ ലോഗ് ചെയ്തു"
   },
   "profile": {
     "backHome": "← ഹോം",
@@ -887,7 +892,8 @@
       "chocolatesBody": "ചില ദിവസങ്ങൾ നിങ്ങളിൽ നിന്ന് വളരെയധികം ചോദിക്കുന്നു. ഈ ദിവസത്തിൽ ചെറുതെങ്കിലും ഒരു നല്ല കാര്യം ഉണ്ടാകണമെന്ന് {{name}} ആഗ്രഹിച്ചു.",
       "thankYou": "നന്ദി 💛",
       "getsSmiley": "{{name}}-ന്റെ ഫോണിൽ ഒരു സ്മൈലി ലഭിക്കും."
-    }
+    },
+    "fromFallback": "നിങ്ങളുടെ കുടുംബം"
   },
   "install": {
     "homeScreenNote": "നിങ്ങളുടെ ഹോം സ്‌ക്രീനിൽ <1>Anuva Wellness</1> ഐക്കൺ നോക്കൂ.",
@@ -953,7 +959,11 @@
   "calendar": {
     "previousMonth": "മുൻ മാസം",
     "nextMonth": "അടുത്ത മാസം",
-    "predicted": "പ്രവചിച്ചത്"
+    "predicted": "പ്രവചിച്ചത്",
+    "legendPeriod": "പിരീഡ്",
+    "legendPredicted": "പ്രവചിച്ചത്",
+    "legendFertile": "ഫെർട്ടൈൽ",
+    "legendOvulation": "അണ്ഡോത്സർഗം"
   },
   "summary": {
     "periods": {
@@ -989,7 +999,15 @@
     "ariaThroughout": "മുഴുവനും {{value}} {{unit}}",
     "ariaRanged": "{{low}} മുതൽ {{high}} {{unit}} വരെ വ്യത്യാസപ്പെട്ടു, ഏറ്റവും പുതിയത് {{latest}} {{unit}}",
     "ariaMissingNote": " {{count}} ലോഗ് ചെയ്തിട്ടില്ല.",
-    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}} ദിവസത്തിൽ {{logged}} ലോഗ് ചെയ്തു.{{missingNote}}"
+    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}} ദിവസത്തിൽ {{logged}} ലോഗ് ചെയ്തു.{{missingNote}}",
+    "barAria": "{{date}}: {{value}}",
+    "outsideWindow": "ഈ കാലയളവിന് പുറത്ത്",
+    "notLogged": "ലോഗ് ചെയ്തിട്ടില്ല",
+    "seeDayByDay": "{{label}}. ദിവസം തോറും കാണൂ",
+    "glanceAria": "{{eyebrow}}: {{label}}{{value}} {{note}}. ദിവസം തോറും കാണൂ",
+    "glanceValue": ", {{value}}",
+    "dayMetricsLogged": "{{date}}, {{total}} മെട്രിക്കുകളിൽ {{count}} ലോഗ് ചെയ്തു",
+    "dayNothingLogged": "{{date}}, ഒന്നും ലോഗ് ചെയ്തിട്ടില്ല"
   },
   "metric": {
     "backToSummary": "സംഗ്രഹം",
@@ -1066,6 +1084,38 @@
         "steady": "സ്ഥിരമായി",
         "worsening": "മുൻപത്തേക്കാൾ കൂടുതൽ"
       }
+    },
+    "dayBalance": "ദിവസങ്ങളുടെ സന്തുലനം",
+    "untrackedDays": "ട്രാക്ക് ചെയ്യാത്ത ദിവസങ്ങൾ",
+    "scoredNote": "0–100 സ്കോർ, കൂടുതൽ എപ്പോഴും മെച്ചമാണ്. {{note}}",
+    "byTheNumbers": "സംഖ്യകളിൽ",
+    "whatStoodOut": "എന്താണ് വേറിട്ടുനിന്നത്",
+    "stoodOut": {
+      "positive": "മെച്ചപ്പെടുന്നു",
+      "neutral": "സ്ഥിരമായി",
+      "attention": "ശ്രദ്ധ വേണം"
+    },
+    "stoodOutAria": "{{label}}, {{column}}. ദിവസം തോറും കാണൂ",
+    "delta": {
+      "positive": "മെച്ചം",
+      "attention": "മോശം",
+      "neutral": "ഏതാണ്ട് ഒരുപോലെ"
+    },
+    "points": "{{value}} പോയിന്റ്",
+    "notLogged": "ലോഗ് ചെയ്തിട്ടില്ല",
+    "seriesToChart": "ചാർട്ട് ചെയ്യേണ്ട ശ്രേണി",
+    "overallTrend": "മൊത്തത്തിലുള്ള പ്രവണത",
+    "trendNoteWeekly": "ഓരോ ആഴ്ചയ്ക്കും ഒരു പോയിന്റ്, ആ ആഴ്ചയിൽ ലോഗ് ചെയ്ത ദിവസങ്ങളുടെ ശരാശരി.",
+    "trendNoteDaily": "ഓരോ ദിവസത്തിനും ഒരു പോയിന്റ്. അക്ഷത്തിന് താഴെയുള്ള ടിക്കുകൾ ചെക്ക്-ഇൻ ഇല്ലാത്ത ദിവസങ്ങളാണ്.",
+    "balanceColumn": {
+      "good_one": "നല്ല ദിവസം",
+      "good_other": "നല്ല ദിവസങ്ങൾ",
+      "okay_one": "ഓക്കെ ദിവസം",
+      "okay_other": "ഓക്കെ ദിവസങ്ങൾ",
+      "hard_one": "ബുദ്ധിമുട്ടേറിയ ദിവസം",
+      "hard_other": "ബുദ്ധിമുട്ടേറിയ ദിവസങ്ങൾ",
+      "untracked_one": "ട്രാക്ക് ചെയ്യാത്ത ദിവസം",
+      "untracked_other": "ട്രാക്ക് ചെയ്യാത്ത ദിവസങ്ങൾ"
     }
   },
   "wellness": {
@@ -1101,7 +1151,14 @@
       "day": "ദിവസം",
       "week": "ആഴ്ച"
     },
-    "trendAriaSummary": "{{series}}, ഓരോ {{unit}}-ത്തിനും ഒരു പോയിന്റ്. {{points}}.{{missingNote}}"
+    "trendAriaSummary": "{{series}}, ഓരോ {{unit}}-ത്തിനും ഒരു പോയിന്റ്. {{points}}.{{missingNote}}",
+    "bandNames": {
+      "great": "മികച്ചത്",
+      "good": "നല്ലത്",
+      "okay": "ഓക്കെ",
+      "hard": "ബുദ്ധിമുട്ട്",
+      "veryHard": "വളരെ ബുദ്ധിമുട്ട്"
+    }
   },
   "booking": {
     "freeBadge": "★ സൗജന്യമായി ഉൾപ്പെടുന്നു · ആദ്യ കൺസൾട്ട്",
@@ -1424,6 +1481,16 @@
       "dietician": "ഡയറ്റീഷ്യൻ",
       "coach": "മെനോപോസ് കോച്ച്",
       "all": "എല്ലാ പ്രാക്റ്റീഷണർമാരും"
+    },
+    "answerHighlightedMany": "തുടരുന്നതിന് മുൻപ് അടയാളപ്പെടുത്തിയ {{count}} ചോദ്യങ്ങൾക്ക് ഉത്തരം നൽകൂ.",
+    "auto": "ഓട്ടോ",
+    "listItem": "{{number}}.",
+    "medicationRow": "മരുന്ന് {{number}}",
+    "progress": "{{current}} / {{total}}",
+    "columns": {
+      "medication_supplement": "മരുന്ന് / സപ്ലിമെന്റ്",
+      "dosage": "ഡോസ്",
+      "duration_frequency": "കാലയളവ് / ആവൃത്തി"
     }
   },
   "help": {
@@ -1545,7 +1612,10 @@
     "downloaded": "നിങ്ങളുടെ ഡാറ്റ ഡൗൺലോഡ് ചെയ്തു. ലിങ്ക് ഇപ്പോൾ ഉപയോഗിച്ചു, വീണ്ടും തുറക്കാൻ കഴിയില്ല.",
     "deletionCancelled": "നിങ്ങളുടെ അക്കൗണ്ട് ഡിലീറ്റ് ചെയ്യില്ല. ഒന്നും നീക്കം ചെയ്തിട്ടില്ല.",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "accountScheduled": "നിങ്ങളുടെ അക്കൗണ്ട് {{date}} ന് ഡിലീറ്റ് ചെയ്യാൻ ഷെഡ്യൂൾ ചെയ്തിട്ടുണ്ട്. അതിന് മുൻപ് എപ്പോൾ വേണമെങ്കിലും റദ്ദാക്കാം.",
+    "deletedItems_one": "{{count}} ഇനം ഡിലീറ്റ് ചെയ്തു. {{scope}}: പൂർത്തിയായി.",
+    "deletedItems_other": "{{count}} ഇനങ്ങൾ ഡിലീറ്റ് ചെയ്തു. {{scope}}: പൂർത്തിയായി."
   },
   "bookings": {
     "backHome": "← ഹോം",
@@ -1634,7 +1704,8 @@
     "openFailed": "നിങ്ങളുടെ റിപ്പോർട്ട് തുറക്കാനായില്ല.",
     "backToProfile": "← പ്രൊഫൈൽ",
     "eyebrow": "നിങ്ങളുടെ വിലയിരുത്തൽ റിപ്പോർട്ട്",
-    "preparing": "നിങ്ങളുടെ റിപ്പോർട്ട് തയ്യാറാക്കുന്നു…"
+    "preparing": "നിങ്ങളുടെ റിപ്പോർട്ട് തയ്യാറാക്കുന്നു…",
+    "additionalFocus": "അധിക ശ്രദ്ധ"
   },
   "datePicker": {
     "close": "ഡേറ്റ് പിക്കർ അടയ്ക്കുക",
@@ -1644,5 +1715,50 @@
     "previousMonth": "മുൻ മാസം",
     "nextMonth": "അടുത്ത മാസം",
     "backToToday": "ഇന്നിലേക്ക് തിരികെ"
+  },
+  "time": {
+    "justNow": "ഇപ്പോൾ തന്നെ",
+    "hoursAgo": "{{count}} മണിക്കൂർ മുൻപ്",
+    "daysAgo": "{{count}} ദിവസം മുൻപ്"
+  },
+  "errors": {
+    "requestFailed": "അഭ്യർത്ഥന പരാജയപ്പെട്ടു, സ്റ്റാറ്റസ് {{status}}",
+    "loadCycle": "സൈക്കിൾ ഡാറ്റ ലോഡ് ചെയ്യാനായില്ല",
+    "loadToday": "ഇന്നത്തെ വെൽനെസ് ലോഡ് ചെയ്യാനായില്ല",
+    "loadAssessment": "വിലയിരുത്തൽ ലോഡ് ചെയ്യാനായില്ല",
+    "loadJoints": "സന്ധി ഡാറ്റ ലോഡ് ചെയ്യാനായില്ല",
+    "loadMood": "മൂഡ് ഡാറ്റ ലോഡ് ചെയ്യാനായില്ല",
+    "loadDay": "നിങ്ങളുടെ ദിവസം ലോഡ് ചെയ്യാനായില്ല",
+    "loadCheckIn": "നിങ്ങളുടെ ചെക്ക്-ഇൻ ലോഡ് ചെയ്യാനായില്ല",
+    "loadQuickLog": "ക്വിക്ക് ലോഗ് ലോഡ് ചെയ്യാനായില്ല",
+    "loadSleep": "ഉറക്ക ഡാറ്റ ലോഡ് ചെയ്യാനായില്ല",
+    "loadCalendar": "നിങ്ങളുടെ കലണ്ടർ ലോഡ് ചെയ്യാനായില്ല",
+    "loadSummary": "നിങ്ങളുടെ സംഗ്രഹം ലോഡ് ചെയ്യാനായില്ല",
+    "loadLibrary": "ലൈബ്രറി ലോഡ് ചെയ്യാനായില്ല.",
+    "articleNotFound": "ലേഖനം കണ്ടെത്താനായില്ല.",
+    "loadArticle": "ഈ ലേഖനം ലോഡ് ചെയ്യാനായില്ല.",
+    "downloadUsed": "ആ ഡൗൺലോഡ് ഇതിനകം ഉപയോഗിച്ചു. നിങ്ങളുടെ ഡാറ്റ വീണ്ടും ആവശ്യപ്പെടൂ.",
+    "downloadFailed": "നിങ്ങളുടെ ഡാറ്റ ഡൗൺലോഡ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കൂ.",
+    "loadQuestions": "ചോദ്യങ്ങൾ ലോഡ് ചെയ്യാനായില്ല.",
+    "sendQuestion": "നിങ്ങളുടെ ചോദ്യം അയയ്ക്കാനായില്ല.",
+    "checkFamilyInvite": "നിങ്ങളുടെ കുടുംബ ക്ഷണം പരിശോധിക്കാനായില്ല.",
+    "shareRecordFailedWithReason": "{{reason}} ലിങ്ക് ഇതിനകം അയച്ചിട്ടുണ്ടെങ്കിൽ, വീണ്ടും പങ്കിടൽ ടാപ്പ് ചെയ്യൂ.",
+    "shareRecordFailed": "നിങ്ങൾ ലിങ്ക് പങ്കിട്ടെന്ന് രേഖപ്പെടുത്താനായില്ല.",
+    "recordingUnavailable": "റെക്കോർഡിംഗ് ഇതുവരെ ലഭ്യമല്ല.",
+    "documentUnavailable": "ഈ ഡോക്യുമെന്റ് തുറക്കാനായില്ല.",
+    "notificationsNotRegistered": "നോട്ടിഫിക്കേഷനുകൾ ഓണാണ്, പക്ഷേ ഈ ഡിവൈസ് ഇതുവരെ രജിസ്റ്റർ ചെയ്തിട്ടില്ല. വീണ്ടും ശ്രമിക്കാൻ ടാപ്പ് ചെയ്യൂ.",
+    "deviceRegisterFailed": "ഈ ഡിവൈസ് രജിസ്റ്റർ ചെയ്യാനായില്ല. ഹോമിൽ വീണ്ടും ശ്രമിക്കാൻ ടാപ്പ് ചെയ്യൂ.",
+    "firebaseNotConfigured": "Firebase സജ്ജീകരിച്ചിട്ടില്ല.",
+    "serviceWorkerUnsupported": "സർവീസ് വർക്കറുകൾ ഇവിടെ പിന്തുണയ്ക്കുന്നില്ല.",
+    "pushNotConfigured": "ഈ ബിൽഡിൽ പുഷ് നോട്ടിഫിക്കേഷനുകൾ സജ്ജീകരിച്ചിട്ടില്ല.",
+    "pushUnsupported": "ഈ ബ്രൗസർ പുഷ് നോട്ടിഫിക്കേഷനുകൾ പിന്തുണയ്ക്കുന്നില്ല.",
+    "permissionNotGranted": "നോട്ടിഫിക്കേഷൻ അനുമതി നൽകിയിട്ടില്ല.",
+    "messagingInitFailed": "ഈ ബ്രൗസറിൽ മെസേജിംഗ് തുടങ്ങാനായില്ല.",
+    "noDeviceToken": "Firebase-ൽ നിന്ന് ഒരു ഡിവൈസ് ടോക്കൺ കിട്ടിയില്ല. പേജ് പൂർണ്ണമായി റിഫ്രഷ് ചെയ്തുനോക്കൂ.",
+    "permissionWasNotGranted": "നോട്ടിഫിക്കേഷൻ അനുമതി നൽകിയില്ല.",
+    "notSignedIn": "നിങ്ങൾ സൈൻ ഇൻ ചെയ്തിട്ടില്ല. വീണ്ടും ലോഗിൻ ചെയ്ത് ശ്രമിക്കൂ.",
+    "saveNotificationSettings": "നിങ്ങളുടെ നോട്ടിഫിക്കേഷൻ സെറ്റിംഗ്സ് സേവ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കൂ.",
+    "serverUnreachable": "സെർവറുമായി ബന്ധപ്പെടാനായില്ല. API പ്രവർത്തിക്കുന്നുണ്ടോ?",
+    "notificationsBlocked": "നോട്ടിഫിക്കേഷനുകൾ ബ്ലോക്ക് ചെയ്തിരിക്കുന്നു. ബ്രൗസറിന്റെ സൈറ്റ് സെറ്റിംഗ്സിൽ അവ ഓണാക്കൂ."
   }
 }

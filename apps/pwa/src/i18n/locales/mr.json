@@ -660,7 +660,12 @@
     "editSettingsTitle": "सायकल आणि पाळीची लांबी",
     "settingIsStartingPoint": ". पुरेशा सायकल नोंदवल्या जाईपर्यंत तुमची सेटिंग ही फक्त सुरुवातीची बिंदू आहे.",
     "cycleLengthLabel": "सायकल लांबी",
-    "periodLengthLabel": "पाळीची लांबी"
+    "periodLengthLabel": "पाळीची लांबी",
+    "avgCycle": "सरासरी सायकल",
+    "avgPeriod": "सरासरी पाळी",
+    "daysValue": "{{count}} दिवस",
+    "loggedCycles_one": "{{count}} नोंदवलेली सायकल",
+    "loggedCycles_other": "{{count}} नोंदवलेल्या सायकल"
   },
   "profile": {
     "backHome": "← मुख्यपृष्ठ",
@@ -887,7 +892,8 @@
       "chocolatesBody": "काही दिवस खूप काही मागतात. {{name}} ला वाटलं की आजच्या दिवसात किमान एक छोटी चांगली गोष्ट असावी.",
       "thankYou": "धन्यवाद 💛",
       "getsSmiley": "{{name}} च्या फोनवर एक स्माइली मिळेल."
-    }
+    },
+    "fromFallback": "तुमचं कुटुंब"
   },
   "install": {
     "homeScreenNote": "तुमच्या होम स्क्रीनवर <1>Anuva Wellness</1> आयकॉन शोधा.",
@@ -953,7 +959,11 @@
   "calendar": {
     "previousMonth": "मागील महिना",
     "nextMonth": "पुढील महिना",
-    "predicted": "अंदाजित"
+    "predicted": "अंदाजित",
+    "legendPeriod": "पाळी",
+    "legendPredicted": "अंदाजित",
+    "legendFertile": "प्रजननक्षम",
+    "legendOvulation": "ओव्ह्युलेशन"
   },
   "summary": {
     "periods": {
@@ -989,7 +999,15 @@
     "ariaThroughout": "संपूर्ण काळ {{value}} {{unit}}",
     "ariaRanged": "{{low}} ते {{high}} {{unit}} दरम्यान, अलीकडचं {{latest}} {{unit}}",
     "ariaMissingNote": " {{count}} नोंदवलेलं नाही.",
-    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}} पैकी {{logged}} दिवस नोंदवले.{{missingNote}}"
+    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}} पैकी {{logged}} दिवस नोंदवले.{{missingNote}}",
+    "barAria": "{{date}}: {{value}}",
+    "outsideWindow": "या कालावधीबाहेर",
+    "notLogged": "नोंदवलेलं नाही",
+    "seeDayByDay": "{{label}}. दिवसागणिक पाहा",
+    "glanceAria": "{{eyebrow}}: {{label}}{{value}} {{note}}. दिवसागणिक पाहा",
+    "glanceValue": ", {{value}}",
+    "dayMetricsLogged": "{{date}}, {{total}} पैकी {{count}} मेट्रिक नोंदवले",
+    "dayNothingLogged": "{{date}}, काहीही नोंदवलेलं नाही"
   },
   "metric": {
     "backToSummary": "सारांश",
@@ -1066,6 +1084,38 @@
         "steady": "स्थिर",
         "worsening": "आधीपेक्षा जास्त"
       }
+    },
+    "dayBalance": "दिवसांचा समतोल",
+    "untrackedDays": "ट्रॅक न केलेले दिवस",
+    "scoredNote": "0–100 पैकी गुण, जास्त नेहमी चांगलं. {{note}}",
+    "byTheNumbers": "आकड्यांमध्ये",
+    "whatStoodOut": "काय वेगळं दिसलं",
+    "stoodOut": {
+      "positive": "सुधारतंय",
+      "neutral": "स्थिर",
+      "attention": "लक्ष देण्याची गरज"
+    },
+    "stoodOutAria": "{{label}}, {{column}}. दिवसागणिक पाहा",
+    "delta": {
+      "positive": "चांगलं",
+      "attention": "वाईट",
+      "neutral": "सारखंच"
+    },
+    "points": "{{value}} गुण",
+    "notLogged": "नोंदवलेलं नाही",
+    "seriesToChart": "आलेखासाठी मालिका",
+    "overallTrend": "एकूण ट्रेंड",
+    "trendNoteWeekly": "आठवड्याला एक बिंदू, त्या आठवड्यात तुम्ही नोंदवलेल्या दिवसांची सरासरी.",
+    "trendNoteDaily": "दिवसाला एक बिंदू. अक्षाखालील टिक्स म्हणजे चेक-इन नसलेले दिवस.",
+    "balanceColumn": {
+      "good_one": "चांगला दिवस",
+      "good_other": "चांगले दिवस",
+      "okay_one": "ठीक दिवस",
+      "okay_other": "ठीक दिवस",
+      "hard_one": "कठीण दिवस",
+      "hard_other": "कठीण दिवस",
+      "untracked_one": "ट्रॅक न केलेला दिवस",
+      "untracked_other": "ट्रॅक न केलेले दिवस"
     }
   },
   "wellness": {
@@ -1101,7 +1151,14 @@
       "day": "दिवस",
       "week": "आठवडा"
     },
-    "trendAriaSummary": "{{series}}, प्रत्येक {{unit}} साठी एक बिंदू. {{points}}.{{missingNote}}"
+    "trendAriaSummary": "{{series}}, प्रत्येक {{unit}} साठी एक बिंदू. {{points}}.{{missingNote}}",
+    "bandNames": {
+      "great": "खूप छान",
+      "good": "चांगलं",
+      "okay": "ठीक",
+      "hard": "कठीण",
+      "veryHard": "खूप कठीण"
+    }
   },
   "booking": {
     "freeBadge": "★ मोफत समाविष्ट · पहिला सल्ला",
@@ -1424,6 +1481,16 @@
       "dietician": "आहारतज्ज्ञ",
       "coach": "मेनोपॉज कोच",
       "all": "सर्व तज्ज्ञ"
+    },
+    "answerHighlightedMany": "पुढे जाण्यापूर्वी हायलाइट केलेल्या {{count}} प्रश्नांची उत्तरं द्या.",
+    "auto": "आपोआप",
+    "listItem": "{{number}}.",
+    "medicationRow": "औषध {{number}}",
+    "progress": "{{current}} / {{total}}",
+    "columns": {
+      "medication_supplement": "औषध / पूरक",
+      "dosage": "मात्रा",
+      "duration_frequency": "कालावधी / वारंवारता"
     }
   },
   "help": {
@@ -1545,7 +1612,10 @@
     "downloaded": "तुमचा डेटा डाउनलोड झाला आहे. लिंक आता वापरली गेली आहे आणि पुन्हा उघडता येणार नाही.",
     "deletionCancelled": "तुमचं खातं डिलीट होणार नाही. काहीही काढलं गेलेलं नाही.",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "accountScheduled": "तुमचं खातं {{date}} रोजी हटवण्याचं ठरलं आहे. त्याआधी कधीही तुम्ही हे रद्द करू शकता.",
+    "deletedItems_one": "{{count}} गोष्ट हटवली. {{scope}}: झालं.",
+    "deletedItems_other": "{{count}} गोष्टी हटवल्या. {{scope}}: झालं."
   },
   "bookings": {
     "backHome": "← मुख्यपृष्ठ",
@@ -1634,7 +1704,8 @@
     "openFailed": "तुमचा अहवाल उघडता आला नाही.",
     "backToProfile": "← प्रोफाइल",
     "eyebrow": "तुमचा मूल्यांकन अहवाल",
-    "preparing": "तुमचा अहवाल तयार करत आहे…"
+    "preparing": "तुमचा अहवाल तयार करत आहे…",
+    "additionalFocus": "अतिरिक्त लक्ष"
   },
   "datePicker": {
     "close": "डेट पिकर बंद करा",
@@ -1644,5 +1715,50 @@
     "previousMonth": "मागील महिना",
     "nextMonth": "पुढील महिना",
     "backToToday": "आजच्या दिवशी परत जा"
+  },
+  "time": {
+    "justNow": "आत्ताच",
+    "hoursAgo": "{{count}} तासांपूर्वी",
+    "daysAgo": "{{count}} दिवसांपूर्वी"
+  },
+  "errors": {
+    "requestFailed": "विनंती अयशस्वी झाली, स्टेटस {{status}}",
+    "loadCycle": "सायकल डेटा लोड करता आला नाही",
+    "loadToday": "आजची वेलनेस लोड करता आली नाही",
+    "loadAssessment": "मूल्यांकन लोड करता आलं नाही",
+    "loadJoints": "सांध्यांचा डेटा लोड करता आला नाही",
+    "loadMood": "मूड डेटा लोड करता आला नाही",
+    "loadDay": "तुमचा दिवस लोड करता आला नाही",
+    "loadCheckIn": "तुमचं चेक-इन लोड करता आलं नाही",
+    "loadQuickLog": "झटपट नोंद लोड करता आली नाही",
+    "loadSleep": "झोपेचा डेटा लोड करता आला नाही",
+    "loadCalendar": "तुमचं कॅलेंडर लोड करता आलं नाही",
+    "loadSummary": "तुमचा सारांश लोड करता आला नाही",
+    "loadLibrary": "लायब्ररी लोड करता आली नाही.",
+    "articleNotFound": "लेख सापडला नाही.",
+    "loadArticle": "हा लेख लोड करता आला नाही.",
+    "downloadUsed": "ते डाउनलोड आधीच वापरलं गेलं आहे. तुमचा डेटा पुन्हा मागवा.",
+    "downloadFailed": "तुमचा डेटा डाउनलोड करता आला नाही. कृपया पुन्हा प्रयत्न करा.",
+    "loadQuestions": "प्रश्न लोड करता आले नाहीत.",
+    "sendQuestion": "तुमचा प्रश्न पाठवता आला नाही.",
+    "checkFamilyInvite": "तुमचं कुटुंब आमंत्रण तपासता आलं नाही.",
+    "shareRecordFailedWithReason": "{{reason}} तुम्ही लिंक आधीच पाठवली असेल, तर पुन्हा शेअरवर टॅप करा.",
+    "shareRecordFailed": "तुम्ही लिंक शेअर केल्याची नोंद करता आली नाही.",
+    "recordingUnavailable": "रेकॉर्डिंग अजून उपलब्ध नाही.",
+    "documentUnavailable": "हे कागदपत्र उघडता आलं नाही.",
+    "notificationsNotRegistered": "नोटिफिकेशन्स चालू आहेत, पण हे डिव्हाइस अजून नोंदवलेलं नाही. पुन्हा प्रयत्न करा वर टॅप करा.",
+    "deviceRegisterFailed": "हे डिव्हाइस नोंदवता आलं नाही. होम स्क्रीनवर पुन्हा प्रयत्न करा वर टॅप करा.",
+    "firebaseNotConfigured": "Firebase सेट केलेलं नाही.",
+    "serviceWorkerUnsupported": "सर्व्हिस वर्कर्सना इथे सपोर्ट नाही.",
+    "pushNotConfigured": "या बिल्डमध्ये पुश नोटिफिकेशन्स सेट केलेली नाहीत.",
+    "pushUnsupported": "हा ब्राउझर पुश नोटिफिकेशन्सना सपोर्ट करत नाही.",
+    "permissionNotGranted": "नोटिफिकेशनची परवानगी दिलेली नाही.",
+    "messagingInitFailed": "या ब्राउझरमध्ये मेसेजिंग सुरू करता आलं नाही.",
+    "noDeviceToken": "Firebase कडून डिव्हाइस टोकन मिळालं नाही. पेज पूर्ण रिफ्रेश करून पाहा.",
+    "permissionWasNotGranted": "नोटिफिकेशनची परवानगी दिली गेली नाही.",
+    "notSignedIn": "तुम्ही साइन इन केलेलं नाही. कृपया पुन्हा लॉगिन करा, मग पुन्हा प्रयत्न करा.",
+    "saveNotificationSettings": "तुमच्या नोटिफिकेशन सेटिंग्ज जतन करता आल्या नाहीत. कृपया पुन्हा प्रयत्न करा.",
+    "serverUnreachable": "सर्व्हरशी संपर्क होत नाहीये. API चालू आहे का?",
+    "notificationsBlocked": "नोटिफिकेशन्स ब्लॉक केली आहेत. तुमच्या ब्राउझरच्या साइट सेटिंग्जमध्ये ती चालू करा."
   }
 }

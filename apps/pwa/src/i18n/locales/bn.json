@@ -660,7 +660,12 @@
     "editSettingsTitle": "সাইকেল ও পিরিয়ডের দৈর্ঘ্য",
     "settingIsStartingPoint": "। পর্যাপ্ত সাইকেল লগ না হওয়া পর্যন্ত আপনার সেটিং শুরুর পয়েন্ট হিসেবে কাজ করে।",
     "cycleLengthLabel": "সাইকেলের দৈর্ঘ্য",
-    "periodLengthLabel": "পিরিয়ডের দৈর্ঘ্য"
+    "periodLengthLabel": "পিরিয়ডের দৈর্ঘ্য",
+    "avgCycle": "গড় সাইকেল",
+    "avgPeriod": "গড় পিরিয়ড",
+    "daysValue": "{{count}} দিন",
+    "loggedCycles_one": "{{count}}টি লগ করা সাইকেল",
+    "loggedCycles_other": "{{count}}টি লগ করা সাইকেল"
   },
   "profile": {
     "backHome": "← হোম",
@@ -887,7 +892,8 @@
       "chocolatesBody": "কিছু দিন অনেক কিছু চেয়ে বসে। {{name}} চেয়েছিলেন আজকের দিনে অন্তত একটা ছোট ভালো জিনিস থাকুক।",
       "thankYou": "ধন্যবাদ 💛",
       "getsSmiley": "{{name}} তাদের ফোনে একটি স্মাইলি পাবেন।"
-    }
+    },
+    "fromFallback": "আপনার পরিবার"
   },
   "install": {
     "homeScreenNote": "আপনার হোম স্ক্রিনে <1>Anuva Wellness</1> আইকনটি খুঁজুন।",
@@ -953,7 +959,11 @@
   "calendar": {
     "previousMonth": "আগের মাস",
     "nextMonth": "পরের মাস",
-    "predicted": "প্রেডিক্টেড"
+    "predicted": "প্রেডিক্টেড",
+    "legendPeriod": "পিরিয়ড",
+    "legendPredicted": "প্রেডিক্টেড",
+    "legendFertile": "ফার্টাইল",
+    "legendOvulation": "ওভুলেশন"
   },
   "summary": {
     "periods": {
@@ -989,7 +999,15 @@
     "ariaThroughout": "সারাক্ষণ {{value}} {{unit}}",
     "ariaRanged": "{{low}} থেকে {{high}} {{unit}} পর্যন্ত, সর্বশেষ {{latest}} {{unit}}",
     "ariaMissingNote": " {{count}}টি লগ করা হয়নি।",
-    "ariaSummary": "{{label}}, {{span}}: {{shape}}। {{total}}টির মধ্যে {{logged}}টি দিন লগ করা হয়েছে।{{missingNote}}"
+    "ariaSummary": "{{label}}, {{span}}: {{shape}}। {{total}}টির মধ্যে {{logged}}টি দিন লগ করা হয়েছে।{{missingNote}}",
+    "barAria": "{{date}}: {{value}}",
+    "outsideWindow": "এই সময়সীমার বাইরে",
+    "notLogged": "লগ করা হয়নি",
+    "seeDayByDay": "{{label}}। দিন অনুযায়ী দেখুন",
+    "glanceAria": "{{eyebrow}}: {{label}}{{value}} {{note}}। দিন অনুযায়ী দেখুন",
+    "glanceValue": ", {{value}}",
+    "dayMetricsLogged": "{{date}}, {{total}}টি মেট্রিকের মধ্যে {{count}}টি লগ করা হয়েছে",
+    "dayNothingLogged": "{{date}}, কিছু লগ করা হয়নি"
   },
   "metric": {
     "backToSummary": "সারাংশ",
@@ -1066,6 +1084,38 @@
         "steady": "স্থির",
         "worsening": "আগের চেয়ে বেশি"
       }
+    },
+    "dayBalance": "দিনের ভারসাম্য",
+    "untrackedDays": "ট্র্যাক না করা দিন",
+    "scoredNote": "০–১০০-এ স্কোর, বেশি মানে সবসময়ই ভালো। {{note}}",
+    "byTheNumbers": "সংখ্যায় দেখলে",
+    "whatStoodOut": "যা আলাদা করে চোখে পড়ল",
+    "stoodOut": {
+      "positive": "উন্নতি হচ্ছে",
+      "neutral": "স্থির",
+      "attention": "নজর দেওয়া দরকার"
+    },
+    "stoodOutAria": "{{label}}, {{column}}। দিন অনুযায়ী দেখুন",
+    "delta": {
+      "positive": "ভালো",
+      "attention": "খারাপ",
+      "neutral": "একইরকম"
+    },
+    "points": "{{value}} পয়েন্ট",
+    "notLogged": "লগ করা হয়নি",
+    "seriesToChart": "চার্টে দেখানোর সিরিজ",
+    "overallTrend": "সার্বিক ধারা",
+    "trendNoteWeekly": "প্রতি সপ্তাহে একটি পয়েন্ট, সেই সপ্তাহে যে দিনগুলো লগ করেছেন তার গড়।",
+    "trendNoteDaily": "প্রতিদিনে একটি পয়েন্ট। অক্ষরেখার নিচের টিকগুলো এমন দিন যেখানে কোনো চেক-ইন হয়নি।",
+    "balanceColumn": {
+      "good_one": "ভালো দিন",
+      "good_other": "ভালো দিন",
+      "okay_one": "ঠিকঠাক দিন",
+      "okay_other": "ঠিকঠাক দিন",
+      "hard_one": "কঠিন দিন",
+      "hard_other": "কঠিন দিন",
+      "untracked_one": "ট্র্যাক না করা দিন",
+      "untracked_other": "ট্র্যাক না করা দিন"
     }
   },
   "wellness": {
@@ -1101,7 +1151,14 @@
       "day": "দিন",
       "week": "সপ্তাহ"
     },
-    "trendAriaSummary": "{{series}}, প্রতি {{unit}}-এ একটি পয়েন্ট। {{points}}।{{missingNote}}"
+    "trendAriaSummary": "{{series}}, প্রতি {{unit}}-এ একটি পয়েন্ট। {{points}}।{{missingNote}}",
+    "bandNames": {
+      "great": "দারুণ",
+      "good": "ভালো",
+      "okay": "ঠিকঠাক",
+      "hard": "কঠিন",
+      "veryHard": "খুব কঠিন"
+    }
   },
   "booking": {
     "freeBadge": "★ ফ্রি অন্তর্ভুক্ত · প্রথম কনসাল্ট",
@@ -1424,6 +1481,16 @@
       "dietician": "ডায়েটিশিয়ান",
       "coach": "মেনোপজ কোচ",
       "all": "সব প্র্যাকটিশনার"
+    },
+    "answerHighlightedMany": "এগিয়ে যাওয়ার আগে চিহ্নিত করা {{count}}টি প্রশ্নের উত্তর দিন।",
+    "auto": "অটো",
+    "listItem": "{{number}}.",
+    "medicationRow": "ওষুধ {{number}}",
+    "progress": "{{current}} / {{total}}",
+    "columns": {
+      "medication_supplement": "ওষুধ / সাপ্লিমেন্ট",
+      "dosage": "ডোজ",
+      "duration_frequency": "কত দিন / কতবার"
     }
   },
   "help": {
@@ -1545,7 +1612,10 @@
     "downloaded": "আপনার ডেটা ডাউনলোড হয়ে গেছে। লিংকটি এখন ব্যবহার হয়ে গেছে এবং আবার খোলা যাবে না।",
     "deletionCancelled": "আপনার অ্যাকাউন্ট মোছা হবে না। কিছুই সরানো হয়নি।",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "accountScheduled": "আপনার অ্যাকাউন্ট {{date}}-এ মুছে ফেলার জন্য নির্ধারিত আছে। তার আগে যেকোনো সময় বাতিল করতে পারবেন।",
+    "deletedItems_one": "{{count}}টি জিনিস মুছে ফেলা হয়েছে। {{scope}}: সম্পন্ন।",
+    "deletedItems_other": "{{count}}টি জিনিস মুছে ফেলা হয়েছে। {{scope}}: সম্পন্ন।"
   },
   "bookings": {
     "backHome": "← হোম",
@@ -1634,7 +1704,8 @@
     "openFailed": "আপনার রিপোর্ট খোলা গেল না।",
     "backToProfile": "← প্রোফাইল",
     "eyebrow": "আপনার অ্যাসেসমেন্ট রিপোর্ট",
-    "preparing": "আপনার রিপোর্ট তৈরি করা হচ্ছে…"
+    "preparing": "আপনার রিপোর্ট তৈরি করা হচ্ছে…",
+    "additionalFocus": "অতিরিক্ত ফোকাস"
   },
   "datePicker": {
     "close": "ডেট পিকার বন্ধ করুন",
@@ -1644,5 +1715,50 @@
     "previousMonth": "আগের মাস",
     "nextMonth": "পরের মাস",
     "backToToday": "আজকের দিনে ফিরুন"
+  },
+  "time": {
+    "justNow": "এইমাত্র",
+    "hoursAgo": "{{count}} ঘণ্টা আগে",
+    "daysAgo": "{{count}} দিন আগে"
+  },
+  "errors": {
+    "requestFailed": "অনুরোধ ব্যর্থ হয়েছে, স্ট্যাটাস {{status}}",
+    "loadCycle": "সাইকেলের ডেটা লোড করা গেল না",
+    "loadToday": "আজকের ওয়েলনেস লোড করা গেল না",
+    "loadAssessment": "অ্যাসেসমেন্ট লোড করা গেল না",
+    "loadJoints": "জয়েন্টের ডেটা লোড করা গেল না",
+    "loadMood": "মুডের ডেটা লোড করা গেল না",
+    "loadDay": "আপনার দিনটা লোড করা গেল না",
+    "loadCheckIn": "আপনার চেক-ইন লোড করা গেল না",
+    "loadQuickLog": "দ্রুত লগ লোড করা গেল না",
+    "loadSleep": "ঘুমের ডেটা লোড করা গেল না",
+    "loadCalendar": "আপনার ক্যালেন্ডার লোড করা গেল না",
+    "loadSummary": "আপনার সারাংশ লোড করা গেল না",
+    "loadLibrary": "লাইব্রেরি লোড করা গেল না।",
+    "articleNotFound": "আর্টিকেল পাওয়া যায়নি।",
+    "loadArticle": "এই আর্টিকেলটি লোড করা গেল না।",
+    "downloadUsed": "সেই ডাউনলোডটি ইতিমধ্যেই ব্যবহার হয়ে গেছে। আপনার ডেটা আবার চেয়ে নিন।",
+    "downloadFailed": "আপনার ডেটা ডাউনলোড করা গেল না। আবার চেষ্টা করুন।",
+    "loadQuestions": "প্রশ্ন লোড করা গেল না।",
+    "sendQuestion": "আপনার প্রশ্নটি পাঠানো গেল না।",
+    "checkFamilyInvite": "আপনার ফ্যামিলি আমন্ত্রণটি যাচাই করা গেল না।",
+    "shareRecordFailedWithReason": "{{reason}} লিংকটা ইতিমধ্যেই পাঠিয়ে থাকলে আবার শেয়ারে ট্যাপ করুন।",
+    "shareRecordFailed": "আপনি যে লিংকটি শেয়ার করেছেন তা লিখে রাখা গেল না।",
+    "recordingUnavailable": "রেকর্ডিং এখনও পাওয়া যাচ্ছে না।",
+    "documentUnavailable": "এই নথিটি খোলা গেল না।",
+    "notificationsNotRegistered": "নোটিফিকেশন চালু আছে, তবে এই ডিভাইসটি এখনও রেজিস্টার করা হয়নি। আবার চেষ্টা করুন-এ ট্যাপ করুন।",
+    "deviceRegisterFailed": "এই ডিভাইসটি রেজিস্টার করা গেল না। হোমে গিয়ে আবার চেষ্টা করুন-এ ট্যাপ করুন।",
+    "firebaseNotConfigured": "Firebase সেট করা নেই।",
+    "serviceWorkerUnsupported": "এখানে সার্ভিস ওয়ার্কার সমর্থিত নয়।",
+    "pushNotConfigured": "এই বিল্ডে পুশ নোটিফিকেশন সেট করা নেই।",
+    "pushUnsupported": "এই ব্রাউজারে পুশ নোটিফিকেশন চলে না।",
+    "permissionNotGranted": "নোটিফিকেশনের অনুমতি দেওয়া নেই।",
+    "messagingInitFailed": "এই ব্রাউজারে মেসেজিং চালু করা গেল না।",
+    "noDeviceToken": "Firebase থেকে ডিভাইস টোকেন পাওয়া গেল না। একবার হার্ড রিফ্রেশ করে দেখুন।",
+    "permissionWasNotGranted": "নোটিফিকেশনের অনুমতি দেওয়া হয়নি।",
+    "notSignedIn": "আপনি সাইন ইন করা নেই। আবার লগইন করে চেষ্টা করুন।",
+    "saveNotificationSettings": "আপনার নোটিফিকেশন সেটিংস সেভ করা গেল না। আবার চেষ্টা করুন।",
+    "serverUnreachable": "সার্ভারের সাথে যোগাযোগ করা গেল না। API কি চালু আছে?",
+    "notificationsBlocked": "নোটিফিকেশন ব্লক করা হয়েছে। ব্রাউজারের সাইট সেটিংসে গিয়ে চালু করুন।"
   }
 }
