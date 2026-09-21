@@ -279,3 +279,40 @@ export function subscribeToForegroundMessages(onPayload: (payload: unknown) => v
 
 export type { FcmSyncResult };
 export { needsPushRegistrationRetry } from './notifications/fcmSync';
+
+const FAMILY_PUSH_KEYS = ['familyMessage', 'familyGift'];
+
+/**
+ * FCM shows nothing when a tab is visible and hands the payload to `onMessage` instead, so without
+ * this a push received while the app is open simply vanished. Re-display it as the same system
+ * notification the background path produces; the FCM worker owns the click, so tapping it routes
+ * identically in all three states. Family notes/gifts are excluded: they open their own in-app card.
+ */
+export function subscribeToForegroundNotifications(): () => void {
+  return subscribeToForegroundMessages((payload) => {
+    const message = payload as {
+      notification?: { title?: string; body?: string };
+      data?: Record<string, string>;
+    };
+    const data = message.data ?? {};
+    if (FAMILY_PUSH_KEYS.some((key) => data[key])) return;
+
+    const title = message.notification?.title || data.title || 'Anuva';
+    const body = message.notification?.body || data.body || '';
+    if (!title && !body) return;
+
+    void getFcmServiceWorkerRegistration()
+      .then((registration) =>
+        registration.showNotification(title, {
+          body,
+          icon: '/pwa-192.png',
+          badge: '/pwa-192.png',
+          data,
+          tag: data.type && data.consultationId ? `${data.type}:${data.consultationId}` : undefined,
+        })
+      )
+      .catch(() => {
+        /* permission revoked or SW unavailable: nothing useful to do */
+      });
+  });
+}

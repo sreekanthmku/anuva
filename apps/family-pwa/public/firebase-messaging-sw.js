@@ -8,8 +8,12 @@ if (self.FIREBASE_WEB_CONFIG?.apiKey) {
   const messaging = firebase.messaging();
 
   messaging.onBackgroundMessage((payload) => {
-    self.registration.showNotification(payload.notification?.title || 'Anuva Family', {
-      body: payload.notification?.body || '',
+    // A push with a `notification` block is already displayed by the Firebase SDK before this
+    // handler runs; showing it again produced two notifications per push. Only data-only pushes
+    // need us to display them.
+    if (payload.notification) return;
+    self.registration.showNotification(payload.data?.title || 'Anuva Family', {
+      body: payload.data?.body || '',
       icon: '/pwa-192.png',
       badge: '/pwa-192.png',
       data: payload.data || {},
@@ -50,7 +54,12 @@ self.addEventListener('notificationclick', (event) => {
       for (const client of clientList) {
         if ('focus' in client) {
           await client.focus();
-          client.postMessage({ type: 'family-navigate', url });
+          const parsed = new URL(url, self.location.origin);
+          const path =
+            parsed.origin === self.location.origin
+              ? parsed.pathname + parsed.search + parsed.hash
+              : '/';
+          client.postMessage({ type: 'family-navigate', url: path });
           return;
         }
       }

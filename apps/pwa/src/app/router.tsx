@@ -26,6 +26,7 @@ import HelpRoute from '../features/core/HelpRoute';
 import LoginRoute from '../features/auth/LoginRoute';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import SplashRoute from '../features/auth/SplashRoute';
+import { subscribeToForegroundNotifications } from '../lib/firebase';
 import { InstallGuard } from '../features/install/InstallGuard';
 
 // Routes notification clicks when the service worker can't navigate the client
@@ -46,10 +47,18 @@ function ServiceWorkerNavListener() {
   return null;
 }
 
+// App-wide so every screen shows pushes that arrive while it is open (previously only the home
+// screen's family hooks listened, and everything else was dropped).
+function ForegroundNotificationListener() {
+  useEffect(() => subscribeToForegroundNotifications(), []);
+  return null;
+}
+
 export function AppRouter() {
   return (
     <BrowserRouter>
       <ServiceWorkerNavListener />
+      <ForegroundNotificationListener />
       <InstallGuard>
         <Routes>
           <Route path="/" element={<SplashRoute />} />

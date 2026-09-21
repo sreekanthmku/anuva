@@ -269,7 +269,33 @@ export async function syncDoctorPushIfGranted(): Promise<PushResult | null> {
   return obtainAndRegisterToken();
 }
 
-/** Foreground pushes never raise a system notification, so the portal refreshes its own feed. */
+/** Foreground pushes raise no system notification on their own: show one, and refresh the feed. */
+
+/**
+ * FCM shows nothing when a tab is visible and hands the payload to `onMessage` instead. Re-display
+ * it as the same system notification the background path produces; the FCM worker owns the click,
+ * so tapping it routes identically in all three app states.
+ */
+async function showForegroundNotification(
+  registration: ServiceWorkerRegistration,
+  payload: unknown,
+  fallbackTitle: string,
+): Promise<void> {
+  const message = payload as {
+    notification?: { title?: string; body?: string };
+    data?: Record<string, string>;
+  };
+  const data = message.data ?? {};
+  const title = message.notification?.title || data.title || fallbackTitle;
+  const body = message.notification?.body || data.body || '';
+  await registration.showNotification(title, {
+    body,
+    icon: '/pwa-192.png',
+    badge: '/pwa-192.png',
+    data,
+  });
+}
+
 export function onForegroundPush(handler: () => void): () => void {
   if (!isPushConfigured()) {
     return () => {};
@@ -279,7 +305,12 @@ export function onForegroundPush(handler: () => void): () => void {
 
   void getFirebaseMessaging().then((instance) => {
     if (!instance) return;
-    unsubscribe = onMessage(instance, () => handler());
+    unsubscribe = onMessage(instance, (payload) => {
+      void getFcmRegistration()
+        .then((registration) => showForegroundNotification(registration, payload, 'Anuva Doctor'))
+        .catch(() => {});
+      handler();
+    });
   });
 
   return () => unsubscribe?.();

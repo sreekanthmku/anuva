@@ -8,9 +8,13 @@ if (self.FIREBASE_WEB_CONFIG?.apiKey) {
   const messaging = firebase.messaging();
 
   messaging.onBackgroundMessage((payload) => {
-    const title = payload.notification?.title || 'Anuva';
+    // A push with a `notification` block is already displayed by the Firebase SDK before this
+    // handler runs; showing it again here produced two notifications per push. Only data-only
+    // pushes need us to display them.
+    if (payload.notification) return;
+    const title = payload.data?.title || 'Anuva';
     const options = {
-      body: payload.notification?.body || '',
+      body: payload.data?.body || '',
       icon: '/pwa-192.png',
       badge: '/pwa-192.png',
       data: payload.data || {},
@@ -61,7 +65,13 @@ self.addEventListener('notificationclick', (event) => {
       for (const client of clientList) {
         if ('focus' in client) {
           await client.focus();
-          client.postMessage({ type: 'nudge-navigate', url });
+          // Same-origin paths only: the router's navigate() needs a path, not an absolute URL.
+          const parsed = new URL(url, self.location.origin);
+          const path =
+            parsed.origin === self.location.origin
+              ? parsed.pathname + parsed.search + parsed.hash
+              : '/home';
+          client.postMessage({ type: 'nudge-navigate', url: path });
           return;
         }
       }

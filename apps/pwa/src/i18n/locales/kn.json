@@ -660,7 +660,12 @@
     "editSettingsTitle": "ಸೈಕಲ್ ಮತ್ತು ಪಿರಿಯಡ್ ಉದ್ದ",
     "settingIsStartingPoint": ". ಸಾಕಷ್ಟು ಸೈಕಲ್‌ಗಳು ಲಾಗ್ ಆಗುವವರೆಗೆ ನಿಮ್ಮ ಸೆಟ್ಟಿಂಗ್ ಒಂದು ಆರಂಭಿಕ ಬಿಂದು.",
     "cycleLengthLabel": "ಸೈಕಲ್ ಉದ್ದ",
-    "periodLengthLabel": "ಪಿರಿಯಡ್ ಉದ್ದ"
+    "periodLengthLabel": "ಪಿರಿಯಡ್ ಉದ್ದ",
+    "avgCycle": "ಸರಾಸರಿ ಸೈಕಲ್",
+    "avgPeriod": "ಸರಾಸರಿ ಪಿರಿಯಡ್",
+    "daysValue": "{{count}} ದಿನ",
+    "loggedCycles_one": "{{count}} ಸೈಕಲ್ ಲಾಗ್ ಆಗಿದೆ",
+    "loggedCycles_other": "{{count}} ಸೈಕಲ್‌ಗಳು ಲಾಗ್ ಆಗಿವೆ"
   },
   "profile": {
     "backHome": "← ಹೋಮ್",
@@ -887,7 +892,8 @@
       "chocolatesBody": "ಕೆಲವು ದಿನಗಳು ನಿಮ್ಮಿಂದ ಬಹಳಷ್ಟನ್ನು ಬೇಡುತ್ತವೆ. ಈ ದಿನಕ್ಕೆ ಕನಿಷ್ಠ ಒಂದು ಸಣ್ಣ ಒಳ್ಳೆಯ ವಿಷಯ ಸಿಗಲಿ ಎಂದು {{name}} ಬಯಸಿದರು.",
       "thankYou": "ಧನ್ಯವಾದಗಳು 💛",
       "getsSmiley": "{{name}} ಗೆ ಅವರ ಫೋನ್‌ನಲ್ಲಿ ಸ್ಮೈಲಿ ಸಿಗುತ್ತದೆ."
-    }
+    },
+    "fromFallback": "ನಿಮ್ಮ ಕುಟುಂಬ"
   },
   "install": {
     "homeScreenNote": "ನಿಮ್ಮ ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ನಲ್ಲಿ <1>Anuva Wellness</1> ಐಕಾನ್ ಹುಡುಕಿ.",
@@ -953,7 +959,11 @@
   "calendar": {
     "previousMonth": "ಹಿಂದಿನ ತಿಂಗಳು",
     "nextMonth": "ಮುಂದಿನ ತಿಂಗಳು",
-    "predicted": "ಮುನ್ಸೂಚಿತ"
+    "predicted": "ಮುನ್ಸೂಚಿತ",
+    "legendPeriod": "ಪಿರಿಯಡ್",
+    "legendPredicted": "ಮುನ್ಸೂಚಿತ",
+    "legendFertile": "ಫಲವತ್ತಾದ ಅವಧಿ",
+    "legendOvulation": "ಅಂಡೋತ್ಪತ್ತಿ"
   },
   "summary": {
     "periods": {
@@ -989,7 +999,15 @@
     "ariaThroughout": "ದಿನವಿಡೀ {{value}} {{unit}}",
     "ariaRanged": "{{low}} ರಿಂದ {{high}} {{unit}} ವ್ಯಾಪ್ತಿ, ಇತ್ತೀಚಿನದು {{latest}} {{unit}}",
     "ariaMissingNote": " {{count}} ಲಾಗ್ ಆಗಿಲ್ಲ.",
-    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}} ರಲ್ಲಿ {{logged}} ದಿನ ಲಾಗ್ ಆಗಿದೆ.{{missingNote}}"
+    "ariaSummary": "{{label}}, {{span}}: {{shape}}. {{total}} ರಲ್ಲಿ {{logged}} ದಿನ ಲಾಗ್ ಆಗಿದೆ.{{missingNote}}",
+    "barAria": "{{date}}: {{value}}",
+    "outsideWindow": "ಈ ಅವಧಿಯ ಹೊರಗೆ",
+    "notLogged": "ಲಾಗ್ ಆಗಿಲ್ಲ",
+    "seeDayByDay": "{{label}}. ದಿನದಿನದ ವಿವರ ನೋಡಿ",
+    "glanceAria": "{{eyebrow}}: {{label}}{{value}} {{note}}. ದಿನದಿನದ ವಿವರ ನೋಡಿ",
+    "glanceValue": ", {{value}}",
+    "dayMetricsLogged": "{{date}}, {{total}} ಮೆಟ್ರಿಕ್‌ಗಳಲ್ಲಿ {{count}} ಲಾಗ್ ಆಗಿವೆ",
+    "dayNothingLogged": "{{date}}, ಏನೂ ಲಾಗ್ ಆಗಿಲ್ಲ"
   },
   "metric": {
     "backToSummary": "ಸಾರಾಂಶ",
@@ -1066,6 +1084,38 @@
         "steady": "ಸ್ಥಿರ",
         "worsening": "ಮೊದಲಿಗಿಂತ ಹೆಚ್ಚು"
       }
+    },
+    "dayBalance": "ದಿನಗಳ ಸಮತೋಲನ",
+    "untrackedDays": "ಟ್ರ್ಯಾಕ್ ಆಗದ ದಿನಗಳು",
+    "scoredNote": "0–100 ಪ್ರಮಾಣದಲ್ಲಿ, ಹೆಚ್ಚು ಇರುವುದು ಯಾವಾಗಲೂ ಒಳ್ಳೆಯದು. {{note}}",
+    "byTheNumbers": "ಅಂಕಿಗಳಲ್ಲಿ",
+    "whatStoodOut": "ಎದ್ದು ಕಂಡದ್ದು",
+    "stoodOut": {
+      "positive": "ಸುಧಾರಿಸುತ್ತಿದೆ",
+      "neutral": "ಸ್ಥಿರ",
+      "attention": "ಗಮನ ಬೇಕು"
+    },
+    "stoodOutAria": "{{label}}, {{column}}. ದಿನದಿನದ ವಿವರ ನೋಡಿ",
+    "delta": {
+      "positive": "ಉತ್ತಮ",
+      "attention": "ಕುಸಿದಿದೆ",
+      "neutral": "ಬಹುತೇಕ ಅಷ್ಟೇ"
+    },
+    "points": "{{value}} ಅಂಕ",
+    "notLogged": "ಲಾಗ್ ಆಗಿಲ್ಲ",
+    "seriesToChart": "ಚಾರ್ಟ್‌ನಲ್ಲಿ ಯಾವುದನ್ನು ತೋರಿಸಬೇಕು",
+    "overallTrend": "ಒಟ್ಟಾರೆ ಟ್ರೆಂಡ್",
+    "trendNoteWeekly": "ಪ್ರತಿ ವಾರಕ್ಕೆ ಒಂದು ಬಿಂದು — ಆ ವಾರ ನೀವು ಲಾಗ್ ಮಾಡಿದ ದಿನಗಳ ಸರಾಸರಿ.",
+    "trendNoteDaily": "ಪ್ರತಿ ದಿನಕ್ಕೆ ಒಂದು ಬಿಂದು. ಅಕ್ಷದ ಕೆಳಗಿನ ಗೆರೆಗಳು ಚೆಕ್-ಇನ್ ಇಲ್ಲದ ದಿನಗಳು.",
+    "balanceColumn": {
+      "good_one": "ಒಳ್ಳೆಯ ದಿನ",
+      "good_other": "ಒಳ್ಳೆಯ ದಿನಗಳು",
+      "okay_one": "ಪರವಾಗಿಲ್ಲದ ದಿನ",
+      "okay_other": "ಪರವಾಗಿಲ್ಲದ ದಿನಗಳು",
+      "hard_one": "ಕಷ್ಟದ ದಿನ",
+      "hard_other": "ಕಷ್ಟದ ದಿನಗಳು",
+      "untracked_one": "ಟ್ರ್ಯಾಕ್ ಆಗದ ದಿನ",
+      "untracked_other": "ಟ್ರ್ಯಾಕ್ ಆಗದ ದಿನಗಳು"
     }
   },
   "wellness": {
@@ -1101,7 +1151,14 @@
       "day": "ದಿನ",
       "week": "ವಾರ"
     },
-    "trendAriaSummary": "{{series}}, ಪ್ರತಿ {{unit}} ಗೊಂದು ಬಿಂದು. {{points}}.{{missingNote}}"
+    "trendAriaSummary": "{{series}}, ಪ್ರತಿ {{unit}} ಗೊಂದು ಬಿಂದು. {{points}}.{{missingNote}}",
+    "bandNames": {
+      "great": "ಅದ್ಭುತ",
+      "good": "ಚೆನ್ನಾಗಿದೆ",
+      "okay": "ಪರವಾಗಿಲ್ಲ",
+      "hard": "ಕಷ್ಟ",
+      "veryHard": "ತುಂಬಾ ಕಷ್ಟ"
+    }
   },
   "booking": {
     "freeBadge": "★ ಉಚಿತ ಸೇರಿದೆ · ಮೊದಲ ಸಮಾಲೋಚನೆ",
@@ -1424,6 +1481,16 @@
       "dietician": "ಪೌಷ್ಟಿಕಾಂಶ ತಜ್ಞೆ",
       "coach": "ಮೆನೋಪಾಸ್ ಕೋಚ್",
       "all": "ಎಲ್ಲಾ ಪ್ರ್ಯಾಕ್ಟೀಷನರ್‌ಗಳು"
+    },
+    "answerHighlightedMany": "ಮುಂದುವರಿಯುವ ಮೊದಲು ಹೈಲೈಟ್ ಮಾಡಿದ {{count}} ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.",
+    "auto": "ಸ್ವಯಂ",
+    "listItem": "{{number}}.",
+    "medicationRow": "ಔಷಧಿ {{number}}",
+    "progress": "{{current}} / {{total}}",
+    "columns": {
+      "medication_supplement": "ಔಷಧಿ / ಪೂರಕ",
+      "dosage": "ಡೋಸ್",
+      "duration_frequency": "ಅವಧಿ / ಎಷ್ಟು ಬಾರಿ"
     }
   },
   "help": {
@@ -1545,7 +1612,10 @@
     "downloaded": "ನಿಮ್ಮ ಡೇಟಾ ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ. ಲಿಂಕ್ ಈಗ ಬಳಸಲಾಗಿದೆ ಮತ್ತು ಮತ್ತೆ ತೆರೆಯಲಾಗುವುದಿಲ್ಲ.",
     "deletionCancelled": "ನಿಮ್ಮ ಖಾತೆ ಅಳಿಸಲಾಗುವುದಿಲ್ಲ. ಏನೂ ತೆಗೆದುಹಾಕಲಾಗಿಲ್ಲ.",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "accountScheduled": "ನಿಮ್ಮ ಖಾತೆ {{date}} ರಂದು ಅಳಿಸಲು ನಿಗದಿಯಾಗಿದೆ. ಅದಕ್ಕೂ ಮೊದಲು ಯಾವಾಗ ಬೇಕಾದರೂ ನೀವು ಇದನ್ನು ರದ್ದುಮಾಡಬಹುದು.",
+    "deletedItems_one": "{{count}} ಐಟಂ ಅಳಿಸಲಾಗಿದೆ. {{scope}}: ಮುಗಿದಿದೆ.",
+    "deletedItems_other": "{{count}} ಐಟಂಗಳನ್ನು ಅಳಿಸಲಾಗಿದೆ. {{scope}}: ಮುಗಿದಿದೆ."
   },
   "bookings": {
     "backHome": "← ಹೋಮ್",
@@ -1634,7 +1704,8 @@
     "openFailed": "ನಿಮ್ಮ ವರದಿ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
     "backToProfile": "← ಪ್ರೊಫೈಲ್",
     "eyebrow": "ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನ ವರದಿ",
-    "preparing": "ನಿಮ್ಮ ವರದಿ ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ…"
+    "preparing": "ನಿಮ್ಮ ವರದಿ ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ…",
+    "additionalFocus": "ಹೆಚ್ಚುವರಿ ಗಮನ"
   },
   "datePicker": {
     "close": "ದಿನಾಂಕ ಆಯ್ಕೆಗಾರ ಮುಚ್ಚಿ",
@@ -1644,5 +1715,50 @@
     "previousMonth": "ಹಿಂದಿನ ತಿಂಗಳು",
     "nextMonth": "ಮುಂದಿನ ತಿಂಗಳು",
     "backToToday": "ಇಂದಿಗೆ ಹಿಂತಿರುಗಿ"
+  },
+  "time": {
+    "justNow": "ಈಗಷ್ಟೇ",
+    "hoursAgo": "{{count}} ಗಂ. ಹಿಂದೆ",
+    "daysAgo": "{{count}} ದಿ. ಹಿಂದೆ"
+  },
+  "errors": {
+    "requestFailed": "ವಿನಂತಿ ಪೂರ್ಣಗೊಳ್ಳಲಿಲ್ಲ (ಸ್ಥಿತಿ {{status}})",
+    "loadCycle": "ಸೈಕಲ್ ಡೇಟಾ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadToday": "ಇಂದಿನ ವೆಲ್‌ನೆಸ್ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadAssessment": "ಮೌಲ್ಯಮಾಪನ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadJoints": "ಕೀಲುಗಳ ಡೇಟಾ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadMood": "ಮೂಡ್ ಡೇಟಾ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadDay": "ನಿಮ್ಮ ದಿನದ ವಿವರ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadCheckIn": "ನಿಮ್ಮ ಚೆಕ್-ಇನ್ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadQuickLog": "ಕ್ವಿಕ್ ಲಾಗ್ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadSleep": "ನಿದ್ರೆಯ ಡೇಟಾ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadCalendar": "ನಿಮ್ಮ ಕ್ಯಾಲೆಂಡರ್ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadSummary": "ನಿಮ್ಮ ಸಾರಾಂಶ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "loadLibrary": "ಲೈಬ್ರರಿ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "articleNotFound": "ಲೇಖನ ಸಿಗಲಿಲ್ಲ.",
+    "loadArticle": "ಈ ಲೇಖನ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "downloadUsed": "ಆ ಡೌನ್‌ಲೋಡ್ ಲಿಂಕ್ ಈಗಾಗಲೇ ಬಳಸಲಾಗಿದೆ. ನಿಮ್ಮ ಡೇಟಾವನ್ನು ಮತ್ತೆ ಕೇಳಿ.",
+    "downloadFailed": "ನಿಮ್ಮ ಡೇಟಾ ಡೌನ್‌ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "loadQuestions": "ಪ್ರಶ್ನೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "sendQuestion": "ನಿಮ್ಮ ಪ್ರಶ್ನೆ ಕಳುಹಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "checkFamilyInvite": "ನಿಮ್ಮ ಕುಟುಂಬ ಆಹ್ವಾನವನ್ನು ಪರಿಶೀಲಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "shareRecordFailedWithReason": "{{reason}} ನೀವು ಈಗಾಗಲೇ ಲಿಂಕ್ ಕಳುಹಿಸಿದ್ದರೆ, ಮತ್ತೆ ಹಂಚಿಕೊಳ್ಳಿ ಟ್ಯಾಪ್ ಮಾಡಿ.",
+    "shareRecordFailed": "ನೀವು ಲಿಂಕ್ ಹಂಚಿಕೊಂಡಿದ್ದನ್ನು ದಾಖಲಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "recordingUnavailable": "ರೆಕಾರ್ಡಿಂಗ್ ಇನ್ನೂ ಲಭ್ಯವಿಲ್ಲ.",
+    "documentUnavailable": "ಈ ದಾಖಲೆಯನ್ನು ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "notificationsNotRegistered": "ನೋಟಿಫಿಕೇಶನ್‌ಗಳು ಆನ್ ಆಗಿವೆ, ಆದರೆ ಈ ಸಾಧನ ಇನ್ನೂ ನೋಂದಣಿಯಾಗಿಲ್ಲ. ಮರುಪ್ರಯತ್ನಿಸಿ ಟ್ಯಾಪ್ ಮಾಡಿ.",
+    "deviceRegisterFailed": "ಈ ಸಾಧನವನ್ನು ನೋಂದಾಯಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಹೋಮ್‌ನಲ್ಲಿ ಮರುಪ್ರಯತ್ನಿಸಿ ಟ್ಯಾಪ್ ಮಾಡಿ.",
+    "firebaseNotConfigured": "Firebase ಇನ್ನೂ ಸೆಟಪ್ ಆಗಿಲ್ಲ.",
+    "serviceWorkerUnsupported": "ಸರ್ವೀಸ್ ವರ್ಕರ್‌ಗಳಿಗೆ ಇಲ್ಲಿ ಬೆಂಬಲವಿಲ್ಲ.",
+    "pushNotConfigured": "ಈ ಆವೃತ್ತಿಯಲ್ಲಿ ಪುಶ್ ನೋಟಿಫಿಕೇಶನ್‌ಗಳು ಸೆಟಪ್ ಆಗಿಲ್ಲ.",
+    "pushUnsupported": "ಈ ಬ್ರೌಸರ್ ಪುಶ್ ನೋಟಿಫಿಕೇಶನ್‌ಗಳನ್ನು ಬೆಂಬಲಿಸುವುದಿಲ್ಲ.",
+    "permissionNotGranted": "ನೋಟಿಫಿಕೇಶನ್ ಅನುಮತಿ ನೀಡಲಾಗಿಲ್ಲ.",
+    "messagingInitFailed": "ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಮೆಸೇಜಿಂಗ್ ಆರಂಭಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "noDeviceToken": "Firebase ನಿಂದ ಸಾಧನದ ಟೋಕನ್ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಪುಟವನ್ನು ಪೂರ್ತಿ ರಿಫ್ರೆಶ್ ಮಾಡಿ ನೋಡಿ.",
+    "permissionWasNotGranted": "ನೋಟಿಫಿಕೇಶನ್ ಅನುಮತಿ ನೀಡಲಾಗಲಿಲ್ಲ.",
+    "notSignedIn": "ನೀವು ಸೈನ್ ಇನ್ ಆಗಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಲಾಗಿನ್ ಆಗಿ, ನಂತರ ಮರುಪ್ರಯತ್ನಿಸಿ.",
+    "saveNotificationSettings": "ನಿಮ್ಮ ನೋಟಿಫಿಕೇಶನ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "serverUnreachable": "ಸರ್ವರ್ ತಲುಪಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. API ಚಾಲನೆಯಲ್ಲಿದೆಯೇ?",
+    "notificationsBlocked": "ನೋಟಿಫಿಕೇಶನ್‌ಗಳನ್ನು ತಡೆಹಿಡಿಯಲಾಗಿದೆ. ನಿಮ್ಮ ಬ್ರೌಸರ್‌ನ ಸೈಟ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಅವುಗಳನ್ನು ಆನ್ ಮಾಡಿ."
   }
 }

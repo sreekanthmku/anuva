@@ -1,3 +1,4 @@
+import { subscribeToForegroundNotifications } from './lib/firebase';
 import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 import { AppErrorBoundary } from './lib/AppErrorBoundary';
@@ -36,6 +37,11 @@ function ServiceWorkerNavListener() {
   return null;
 }
 
+function ForegroundNotificationListener() {
+  useEffect(() => subscribeToForegroundNotifications(), []);
+  return null;
+}
+
 /**
  * Auth first, then the install gate: someone who has not joined yet needs the sign-in screen, not
  * an instruction to install an app they have no account on. See InstallGuard for why the gate sits
@@ -58,6 +64,7 @@ export default function App() {
     // Outside the router and the auth provider: a crash in either is what this exists to catch.
     <AppErrorBoundary>
     <BrowserRouter>
+      <ForegroundNotificationListener />
       <ServiceWorkerNavListener />
       <FamilyAuthProvider>
         <Routes>
