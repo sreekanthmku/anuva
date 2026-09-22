@@ -67,6 +67,8 @@ export async function sendPushToAllTokens(
       notification,
       data,
       webpush: {
+        headers: { Urgency: 'high' },
+        notification: { icon: '/pwa-192.png', badge: '/pwa-192.png' },
         fcmOptions: {
           link: data?.url ?? '/home',
         },

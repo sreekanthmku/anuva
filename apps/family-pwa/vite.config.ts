@@ -30,11 +30,67 @@ function writeFirebaseWebConfig(env: Record<string, string>) {
   );
 }
 
+const REQUIRED_FIREBASE_VARS = [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_MESSAGING_SENDER_ID',
+  'VITE_FIREBASE_APP_ID',
+  'VITE_FIREBASE_VAPID_KEY',
+];
+
+/**
+ * A production build without the Firebase config is refused rather than shipped.
+ *
+ * Without these, `isFirebaseConfigured()` is false at runtime, so the permission card never appears
+ * and the service worker has an empty config — no error, no log, just a family app that can never
+ * be told "she said thank you", which is the one thing it exists for. That happened once: the
+ * family Vercel project was deployed without the variables the patient project has. Set
+ * `ALLOW_MISSING_FIREBASE=1` for a build that genuinely should not have push.
+ */
+/**
+ * The shape each value must have. Present-but-mangled fails later and further from its cause: a
+ * stray `=` pasted in front of the API key (it happened) builds fine, then Firebase answers "API key
+ * not valid" only when someone taps Allow.
+ */
+const FIREBASE_VAR_SHAPES: Record<string, RegExp> = {
+  VITE_FIREBASE_API_KEY: /^AIza[0-9A-Za-z_-]{35}$/,
+  VITE_FIREBASE_AUTH_DOMAIN: /^[a-z0-9-]+\.(firebaseapp\.com|web\.app)$/,
+  VITE_FIREBASE_PROJECT_ID: /^[a-z0-9-]+$/,
+  VITE_FIREBASE_MESSAGING_SENDER_ID: /^\d+$/,
+  VITE_FIREBASE_APP_ID: /^\d+:\d+:web:[0-9a-f]+$/,
+  VITE_FIREBASE_VAPID_KEY: /^B[A-Za-z0-9_-]{80,}$/,
+};
+
+function assertFirebaseConfigured(env: Record<string, string>) {
+  if (env.ALLOW_MISSING_FIREBASE === '1') return;
+  const missing = REQUIRED_FIREBASE_VARS.filter((name) => !env[name]);
+  // Never echo the value itself into a build log — just which variable is off.
+  const malformed = REQUIRED_FIREBASE_VARS.filter(
+    (name) => env[name] && !FIREBASE_VAR_SHAPES[name]!.test(env[name]!),
+  );
+  if (missing.length === 0 && malformed.length === 0) return;
+
+  const problems = [
+    missing.length ? `missing: ${missing.join(', ')}` : '',
+    malformed.length
+      ? `malformed (check for a stray "=", quotes or spaces around the value): ${malformed.join(', ')}`
+      : '',
+  ].filter(Boolean);
+  throw new Error(
+    `[family-pwa] Refusing to build for production with a broken Firebase config — push ` +
+      `notifications would not work. ${problems.join('; ')}. Fix them in the build environment ` +
+      `(the Vercel project for family.anuvawellness.com), or set ALLOW_MISSING_FIREBASE=1 to build anyway.`,
+  );
+}
+
 function firebaseWebConfigPlugin(): Plugin {
   return {
     name: 'anuva-family-firebase-config',
-    config(_config, { mode }) {
-      writeFirebaseWebConfig(loadEnv(mode, repoRoot, ''));
+    config(_config, { mode, command }) {
+      const env = loadEnv(mode, repoRoot, '');
+      if (command === 'build' && mode === 'production') assertFirebaseConfigured(env);
+      writeFirebaseWebConfig(env);
     },
   };
 }
