@@ -8,7 +8,10 @@ import { requestNotificationPermission } from './notifications/notificationPromp
 import { ApiError } from '../shared/lib/api';
 import i18n from '../i18n';
 import {
+  deleteFirebaseDatabases,
   describePushSupport,
+  isQuotaFailure,
+  isStorageCorruption,
   missingPushCapabilities,
   purgeRebuildableCaches,
   waitForIndexedDb,
@@ -211,18 +214,36 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
     const stillMissing = missingPushCapabilities();
     let wait = stillMissing.length === 0 ? await waitForIndexedDb() : undefined;
     let purged: string[] = [];
+    let deletedDatabases: string[] = [];
 
-    // Still refusing after the waits. If this origin is simply out of room, the caches it can
-    // rebuild are what to give up — a stale API response is worth less than being reachable.
-    if (wait && wait.outcome !== 'ok' && wait.outcome !== 'absent') {
+    // Still refusing after the waits, so try the one repair that matches the reason given.
+    //
+    // Out of room: give back the caches this origin can rebuild. Measured at 0% used on the device
+    // that prompted this, so it is the rarer case — but cheap, and a stale API response is worth
+    // less than being reachable.
+    if (wait && isQuotaFailure(wait.error)) {
       purged = await purgeRebuildableCaches();
       if (purged.length > 0) wait = await waitForIndexedDb([0, 400]);
+    }
+
+    // "Unable to open database file on disk": the file is damaged, not full. Dropping Firebase's
+    // own databases sometimes clears it; when it does not, only reinstalling the app will, and the
+    // log below is what says so.
+    if (wait && isStorageCorruption(wait.error)) {
+      deletedDatabases = await deleteFirebaseDatabases();
+      if (deletedDatabases.length > 0) wait = await waitForIndexedDb([0, 400]);
     }
 
     const recovered = wait?.outcome === 'ok' && (await isSupported());
 
     if (!recovered) {
-      const detail = { ...(await describePushSupport(wait)), purgedCaches: purged };
+      const detail = {
+        ...(await describePushSupport(wait)),
+        purgedCaches: purged,
+        deletedDatabases,
+        // Said plainly in the log, because no amount of retrying fixes a damaged database file.
+        likelyFix: isStorageCorruption(wait?.error) ? 'reinstall app: storage is corrupted' : null,
+      };
       console.warn('[push] Firebase reports push unsupported', detail);
       Sentry.captureMessage('push unsupported', { level: 'warning', extra: detail });
       return {
@@ -237,7 +258,7 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
       category: 'push',
       level: 'info',
       message: 'indexedDB recovered after wait',
-      data: { attempts: wait?.attempts, purgedCaches: purged },
+      data: { attempts: wait?.attempts, purgedCaches: purged, deletedDatabases },
     });
   }
 

@@ -138,6 +138,55 @@ export async function waitForIndexedDb(
   return { ...result, attempts: delaysMs.length };
 }
 
+/** WebKit's wording when the database file itself is unreadable — not a quota problem. */
+export function isStorageCorruption(error?: string): boolean {
+  return Boolean(error && /UnknownError|InvalidStateError/.test(error));
+}
+
+/** Out of room, which is the only case where deleting caches can possibly help. */
+export function isQuotaFailure(error?: string): boolean {
+  return Boolean(error && /Quota/i.test(error));
+}
+
+/**
+ * Throws away the databases this origin can rebuild, for a corrupted store.
+ *
+ * When WebKit reports "Unable to open database file on disk", the file is damaged rather than
+ * full. Deleting is the only move left in the page: Firebase recreates all three on its next call.
+ * It often fails as well — the same broken file is in the way — which is why the result is
+ * reported rather than assumed.
+ */
+export async function deleteFirebaseDatabases(): Promise<string[]> {
+  if (typeof indexedDB === 'undefined') return [];
+  const databases = [
+    'firebase-messaging-database',
+    'firebase-installations-database',
+    'firebase-heartbeat-database',
+    PROBE_DB,
+  ];
+  const deleted: string[] = [];
+  await Promise.all(
+    databases.map(
+      (name) =>
+        new Promise<void>((resolve) => {
+          try {
+            const request = indexedDB.deleteDatabase(name);
+            request.onsuccess = () => {
+              deleted.push(name);
+              resolve();
+            };
+            request.onerror = () => resolve();
+            request.onblocked = () => resolve();
+            setTimeout(resolve, 1500);
+          } catch {
+            resolve();
+          }
+        }),
+    ),
+  );
+  return deleted;
+}
+
 /**
  * Deletes the caches this origin can rebuild, then reports whether storage came back.
  *
