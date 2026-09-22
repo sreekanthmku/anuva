@@ -153,7 +153,15 @@ export default defineConfig(({ mode }) => {
             {
               urlPattern: ({ url }) => url.pathname.startsWith('/api') && !url.pathname.startsWith('/api/auth/'),
               handler: 'NetworkFirst',
-              options: { cacheName: 'api-cache' },
+              options: {
+                cacheName: 'api-cache',
+                // Bounded, because responses now vary by `Accept-Language`: the Cache API keys a
+                // separate entry per language, so an unbounded cache grew a copy of every endpoint
+                // for every language anyone switched to. On iOS an origin that reaches its storage
+                // limit does not fail gracefully — `indexedDB.open()` starts erroring, and Firebase
+                // reads that as "this browser has no push".
+                expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 7, purgeOnQuotaError: true },
+              },
             },
             {
               // Library hero photos are hotlinked from Unsplash's CDN and never change per URL,
@@ -162,7 +170,8 @@ export default defineConfig(({ mode }) => {
               handler: 'CacheFirst',
               options: {
                 cacheName: 'library-images',
-                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
+                // Photos are the bulk of this origin's storage; let them go first under pressure.
+                expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: true },
                 cacheableResponse: { statuses: [0, 200] },
               },
             },

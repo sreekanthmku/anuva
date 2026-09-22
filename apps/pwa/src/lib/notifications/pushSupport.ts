@@ -22,6 +22,13 @@ export type PushCapability =
 /** Why a database open did not succeed — the distinction matters: a hang is not a refusal. */
 export type IndexedDbProbe = 'ok' | 'error' | 'blocked' | 'timeout' | 'absent';
 
+/**
+ * The outcome plus the browser's own reason for it. The reason is the whole diagnosis:
+ * `QuotaExceededError` means this origin is out of storage, `UnknownError` is WebKit's corrupted
+ * database, `SecurityError` means storage is blocked for the site. One word tells us which.
+ */
+export type IndexedDbResult = { outcome: IndexedDbProbe; error?: string };
+
 type CapabilityHost = {
   navigator?: { serviceWorker?: unknown };
   PushManager?: unknown;
@@ -46,17 +53,19 @@ export function missingPushCapabilities(host: CapabilityHost = window): PushCapa
 }
 
 /** One attempt at opening a database. A hung open never fires an event, hence the timeout. */
-export async function probeIndexedDb(timeoutMs = 2000): Promise<IndexedDbProbe> {
-  if (typeof indexedDB === 'undefined') return 'absent';
+export async function probeIndexedDb(timeoutMs = 2000): Promise<IndexedDbResult> {
+  if (typeof indexedDB === 'undefined') return { outcome: 'absent' };
 
-  return new Promise<IndexedDbProbe>((resolve) => {
+  return new Promise<IndexedDbResult>((resolve) => {
     let settled = false;
-    const finish = (value: IndexedDbProbe) => {
+    const finish = (value: IndexedDbResult) => {
       if (settled) return;
       settled = true;
       resolve(value);
     };
-    const timer = setTimeout(() => finish('timeout'), timeoutMs);
+    const timer = setTimeout(() => finish({ outcome: 'timeout' }), timeoutMs);
+    const describe = (error: unknown) =>
+      error instanceof DOMException ? `${error.name}: ${error.message}` : String(error ?? 'unknown');
 
     try {
       const request = indexedDB.open(PROBE_DB);
@@ -68,24 +77,42 @@ export async function probeIndexedDb(timeoutMs = 2000): Promise<IndexedDbProbe> 
         } catch {
           /* leaving the probe database behind is harmless */
         }
-        finish('ok');
+        finish({ outcome: 'ok' });
       };
       request.onerror = () => {
         clearTimeout(timer);
-        finish('error');
+        finish({ outcome: 'error', error: describe(request.error) });
       };
       request.onblocked = () => {
         clearTimeout(timer);
-        finish('blocked');
+        finish({ outcome: 'blocked' });
       };
-    } catch {
+    } catch (error) {
+      // `open()` throws synchronously when storage is denied outright.
       clearTimeout(timer);
-      finish('error');
+      finish({ outcome: 'error', error: describe(error) });
     }
   });
 }
 
-export type IndexedDbWait = { outcome: IndexedDbProbe; attempts: number };
+/** How full this origin's storage is — the direct test of "are we out of room?". */
+export async function storageEstimate(): Promise<Record<string, number> | null> {
+  try {
+    const estimate = await navigator.storage?.estimate?.();
+    if (!estimate) return null;
+    const usage = estimate.usage ?? 0;
+    const quota = estimate.quota ?? 0;
+    return {
+      usageMb: Math.round((usage / 1e6) * 10) / 10,
+      quotaMb: Math.round((quota / 1e6) * 10) / 10,
+      percentUsed: quota ? Math.round((usage / quota) * 100) : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export type IndexedDbWait = { outcome: IndexedDbProbe; attempts: number; error?: string };
 
 /**
  * Retries the open a few times before accepting that storage is unusable.
@@ -95,29 +122,56 @@ export type IndexedDbWait = { outcome: IndexedDbProbe; attempts: number };
  */
 export async function waitForIndexedDb(
   delaysMs: number[] = [0, 400, 1200, 2500],
-  probe: (timeoutMs?: number) => Promise<IndexedDbProbe> = probeIndexedDb,
+  probe: (timeoutMs?: number) => Promise<IndexedDbResult> = probeIndexedDb,
   sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
 ): Promise<IndexedDbWait> {
-  let outcome: IndexedDbProbe = 'absent';
+  let result: IndexedDbResult = { outcome: 'absent' };
 
   for (const [attempt, delay] of delaysMs.entries()) {
     if (delay > 0) await sleep(delay);
-    outcome = await probe();
-    if (outcome === 'ok') return { outcome, attempts: attempt + 1 };
-    // Nothing to wait for: the API is not there at all.
-    if (outcome === 'absent') return { outcome, attempts: attempt + 1 };
+    result = await probe();
+    if (result.outcome === 'ok' || result.outcome === 'absent') {
+      return { ...result, attempts: attempt + 1 };
+    }
   }
 
-  return { outcome, attempts: delaysMs.length };
+  return { ...result, attempts: delaysMs.length };
+}
+
+/**
+ * Deletes the caches this origin can rebuild, then reports whether storage came back.
+ *
+ * Only runtime caches go: the API responses and the library photos, both of which refetch. The
+ * precache stays, because dropping it breaks the app offline. If the open was failing because the
+ * origin was full, this is what makes room; if it was failing for any other reason, this changes
+ * nothing and the caller learns that too.
+ */
+export async function purgeRebuildableCaches(): Promise<string[]> {
+  if (typeof caches === 'undefined') return [];
+  const rebuildable = ['api-cache', 'library-images'];
+  const deleted: string[] = [];
+  for (const name of rebuildable) {
+    try {
+      if (await caches.delete(name)) deleted.push(name);
+    } catch {
+      /* nothing we can do about a cache that refuses to go */
+    }
+  }
+  return deleted;
 }
 
 /** Everything worth knowing when push is refused, in one object for a log. */
 export async function describePushSupport(wait?: IndexedDbWait): Promise<Record<string, unknown>> {
   const missing = missingPushCapabilities();
+  const result = wait ?? { ...(await probeIndexedDb()), attempts: 1 };
   return {
     missing,
-    indexedDb: wait?.outcome ?? (await probeIndexedDb()),
-    indexedDbAttempts: wait?.attempts ?? 1,
+    indexedDb: result.outcome,
+    // The browser's own words — this is what names the cause.
+    indexedDbError: result.error ?? null,
+    indexedDbAttempts: result.attempts,
+    storage: await storageEstimate(),
+    cookieEnabled: typeof navigator === 'undefined' ? null : navigator.cookieEnabled,
     standalone: isStandaloneDisplay(),
     permission: typeof Notification === 'undefined' ? 'unavailable' : Notification.permission,
     userAgent: typeof navigator === 'undefined' ? null : navigator.userAgent,

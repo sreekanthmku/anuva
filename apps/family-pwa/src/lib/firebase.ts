@@ -59,6 +59,7 @@ async function getFirebaseMessaging(): Promise<Messaging | null> {
     // after an installed iOS app launches. Firebase reads it as "no push" for good, so wait for
     // storage and ask again before believing it. Anything genuinely missing fails straight through.
     const wait = missingPushCapabilities().length === 0 ? await waitForIndexedDb() : undefined;
+    // Nothing to purge and retry here: this origin keeps no runtime caches, only its precache.
     if (wait?.outcome !== 'ok' || !(await isSupported())) {
       const detail = await describePushSupport(wait);
       console.warn('[push] Firebase reports push unsupported', detail);

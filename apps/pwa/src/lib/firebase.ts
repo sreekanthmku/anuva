@@ -10,6 +10,7 @@ import i18n from '../i18n';
 import {
   describePushSupport,
   missingPushCapabilities,
+  purgeRebuildableCaches,
   waitForIndexedDb,
 } from './notifications/pushSupport';
 import * as Sentry from '@sentry/react';
@@ -208,11 +209,20 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
     // will not open, this is the WebKit fault that clears a second or two after an installed iOS
     // app launches — so wait for storage and ask again rather than telling her push is impossible.
     const stillMissing = missingPushCapabilities();
-    const wait = stillMissing.length === 0 ? await waitForIndexedDb() : undefined;
+    let wait = stillMissing.length === 0 ? await waitForIndexedDb() : undefined;
+    let purged: string[] = [];
+
+    // Still refusing after the waits. If this origin is simply out of room, the caches it can
+    // rebuild are what to give up — a stale API response is worth less than being reachable.
+    if (wait && wait.outcome !== 'ok' && wait.outcome !== 'absent') {
+      purged = await purgeRebuildableCaches();
+      if (purged.length > 0) wait = await waitForIndexedDb([0, 400]);
+    }
+
     const recovered = wait?.outcome === 'ok' && (await isSupported());
 
     if (!recovered) {
-      const detail = await describePushSupport(wait);
+      const detail = { ...(await describePushSupport(wait)), purgedCaches: purged };
       console.warn('[push] Firebase reports push unsupported', detail);
       Sentry.captureMessage('push unsupported', { level: 'warning', extra: detail });
       return {
@@ -227,7 +237,7 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
       category: 'push',
       level: 'info',
       message: 'indexedDB recovered after wait',
-      data: { attempts: wait?.attempts },
+      data: { attempts: wait?.attempts, purgedCaches: purged },
     });
   }
 
