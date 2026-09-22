@@ -7,6 +7,8 @@ import { toSyncErrorMessage } from './notifications/fcmSync';
 import { requestNotificationPermission } from './notifications/notificationPrompt';
 import { ApiError } from '../shared/lib/api';
 import i18n from '../i18n';
+import { describePushSupport } from './notifications/pushSupport';
+import * as Sentry from '@sentry/react';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
@@ -198,6 +200,12 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
   }
 
   if (!(await isSupported())) {
+    // Firebase folds six checks into one boolean, so record which piece is actually missing.
+    // On iOS this is usually IndexedDB refusing to open after the system reclaimed storage —
+    // indistinguishable, from the message alone, from a browser that never had push at all.
+    const detail = await describePushSupport();
+    console.warn('[push] Firebase reports push unsupported', detail);
+    Sentry.captureMessage('push unsupported', { level: 'warning', extra: detail });
     return {
       ok: false,
       reason: 'unsupported',
