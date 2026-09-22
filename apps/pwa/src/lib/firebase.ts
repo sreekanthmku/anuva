@@ -7,7 +7,11 @@ import { toSyncErrorMessage } from './notifications/fcmSync';
 import { requestNotificationPermission } from './notifications/notificationPrompt';
 import { ApiError } from '../shared/lib/api';
 import i18n from '../i18n';
-import { describePushSupport } from './notifications/pushSupport';
+import {
+  describePushSupport,
+  missingPushCapabilities,
+  waitForIndexedDb,
+} from './notifications/pushSupport';
 import * as Sentry from '@sentry/react';
 
 const firebaseConfig = {
@@ -200,17 +204,31 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
   }
 
   if (!(await isSupported())) {
-    // Firebase folds six checks into one boolean, so record which piece is actually missing.
-    // On iOS this is usually IndexedDB refusing to open after the system reclaimed storage —
-    // indistinguishable, from the message alone, from a browser that never had push at all.
-    const detail = await describePushSupport();
-    console.warn('[push] Firebase reports push unsupported', detail);
-    Sentry.captureMessage('push unsupported', { level: 'warning', extra: detail });
-    return {
-      ok: false,
-      reason: 'unsupported',
-      message: i18n.t('errors.pushUnsupported'),
-    };
+    // Firebase folds six checks into one boolean. When everything is present and only IndexedDB
+    // will not open, this is the WebKit fault that clears a second or two after an installed iOS
+    // app launches — so wait for storage and ask again rather than telling her push is impossible.
+    const stillMissing = missingPushCapabilities();
+    const wait = stillMissing.length === 0 ? await waitForIndexedDb() : undefined;
+    const recovered = wait?.outcome === 'ok' && (await isSupported());
+
+    if (!recovered) {
+      const detail = await describePushSupport(wait);
+      console.warn('[push] Firebase reports push unsupported', detail);
+      Sentry.captureMessage('push unsupported', { level: 'warning', extra: detail });
+      return {
+        ok: false,
+        reason: 'unsupported',
+        message: i18n.t('errors.pushUnsupported'),
+      };
+    }
+
+    // Worth knowing how often the wait saves a registration, and how long it took.
+    Sentry.addBreadcrumb({
+      category: 'push',
+      level: 'info',
+      message: 'indexedDB recovered after wait',
+      data: { attempts: wait?.attempts },
+    });
   }
 
   if (Notification.permission !== 'granted') {

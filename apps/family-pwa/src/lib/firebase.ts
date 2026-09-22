@@ -6,6 +6,12 @@ import { ApiError, apiFetch } from '../shared/lib/api';
 import i18n from '../i18n';
 import { getOrCreateDeviceId } from './notifications/deviceId';
 import { requestNotificationPermission } from './notifications/notificationPrompt';
+import {
+  describePushSupport,
+  missingPushCapabilities,
+  waitForIndexedDb,
+} from './notifications/pushSupport';
+import * as Sentry from '@sentry/react';
 
 /**
  * Push for the family app.
@@ -46,8 +52,19 @@ export function isFirebaseConfigured(): boolean {
 }
 
 async function getFirebaseMessaging(): Promise<Messaging | null> {
-  if (!isFirebaseConfigured() || !(await isSupported())) {
-    return null;
+  if (!isFirebaseConfigured()) return null;
+
+  if (!(await isSupported())) {
+    // Everything present but IndexedDB will not open: the WebKit fault that clears a second or two
+    // after an installed iOS app launches. Firebase reads it as "no push" for good, so wait for
+    // storage and ask again before believing it. Anything genuinely missing fails straight through.
+    const wait = missingPushCapabilities().length === 0 ? await waitForIndexedDb() : undefined;
+    if (wait?.outcome !== 'ok' || !(await isSupported())) {
+      const detail = await describePushSupport(wait);
+      console.warn('[push] Firebase reports push unsupported', detail);
+      Sentry.captureMessage('push unsupported', { level: 'warning', extra: detail });
+      return null;
+    }
   }
 
   if (!app) {
