@@ -14,6 +14,7 @@ import { InstallGuard } from './features/install/InstallGuard';
 import JoinRoute from './features/auth/JoinRoute';
 import SignInRoute from './features/auth/SignInRoute';
 import { LanguageKeyed } from './i18n/LanguageKeyed';
+import { clearPendingNavigation, takePendingNavigation } from './lib/pwa/pendingNavigation';
 
 /**
  * A tap on a notification while the app is already open. The FCM worker cannot navigate a client it
@@ -23,16 +24,43 @@ import { LanguageKeyed } from './i18n/LanguageKeyed';
 function ServiceWorkerNavListener() {
   const navigate = useNavigate();
 
+  // The posted message: instant, but only for an app that is merely hidden and still running.
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
     const onMessage = (event: MessageEvent) => {
       const data = event.data;
       if (data && data.type === 'family-navigate' && typeof data.url === 'string') {
+        // It got here, so the stored copy is redundant — drop it before a later wake-up acts on it.
+        void clearPendingNavigation();
         navigate(data.url);
       }
     };
     navigator.serviceWorker.addEventListener('message', onMessage);
     return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, [navigate]);
+
+  // The stored copy: what a frozen app reads when it wakes. iOS freezes a backgrounded web app and
+  // drops the message above, which is why tapping a notification used to bring the app forward on
+  // the screen it was left on, with the note or thank-you nowhere.
+  useEffect(() => {
+    let cancelled = false;
+    const collect = () => {
+      if (document.visibilityState !== 'visible') return;
+      void takePendingNavigation().then((url) => {
+        if (url && !cancelled) navigate(url);
+      });
+    };
+
+    collect();
+    document.addEventListener('visibilitychange', collect);
+    window.addEventListener('pageshow', collect);
+    window.addEventListener('focus', collect);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', collect);
+      window.removeEventListener('pageshow', collect);
+      window.removeEventListener('focus', collect);
+    };
   }, [navigate]);
 
   return null;
