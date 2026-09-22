@@ -1,24 +1,47 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { subscribeToForegroundMessages } from '../../lib/firebase';
 import { twemojiUrl } from '../../shared/lib/twemoji';
+import { PrimaryButton } from '../shell/ui';
+import { readThanksFromHash, stripThanksFromUrl, type Thanks } from './thanksLink';
 
 /**
- * She said thank you while they had the app open.
+ * She said thank you — shown as a card that stays until they close it, the way her family's notes
+ * open for her in the patient app.
  *
- * FCM shows nothing for a foreground push — the assumption is that an app on screen can say it
- * better itself. Without this, the one notification this app exists to receive would arrive as
- * silence for anyone who happened to be looking at it. So it lands as a card instead, which is
- * warmer than a lock-screen line anyway.
+ * It used to be a banner that faded after five seconds and only when the app was already open;
+ * tapping the notification from the lock screen opened Today with nothing on it. The one moment
+ * this app exists for was the easiest one to miss. Now all three ways it arrives end at the card:
+ *
+ * 1. App closed — the service worker opens `/#familyThanks=…`, so the fragment is there on first
+ *    render and the mount read catches it.
+ * 2. App in the background — the worker posts `family-navigate` and the router navigates to the
+ *    same link. That is a `pushState`, which does not fire `hashchange`, so the read also follows
+ *    react-router's location key.
+ * 3. App open — FCM shows nothing and hands the payload to `onMessage`; the card opens directly.
+ *    (The app-wide foreground display skips `familyThanks` so this is not doubled by a system
+ *    notification.)
+ *
+ * Nothing is kept: once closed, the thank-you is gone, exactly like a note.
  */
-
-const VISIBLE_MS = 5200;
-
-type Thanks = { from: string; body: string };
-
 export function ThanksListener() {
   const { t } = useTranslation();
   const [thanks, setThanks] = useState<Thanks | null>(null);
+  const { key: locationKey } = useLocation();
+
+  const consume = useCallback(() => {
+    const next = readThanksFromHash(window.location.hash);
+    if (!next) return;
+    setThanks(next);
+    stripThanksFromUrl();
+  }, []);
+
+  useEffect(() => {
+    consume();
+    window.addEventListener('hashchange', consume);
+    return () => window.removeEventListener('hashchange', consume);
+  }, [consume, locationKey]);
 
   useEffect(
     () =>
@@ -27,39 +50,56 @@ export function ThanksListener() {
           data?: { familyThanks?: string; familyThanksFrom?: string };
           notification?: { body?: string };
         } | null;
-
         if (!message?.data?.familyThanks) return;
 
         setThanks({
           from: message.data.familyThanksFrom?.trim() || t('thanks.fromFallback'),
-          // The push itself carries her words when there are any; this is the silent case.
-          body: message.notification?.body ?? t('thanks.bodyFallback'),
+          body: message.notification?.body?.trim() || t('thanks.bodyFallback'),
         });
       }),
     [t],
   );
 
-  useEffect(() => {
-    if (!thanks) return;
-    const timer = window.setTimeout(() => setThanks(null), VISIBLE_MS);
-    return () => window.clearTimeout(timer);
-  }, [thanks]);
-
   if (!thanks) return null;
+
+  const close = () => setThanks(null);
 
   return (
     <div
-      role="status"
-      className="pointer-events-none fixed inset-x-0 top-0 z-[75] flex justify-center px-5 pt-[max(0.75rem,env(safe-area-inset-top))]"
+      className="fixed inset-0 z-[80] flex items-center justify-center px-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="family-thanks-title"
     >
-      <div className="flex w-full max-w-[420px] animate-[anuvaRise_360ms_cubic-bezier(0.16,1,0.3,1)] items-center gap-3 rounded-[22px] border border-secondary/25 bg-surface-raised px-4 py-3.5 shadow-lift">
-        <img src={twemojiUrl('😊')} alt="" aria-hidden width={34} height={34} className="shrink-0" />
-        <div className="min-w-0">
-          <p className="font-display text-[15px] font-medium leading-snug text-primary">
-            {t('thanks.title', { name: thanks.from })}
-          </p>
-          <p className="mt-0.5 text-[12.5px] leading-snug text-on-surface-variant">{thanks.body}</p>
-        </div>
+      <button
+        type="button"
+        className="absolute inset-0 animate-[anuvaFade_260ms_ease-out] bg-[#3E2542]/55 backdrop-blur-[2px]"
+        aria-label={t('common.close')}
+        onClick={close}
+      />
+
+      <div className="relative w-full max-w-[360px] animate-[anuvaSheetUp_320ms_cubic-bezier(0.16,1,0.3,1)] rounded-[26px] border border-secondary/25 bg-surface-raised px-6 pb-6 pt-7 text-center shadow-lift">
+        <img
+          src={twemojiUrl('😊')}
+          alt=""
+          aria-hidden
+          width={52}
+          height={52}
+          className="mx-auto"
+        />
+
+        <h2
+          id="family-thanks-title"
+          className="mt-4 font-display text-[21px] font-medium leading-snug text-primary"
+        >
+          {t('thanks.title', { name: thanks.from })}
+        </h2>
+
+        <p className="mt-2.5 text-[15px] leading-relaxed text-on-surface-variant">{thanks.body}</p>
+
+        <PrimaryButton onClick={close} className="mt-6">
+          {t('common.close')}
+        </PrimaryButton>
       </div>
     </div>
   );

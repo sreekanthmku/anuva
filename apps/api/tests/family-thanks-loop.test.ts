@@ -218,7 +218,20 @@ describe('her thank-you', () => {
 
   it('deep-links to Today rather than to a receipt', async () => {
     await sendFamilyThanks({ userId: USER_ID, kind: 'message' });
-    expect(lastPush().data.url).toBe('/');
+    expect(lastPush().data.url.split('#')[0]).toBe('/');
+  });
+
+  it('carries the thank-you in the fragment, so tapping the notification opens it as a card', async () => {
+    await sendFamilyThanks({ userId: USER_ID, kind: 'message' });
+    const { data, notification } = lastPush();
+
+    // Fragment only: a query string would reach the server's access logs.
+    expect(data.url).not.toContain('?');
+    const fragment = fragmentOf(data.url);
+    expect(fragment.get('familyThanks')).toBe('message');
+    expect(fragment.get('familyThanksFrom')).toBe('Meera');
+    // The card says exactly what the lock screen said.
+    expect(fragment.get('familyThanksBody')).toBe(notification.body);
   });
 
   it('names the gesture it answers', async () => {

@@ -35,3 +35,6 @@ ANU_Nudge_Engine_Dev_Reference.docx
 Image_20260619_000213_718.jpeg
 .pnpm-store/
 node_modules/
+
+# Translation work in progress (split sources, partial per-article output). Survives session resets.
+.i18n-work/

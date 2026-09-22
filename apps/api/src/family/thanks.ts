@@ -85,8 +85,22 @@ export async function sendFamilyThanks(input: {
   });
 
   // Deep-links to Today, where the support card is — the natural next thing after being thanked is
-  // to do the next day's gesture, not to read a receipt.
-  const data = { url: '/', familyThanks: input.kind ?? 'general', familyThanksFrom: first };
+  // to do the next day's gesture, not to read a receipt. The thank-you itself rides in the URL
+  // *fragment* so tapping the notification opens it as a card, the way her family's notes open for
+  // her: a fragment never reaches a server, and the family app strips it once read. Built from the
+  // localized notification, so the card says exactly what the lock screen said, in his language.
+  const data = (content: { body: string }) => {
+    const fragment = new URLSearchParams({
+      familyThanks: input.kind ?? 'general',
+      familyThanksFrom: first,
+      familyThanksBody: content.body,
+    });
+    return {
+      url: `/#${fragment.toString()}`,
+      familyThanks: input.kind ?? 'general',
+      familyThanksFrom: first,
+    };
+  };
 
   const results = await Promise.all(
     members.map((member) => sendToFamilyMember(member.id, notification, data)),

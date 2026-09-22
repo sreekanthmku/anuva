@@ -54,10 +54,15 @@ export async function unregisterFamilyToken(input: {
   });
 }
 
+/**
+ * `data` may be derived from the finished notification, for a deep link that must carry the same
+ * words the lock screen shows — already in the recipient's language, with no second copy of the
+ * text to drift from the first.
+ */
 export async function sendToFamilyMember(
   familyMemberId: string,
   notification: FamilyNotification | (() => FamilyNotification),
-  data: Record<string, string>,
+  data: Record<string, string> | ((content: FamilyNotification) => Record<string, string>),
 ): Promise<number> {
   const [rows, language] = await Promise.all([
     prisma.familyFcmToken.findMany({
@@ -79,7 +84,8 @@ export async function sendToFamilyMember(
     typeof notification === 'function' ? notification() : notification,
   );
 
-  const { successCount } = await sendPushToAllTokens(tokens, content, data);
+  const payload = typeof data === 'function' ? data(content) : data;
+  const { successCount } = await sendPushToAllTokens(tokens, content, payload);
   return successCount;
 }
 
