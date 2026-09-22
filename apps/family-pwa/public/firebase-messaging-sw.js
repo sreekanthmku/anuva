@@ -3,6 +3,19 @@ importScripts('https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging-compat.js');
 importScripts('/firebase-config.js');
 
+/**
+ * Take over as soon as a new version of this worker is deployed.
+ *
+ * Without this, an updated worker sits in `waiting` until every window of the app is closed, so the
+ * page keeps talking to the previous version. On iOS that mismatch is worse than stale code: the
+ * push subscription belonging to the old worker is dropped, and re-subscribing fails with
+ * "push service initialization failed" until the app is fully restarted. Activating straight away
+ * keeps one version in play. Nothing is controlled by this scope but the push endpoint, so claiming
+ * clients cannot disturb a page the workbox worker owns.
+ */
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
+
 if (self.FIREBASE_WEB_CONFIG?.apiKey) {
   firebase.initializeApp(self.FIREBASE_WEB_CONFIG);
   const messaging = firebase.messaging();

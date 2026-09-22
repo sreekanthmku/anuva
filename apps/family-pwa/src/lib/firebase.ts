@@ -1,7 +1,7 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getMessaging, getToken, isSupported, onMessage, type Messaging } from 'firebase/messaging';
 import type { FcmPlatform } from '@anuva/shared';
-import { apiFetch } from '../shared/lib/api';
+import { ApiError, apiFetch } from '../shared/lib/api';
 // The instance rather than the hook: none of this runs inside a React render.
 import i18n from '../i18n';
 import { getOrCreateDeviceId } from './notifications/deviceId';
@@ -135,6 +135,43 @@ async function registerTokenOnServer(fcmToken: string): Promise<void> {
   });
 }
 
+/**
+ * Subscribing again after the first attempt failed.
+ *
+ * A stale subscription (Android) or a service worker that has just been replaced (iOS, where the
+ * update drops the old subscription) both fail the first `getToken`. Retrying in the same tick
+ * fails too, because the new worker is still activating — so each attempt clears what is there,
+ * pulls the freshest registration, waits for it to activate, and only then asks again.
+ */
+async function resubscribe(
+  messagingInstance: Messaging,
+  registration: ServiceWorkerRegistration,
+): Promise<string> {
+  let lastError: unknown;
+
+  for (const backoffMs of [200, 1200]) {
+    try {
+      await clearStalePushSubscriptions(registration);
+      try {
+        await registration.update();
+      } catch {
+        /* offline, or nothing new to fetch */
+      }
+      await waitForActivation(registration);
+      await new Promise((resolve) => setTimeout(resolve, backoffMs));
+
+      return await getToken(messagingInstance, {
+        vapidKey: vapidKey!,
+        serviceWorkerRegistration: registration,
+      });
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
 export async function registerFamilyDevice(): Promise<FamilyPushResult> {
   const instance = await getFirebaseMessaging();
   if (!instance) {
@@ -152,8 +189,7 @@ export async function registerFamilyDevice(): Promise<FamilyPushResult> {
     try {
       token = await getToken(instance, { vapidKey: vapidKey!, serviceWorkerRegistration: registration });
     } catch {
-      await clearStalePushSubscriptions(registration);
-      token = await getToken(instance, { vapidKey: vapidKey!, serviceWorkerRegistration: registration });
+      token = await resubscribe(instance, registration);
     }
 
     if (!token) {
@@ -169,9 +205,12 @@ export async function registerFamilyDevice(): Promise<FamilyPushResult> {
 
     return { ok: true };
   } catch (error) {
+    // Browser subscribe failures ("push service initialization failed") are untranslated and not
+    // actionable for a family member; the server's own message is. The original goes to the console.
+    console.warn('[push] registration failed', error);
     return {
       ok: false,
-      message: error instanceof Error ? error.message : i18n.t('errors.notificationsFailed'),
+      message: error instanceof ApiError ? error.message : i18n.t('errors.notificationsFailed'),
     };
   }
 }

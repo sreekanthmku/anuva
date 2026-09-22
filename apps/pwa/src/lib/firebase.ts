@@ -5,6 +5,7 @@ import { registerFcmTokenOnServer } from './notifications/registerFcmToken';
 import type { FcmSyncResult } from './notifications/fcmSync';
 import { toSyncErrorMessage } from './notifications/fcmSync';
 import { requestNotificationPermission } from './notifications/notificationPrompt';
+import { ApiError } from '../shared/lib/api';
 import i18n from '../i18n';
 
 const firebaseConfig = {
@@ -142,6 +143,43 @@ async function clearStalePushSubscriptions(
   );
 }
 
+/**
+ * Subscribing again after the first attempt failed.
+ *
+ * A stale subscription (Android) or a service worker that has just been replaced (iOS, where the
+ * update drops the old subscription) both fail the first `getToken`. Retrying in the same tick
+ * fails too, because the new worker is still activating — so each attempt clears what is there,
+ * pulls the freshest registration, waits for it to activate, and only then asks again.
+ */
+async function resubscribe(
+  messagingInstance: Messaging,
+  registration: ServiceWorkerRegistration,
+): Promise<string> {
+  let lastError: unknown;
+
+  for (const backoffMs of [200, 1200]) {
+    try {
+      await clearStalePushSubscriptions(registration);
+      try {
+        await registration.update();
+      } catch {
+        /* offline, or nothing new to fetch */
+      }
+      await waitForActivation(registration);
+      await new Promise((resolve) => setTimeout(resolve, backoffMs));
+
+      return await getToken(messagingInstance, {
+        vapidKey: vapidKey!,
+        serviceWorkerRegistration: registration,
+      });
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
 export async function saveFcmTokenToServer(fcmToken: string): Promise<void> {
   await registerFcmTokenOnServer({
     fcmToken,
@@ -193,14 +231,8 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
         vapidKey: vapidKey!,
         serviceWorkerRegistration: registration,
       });
-    } catch (subscribeError) {
-      // A stale/conflicting push subscription (common on Android) makes the first subscribe fail
-      // with "Registration failed - push service error". Clear it and retry once.
-      await clearStalePushSubscriptions(registration);
-      token = await getToken(messagingInstance, {
-        vapidKey: vapidKey!,
-        serviceWorkerRegistration: registration,
-      });
+    } catch {
+      token = await resubscribe(messagingInstance, registration);
     }
 
     if (!token) {
@@ -221,10 +253,15 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
 
     return { ok: true, token };
   } catch (error) {
+    // A browser/Firebase subscribe failure reads like "push service initialization failed" — true,
+    // untranslated, and not something she can act on. The server's own errors still speak for
+    // themselves. Either way the original is kept for the console and Sentry.
+    console.warn('[push] registration failed', error);
     return {
       ok: false,
       reason: 'server_error',
-      message: toSyncErrorMessage(error),
+      message:
+        error instanceof ApiError ? toSyncErrorMessage(error) : i18n.t('errors.deviceRegisterFailed'),
     };
   }
 }
