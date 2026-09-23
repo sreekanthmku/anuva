@@ -7,8 +7,10 @@ import i18n from '../i18n';
 import { getOrCreateDeviceId } from './notifications/deviceId';
 import { requestNotificationPermission } from './notifications/notificationPrompt';
 import {
+  describeError,
   describePushSupport,
   missingPushCapabilities,
+  probeIndexedDb,
   waitForIndexedDb,
 } from './notifications/pushSupport';
 import * as Sentry from '@sentry/react';
@@ -110,7 +112,20 @@ async function getFcmServiceWorkerRegistration(): Promise<ServiceWorkerRegistrat
   const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
   const registration = isFcmRegistration(existing)
     ? existing
-    : await navigator.serviceWorker.register(FCM_SW_URL, { scope: FCM_SW_SCOPE });
+    : await navigator.serviceWorker.register(FCM_SW_URL, {
+        scope: FCM_SW_SCOPE,
+        // Without this the browser may serve this script from its HTTP cache for up to 24 hours, so
+        // a fix shipped to the worker does not reach the device.
+        updateViaCache: 'none',
+      });
+
+  // Ask for a newer worker on every launch, not only after a subscribe has already failed — it is
+  // the only thing that gets a worker change onto a device content with the copy it has.
+  try {
+    void registration.update();
+  } catch {
+    /* offline, or nothing new to fetch */
+  }
 
   await waitForActivation(registration);
   return registration;
@@ -200,13 +215,22 @@ export async function registerFamilyDevice(): Promise<FamilyPushResult> {
     return { ok: false, message: i18n.t('errors.permissionNotGranted') };
   }
 
+  // Which step failed is the diagnosis: the browser throws the same opaque string whether the
+  // worker never activated or the subscribe itself was refused.
+  let stage: 'service-worker' | 'token' | 'resubscribe' | 'server' = 'service-worker';
+  let firstTokenError: string | null = null;
+  let registration: ServiceWorkerRegistration | null = null;
+
   try {
-    const registration = await getFcmServiceWorkerRegistration();
+    registration = await getFcmServiceWorkerRegistration();
 
     let token: string;
+    stage = 'token';
     try {
       token = await getToken(instance, { vapidKey: vapidKey!, serviceWorkerRegistration: registration });
-    } catch {
+    } catch (error) {
+      firstTokenError = describeError(error);
+      stage = 'resubscribe';
       token = await resubscribe(instance, registration);
     }
 
@@ -214,6 +238,7 @@ export async function registerFamilyDevice(): Promise<FamilyPushResult> {
       return { ok: false, message: i18n.t('errors.noDeviceToken') };
     }
 
+    stage = 'server';
     await registerTokenOnServer(token);
     try {
       localStorage.setItem('anuva-family-fcm-token', token);
@@ -225,7 +250,17 @@ export async function registerFamilyDevice(): Promise<FamilyPushResult> {
   } catch (error) {
     // Browser subscribe failures ("push service initialization failed") are untranslated and not
     // actionable for a family member; the server's own message is. The original goes to the console.
-    console.warn('[push] registration failed', error);
+    const detail = {
+      stage,
+      error: describeError(error),
+      firstTokenError,
+      swScope: registration?.scope ?? null,
+      swScript: registration?.active?.scriptURL ?? null,
+      permission: Notification.permission,
+      indexedDb: (await probeIndexedDb()).outcome,
+    };
+    console.warn('[push] registration failed', detail, error);
+    Sentry.captureMessage('push registration failed', { level: 'warning', extra: detail });
     return {
       ok: false,
       message: error instanceof ApiError ? error.message : i18n.t('errors.notificationsFailed'),

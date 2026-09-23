@@ -9,10 +9,12 @@ import { ApiError } from '../shared/lib/api';
 import i18n from '../i18n';
 import {
   deleteFirebaseDatabases,
+  describeError,
   describePushSupport,
   isQuotaFailure,
   isStorageCorruption,
   missingPushCapabilities,
+  probeIndexedDb,
   purgeRebuildableCaches,
   waitForIndexedDb,
 } from './notifications/pushSupport';
@@ -113,8 +115,23 @@ async function getFcmServiceWorkerRegistration(): Promise<ServiceWorkerRegistrat
   const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
   const registration = isFcmRegistration(existing)
     ? existing
-    : await navigator.serviceWorker.register(FCM_SW_URL, { scope: FCM_SW_SCOPE });
+    : await navigator.serviceWorker.register(FCM_SW_URL, {
+        scope: FCM_SW_SCOPE,
+        // Without this the browser may serve this script from its HTTP cache for up to 24 hours, so
+        // a fix shipped to the worker does not reach the device. That is how a deployed
+        // notification-click fix kept behaving like the old one on an installed iOS app.
+        updateViaCache: 'none',
+      });
 
+
+  // Ask for a newer worker on every launch, not only after a subscribe has already failed. The
+  // check is cheap, and it is the only thing that gets a worker change onto a device that is
+  // otherwise content with the copy it has.
+  try {
+    void registration.update();
+  } catch {
+    /* offline, or nothing new to fetch */
+  }
   await waitForActivation(registration);
 
   return registration;
@@ -270,6 +287,13 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
     };
   }
 
+  // Which step failed is the whole diagnosis when a subscribe goes wrong, and it is not knowable
+  // from the message the browser throws — "push service initialization failed" is the same string
+  // whether the worker never activated or the VAPID key was refused.
+  let stage: 'messaging' | 'service-worker' | 'token' | 'resubscribe' | 'server' = 'messaging';
+  let firstTokenError: string | null = null;
+  let registration: ServiceWorkerRegistration | null = null;
+
   try {
     const messagingInstance = await getFirebaseMessaging();
     if (!messagingInstance) {
@@ -280,15 +304,20 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
       };
     }
 
-    const registration = await getFcmServiceWorkerRegistration();
+    stage = 'service-worker';
+    registration = await getFcmServiceWorkerRegistration();
 
     let token: string;
+    stage = 'token';
     try {
       token = await getToken(messagingInstance, {
         vapidKey: vapidKey!,
         serviceWorkerRegistration: registration,
       });
-    } catch {
+    } catch (error) {
+      // The first failure is often the informative one; the retry hides it behind its own.
+      firstTokenError = describeError(error);
+      stage = 'resubscribe';
       token = await resubscribe(messagingInstance, registration);
     }
 
@@ -300,6 +329,7 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
       };
     }
 
+    stage = 'server';
     await saveFcmTokenToServer(token);
 
     try {
@@ -313,7 +343,19 @@ export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
     // A browser/Firebase subscribe failure reads like "push service initialization failed" — true,
     // untranslated, and not something she can act on. The server's own errors still speak for
     // themselves. Either way the original is kept for the console and Sentry.
-    console.warn('[push] registration failed', error);
+    const detail = {
+      stage,
+      error: describeError(error),
+      firstTokenError,
+      swScope: registration?.scope ?? null,
+      swScript: registration?.active?.scriptURL ?? null,
+      permission: Notification.permission,
+      indexedDb: (await probeIndexedDb()).outcome,
+    };
+    console.warn('[push] registration failed', detail, error);
+    // Previously console-only, which left the commonest failure — tapping Allow and getting
+    // nowhere — with no trace anywhere it could be read from a phone.
+    Sentry.captureMessage('push registration failed', { level: 'warning', extra: detail });
     return {
       ok: false,
       reason: 'server_error',

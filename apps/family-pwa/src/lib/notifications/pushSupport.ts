@@ -138,6 +138,12 @@ export async function waitForIndexedDb(
   return { ...result, attempts: delaysMs.length };
 }
 
+/** `name: message` for anything thrown — DOMExceptions, Errors, and whatever else turns up. */
+export function describeError(error: unknown): string {
+  if (error instanceof DOMException || error instanceof Error) return `${error.name}: ${error.message}`;
+  return String(error ?? 'unknown');
+}
+
 /** WebKit's wording when the database file itself is unreadable — not a quota problem. */
 export function isStorageCorruption(error?: string): boolean {
   return Boolean(error && /UnknownError|InvalidStateError/.test(error));
