@@ -6,6 +6,7 @@ import { ApiError, apiFetch } from '../shared/lib/api';
 import i18n from '../i18n';
 import { getOrCreateDeviceId } from './notifications/deviceId';
 import { requestNotificationPermission } from './notifications/notificationPrompt';
+import { fetchPushConfig, subscribeToWebPush, webPushSupported } from './notifications/webPush';
 import {
   describeError,
   describePushSupport,
@@ -205,7 +206,46 @@ async function resubscribe(
   throw lastError;
 }
 
+/** The Web Push path: the browser's own subscription, no Firebase SDK and no IndexedDB. */
+async function registerFamilyWebPush(vapidPublicKey: string): Promise<FamilyPushResult> {
+  if (!webPushSupported()) {
+    return { ok: false, message: i18n.t('errors.pushUnavailable') };
+  }
+  if (Notification.permission !== 'granted') {
+    return { ok: false, message: i18n.t('errors.permissionNotGranted') };
+  }
+
+  try {
+    const registration = await getFcmServiceWorkerRegistration();
+    const subscription = await subscribeToWebPush(
+      registration,
+      vapidPublicKey,
+      '/api/family/push/web/register',
+    );
+    try {
+      localStorage.setItem('anuva-family-fcm-token', subscription.endpoint);
+    } catch {
+      /* ignore */
+    }
+    return { ok: true };
+  } catch (error) {
+    const detail = { transport: 'webpush', error: describeError(error), permission: Notification.permission };
+    console.warn('[push] web push subscribe failed', detail, error);
+    Sentry.captureMessage('push registration failed', { level: 'warning', extra: detail });
+    return {
+      ok: false,
+      message: error instanceof ApiError ? error.message : i18n.t('errors.notificationsFailed'),
+    };
+  }
+}
+
 export async function registerFamilyDevice(): Promise<FamilyPushResult> {
+  // Which transport this deployment uses; asked once per app start.
+  const pushConfig = await fetchPushConfig().catch(() => null);
+  if (pushConfig?.provider !== 'fcm' && pushConfig?.vapidPublicKey) {
+    return registerFamilyWebPush(pushConfig.vapidPublicKey);
+  }
+
   const instance = await getFirebaseMessaging();
   if (!instance) {
     return { ok: false, message: i18n.t('errors.pushUnavailable') };

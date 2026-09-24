@@ -7,6 +7,7 @@ import { toSyncErrorMessage } from './notifications/fcmSync';
 import { requestNotificationPermission } from './notifications/notificationPrompt';
 import { ApiError } from '../shared/lib/api';
 import i18n from '../i18n';
+import { fetchPushConfig, subscribeToWebPush, webPushSupported } from './notifications/webPush';
 import {
   deleteFirebaseDatabases,
   describeError,
@@ -215,7 +216,56 @@ export async function saveFcmTokenToServer(fcmToken: string): Promise<void> {
   });
 }
 
+/**
+ * The Web Push path: the browser's own subscription, no Firebase SDK and no IndexedDB.
+ *
+ * Chosen by the API (`GET /push/config`), so a deployment can switch transports without releasing
+ * the apps. Failures here are reported the same way the Firebase path reports its own, because to
+ * the person waiting they are the same thing: notifications did not turn on.
+ */
+async function registerWebPushSubscription(vapidPublicKey: string): Promise<FcmSyncResult> {
+  if (!webPushSupported()) {
+    const detail = await describePushSupport();
+    console.warn('[push] browser cannot subscribe', detail);
+    Sentry.captureMessage('push unsupported', { level: 'warning', extra: detail });
+    return { ok: false, reason: 'unsupported', message: i18n.t('errors.pushUnsupported') };
+  }
+
+  if (Notification.permission !== 'granted') {
+    return { ok: false, reason: 'not_granted', message: i18n.t('errors.permissionNotGranted') };
+  }
+
+  try {
+    const registration = await getFcmServiceWorkerRegistration();
+    const subscription = await subscribeToWebPush(registration, vapidPublicKey, '/api/push/web/register');
+    try {
+      // Kept for the same reason the FCM token is: it tells a later visit that this device is
+      // already registered, without asking the server.
+      localStorage.setItem('anuva-fcm-token', subscription.endpoint);
+    } catch {
+      /* ignore */
+    }
+    return { ok: true, token: subscription.endpoint };
+  } catch (error) {
+    const detail = { transport: 'webpush', error: describeError(error), permission: Notification.permission };
+    console.warn('[push] web push subscribe failed', detail, error);
+    Sentry.captureMessage('push registration failed', { level: 'warning', extra: detail });
+    return {
+      ok: false,
+      reason: error instanceof ApiError ? 'server_error' : 'unknown',
+      message:
+        error instanceof ApiError ? toSyncErrorMessage(error) : i18n.t('errors.deviceRegisterFailed'),
+    };
+  }
+}
+
 export async function obtainAndRegisterFcmToken(): Promise<FcmSyncResult> {
+  // Which transport is this deployment's business, not this device's. Asked once per app start.
+  const pushConfig = await fetchPushConfig().catch(() => null);
+  if (pushConfig?.provider !== 'fcm' && pushConfig?.vapidPublicKey) {
+    return registerWebPushSubscription(pushConfig.vapidPublicKey);
+  }
+
   if (!isFirebaseConfigured()) {
     return {
       ok: false,

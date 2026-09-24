@@ -2,7 +2,7 @@ import { copy, fill, withLanguage } from '../i18n/index.js';
 import { languageForUser } from '../i18n/recipients.js';
 import { prisma } from '@anuva/database';
 import type { FamilySupportActionKind } from '@anuva/shared';
-import { sendPushToAllTokens } from '../fcm.js';
+import { sendToAudience } from '../push/dispatch.js';
 import { dayKey } from '../dayKey.js';
 import { FAMILY_TEXT } from './content.js';
 import { attributeSupportAction } from './nudgeLog.js';
@@ -66,12 +66,6 @@ async function deliverGift(input: {
   memberName: string;
   kind: FamilyGiftKind;
 }): Promise<boolean> {
-  const rows = await prisma.fcmToken.findMany({
-    where: { userId: input.userId, status: 'ACTIVE' },
-    select: { token: true },
-  });
-  const tokens = [...new Set(rows.map((row) => row.token))];
-  if (tokens.length === 0) return false;
 
   const first = firstNameOf(input.memberName);
   const deepLink = `/home#familyGift=${input.kind}&familyFrom=${encodeURIComponent(first)}`;
@@ -82,11 +76,11 @@ async function deliverGift(input: {
     body: GIFT_PUSH[input.kind].body,
   }));
 
-  const { successCount } = await sendPushToAllTokens(
-    tokens,
-    notification,
-    { url: deepLink, familyGift: input.kind, familyFrom: first },
-  );
+  const { successCount } = await sendToAudience({ kind: 'user', userId: input.userId }, notification, {
+    url: deepLink,
+    familyGift: input.kind,
+    familyFrom: first,
+  });
 
   return successCount > 0;
 }

@@ -1,6 +1,6 @@
 import { prisma } from '@anuva/database';
 import type { DoctorNotificationType } from '@anuva/shared';
-import { sendPushToAllTokens } from './fcm.js';
+import { sendToAudience } from './push/dispatch.js';
 import { logger } from './logger.js';
 
 const log = logger.child({ module: 'doctor-notifications' });
@@ -42,18 +42,8 @@ export async function createDoctorNotification(input: DoctorNotificationInput): 
   }
 
   try {
-    const rows: Array<{ token: string }> = await prisma.specialistFcmToken.findMany({
-      where: { specialistId: input.specialistId, status: 'ACTIVE' },
-      select: { token: true },
-    });
-    const tokens: string[] = [...new Set(rows.map((row) => row.token))];
-
-    if (tokens.length === 0) {
-      return;
-    }
-
-    await sendPushToAllTokens(
-      tokens,
+    const result = await sendToAudience(
+      { kind: 'specialist', specialistId: input.specialistId },
       { title: input.title, body: input.body },
       {
         url: input.url ?? '/notifications',
@@ -63,7 +53,10 @@ export async function createDoctorNotification(input: DoctorNotificationInput): 
       },
     );
 
-    log.info({ specialistId: input.specialistId, tokens: tokens.length, type: input.type }, 'Doctor push sent');
+    log.info(
+      { specialistId: input.specialistId, delivered: result.successCount, type: input.type },
+      'Doctor push sent',
+    );
   } catch (error) {
     log.error(
       { err: error, specialistId: input.specialistId, type: input.type },

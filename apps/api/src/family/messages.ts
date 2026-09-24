@@ -2,7 +2,7 @@ import { copy, fill, withLanguage } from '../i18n/index.js';
 import { languageForUser } from '../i18n/recipients.js';
 import { prisma } from '@anuva/database';
 import type { FamilyMessageResponse } from '@anuva/shared';
-import { sendPushToAllTokens } from '../fcm.js';
+import { countDevices, sendToAudience } from '../push/dispatch.js';
 import { dayKey } from '../dayKey.js';
 import { FamilyError } from './errors.js';
 import { attributeSupportAction } from './nudgeLog.js';
@@ -57,11 +57,7 @@ export async function sendFamilyMessage(input: {
     );
   }
 
-  const rows = await prisma.fcmToken.findMany({
-    where: { userId: input.userId, status: 'ACTIVE' },
-    select: { token: true },
-  });
-  const tokens = [...new Set(rows.map((row) => row.token))];
+  const deviceCount = await countDevices({ kind: 'user', userId: input.userId });
 
   const first = firstNameOf(input.memberName);
 
@@ -89,7 +85,7 @@ export async function sendFamilyMessage(input: {
   // count — which is why this sits outside the first-tap check the gift kinds need.
   await attributeSupportAction({ familyMemberId: input.familyMemberId, kind: 'message' });
 
-  if (tokens.length === 0) {
+  if (deviceCount === 0) {
     return {
       delivered: false,
       toast: MESSAGE_TEXT.noDevice,
@@ -104,8 +100,8 @@ export async function sendFamilyMessage(input: {
     fill(MESSAGE_TEXT.pushTitle, { name: first }),
   );
 
-  const { successCount } = await sendPushToAllTokens(
-    tokens,
+  const { successCount } = await sendToAudience(
+    { kind: 'user', userId: input.userId },
     { title, body: input.text },
     { url: deepLink, familyMessage: input.text, familyFrom: first },
   );

@@ -8,7 +8,7 @@ import { withLanguage } from '../i18n/index.js';
 import cron from 'node-cron';
 import { prisma } from '@anuva/database';
 import type { NudgeSlot } from '@anuva/shared';
-import { sendPushToAllTokens } from '../fcm.js';
+import { sendToAudience } from '../push/dispatch.js';
 import { logger } from '../logger.js';
 import { buildDispatch, recordSend, recordSuppression } from './engine.js';
 
@@ -61,8 +61,8 @@ export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<D
         log.debug({ slot, userId: u.id, nudgeId, reason }, 'Nudge suppressed');
         continue;
       }
-      await sendPushToAllTokens(
-        u.fcmTokens.map((t: { token: string }) => t.token),
+      await sendToAudience(
+        { kind: 'user', userId: u.id },
         { title: dispatch.bundleTitle, body: dispatch.cards[0]!.question },
         { url: `/home?nudge=${slot}`, slot },
       );

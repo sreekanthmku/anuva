@@ -1,5 +1,5 @@
 import { prisma } from '@anuva/database';
-import { sendPushToAllTokens } from './fcm.js';
+import { sendToAudience } from './push/dispatch.js';
 import { copy, fill, withLanguage } from './i18n/index.js';
 import { languageForUser } from './i18n/recipients.js';
 import { logger } from './logger.js';
@@ -24,16 +24,6 @@ export async function notifyAskerQuestionAnswered(
   userId: string,
   doctorName: string,
 ): Promise<void> {
-  const rows: Array<{ token: string }> = await prisma.fcmToken.findMany({
-    where: { userId, status: 'ACTIVE' },
-    select: { token: true },
-  });
-  const tokens: string[] = [...new Set(rows.map((row) => row.token))];
-
-  if (tokens.length === 0) {
-    return;
-  }
-
   // Built in the asker's language: this runs inside the answering doctor's (or admin's) request.
   const notification = withLanguage(await languageForUser(userId), () => ({
     title: QA_PUSH.title,
@@ -41,18 +31,14 @@ export async function notifyAskerQuestionAnswered(
   }));
 
   try {
-    await sendPushToAllTokens(
-      tokens,
-      notification,
-      {
-        url: '/qa',
-        type: 'anonymous-qa-answer',
-      },
-    );
-    log.info({ userId, tokens: tokens.length, type: 'anonymous-qa-answer' }, 'Push sent');
+    const result = await sendToAudience({ kind: 'user', userId }, notification, {
+      url: '/qa',
+      type: 'anonymous-qa-answer',
+    });
+    log.info({ userId, delivered: result.successCount, type: 'anonymous-qa-answer' }, 'Push sent');
   } catch (error) {
     log.error(
-      { err: error, userId, tokens: tokens.length },
+      { err: error, userId },
       'Unable to send anonymous Q&A push notification',
     );
   }

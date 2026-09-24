@@ -18,6 +18,20 @@ export {
   type RegisterFcmResponse,
   type UnregisterFcmBody,
   type UnregisterFcmResponse,
+  pushConfigResponseSchema,
+  pushProviderSchema,
+  registerWebPushBodySchema,
+  registerWebPushResponseSchema,
+  unregisterWebPushBodySchema,
+  unregisterWebPushResponseSchema,
+  webPushSubscriptionSchema,
+  type PushConfigResponse,
+  type PushProviderName,
+  type RegisterWebPushBody,
+  type RegisterWebPushResponse,
+  type UnregisterWebPushBody,
+  type UnregisterWebPushResponse,
+  type WebPushSubscriptionInput,
 } from './push.js';
 
 export {

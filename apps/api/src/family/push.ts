@@ -1,7 +1,7 @@
 import { withLanguage } from '../i18n/index.js';
 import { prisma } from '@anuva/database';
 import type { FcmPlatform } from '@anuva/shared';
-import { sendPushToAllTokens } from '../fcm.js';
+import { sendToAudience } from '../push/dispatch.js';
 import { languageForFamilyMember } from '../i18n/recipients.js';
 
 /**
@@ -55,6 +55,59 @@ export async function unregisterFamilyToken(input: {
 }
 
 /**
+ * A browser push subscription for a family member.
+ *
+ * Keyed on the endpoint for the same reason tokens are keyed on the token: a shared family tablet
+ * that re-subscribes must move to whoever is signed in now, not notify the previous member.
+ */
+export async function registerFamilyWebPush(input: {
+  familyMemberId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  platform: FcmPlatform;
+  deviceId?: string;
+}): Promise<void> {
+  await prisma.familyWebPushSubscription.upsert({
+    where: { endpoint: input.endpoint },
+    create: {
+      familyMemberId: input.familyMemberId,
+      endpoint: input.endpoint,
+      p256dh: input.p256dh,
+      auth: input.auth,
+      platform: input.platform,
+      deviceId: input.deviceId,
+      status: 'ACTIVE',
+    },
+    update: {
+      familyMemberId: input.familyMemberId,
+      p256dh: input.p256dh,
+      auth: input.auth,
+      platform: input.platform,
+      deviceId: input.deviceId,
+      status: 'ACTIVE',
+    },
+  });
+}
+
+/** Deleted, not deactivated: an unsubscribed endpoint can never deliver again. */
+export async function unregisterFamilyWebPush(input: {
+  familyMemberId: string;
+  endpoint?: string;
+  deviceId?: string;
+}): Promise<void> {
+  if (!input.endpoint && !input.deviceId) return;
+
+  await prisma.familyWebPushSubscription.deleteMany({
+    where: {
+      familyMemberId: input.familyMemberId,
+      ...(input.endpoint ? { endpoint: input.endpoint } : {}),
+      ...(input.deviceId ? { deviceId: input.deviceId } : {}),
+    },
+  });
+}
+
+/**
  * `data` may be derived from the finished notification, for a deep link that must carry the same
  * words the lock screen shows — already in the recipient's language, with no second copy of the
  * text to drift from the first.
@@ -64,18 +117,7 @@ export async function sendToFamilyMember(
   notification: FamilyNotification | (() => FamilyNotification),
   data: Record<string, string> | ((content: FamilyNotification) => Record<string, string>),
 ): Promise<number> {
-  const [rows, language] = await Promise.all([
-    prisma.familyFcmToken.findMany({
-      where: { familyMemberId, status: 'ACTIVE' },
-      select: { token: true },
-    }),
-    languageForFamilyMember(familyMemberId),
-  ]);
-
-  const tokens = [...new Set(rows.map((row) => row.token))];
-  if (tokens.length === 0) {
-    return 0;
-  }
+  const language = await languageForFamilyMember(familyMemberId);
 
   // Built in the *recipient's* language, not the request's. The request that triggers a push is
   // often someone else's — her thank-you reaching him — and a job has no request at all. A member
@@ -85,7 +127,8 @@ export async function sendToFamilyMember(
   );
 
   const payload = typeof data === 'function' ? data(content) : data;
-  const { successCount } = await sendPushToAllTokens(tokens, content, payload);
+  // Which transport carries it is `PUSH_PROVIDER`'s business, not this module's.
+  const { successCount } = await sendToAudience({ kind: 'familyMember', familyMemberId }, content, payload);
   return successCount;
 }
 

@@ -1,6 +1,7 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getMessaging, getToken, isSupported, onMessage, type Messaging } from 'firebase/messaging';
 import { apiFetch } from './api';
+import { fetchPushConfig, subscribeToWebPush, webPushSupported } from './webPush';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
@@ -136,7 +137,55 @@ async function clearStaleSubscriptions(fcmRegistration: ServiceWorkerRegistratio
   );
 }
 
+/**
+ * The Web Push path: the browser's own subscription, with no Firebase SDK and no IndexedDB behind
+ * it. Which transport this deployment uses comes from the API, so it can change without a release.
+ */
+async function registerWebPushDevice(vapidPublicKey: string): Promise<PushResult> {
+  if (!webPushSupported()) {
+    return {
+      ok: false,
+      reason: 'unsupported',
+      message: 'This browser does not support push notifications.',
+    };
+  }
+
+  if (Notification.permission !== 'granted') {
+    return { ok: false, reason: 'not_granted', message: 'Notification permission is not granted.' };
+  }
+
+  try {
+    const registration = await getFcmRegistration();
+    const subscription = await subscribeToWebPush(
+      registration,
+      vapidPublicKey,
+      '/api/doctor/push/web/register',
+      getDeviceId(),
+    );
+
+    try {
+      localStorage.setItem(TOKEN_KEY, subscription.endpoint);
+    } catch {
+      /* ignore */
+    }
+
+    return { ok: true, token: subscription.endpoint };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: 'server_error',
+      message: error instanceof Error ? error.message : 'Could not save this device.',
+    };
+  }
+}
+
 async function obtainAndRegisterToken(): Promise<PushResult> {
+  // The API decides the transport; this device just follows it.
+  const pushConfig = await fetchPushConfig().catch(() => null);
+  if (pushConfig?.provider !== 'fcm' && pushConfig?.vapidPublicKey) {
+    return registerWebPushDevice(pushConfig.vapidPublicKey);
+  }
+
   if (!isPushConfigured()) {
     return {
       ok: false,
@@ -237,10 +286,25 @@ export async function disableDoctorPush(): Promise<void> {
     }
   })();
 
-  await apiFetch('/api/doctor/push/unregister', {
-    method: 'POST',
-    body: JSON.stringify({ ...(token ? { fcmToken: token } : {}), deviceId: getDeviceId() }),
-  }).catch(() => undefined);
+  // A stored value starting with https:// is a Web Push endpoint, not an FCM token. Both routes are
+  // called because a device that has switched transports may still be registered under the old one.
+  const isEndpoint = Boolean(token?.startsWith('https://'));
+  await Promise.all([
+    apiFetch('/api/doctor/push/unregister', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...(token && !isEndpoint ? { fcmToken: token } : {}),
+        deviceId: getDeviceId(),
+      }),
+    }).catch(() => undefined),
+    apiFetch('/api/doctor/push/web/unregister', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...(token && isEndpoint ? { endpoint: token } : {}),
+        deviceId: getDeviceId(),
+      }),
+    }).catch(() => undefined),
+  ]);
 
   try {
     localStorage.removeItem(TOKEN_KEY);
@@ -262,9 +326,11 @@ export function hasRegisteredDevice(): boolean {
  * server has not seen since is a device that silently stops receiving anything.
  */
 export async function syncDoctorPushIfGranted(): Promise<PushResult | null> {
-  if (!isPushConfigured() || pushPermission() !== 'granted') {
-    return null;
-  }
+  if (pushPermission() !== 'granted') return null;
+  // Firebase config only matters to the Firebase path; a Web Push deployment has none.
+  const pushConfig = await fetchPushConfig().catch(() => null);
+  const webPush = pushConfig?.provider !== 'fcm' && pushConfig?.vapidPublicKey;
+  if (!webPush && !isPushConfigured()) return null;
 
   return obtainAndRegisterToken();
 }

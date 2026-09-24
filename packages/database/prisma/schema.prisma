@@ -47,6 +47,7 @@ model User {
   questions         AnonymousQuestion[]
   chatThreads       ChatThread[]
   fcmTokens         FcmToken[]
+  webPushSubscriptions WebPushSubscription[]
   cycleSettings      CycleSettings?
   periodLogs         PeriodLog[]
   periodFlowLogs     PeriodFlowLog[]
@@ -355,6 +356,7 @@ model FamilyMember {
   sessions       FamilySession[]
   supportActions FamilySupportAction[]
   fcmTokens      FamilyFcmToken[]
+  webPushSubscriptions FamilyWebPushSubscription[]
   nudgeLogs      FamilyNudgeLog[]
 
   @@index([userId, status])
@@ -818,6 +820,7 @@ model Specialist {
   expertAnswers  ExpertAnswer[]
   uploadedDocs   ConsultationDocument[]
   fcmTokens      SpecialistFcmToken[]
+  webPushSubscriptions SpecialistWebPushSubscription[]
   notifications  DoctorNotification[]
 }
 
@@ -1735,4 +1738,72 @@ model Translation {
   @@unique([language, key])
   @@index([language])
   @@index([updatedAt])
+}
+
+// ─────────────────────────────────────────────
+// Web Push subscriptions
+// ─────────────────────────────────────────────
+
+/// Why these exist alongside the FCM tokens.
+///
+/// A browser push subscription, obtained from `pushManager.subscribe()` and delivered to with the
+/// standard Web Push protocol — no Firebase SDK on the device. That matters on iOS: the Firebase
+/// JS SDK keeps its token in IndexedDB and reports "push is not supported" when that database
+/// cannot be opened, which is a live WebKit fault (an installed app stopped being able to register
+/// at all). A subscription needs no database, so it survives that.
+///
+/// `PUSH_PROVIDER` decides which transport is used; both sets of rows can exist at once during a
+/// migration, deduplicated by `deviceId` so nobody is notified twice.
+///
+/// `endpoint` is the push service URL and is the identity of the subscription — unique, and the
+/// thing a 404/410 from that service tells us to delete. `p256dh` and `auth` are the keys the
+/// payload is encrypted with; they are useless without the endpoint and cannot read anything.
+model WebPushSubscription {
+  id        String               @id @default(cuid())
+  userId    String
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String               @unique
+  p256dh    String
+  auth      String
+  platform  FcmPlatform
+  status    FcmTokenStatus       @default(ACTIVE)
+  deviceId  String?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@index([userId, status])
+}
+
+/// The family app's half. A member's subscriptions go with them when they are revoked.
+model FamilyWebPushSubscription {
+  id             String         @id @default(cuid())
+  familyMemberId String
+  member         FamilyMember   @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+  endpoint       String         @unique
+  p256dh         String
+  auth           String
+  platform       FcmPlatform
+  status         FcmTokenStatus @default(ACTIVE)
+  deviceId       String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([familyMemberId, status])
+}
+
+/// The doctor portal's half.
+model SpecialistWebPushSubscription {
+  id           String         @id @default(cuid())
+  specialistId String
+  specialist   Specialist     @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  endpoint     String         @unique
+  p256dh       String
+  auth         String
+  platform     FcmPlatform
+  status       FcmTokenStatus @default(ACTIVE)
+  deviceId     String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([specialistId, status])
 }

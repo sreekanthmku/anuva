@@ -4,6 +4,40 @@ importScripts('https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging-comp
 importScripts('/firebase-config.js');
 
 /**
+ * Push delivered over the standard Web Push protocol — our own payload, no Firebase involved.
+ *
+ * Firebase's handler covers its own messages when that transport is in use; this covers ours, and
+ * the `anuva` marker keeps the two apart so a deployment running both cannot show one notification
+ * twice. iOS revokes a site's permission for a push that displays nothing, so anything of ours
+ * still shows something rather than returning silently.
+ */
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  let payload = null;
+  try {
+    payload = event.data.json();
+  } catch (e) {
+    payload = null;
+  }
+
+  // Not ours: Firebase's own handler will display it, or it is not something we can render.
+  if (!payload || payload.anuva !== 1) return;
+
+  const notification = payload.notification || {};
+  const data = payload.data || {};
+
+  event.waitUntil(
+    self.registration.showNotification(notification.title || 'Anuva', {
+      body: notification.body || '',
+      icon: notification.icon || '/pwa-192.png',
+      badge: notification.badge || '/pwa-192.png',
+      data,
+    }),
+  );
+});
+
+/**
  * Take over as soon as a new version of this worker is deployed.
  *
  * Without this, an updated worker sits in `waiting` until every window of the app is closed, so the

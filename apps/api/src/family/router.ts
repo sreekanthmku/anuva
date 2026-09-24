@@ -71,6 +71,10 @@ import {
   familyStatusResponseSchema,
   markFamilyInviteSharedBodySchema,
   registerFcmBodySchema,
+  registerWebPushBodySchema,
+  registerWebPushResponseSchema,
+  unregisterWebPushBodySchema,
+  unregisterWebPushResponseSchema,
   registerFcmResponseSchema,
   unregisterFcmBodySchema,
   unregisterFcmResponseSchema,
@@ -95,7 +99,12 @@ import { familyMeBody, previewInvite, requestJoinOtp, verifyJoinOtp, type OtpDep
 import { sendFamilyMessage } from './messages.js';
 import { sendFamilyThanks } from './thanks.js';
 import { requestSignInOtp, verifySignInOtp } from './signin.js';
-import { registerFamilyToken, unregisterFamilyToken } from './push.js';
+import {
+  registerFamilyToken,
+  registerFamilyWebPush,
+  unregisterFamilyToken,
+  unregisterFamilyWebPush,
+} from './push.js';
 import { rateLimit } from './rateLimit.js';
 import {
   confirmPendingAction,
@@ -507,6 +516,41 @@ export function createFamilyRouter({
         deviceId: body.deviceId,
       });
       res.json(unregisterFcmResponseSchema.parse({ ok: true }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/push/web/register', async (req, res, next) => {
+    try {
+      noStore(res);
+      const identity = await requireFamilyMember(req);
+      const body = registerWebPushBodySchema.parse(req.body);
+      await registerFamilyWebPush({
+        familyMemberId: identity.memberId,
+        endpoint: body.subscription.endpoint,
+        p256dh: body.subscription.keys.p256dh,
+        auth: body.subscription.keys.auth,
+        platform: body.platform,
+        deviceId: body.deviceId,
+      });
+      res.json(registerWebPushResponseSchema.parse({ ok: true }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.post('/push/web/unregister', async (req, res, next) => {
+    try {
+      noStore(res);
+      const identity = await requireFamilyMember(req);
+      const body = unregisterWebPushBodySchema.parse(req.body);
+      await unregisterFamilyWebPush({
+        familyMemberId: identity.memberId,
+        endpoint: body.endpoint,
+        deviceId: body.deviceId,
+      });
+      res.json(unregisterWebPushResponseSchema.parse({ ok: true }));
     } catch (e) {
       next(e);
     }

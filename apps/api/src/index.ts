@@ -33,6 +33,7 @@ import {
 } from './i18n/index.js';
 import { languageForUser } from './i18n/recipients.js';
 import { startTranslationOverrides } from './i18n/store.js';
+import { clientPushConfig, webPushMisconfigured } from './push/config.js';
 import { PATIENT_PUSH, PATIENT_TEXT } from './patientCopy.js';
 import type { NextFunction, Request, Response } from 'express';
 import { MulterError } from 'multer';
@@ -82,7 +83,12 @@ import {
   rescheduleConsultationBodySchema,
   rescheduleConsultationResponseSchema,
   logoutResponseSchema,
+  pushConfigResponseSchema,
   registerFcmBodySchema,
+  registerWebPushBodySchema,
+  registerWebPushResponseSchema,
+  unregisterWebPushBodySchema,
+  unregisterWebPushResponseSchema,
   registerFcmResponseSchema,
   requestOtpBodySchema,
   pushBroadcastResponseSchema,
@@ -192,6 +198,7 @@ import {
   writeConsultationDocument,
 } from './consultationDocuments.js';
 import { sendPushToAllTokens } from './fcm.js';
+import { sendToAudience } from './push/dispatch.js';
 import {
   notifyDoctorConsultationBooked,
   notifyDoctorConsultationCancelled,
@@ -1700,24 +1707,9 @@ async function reconcileCallRecordings(roomName: string): Promise<void> {
 }
 
 async function notifyPatientCallStarted(consultationId: string, patientId: string, doctorName: string) {
-  const rows: Array<{ token: string }> = await prisma.fcmToken.findMany({
-    where: {
-      userId: patientId,
-      status: 'ACTIVE',
-    },
-    select: {
-      token: true,
-    },
-  });
-  const tokens: string[] = [...new Set(rows.map((row) => row.token))];
-
-  if (tokens.length === 0) {
-    return;
-  }
-
   try {
-    await sendPushToAllTokens(
-      tokens,
+    const result = await sendToAudience(
+      { kind: 'user', userId: patientId },
       // Her language, not the doctor's — the doctor's request is what triggers this.
       withLanguage(await languageForUser(patientId), () => ({
         title: PATIENT_PUSH.callReady.title,
@@ -1730,12 +1722,12 @@ async function notifyPatientCallStarted(consultationId: string, patientId: strin
       },
     );
     logger.info(
-      { consultationId, userId: patientId, tokens: tokens.length, type: 'consultation-call' },
+      { consultationId, userId: patientId, delivered: result.successCount, type: 'consultation-call' },
       'Push sent',
     );
   } catch (error) {
     logger.error(
-      { err: error, consultationId, userId: patientId, tokens: tokens.length },
+      { err: error, consultationId, userId: patientId },
       'Unable to send consultation call push notification',
     );
   }
@@ -2258,16 +2250,6 @@ async function notifyPatientDocumentShared(args: {
   doctorName: string;
   kind: 'prescription' | 'diet_plan' | 'care_plan' | 'suggestion';
 }) {
-  const rows: Array<{ token: string }> = await prisma.fcmToken.findMany({
-    where: { userId: args.patientId, status: 'ACTIVE' },
-    select: { token: true },
-  });
-  const tokens: string[] = [...new Set(rows.map((row) => row.token))];
-
-  if (tokens.length === 0) {
-    return;
-  }
-
   // Warm, plain-language copy: this lands on a phone right after a consultation, so it says what
   // arrived and who sent it without sounding like a system alert.
   // In her language — this is sent from the doctor's request, not hers. See PATIENT_PUSH.
@@ -2277,8 +2259,8 @@ async function notifyPatientDocumentShared(args: {
   }));
 
   try {
-    await sendPushToAllTokens(
-      tokens,
+    const result = await sendToAudience(
+      { kind: 'user', userId: args.patientId },
       copy,
       {
         url: '/my-bookings',
@@ -2290,7 +2272,7 @@ async function notifyPatientDocumentShared(args: {
       {
         consultationId: args.consultationId,
         userId: args.patientId,
-        tokens: tokens.length,
+        delivered: result.successCount,
         type: 'consultation-document',
       },
       'Push sent',
@@ -3875,6 +3857,134 @@ app.post('/unregister-fcm', async (req, res, next) => {
     });
 
     res.json(unregisterFcmResponseSchema.parse({ ok: true }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Which push transport to use, and the key to subscribe with.
+ *
+ * Public and unauthenticated on purpose: a browser needs this before it has done anything, and it
+ * reveals nothing — the VAPID public key is meant for clients, and the provider name is not a
+ * secret. Served by the API rather than compiled into the apps so the transport can be switched
+ * without releasing them.
+ */
+app.get('/push/config', (_req, res) => {
+  res.json(pushConfigResponseSchema.parse(clientPushConfig()));
+});
+
+app.post('/push/web/register', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const parsed = registerWebPushBodySchema.parse(req.body);
+    const { endpoint, keys } = parsed.subscription;
+
+    // Keyed by endpoint: a browser that re-subscribes gets the same row, and a device that has
+    // moved to another account is reassigned rather than duplicated.
+    await prisma.webPushSubscription.upsert({
+      where: { endpoint },
+      create: {
+        userId: user.id,
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        platform: parsed.platform,
+        status: 'ACTIVE',
+        deviceId: parsed.deviceId ?? null,
+      },
+      update: {
+        userId: user.id,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        platform: parsed.platform,
+        status: 'ACTIVE',
+        deviceId: parsed.deviceId ?? null,
+      },
+    });
+
+    res.json(registerWebPushResponseSchema.parse({ ok: true }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/push/web/unregister', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const parsed = unregisterWebPushBodySchema.parse(req.body);
+
+    if (!parsed.endpoint && !parsed.deviceId) {
+      throw new HttpError(400, 'Provide endpoint or deviceId.');
+    }
+
+    // Deleted rather than deactivated: unlike an FCM token, a browser subscription that has been
+    // unsubscribed can never be revived, and keeping it would only mean sending to a dead endpoint.
+    await prisma.webPushSubscription.deleteMany({
+      where: {
+        userId: user.id,
+        ...(parsed.endpoint ? { endpoint: parsed.endpoint } : {}),
+        ...(parsed.deviceId ? { deviceId: parsed.deviceId } : {}),
+      },
+    });
+
+    res.json(unregisterWebPushResponseSchema.parse({ ok: true }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/doctor/push/web/register', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+    const parsed = registerWebPushBodySchema.parse(req.body);
+    const { endpoint, keys } = parsed.subscription;
+
+    await prisma.specialistWebPushSubscription.upsert({
+      where: { endpoint },
+      create: {
+        specialistId: identity.specialistRowId,
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        platform: parsed.platform,
+        status: 'ACTIVE',
+        deviceId: parsed.deviceId ?? null,
+      },
+      update: {
+        specialistId: identity.specialistRowId,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        platform: parsed.platform,
+        status: 'ACTIVE',
+        deviceId: parsed.deviceId ?? null,
+      },
+    });
+
+    res.json(registerWebPushResponseSchema.parse({ ok: true }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post('/doctor/push/web/unregister', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+    const parsed = unregisterWebPushBodySchema.parse(req.body);
+
+    if (!parsed.endpoint && !parsed.deviceId) {
+      throw new HttpError(400, 'Provide endpoint or deviceId.');
+    }
+
+    await prisma.specialistWebPushSubscription.deleteMany({
+      where: {
+        specialistId: identity.specialistRowId,
+        ...(parsed.endpoint ? { endpoint: parsed.endpoint } : {}),
+        ...(parsed.deviceId ? { deviceId: parsed.deviceId } : {}),
+      },
+    });
+
+    res.json(unregisterWebPushResponseSchema.parse({ ok: true }));
   } catch (e) {
     next(e);
   }
@@ -6197,6 +6307,14 @@ async function startServer() {
   // Admin-edited copy, over the bundled JSON. Optional: if the table cannot be read the API serves
   // the files, so translations never gate the boot.
   await startTranslationOverrides();
+
+  // Asking for Web Push without VAPID keys silently falls back to FCM, which is the right
+  // behaviour and the wrong thing to discover from a user's bug report.
+  if (webPushMisconfigured()) {
+    logger.error(
+      'PUSH_PROVIDER asks for Web Push but VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY are not set — serving FCM instead.',
+    );
+  }
 
   const server = app.listen(port, () => {
     logger.info(
