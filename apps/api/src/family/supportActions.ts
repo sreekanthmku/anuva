@@ -47,8 +47,6 @@ const GIFT_PUSH: Record<FamilyGiftKind, { title: string; body: string }> = copy(
 const GIFT_TEXT = copy('family.giftText', {
   undelivered:
     'Recorded for today, but her phone has no notifications set up, so she will not see them.',
-  alreadyFlowers: 'Already sent her flowers today. She has them.',
-  alreadyChocolates: 'Already sent her chocolates today. She has them.',
   reminderSaved: 'Reminder saved for this evening.',
 });
 
@@ -210,12 +208,11 @@ export async function recordSupportAction(input: {
     return selectAction({ familyMemberId: input.familyMemberId, kind: input.kind, now });
   }
 
-  // Upsert per *kind*: tapping the same action twice in a day is a re-affirmation rather than an
-  // error, but a different action is a genuinely new one and must not overwrite the first. The
-  // unique index on (member, day, kind) is what keeps both true, and caps this at four rows a day.
-  //
-  // `count` distinguishes the first tap of the day from a re-tap, which the gift kinds need:
-  // recording twice is harmless, but notifying her twice for the same flowers is not.
+  // The ledger row is per *kind* per day, not per tap — sending flowers five times today is still
+  // one "she got flowers today" fact for the nudge card and the completion badge. The unique index
+  // on (member, day, kind) is what keeps a re-tap from creating a second row; `count` tells us
+  // whether this was the day's first tap, which gates attribution only. It never gates delivery —
+  // there is no cap on how many times she can be sent a message, flowers, or chocolates today.
   const { count } = await prisma.familySupportAction.createMany({
     data: [
       {
@@ -243,20 +240,9 @@ export async function recordSupportAction(input: {
     return { completedToday: true, pending: false, prompt: null, toast: TOASTS[input.kind] };
   }
 
-  if (!firstTapToday) {
-    // Already sent today. Say so rather than silently doing nothing, and do not push again.
-    return {
-      completedToday: true,
-      pending: false,
-      prompt: null,
-      toast:
-        input.kind === 'flowers' ? GIFT_TEXT.alreadyFlowers : GIFT_TEXT.alreadyChocolates,
-      delivered: true,
-    };
-  }
-
-  // Recorded before delivery is attempted, same as a note: the gesture happened either way, and her
-  // "your family checked in" card should not depend on whether her phone had notifications on.
+  // Every tap delivers again — recorded before delivery is attempted, same as a note: the gesture
+  // happened either way, and her "your family checked in" card should not depend on whether her
+  // phone had notifications on.
   const delivered = await deliverGift({
     userId: input.userId,
     memberName: input.memberName,

@@ -4,9 +4,7 @@ import { prisma } from '@anuva/database';
 import type { FamilyMessageResponse } from '@anuva/shared';
 import { countDevices, sendToAudience } from '../push/dispatch.js';
 import { dayKey } from '../dayKey.js';
-import { FamilyError } from './errors.js';
 import { attributeSupportAction } from './nudgeLog.js';
-import { rateLimit } from './rateLimit.js';
 
 /**
  * A short note from a family member to her, delivered as a push notification.
@@ -35,10 +33,6 @@ const MESSAGE_TEXT = copy('family.messageText', {
   notAccepted: 'Saved as a check-in, but her phone did not accept the notification.',
 });
 
-/** Enough for a few notes a day, not enough to be used as a channel for pestering her. */
-const MESSAGE_LIMIT = 6;
-const MESSAGE_WINDOW_MS = 60 * 60 * 1000;
-
 function firstNameOf(name: string): string {
   return name.trim().split(/\s+/)[0] || name;
 }
@@ -49,14 +43,6 @@ export async function sendFamilyMessage(input: {
   userId: string;
   text: string;
 }): Promise<FamilyMessageResponse> {
-  if (!rateLimit(`familyMessage:${input.familyMemberId}`, MESSAGE_LIMIT, MESSAGE_WINDOW_MS)) {
-    throw new FamilyError(
-      429,
-      'message_rate_limited',
-      'You have sent a few messages already. Give it an hour before the next one.',
-    );
-  }
-
   const deviceCount = await countDevices({ kind: 'user', userId: input.userId });
 
   const first = firstNameOf(input.memberName);
