@@ -110,3 +110,78 @@ export async function sendWebPush(
 
   return { successCount, failureCount: results.length - successCount, goneEndpoints };
 }
+
+/**
+ * Declarative Web Push — the payload Safari acts on by itself.
+ *
+ * `web_push: 8030` opts the message into declarative parsing (an homage to RFC 8030). Safari then
+ * displays the notification without waking a service worker, and on a tap navigates to `navigate`
+ * itself — skipping the `notificationclick` handler entirely. That matters because on iOS a tap
+ * that reaches a backgrounded app leaves that handler unable to route it: `focus()` and
+ * `postMessage()` on the window client silently do nothing (WebKit bug 268797, still open).
+ *
+ * Supported from iOS 18.4 and Safari 18.4. Browsers that do not understand it deliver the same
+ * bytes to the service worker's `push` event instead, so the worker must be able to render this
+ * shape as well — see the `push` listener in `firebase-messaging-sw.js`.
+ *
+ * Experimental: kept separate from `sendWebPush` until the behaviour when the app is already open
+ * has been proved on a device.
+ */
+export function buildDeclarativePayload(
+  notification: WebPushNotification,
+  navigate: string,
+): string {
+  return JSON.stringify({
+    web_push: 8030,
+    notification: {
+      title: notification.title,
+      body: notification.body,
+      navigate,
+    },
+    // Read by the service worker on platforms that do not act on the declarative shape.
+    anuva: 1,
+    data: { url: navigate },
+  });
+}
+
+/** Sends a declarative push to one subscription. Used by the spike endpoint, not by features yet. */
+export async function sendDeclarativeWebPush(
+  subscriptions: StoredSubscription[],
+  notification: WebPushNotification,
+  navigate: string,
+): Promise<WebPushResult> {
+  const empty: WebPushResult = { successCount: 0, failureCount: 0, goneEndpoints: [] };
+  if (subscriptions.length === 0) return empty;
+
+  const keys = vapidKeys();
+  if (!keys) {
+    log.warn('VAPID keys are not configured — nothing sent');
+    return { ...empty, failureCount: subscriptions.length };
+  }
+
+  const payload = buildDeclarativePayload(notification, navigate);
+  const options = {
+    vapidDetails: { subject: keys.subject, publicKey: keys.publicKey, privateKey: keys.privateKey },
+    TTL: TTL_SECONDS,
+    headers: { Urgency: 'high' },
+  };
+
+  const results = await Promise.all(
+    subscriptions.map(async (subscription) => {
+      try {
+        await webpush.sendNotification(toWebPushSubscription(subscription), payload, options);
+        return { ok: true as const, endpoint: subscription.endpoint, gone: false };
+      } catch (error) {
+        const status = (error as { statusCode?: number }).statusCode;
+        log.warn({ status }, 'Declarative push delivery failed');
+        return { ok: false as const, endpoint: subscription.endpoint, gone: status === 404 || status === 410 };
+      }
+    }),
+  );
+
+  return {
+    successCount: results.filter((r) => r.ok).length,
+    failureCount: results.filter((r) => !r.ok).length,
+    goneEndpoints: results.filter((r) => r.gone).map((r) => r.endpoint),
+  };
+}

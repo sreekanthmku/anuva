@@ -34,6 +34,7 @@ import {
 import { languageForUser } from './i18n/recipients.js';
 import { startTranslationOverrides } from './i18n/store.js';
 import { clientPushConfig, webPushMisconfigured } from './push/config.js';
+import { sendDeclarativeWebPush } from './push/webPush.js';
 import { PATIENT_PUSH, PATIENT_TEXT } from './patientCopy.js';
 import type { NextFunction, Request, Response } from 'express';
 import { MulterError } from 'multer';
@@ -53,6 +54,7 @@ import {
   activateOneDaySubscriptionResponseSchema,
   authSessionResponseSchema,
   authUserSchema,
+  betaLoginBodySchema,
   consultationBookingResponseSchema,
   consultationCallConsentBodySchema,
   consultationCallConsentResponseSchema,
@@ -181,7 +183,7 @@ import {
   type AuthUser,
   type ConsultationCallState,
 } from '@anuva/shared';
-import { ZodError } from 'zod';
+import { ZodError, z } from 'zod';
 import {
   BOOKABLE_DOCTOR_KEYS,
   ensureBookingCatalog,
@@ -274,6 +276,11 @@ const OTP_MAX_VERIFY_ATTEMPTS = Number(process.env.OTP_MAX_VERIFY_ATTEMPTS || 5)
 const TWOFACTOR_BASE_URL = process.env.TWOFACTOR_BASE_URL || 'https://2factor.in/API/V1';
 const TWOFACTOR_OTP_TEMPLATE_NAME = process.env.TWOFACTOR_OTP_TEMPLATE_NAME?.trim() || '';
 const FREE_TRIAL_DAYS = Math.max(1, Number(process.env.FREE_TRIAL_DAYS || 14));
+/**
+ * Beta-only, no-OTP login by email — for testers who don't have a phone number to receive an SMS
+ * OTP with. Off by default; only meant to be flipped on for the beta environment.
+ */
+const BETA_EMAIL_LOGIN_ENABLED = process.env.BETA_EMAIL_LOGIN_ENABLED === 'true';
 const SESSION_COOKIE_SECURE = process.env.SESSION_COOKIE_SECURE === 'true';
 const SESSION_COOKIE_DOMAIN = process.env.SESSION_COOKIE_DOMAIN?.trim() || undefined;
 const SESSION_COOKIE_SAME_SITE = (process.env.SESSION_COOKIE_SAME_SITE?.trim().toLowerCase() || 'lax') as
@@ -3656,6 +3663,67 @@ app.post('/auth/verify-otp', async (req, res, next) => {
   }
 });
 
+/**
+ * Beta-only email login, no OTP: looks a user up (or creates one) by email and signs them in
+ * directly. Gated behind BETA_EMAIL_LOGIN_ENABLED — disabled means production's phone/OTP path
+ * is the only way in. A beta account gets a synthetic, non-routable `phone` (never sent an SMS,
+ * never a real number) purely to satisfy the column's NOT NULL + unique constraint.
+ */
+app.post('/auth/beta-login', async (req, res, next) => {
+  try {
+    setNoStoreHeaders(res);
+
+    if (!BETA_EMAIL_LOGIN_ENABLED) {
+      throw new HttpError(404, 'Not found.');
+    }
+
+    const parsed = betaLoginBodySchema.parse(req.body);
+    const now = new Date();
+
+    let user = await prisma.user.findUnique({ where: { email: parsed.email } });
+
+    if (user?.erasedAt) {
+      throw new HttpError(404, 'No account found for this email.');
+    }
+
+    const isNewUser = !user;
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          phone: `beta:${crypto.randomUUID()}`,
+          email: parsed.email,
+          name: parsed.name?.trim(),
+        },
+      });
+    }
+
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = addDays(now, SESSION_TTL_DAYS);
+
+    await prisma.session.create({
+      data: {
+        tokenHash: sha256(sessionToken),
+        userId: user.id,
+        expiresAt,
+      },
+    });
+
+    req.log = req.log.child({ userId: user.id });
+    req.log.info({ isNewUser }, 'Beta email session created');
+
+    setSessionCookie(res, sessionToken, expiresAt);
+    res.json(
+      authSessionResponseSchema.parse({
+        user: serializeUser(user),
+        isNewUser,
+      })
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.get('/auth/me', async (req, res, next) => {
   try {
     setNoStoreHeaders(res);
@@ -3985,6 +4053,63 @@ app.post('/doctor/push/web/unregister', async (req, res, next) => {
     });
 
     res.json(unregisterWebPushResponseSchema.parse({ ok: true }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+
+/**
+ * The Declarative Web Push spike.
+ *
+ * Sends one declarative push to whoever is named, so the one question the documentation does not
+ * answer can be settled on a real device: when the app is already open in the background, does
+ * Safari navigate it to `navigate`, or does it only bring it forward as it does today?
+ *
+ * Guarded by the broadcast secret, like the other manual push tools. Temporary — delete it once the
+ * answer is known and the behaviour is either adopted or abandoned.
+ */
+app.post('/push/declarative-test', async (req, res, next) => {
+  try {
+    requireBroadcastSecret(req);
+
+    const body = z
+      .object({
+        userId: z.string().trim().min(1).optional(),
+        familyMemberId: z.string().trim().min(1).optional(),
+        navigate: z.string().trim().url(),
+        title: z.string().trim().min(1).default('Declarative push test'),
+        body: z.string().trim().min(1).default('Tap me with the app open in the background.'),
+      })
+      .parse(req.body);
+
+    if (!body.userId && !body.familyMemberId) {
+      throw new HttpError(400, 'Provide userId or familyMemberId.');
+    }
+
+    const select = { id: true, endpoint: true, p256dh: true, auth: true, deviceId: true } as const;
+    const subscriptions = body.userId
+      ? await prisma.webPushSubscription.findMany({
+          where: { userId: body.userId, status: 'ACTIVE' },
+          select,
+        })
+      : await prisma.familyWebPushSubscription.findMany({
+          where: { familyMemberId: body.familyMemberId!, status: 'ACTIVE' },
+          select,
+        });
+
+    const result = await sendDeclarativeWebPush(
+      subscriptions,
+      { title: body.title, body: body.body },
+      body.navigate,
+    );
+
+    res.json({
+      ok: true,
+      subscriptions: subscriptions.length,
+      successCount: result.successCount,
+      failureCount: result.failureCount,
+    });
   } catch (e) {
     next(e);
   }

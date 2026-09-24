@@ -53,6 +53,13 @@ export const verifyOtpBodySchema = z
 
 export type VerifyOtpBody = z.infer<typeof verifyOtpBodySchema>;
 
+export const betaLoginBodySchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+  name: z.string().trim().min(2).max(80).optional(),
+});
+
+export type BetaLoginBody = z.infer<typeof betaLoginBodySchema>;
+
 export const authUserSchema = z.object({
   id: z.string(),
   phone: z.string(),
