@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * iOS Safari (and some Android browsers) zoom the page in when a focused input's computed
+ * font-size is under 16px. Several inputs here use smaller sizes for their design, so this
+ * overrides them on mobile widths specifically — unlayered and !important so it beats any
+ * text-[Npx] utility regardless of Tailwind's layer ordering.
+ */
+@media screen and (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 @layer utilities {
   .min-h-mobile {
     min-height: 100vh;

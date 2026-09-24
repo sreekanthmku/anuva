@@ -44,6 +44,7 @@ model User {
   journeyStages     CareJourneyStage[]
   consultations     Consultation[]
   callConsents      ConsultationCallConsent[]
+  consultationFeedbacks ConsultationFeedback[]
   questions         AnonymousQuestion[]
   chatThreads       ChatThread[]
   fcmTokens         FcmToken[]
@@ -945,10 +946,27 @@ model Consultation {
   slot         ConsultationSlot?
   call         ConsultationCall?
   documents    ConsultationDocument[]
+  feedback     ConsultationFeedback?
 
   @@index([userId])
   @@index([specialistId])
   @@index([purgeAfter])
+}
+
+/// One rating per consultation, given by the patient. Only collected once the consultation is
+/// `completed` — the API route enforces that, this table just holds the result.
+model ConsultationFeedback {
+  id             String       @id @default(cuid())
+  consultationId String       @unique
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating         Int
+  comment        String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([userId])
 }
 
 /// A prescription, diet plan, care plan, or suggestion the doctor uploaded after the consultation.

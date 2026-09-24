@@ -5,9 +5,11 @@ import i18n from '../../i18n';
 import { TrustStrip } from '../onboarding/components/TrustStrip';
 import { useAuth } from './auth-context';
 import { getPostAuthPath } from './postAuthPath';
-import { requestOtp, verifyOtp } from './session';
+import { betaLogin, requestOtp, verifyOtp } from './session';
 
 type AuthMode = 'login' | 'signup';
+
+const BETA_EMAIL_LOGIN_ENABLED = import.meta.env.VITE_BETA_EMAIL_LOGIN_ENABLED === 'true';
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
@@ -32,6 +34,9 @@ export default function LoginRoute() {
   const [clock, setClock] = useState(Date.now());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showBetaLogin, setShowBetaLogin] = useState(false);
+  const [betaEmail, setBetaEmail] = useState('');
+  const [betaName, setBetaName] = useState('');
 
   useEffect(() => {
     if (status === 'authenticated' && user) {
@@ -118,6 +123,26 @@ export default function LoginRoute() {
     }
   }
 
+  async function handleBetaLogin(event: FormEvent) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const session = await betaLogin({
+        email: betaEmail,
+        name: betaName.trim() || undefined,
+      });
+
+      setAuthenticatedSession(session);
+      navigate(getPostAuthPath(session.user), { replace: true });
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   const inOtpStep = challengeId !== null;
 
   return (
@@ -169,63 +194,48 @@ export default function LoginRoute() {
         className="relative z-10 mt-6 flex min-h-[calc(100svh-220px)] flex-col rounded-t-[32px] bg-surface px-3 pb-[22px] pt-[26px]"
         style={{ minHeight: 'calc(100dvh - 220px)' }}
       >
-        {!inOtpStep && (
-          <div className="mb-5 grid grid-cols-2 rounded-full border border-border-default bg-surface-container-low p-1">
-            {(['login', 'signup'] as const).map((option) => {
-              const active = mode === option;
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => resetOtpStep(option)}
-                  className="rounded-full px-4 py-2.5 text-[12px] uppercase tracking-[0.12em] transition-colors"
-                  style={{
-                    fontFamily: '"Mulish", sans-serif',
-                    background: active ? '#5E3566' : 'transparent',
-                    color: active ? '#FBF6F0' : '#B49FB0',
-                  }}
-                >
-                  {option === 'login' ? t('login.login') : t('login.signup')}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {inOtpStep ? (
-          <form onSubmit={handleVerifyOtp} className="flex flex-1 flex-col">
-            <div
-              className="mb-5 rounded-[20px] border border-border-default bg-surface-container-low px-4 py-4"
+        {showBetaLogin ? (
+          <form onSubmit={handleBetaLogin} className="flex flex-1 flex-col">
+            <p
+              className="mb-4 text-[12px] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              <p
-                className="text-[12px] uppercase tracking-[0.12em] text-outline"
-                style={{ fontFamily: '"Mulish", sans-serif' }}
-              >
-                {t('login.otpSentLabel')}
-              </p>
-              <p className="mt-2 text-[15px] text-on-surface">
-                {t('login.otpSentTo', { phone: maskedPhone })}
-              </p>
-            </div>
+              Beta testers can sign in with just an email — no phone or password needed.
+            </p>
 
             <label
               className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              {t('login.otpLabel')}
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              autoComplete="email"
+              inputMode="email"
+              value={betaEmail}
+              onChange={(event) => setBetaEmail(event.target.value)}
+              className="mb-4 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+              placeholder="you@example.com"
+            />
+
+            <label
+              className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
+              Full name (optional)
             </label>
             <input
               type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]*"
-              maxLength={6}
-              value={otp}
-              onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="mb-2 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[18px] tracking-[0.35em] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
-              style={{ fontFamily: '"Mulish", sans-serif' }}
-              placeholder={t('login.otpPlaceholder')}
+              name="name"
+              autoComplete="name"
+              value={betaName}
+              onChange={(event) => setBetaName(event.target.value)}
+              className="mb-4 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+              placeholder={t('login.namePlaceholder')}
             />
 
             {errorMessage && (
@@ -239,7 +249,7 @@ export default function LoginRoute() {
 
             <button
               type="submit"
-              disabled={isSubmitting || otp.length !== 6}
+              disabled={isSubmitting || !betaEmail}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
               style={{
                 fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
@@ -247,128 +257,239 @@ export default function LoginRoute() {
                 letterSpacing: '-0.005em',
               }}
             >
-              {isSubmitting ? t('login.verifying') : t('login.verifyOtp')}
-            </button>
-
-            <div className="mt-4">
-              <TrustStrip />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => resetOtpStep()}
-              className="mt-3 w-full bg-transparent py-3 text-[13px] font-medium text-on-surface-variant"
-              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-            >
-              {t('login.changePhone')}
+              {isSubmitting ? t('login.verifying') : 'Continue'}
             </button>
 
             <button
               type="button"
               onClick={() => {
-                void requestOtp({
-                  purpose: mode,
-                  phone,
-                  name: mode === 'signup' ? name : undefined,
-                })
-                  .then((response) => {
-                    setChallengeId(response.challengeId);
-                    setMaskedPhone(response.maskedPhone);
-                    setPhone(response.phone);
-                    setResendAvailableAt(Date.now() + response.resendAfterSeconds * 1000);
-                    setErrorMessage(null);
-                  })
-                  .catch((error) => {
-                    setErrorMessage(getErrorMessage(error));
-                  });
+                setShowBetaLogin(false);
+                setErrorMessage(null);
               }}
-              disabled={isSubmitting || resendCountdown > 0}
-              className="mt-1 w-full bg-transparent py-3 text-[13px] font-medium text-primary disabled:text-outline"
+              className="mt-3 w-full bg-transparent py-3 text-[13px] font-medium text-on-surface-variant"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
-              {resendCountdown > 0
-                ? t('login.resendIn', { seconds: resendCountdown })
-                : t('login.resend')}
+              Back to phone login
             </button>
           </form>
         ) : (
-          <form onSubmit={handleRequestOtp} className="flex flex-1 flex-col">
-            {mode === 'signup' && (
-              <>
+          <>
+            {!inOtpStep && (
+              <div className="mb-5 grid grid-cols-2 rounded-full border border-border-default bg-surface-container-low p-1">
+                {(['login', 'signup'] as const).map((option) => {
+                  const active = mode === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => resetOtpStep(option)}
+                      className="rounded-full px-4 py-2.5 text-[12px] uppercase tracking-[0.12em] transition-colors"
+                      style={{
+                        fontFamily: '"Mulish", sans-serif',
+                        background: active ? '#5E3566' : 'transparent',
+                        color: active ? '#FBF6F0' : '#B49FB0',
+                      }}
+                    >
+                      {option === 'login' ? t('login.login') : t('login.signup')}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {inOtpStep ? (
+              <form onSubmit={handleVerifyOtp} className="flex flex-1 flex-col">
+                <div
+                  className="mb-5 rounded-[20px] border border-border-default bg-surface-container-low px-4 py-4"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                >
+                  <p
+                    className="text-[12px] uppercase tracking-[0.12em] text-outline"
+                    style={{ fontFamily: '"Mulish", sans-serif' }}
+                  >
+                    {t('login.otpSentLabel')}
+                  </p>
+                  <p className="mt-2 text-[15px] text-on-surface">
+                    {t('login.otpSentTo', { phone: maskedPhone })}
+                  </p>
+                </div>
+
                 <label
                   className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  {t('login.nameLabel')}
+                  {t('login.otpLabel')}
                 </label>
                 <input
                   type="text"
-                  name="name"
-                  autoComplete="name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  className="mb-4 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
-                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-                  placeholder={t('login.namePlaceholder')}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="mb-2 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[18px] tracking-[0.35em] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                  placeholder={t('login.otpPlaceholder')}
                 />
-              </>
+
+                {errorMessage && (
+                  <p
+                    className="mb-3 text-[13px] text-error"
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  >
+                    {errorMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || otp.length !== 6}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
+                  style={{
+                    fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+                    fontWeight: 500,
+                    letterSpacing: '-0.005em',
+                  }}
+                >
+                  {isSubmitting ? t('login.verifying') : t('login.verifyOtp')}
+                </button>
+
+                <div className="mt-4">
+                  <TrustStrip />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => resetOtpStep()}
+                  className="mt-3 w-full bg-transparent py-3 text-[13px] font-medium text-on-surface-variant"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                >
+                  {t('login.changePhone')}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    void requestOtp({
+                      purpose: mode,
+                      phone,
+                      name: mode === 'signup' ? name : undefined,
+                    })
+                      .then((response) => {
+                        setChallengeId(response.challengeId);
+                        setMaskedPhone(response.maskedPhone);
+                        setPhone(response.phone);
+                        setResendAvailableAt(Date.now() + response.resendAfterSeconds * 1000);
+                        setErrorMessage(null);
+                      })
+                      .catch((error) => {
+                        setErrorMessage(getErrorMessage(error));
+                      });
+                  }}
+                  disabled={isSubmitting || resendCountdown > 0}
+                  className="mt-1 w-full bg-transparent py-3 text-[13px] font-medium text-primary disabled:text-outline"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                >
+                  {resendCountdown > 0
+                    ? t('login.resendIn', { seconds: resendCountdown })
+                    : t('login.resend')}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleRequestOtp} className="flex flex-1 flex-col">
+                {mode === 'signup' && (
+                  <>
+                    <label
+                      className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
+                      style={{ fontFamily: '"Mulish", sans-serif' }}
+                    >
+                      {t('login.nameLabel')}
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      autoComplete="name"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      className="mb-4 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+                      style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                      placeholder={t('login.namePlaceholder')}
+                    />
+                  </>
+                )}
+
+                <label
+                  className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
+                  {t('login.phoneLabel')}
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  className="mb-2 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  placeholder={t('login.phonePlaceholder')}
+                />
+
+                <p
+                  className="mb-4 text-[12px] text-on-surface-variant"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                >
+                  {mode === 'login' ? t('login.loginHint') : t('login.signupHint')}
+                </p>
+
+                {errorMessage && (
+                  <p
+                    className="mb-3 text-[13px] text-error"
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  >
+                    {errorMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
+                  style={{
+                    fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+                    fontWeight: 500,
+                    letterSpacing: '-0.005em',
+                  }}
+                >
+                  {isSubmitting
+                    ? t('login.sendingOtp')
+                    : mode === 'signup'
+                      ? t('login.signupCta')
+                      : t('login.sendOtp')}
+                </button>
+
+                <div className="mt-4">
+                  <TrustStrip />
+                </div>
+
+                {BETA_EMAIL_LOGIN_ENABLED && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowBetaLogin(true);
+                      setErrorMessage(null);
+                    }}
+                    className="mt-3 w-full bg-transparent py-3 text-[13px] font-medium text-primary"
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  >
+                    Beta tester? Sign in with email
+                  </button>
+                )}
+              </form>
             )}
-
-            <label
-              className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
-              style={{ fontFamily: '"Mulish", sans-serif' }}
-            >
-              {t('login.phoneLabel')}
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              autoComplete="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              className="mb-2 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
-              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-              placeholder={t('login.phonePlaceholder')}
-            />
-
-            <p
-              className="mb-4 text-[12px] text-on-surface-variant"
-              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-            >
-              {mode === 'login' ? t('login.loginHint') : t('login.signupHint')}
-            </p>
-
-            {errorMessage && (
-              <p
-                className="mb-3 text-[13px] text-error"
-                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-              >
-                {errorMessage}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
-              style={{
-                fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
-                fontWeight: 500,
-                letterSpacing: '-0.005em',
-              }}
-            >
-              {isSubmitting
-                ? t('login.sendingOtp')
-                : mode === 'signup'
-                  ? t('login.signupCta')
-                  : t('login.sendOtp')}
-            </button>
-
-            <div className="mt-4">
-              <TrustStrip />
-            </div>
-          </form>
+          </>
         )}
       </section>
     </main>

@@ -2,6 +2,7 @@ import type {
   ActivateOneDaySubscriptionResponse,
   AuthSessionResponse,
   AuthUser,
+  BetaLoginBody,
   RequestOtpBody,
   RequestOtpResponse,
   StartTrialResponse,
@@ -19,6 +20,13 @@ export async function requestOtp(body: RequestOtpBody): Promise<RequestOtpRespon
 
 export async function verifyOtp(body: VerifyOtpBody): Promise<AuthSessionResponse> {
   return apiFetch<AuthSessionResponse>('/api/auth/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function betaLogin(body: BetaLoginBody): Promise<AuthSessionResponse> {
+  return apiFetch<AuthSessionResponse>('/api/auth/beta-login', {
     method: 'POST',
     body: JSON.stringify(body),
   });
