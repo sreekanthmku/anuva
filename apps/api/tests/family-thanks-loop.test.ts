@@ -181,21 +181,10 @@ describe('a note from her family', () => {
     expect(lastPush().tokens).toEqual(['her-phone', 'her-tablet']);
   });
 
-  it('stops a family member using notes as a channel for pestering her', async () => {
-    // Six an hour, keyed per member.
-    for (let i = 0; i < 6; i += 1) {
-      await sendNote(`note ${i}`);
+  it('lets a family member send as many notes as they want in a day', async () => {
+    for (let i = 0; i < 12; i += 1) {
+      await expect(sendNote(`note ${i}`)).resolves.toMatchObject({ delivered: true });
     }
-
-    await expect(sendNote('one too many')).rejects.toMatchObject({
-      status: 429,
-      code: 'message_rate_limited',
-    });
-
-    // A different member is unaffected — the limit is theirs, not hers.
-    await expect(sendNote('hello', { familyMemberId: 'member-2' })).resolves.toMatchObject({
-      delivered: true,
-    });
   });
 });
 
