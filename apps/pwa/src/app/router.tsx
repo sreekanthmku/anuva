@@ -29,7 +29,12 @@ import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import SplashRoute from '../features/auth/SplashRoute';
 import { subscribeToForegroundNotifications } from '../lib/firebase';
 import { InstallGuard } from '../features/install/InstallGuard';
-import { clearPendingNavigation, takePendingNavigation } from '../lib/pwa/pendingNavigation';
+import {
+  alreadyHandled,
+  clearPendingNavigation,
+  markNavigationHandled,
+  takePendingNavigation,
+} from '../lib/pwa/pendingNavigation';
 
 // Routes notification clicks when the service worker can't navigate the client
 // itself (e.g. iOS) and posts a `nudge-navigate` message instead.
@@ -42,7 +47,10 @@ function ServiceWorkerNavListener() {
     const onMessage = (event: MessageEvent) => {
       const data = event.data;
       if (data && data.type === 'nudge-navigate' && typeof data.url === 'string') {
-        // It got here, so the stored copy is redundant — drop it before a later wake-up acts on it.
+        // Claim the destination before navigating: the stored copy is being read concurrently, and
+        // whichever route arrives second must not navigate to the same place again.
+        if (alreadyHandled(data.url)) return;
+        markNavigationHandled(data.url);
         void clearPendingNavigation();
         navigate(data.url);
       }

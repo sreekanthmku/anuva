@@ -14,7 +14,12 @@ import { InstallGuard } from './features/install/InstallGuard';
 import JoinRoute from './features/auth/JoinRoute';
 import SignInRoute from './features/auth/SignInRoute';
 import { LanguageKeyed } from './i18n/LanguageKeyed';
-import { clearPendingNavigation, takePendingNavigation } from './lib/pwa/pendingNavigation';
+import {
+  alreadyHandled,
+  clearPendingNavigation,
+  markNavigationHandled,
+  takePendingNavigation,
+} from './lib/pwa/pendingNavigation';
 
 /**
  * A tap on a notification while the app is already open. The FCM worker cannot navigate a client it
@@ -30,7 +35,10 @@ function ServiceWorkerNavListener() {
     const onMessage = (event: MessageEvent) => {
       const data = event.data;
       if (data && data.type === 'family-navigate' && typeof data.url === 'string') {
-        // It got here, so the stored copy is redundant — drop it before a later wake-up acts on it.
+        // Claim the destination before navigating: the stored copy is being read concurrently, and
+        // whichever route arrives second must not navigate to the same place again.
+        if (alreadyHandled(data.url)) return;
+        markNavigationHandled(data.url);
         void clearPendingNavigation();
         navigate(data.url);
       }

@@ -10,14 +10,14 @@ const stored = (url: string, at = NOW) => JSON.stringify({ url, at });
 
 describe('parsePending', () => {
   it('returns a destination stored moments ago', () => {
-    expect(parsePending(stored('/#familyThanks=message'), NOW + 1_000)).toBe(
-      '/#familyThanks=message',
+    expect(parsePending(stored('/home#familyMessage=Hello'), NOW + 1_000)).toBe(
+      '/home#familyMessage=Hello',
     );
   });
 
   it('ignores a tap from an earlier sitting', () => {
     // Waking the app hours later must not reopen a card for a notification long since read.
-    expect(parsePending(stored('/#familyThanks=message'), NOW + 3 * 60 * 60 * 1000)).toBeNull();
+    expect(parsePending(stored('/home#familyMessage=Hello'), NOW + 3 * 60 * 60 * 1000)).toBeNull();
   });
 
   it('accepts one just inside the window and rejects one just outside', () => {
@@ -48,7 +48,7 @@ describe('parsePending', () => {
  * dismissed reappeared and the button looked broken.
  */
 describe('one tap, one navigation', () => {
-  const LINK = '/#familyThanks=message&familyThanksFrom=Meera';
+  const LINK = '/home#familyMessage=Thinking%20of%20you&familyFrom=Wilfred';
 
   beforeEach(() => {
     // Module state persists between tests, so start each one with nothing claimed.
@@ -63,7 +63,7 @@ describe('one tap, one navigation', () => {
 
   it('does not confuse a different destination for a claimed one', () => {
     markNavigationHandled(LINK);
-    expect(alreadyHandled('/#familyThanks=call&familyThanksFrom=Meera')).toBe(false);
+    expect(alreadyHandled('/home#familyGift=flowers&familyFrom=Wilfred')).toBe(false);
   });
 
   it('lets a genuinely new notification to the same place through, much later', () => {
