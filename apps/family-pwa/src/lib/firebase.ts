@@ -89,9 +89,19 @@ async function getFirebaseMessaging(): Promise<Messaging | null> {
  */
 function isFcmRegistration(
   registration: ServiceWorkerRegistration | undefined,
+  provider: string,
 ): registration is ServiceWorkerRegistration {
   const worker = registration?.active ?? registration?.waiting ?? registration?.installing;
-  return Boolean(worker?.scriptURL.endsWith(FCM_SW_URL));
+  if (!worker) return false;
+  // The provider rides in the query string: a worker registered for another transport is the wrong
+  // one — on `webpush` it would still be loading Firebase — so it is replaced rather than reused.
+  const url = new URL(worker.scriptURL, self.location.href);
+  return url.pathname === FCM_SW_URL && url.searchParams.get('provider') === provider;
+}
+
+/** The worker's URL for a transport. The query is what tells the worker which one it is serving. */
+function workerUrlFor(provider: string): string {
+  return `${FCM_SW_URL}?provider=${encodeURIComponent(provider)}`;
 }
 
 async function waitForActivation(registration: ServiceWorkerRegistration): Promise<void> {
@@ -111,9 +121,10 @@ async function getFcmServiceWorkerRegistration(): Promise<ServiceWorkerRegistrat
   }
 
   const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
-  const registration = isFcmRegistration(existing)
+  const provider = (await fetchPushConfig().catch(() => null))?.provider ?? 'fcm';
+  const registration = isFcmRegistration(existing, provider)
     ? existing
-    : await navigator.serviceWorker.register(FCM_SW_URL, {
+    : await navigator.serviceWorker.register(workerUrlFor(provider), {
         scope: FCM_SW_SCOPE,
         // Without this the browser may serve this script from its HTTP cache for up to 24 hours, so
         // a fix shipped to the worker does not reach the device.

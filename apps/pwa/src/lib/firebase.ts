@@ -71,15 +71,32 @@ async function getFirebaseMessaging(): Promise<Messaging | null> {
 const FCM_SW_URL = '/firebase-messaging-sw.js';
 const FCM_SW_SCOPE = '/firebase-cloud-messaging-push-scope/';
 
-/** True when the registration is actually running our FCM SW script (not the workbox `/` SW). */
+/**
+ * True when the registration is running our push worker *for this transport*.
+ *
+ * The provider rides in the script's query string, because a worker is a static file and cannot
+ * read the API's configuration itself. A registration running the same script under a different
+ * provider is therefore the wrong worker — on `webpush` it would still be loading Firebase — so it
+ * is rejected and re-registered, which swaps it in place.
+ */
 function isFcmRegistration(
-  registration: ServiceWorkerRegistration | undefined
+  registration: ServiceWorkerRegistration | undefined,
+  provider: string,
 ): registration is ServiceWorkerRegistration {
   if (!registration) {
     return false;
   }
   const worker = registration.active ?? registration.waiting ?? registration.installing;
-  return Boolean(worker?.scriptURL.endsWith(FCM_SW_URL));
+  if (!worker) {
+    return false;
+  }
+  const url = new URL(worker.scriptURL, self.location.href);
+  return url.pathname === FCM_SW_URL && url.searchParams.get('provider') === provider;
+}
+
+/** The worker's URL for a transport. The query is what tells the worker which one it is serving. */
+function workerUrlFor(provider: string): string {
+  return `${FCM_SW_URL}?provider=${encodeURIComponent(provider)}`;
 }
 
 async function waitForActivation(registration: ServiceWorkerRegistration): Promise<void> {
@@ -113,10 +130,12 @@ async function getFcmServiceWorkerRegistration(): Promise<ServiceWorkerRegistrat
     throw new Error(i18n.t('errors.serviceWorkerUnsupported'));
   }
 
+  // The worker is told the transport at registration time; see `workerUrlFor`.
+  const provider = (await fetchPushConfig().catch(() => null))?.provider ?? 'fcm';
   const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
-  const registration = isFcmRegistration(existing)
+  const registration = isFcmRegistration(existing, provider)
     ? existing
-    : await navigator.serviceWorker.register(FCM_SW_URL, {
+    : await navigator.serviceWorker.register(workerUrlFor(provider), {
         scope: FCM_SW_SCOPE,
         // Without this the browser may serve this script from its HTTP cache for up to 24 hours, so
         // a fix shipped to the worker does not reach the device. That is how a deployed

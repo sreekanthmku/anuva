@@ -1,15 +1,42 @@
 /* eslint-disable no-undef */
-importScripts('https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging-compat.js');
-importScripts('/firebase-config.js');
+
+/**
+ * Which transport this deployment uses, taken from this worker's own URL.
+ *
+ * A worker is a static file: it cannot read `PUSH_PROVIDER`, which lives in the API's environment
+ * and reaches the page through `GET /push/config`. So the page passes it on when it registers —
+ * `/firebase-messaging-sw.js?provider=webpush` — and this worker reads it back off `self.location`.
+ *
+ * On `webpush` nothing below is loaded: no Firebase scripts fetched on every worker start, no
+ * second `push` listener to render each message a second time, and no Firebase IndexedDB token
+ * store — which matters because opening a database is exactly what fails on iOS when WebKit has
+ * lost the origin's storage, and that is a fault this transport exists to route around.
+ */
+const PUSH_PROVIDER = new URL(self.location.href).searchParams.get('provider') || 'fcm';
+
+if (PUSH_PROVIDER !== 'webpush') {
+  importScripts('https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js');
+  importScripts('https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging-compat.js');
+  importScripts('/firebase-config.js');
+}
 
 /**
  * Push delivered over the standard Web Push protocol — our own payload, no Firebase involved.
  *
- * Firebase's handler covers its own messages when that transport is in use; this covers ours, and
- * the `anuva` marker keeps the two apart so a deployment running both cannot show one notification
- * twice. iOS revokes a site's permission for a push that displays nothing, so anything of ours
- * still shows something rather than returning silently.
+ * Registered *before* `firebase.messaging()` below, which matters: listeners run in registration
+ * order, so this one gets the event first and stops it there.
+ *
+ * It has to. The Firebase worker installs its own `push` listener, and that listener does not check
+ * whether a push came from FCM — `getMessagePayloadInternal` accepts any JSON at all, and then
+ * displays it if it has a `notification` field. Ours does. So every Web Push message was rendered
+ * twice: once here and once by Firebase. Worse with the app open, where Firebase forwards the same
+ * payload into the page as an `onMessage` and the foreground handler drew a third.
+ *
+ * Only our own messages are stopped. Anything without the `anuva` marker falls through to Firebase
+ * untouched, so the FCM transport and the `both` migration mode keep working.
+ *
+ * iOS revokes a site's permission for a push that displays nothing, so anything of ours still shows
+ * something rather than returning silently.
  */
 self.addEventListener('push', (event) => {
   if (!event.data) return;
@@ -23,6 +50,9 @@ self.addEventListener('push', (event) => {
 
   // Not ours: Firebase's own handler will display it, or it is not something we can render.
   if (!payload || payload.anuva !== 1) return;
+
+  // Ours, and displayed here — keep it away from Firebase's listener, which would show it again.
+  event.stopImmediatePropagation();
 
   const notification = payload.notification || {};
   const data = payload.data || {};
@@ -50,7 +80,7 @@ self.addEventListener('push', (event) => {
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
-if (self.FIREBASE_WEB_CONFIG?.apiKey) {
+if (PUSH_PROVIDER !== 'webpush' && self.FIREBASE_WEB_CONFIG?.apiKey) {
   firebase.initializeApp(self.FIREBASE_WEB_CONFIG);
   const messaging = firebase.messaging();
 

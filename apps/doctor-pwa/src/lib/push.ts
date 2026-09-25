@@ -93,11 +93,21 @@ async function getFcmRegistration(): Promise<ServiceWorkerRegistration> {
     throw new Error('Service workers are not supported in this browser.');
   }
 
+  // The worker is a static file and cannot read the API's configuration, so the transport is
+  // passed in its URL. A registration running the same script for another transport is the wrong
+  // worker — on `webpush` it would still be loading Firebase — so it is replaced.
+  const provider = (await fetchPushConfig().catch(() => null))?.provider ?? 'fcm';
   const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
   const worker = existing?.active ?? existing?.waiting ?? existing?.installing;
-  const registration = worker?.scriptURL.endsWith(FCM_SW_URL)
+  const workerUrl = worker ? new URL(worker.scriptURL, self.location.href) : null;
+  const matches =
+    workerUrl?.pathname === FCM_SW_URL && workerUrl.searchParams.get('provider') === provider;
+  const registration = matches
     ? (existing as ServiceWorkerRegistration)
-    : await navigator.serviceWorker.register(FCM_SW_URL, { scope: FCM_SW_SCOPE });
+    : await navigator.serviceWorker.register(
+        `${FCM_SW_URL}?provider=${encodeURIComponent(provider)}`,
+        { scope: FCM_SW_SCOPE, updateViaCache: 'none' },
+      );
 
   if (!registration.active) {
     const pending = registration.installing ?? registration.waiting;
