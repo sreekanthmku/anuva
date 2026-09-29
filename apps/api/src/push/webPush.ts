@@ -10,9 +10,9 @@
  * again, so the row goes. Anything else (a 500 from the service, a timeout) is left alone: it may
  * well deliver next time, and deleting on a transient error silently unsubscribes people.
  */
-import webpush, { type PushSubscription as WebPushSubscription } from 'web-push';
+import webpush, { type PushSubscription as WebPushSubscription, type RequestOptions } from 'web-push';
 import { logger } from '../logger.js';
-import { vapidKeys } from './config.js';
+import { vapidKeys, type VapidKeys } from './config.js';
 
 const log = logger.child({ module: 'web-push' });
 
@@ -39,6 +39,22 @@ const TTL_SECONDS = 4 * 60 * 60;
 
 function toWebPushSubscription(row: StoredSubscription): WebPushSubscription {
   return { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } };
+}
+
+/**
+ * Send options shared by every push.
+ *
+ * Urgency goes through web-push's own `urgency` option, never `headers`: the library writes its
+ * `urgency` (default `normal`) over any `Urgency` header it was given. That is how every push went
+ * out as `normal` — which Chrome on Android receives but does not display. `high` is what the FCM
+ * path always sent, and what Android needs.
+ */
+export function sendOptions(keys: VapidKeys): RequestOptions {
+  return {
+    vapidDetails: { subject: keys.subject, publicKey: keys.publicKey, privateKey: keys.privateKey },
+    TTL: TTL_SECONDS,
+    urgency: 'high',
+  };
 }
 
 /**
@@ -78,11 +94,7 @@ export async function sendWebPush(
   }
 
   const payload = buildPayload(notification, data);
-  const options = {
-    vapidDetails: { subject: keys.subject, publicKey: keys.publicKey, privateKey: keys.privateKey },
-    TTL: TTL_SECONDS,
-    headers: { Urgency: 'high' },
-  };
+  const options = sendOptions(keys);
 
   const results = await Promise.all(
     subscriptions.map(async (subscription) => {
@@ -160,11 +172,7 @@ export async function sendDeclarativeWebPush(
   }
 
   const payload = buildDeclarativePayload(notification, navigate);
-  const options = {
-    vapidDetails: { subject: keys.subject, publicKey: keys.publicKey, privateKey: keys.privateKey },
-    TTL: TTL_SECONDS,
-    headers: { Urgency: 'high' },
-  };
+  const options = sendOptions(keys);
 
   const results = await Promise.all(
     subscriptions.map(async (subscription) => {
