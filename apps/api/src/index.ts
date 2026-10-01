@@ -33,8 +33,8 @@ import {
 } from './i18n/index.js';
 import { languageForUser } from './i18n/recipients.js';
 import { startTranslationOverrides } from './i18n/store.js';
-import { clientPushConfig, webPushMisconfigured } from './push/config.js';
-import { sendDeclarativeWebPush } from './push/webPush.js';
+import { clientPushConfig, vapidKeys, webPushMisconfigured } from './push/config.js';
+import { sendDeclarativeWebPush, sendWebPush, type StoredSubscription } from './push/webPush.js';
 import { PATIENT_PUSH, PATIENT_TEXT } from './patientCopy.js';
 import type { NextFunction, Request, Response } from 'express';
 import { MulterError } from 'multer';
@@ -4144,6 +4144,93 @@ app.get('/push/hello-world', async (req, res, next) => {
       next(new HttpError(503, e.message));
       return;
     }
+    next(e);
+  }
+});
+
+/**
+ * Sends one Web Push notification to every active subscriber, for manual announcements.
+ *
+ * Guarded by the broadcast secret, like the other manual push tools:
+ *   curl -X POST "$API/push/web/broadcast?secret=$PUSH_BROADCAST_SECRET" \
+ *     -H 'Content-Type: application/json' -d '{"title":"Anuva","body":"Hello"}'
+ *
+ * `audience` picks the subscription tables: patients by default, or `family`, `doctors`, `all`.
+ * A device subscribed in more than one table is sent to once.
+ */
+app.post('/push/web/broadcast', async (req, res, next) => {
+  try {
+    requireBroadcastSecret(req);
+
+    const body = z
+      .object({
+        title: z.string().trim().min(1).max(120).default('Anuva'),
+        body: z.string().trim().min(1).max(500),
+        url: z.string().trim().min(1).default('/home'),
+        audience: z.enum(['users', 'family', 'doctors', 'all']).default('users'),
+      })
+      .parse(req.body ?? {});
+
+    if (!vapidKeys()) {
+      throw new HttpError(503, 'VAPID keys are not configured.');
+    }
+
+    const select = { id: true, endpoint: true, p256dh: true, auth: true } as const;
+    const where = { status: 'ACTIVE' } as const;
+    const includes = (kind: 'users' | 'family' | 'doctors') =>
+      body.audience === 'all' || body.audience === kind;
+
+    const [users, family, doctors] = await Promise.all([
+      includes('users') ? prisma.webPushSubscription.findMany({ where, select }) : [],
+      includes('family') ? prisma.familyWebPushSubscription.findMany({ where, select }) : [],
+      includes('doctors') ? prisma.specialistWebPushSubscription.findMany({ where, select }) : [],
+    ]);
+
+    const byEndpoint = new Map<string, StoredSubscription>();
+    for (const row of [...users, ...family, ...doctors]) byEndpoint.set(row.endpoint, row);
+    const subscriptions = [...byEndpoint.values()];
+
+    // Batched so a large list does not open thousands of connections to the push services at once.
+    const BATCH = 100;
+    let successCount = 0;
+    let failureCount = 0;
+    const goneEndpoints: string[] = [];
+    for (let i = 0; i < subscriptions.length; i += BATCH) {
+      const result = await sendWebPush(
+        subscriptions.slice(i, i + BATCH),
+        { title: body.title, body: body.body },
+        { url: body.url },
+      );
+      successCount += result.successCount;
+      failureCount += result.failureCount;
+      goneEndpoints.push(...result.goneEndpoints);
+    }
+
+    if (goneEndpoints.length > 0) {
+      const gone = { endpoint: { in: goneEndpoints } };
+      await Promise.all([
+        prisma.webPushSubscription.deleteMany({ where: gone }),
+        prisma.familyWebPushSubscription.deleteMany({ where: gone }),
+        prisma.specialistWebPushSubscription.deleteMany({ where: gone }),
+      ]).catch((error) => req.log.warn({ err: error }, 'Could not drop expired subscriptions'));
+    }
+
+    req.log.info(
+      { audience: body.audience, targeted: subscriptions.length, successCount, failureCount },
+      'Web push broadcast sent',
+    );
+
+    res.json(
+      pushBroadcastResponseSchema.parse({
+        ok: true,
+        title: body.title,
+        body: body.body,
+        targeted: subscriptions.length,
+        successCount,
+        failureCount,
+      }),
+    );
+  } catch (e) {
     next(e);
   }
 });
