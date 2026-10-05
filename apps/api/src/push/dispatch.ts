@@ -82,6 +82,24 @@ export function withoutDuplicateDevices(
   return tokens.filter((token) => !token.deviceId || !subscribed.has(token.deviceId));
 }
 
+/**
+ * A Prisma `where` fragment for "has a device this deployment can notify".
+ *
+ * For the jobs that pick who to notify before calling `sendToAudience`. Asking only for FCM tokens
+ * is how everyone who registered after the move to Web Push went without scheduled nudges: they
+ * have a subscription and no token, so they were never picked. `User` and `FamilyMember` name both
+ * relations the same, so one fragment serves either.
+ */
+export function hasReachableDevice(provider = pushProvider()) {
+  const active = { some: { status: 'ACTIVE' as const } };
+  return {
+    OR: [
+      ...(usesFcm(provider) ? [{ fcmTokens: active }] : []),
+      ...(usesWebPush(provider) ? [{ webPushSubscriptions: active }] : []),
+    ],
+  };
+}
+
 /** Deletes the subscriptions a push service has told us are gone. */
 async function dropGone(audience: Audience, endpoints: string[]): Promise<void> {
   if (endpoints.length === 0) return;

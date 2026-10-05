@@ -2,6 +2,7 @@ import { copy, fill } from '../i18n/index.js';
 import cron from 'node-cron';
 import { prisma } from '@anuva/database';
 import { logger } from '../logger.js';
+import { hasReachableDevice } from '../push/dispatch.js';
 import { buildSummaryForSignals, weeklyLearnNudge } from './digest.js';
 import { readerFor } from './articles.js';
 import { ACTION_PENDING_REMINDER } from './content.js';
@@ -125,7 +126,7 @@ export async function sendWeeklyLearnNudge(now = new Date()): Promise<number> {
     where: {
       status: 'active',
       user: { familyFeatureOptOut: false, erasedAt: null },
-      fcmTokens: { some: { status: 'ACTIVE' } },
+      ...hasReachableDevice(),
     },
     select: { id: true },
   });
@@ -184,7 +185,7 @@ export async function sendCadenceNudge(
     where: {
       status: 'active',
       user: { familyFeatureOptOut: false, erasedAt: null },
-      fcmTokens: { some: { status: 'ACTIVE' } },
+      ...hasReachableDevice(),
     },
     select: { id: true, relationship: true, userId: true },
   });

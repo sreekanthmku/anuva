@@ -29,7 +29,9 @@ vi.mock('../src/fcm.js', () => ({ sendPushToAllTokens }));
 const sendWebPush = vi.fn();
 vi.mock('../src/push/webPush.js', () => ({ sendWebPush }));
 
-const { countDevices, sendToAudience, withoutDuplicateDevices } = await import('../src/push/dispatch.js');
+const { countDevices, hasReachableDevice, sendToAudience, withoutDuplicateDevices } = await import(
+  '../src/push/dispatch.js'
+);
 
 const NOTIFICATION = { title: 'She says thank you', body: 'It landed.' };
 
@@ -51,6 +53,26 @@ beforeEach(() => {
 
 afterEach(() => {
   delete process.env.PUSH_PROVIDER;
+});
+
+describe('hasReachableDevice', () => {
+  const active = { some: { status: 'ACTIVE' } };
+
+  // The scheduled jobs pick recipients with this. Asking for FCM tokens alone left everyone who
+  // registered after the move to Web Push without nudges.
+  it('picks Web Push subscribers on webpush', () => {
+    expect(hasReachableDevice('webpush')).toEqual({ OR: [{ webPushSubscriptions: active }] });
+  });
+
+  it('picks FCM token holders on fcm', () => {
+    expect(hasReachableDevice('fcm')).toEqual({ OR: [{ fcmTokens: active }] });
+  });
+
+  it('picks either on both', () => {
+    expect(hasReachableDevice('both')).toEqual({
+      OR: [{ fcmTokens: active }, { webPushSubscriptions: active }],
+    });
+  });
 });
 
 describe('withoutDuplicateDevices', () => {

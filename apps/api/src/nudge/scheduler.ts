@@ -1,6 +1,6 @@
 // ANU Nudge Engine — scheduler.
 // node-cron jobs fire each of the three daily slots. Per slot we evaluate every
-// user with an active FCM token through the Governor + dispatch builder and push
+// user with a device on the active push transport through the Governor + dispatch builder and push
 // the resulting card. NudgeDailyState is keyed by date, so each new day starts a
 // fresh row with count 0 — no separate midnight-reset job is needed.
 
@@ -8,7 +8,7 @@ import { withLanguage } from '../i18n/index.js';
 import cron from 'node-cron';
 import { prisma } from '@anuva/database';
 import type { NudgeSlot } from '@anuva/shared';
-import { sendToAudience } from '../push/dispatch.js';
+import { hasReachableDevice, sendToAudience } from '../push/dispatch.js';
 import { logger } from '../logger.js';
 import { buildDispatch, recordSend, recordSuppression } from './engine.js';
 
@@ -31,12 +31,8 @@ export type DispatchSlotResult = {
 // Run one slot for all eligible users. Exported for manual/test triggering.
 export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<DispatchSlotResult> {
   const users = await prisma.user.findMany({
-    where: { fcmTokens: { some: { status: 'ACTIVE' } } },
-    select: {
-      id: true,
-      preferredLanguage: true,
-      fcmTokens: { where: { status: 'ACTIVE' }, select: { token: true } },
-    },
+    where: hasReachableDevice(),
+    select: { id: true, preferredLanguage: true },
   });
 
   let sent = 0;
