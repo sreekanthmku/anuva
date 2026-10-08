@@ -8,6 +8,7 @@ import {
   FAMILY_REPROMPT_MINUTES,
 } from './config.js';
 import { FamilyError } from './errors.js';
+import { endLoginSessions } from '../loginHistory.js';
 import { buildShareMessage, buildShareUrl, inviteTokenHash, mintInviteToken } from './tokens.js';
 
 /**
@@ -400,6 +401,7 @@ export async function removeMember(userId: string, memberId: string): Promise<vo
   }
 
   await prisma.$transaction([
+    endLoginSessions({ familyMemberId: member.id }, 'member_revoked'),
     prisma.familySession.deleteMany({ where: { familyMemberId: member.id } }),
     prisma.familyMember.update({
       where: { id: member.id },

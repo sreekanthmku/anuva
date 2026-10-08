@@ -85,6 +85,7 @@ import {
   rescheduleConsultationBodySchema,
   rescheduleConsultationResponseSchema,
   logoutResponseSchema,
+  loginSessionsResponseSchema,
   pushConfigResponseSchema,
   registerFcmBodySchema,
   registerWebPushBodySchema,
@@ -255,6 +256,13 @@ import { createFamilyRouter } from './family/index.js';
 import { startFamilyJobs } from './family/jobs.js';
 import { AdminError } from './admin/errors.js';
 import {
+  endLoginSessions,
+  loginContext,
+  loginSessionCreate,
+  shouldTouch,
+  touchLoginSession,
+} from './loginHistory.js';
+import {
   CLEARED_LOCK_STATE,
   DUMMY_DOCTOR_PASSWORD_HASH,
   hashDoctorPassword,
@@ -266,6 +274,15 @@ import {
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
+
+// Login history records the client's IP, and behind Coolify's proxy `req.ip` is the proxy's
+// address unless Express is told how many hops to trust. A number is a hop count; anything else is
+// passed through as Express's own setting ("loopback", a subnet list). Unset keeps today's
+// behaviour, which is only right when nothing sits in front of the API.
+const TRUST_PROXY = process.env.TRUST_PROXY?.trim();
+if (TRUST_PROXY) {
+  app.set('trust proxy', /^\d+$/.test(TRUST_PROXY) ? Number(TRUST_PROXY) : TRUST_PROXY === 'true' || TRUST_PROXY);
+}
 
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'anuva_session';
 const SESSION_TTL_DAYS = Number(process.env.SESSION_TTL_DAYS || 30);
@@ -760,17 +777,24 @@ async function requireCurrentUser(req: Request) {
       id: true,
       userId: true,
       expiresAt: true,
+      lastSeenAt: true,
+      loginSessionId: true,
     },
   });
 
-  if (!session || session.expiresAt <= new Date()) {
+  const now = new Date();
+  if (!session || session.expiresAt <= now) {
     throw new HttpError(401, 'Your session has expired. Please sign in again.');
   }
 
-  await prisma.session.update({
-    where: { id: session.id },
-    data: { lastSeenAt: new Date() },
-  });
+  // Throttled and fire-and-forget: "last active" does not need a write on every request, and a
+  // failed write must not fail one.
+  if (shouldTouch(session.lastSeenAt, now)) {
+    void prisma.session
+      .update({ where: { id: session.id }, data: { lastSeenAt: now } })
+      .catch(() => undefined);
+    touchLoginSession(session.loginSessionId, req, now);
+  }
 
   // Every later log line on this request — including the completion line and any error —
   // carries the user it belonged to.
@@ -840,7 +864,7 @@ function doctorConsultationScope(identity: DoctorIdentity): { specialistId?: str
  * A `doctor` account whose specialist row has been deactivated resolves to null: deactivating the
  * specialist is how a doctor is taken off the portal, and it must not silently keep working.
  */
-async function resolveDoctorIdentity(token: string): Promise<DoctorIdentity | null> {
+async function resolveDoctorIdentity(token: string, req: Request): Promise<DoctorIdentity | null> {
   const session = await prisma.specialistSession.findUnique({
     where: { tokenHash: sha256(token) },
     include: {
@@ -862,6 +886,9 @@ async function resolveDoctorIdentity(token: string): Promise<DoctorIdentity | nu
   }
 
   if (session.expiresAt.getTime() <= Date.now()) {
+    await endLoginSessions({ liveSpecialistSession: { is: { id: session.id } } }, 'expired').catch(
+      () => undefined,
+    );
     await prisma.specialistSession.delete({ where: { id: session.id } }).catch(() => undefined);
     return null;
   }
@@ -872,9 +899,13 @@ async function resolveDoctorIdentity(token: string): Promise<DoctorIdentity | nu
   }
 
   // lastSeenAt is best-effort telemetry; a failed write must not fail the request.
-  void prisma.specialistSession
-    .update({ where: { id: session.id }, data: { lastSeenAt: new Date() } })
-    .catch(() => undefined);
+  const now = new Date();
+  if (shouldTouch(session.lastSeenAt, now)) {
+    void prisma.specialistSession
+      .update({ where: { id: session.id }, data: { lastSeenAt: now } })
+      .catch(() => undefined);
+    touchLoginSession(session.loginSessionId, req, now);
+  }
 
   return toDoctorIdentity(specialist);
 }
@@ -926,7 +957,7 @@ async function requireDoctorAccess(req: Request, _res: Response, next: NextFunct
     }
 
     const token = getDoctorSessionToken(req);
-    const identity = token ? await resolveDoctorIdentity(token) : null;
+    const identity = token ? await resolveDoctorIdentity(token, req) : null;
     if (!identity) {
       throw new HttpError(401, 'Sign in to continue.');
     }
@@ -2784,17 +2815,34 @@ app.post('/doctor/auth/login', async (req, res, next) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + DOCTOR_SESSION_TTL_HOURS * 60 * 60 * 1000);
 
+    const now = new Date();
     await prisma.$transaction([
       prisma.specialistSession.create({
-        data: { tokenHash: sha256(token), specialistId: specialist.id, expiresAt },
+        data: {
+          tokenHash: sha256(token),
+          specialist: { connect: { id: specialist.id } },
+          expiresAt,
+          loginSession: loginSessionCreate(
+            loginContext(req),
+            { principal: 'specialist', specialistId: specialist.id },
+            'password',
+            expiresAt,
+          ),
+        },
       }),
       prisma.specialist.update({
         where: { id: specialist.id },
-        data: { lastLoginAt: new Date(), ...CLEARED_LOCK_STATE },
+        data: { lastLoginAt: now, ...CLEARED_LOCK_STATE },
       }),
-      // Housekeeping: expired rows for this account would otherwise accumulate forever.
+      // Housekeeping: expired rows for this account would otherwise accumulate forever. Their
+      // history rows are closed first, while the live row still says which ones they were.
+      endLoginSessions(
+        { liveSpecialistSession: { is: { specialistId: specialist.id, expiresAt: { lte: now } } } },
+        'expired',
+        now,
+      ),
       prisma.specialistSession.deleteMany({
-        where: { specialistId: specialist.id, expiresAt: { lte: new Date() } },
+        where: { specialistId: specialist.id, expiresAt: { lte: now } },
       }),
     ]);
 
@@ -2816,6 +2864,7 @@ app.post('/doctor/auth/logout', async (req, res, next) => {
     setNoStoreHeaders(res);
     const token = getDoctorSessionToken(req);
     if (token) {
+      await endLoginSessions({ liveSpecialistSession: { is: { tokenHash: sha256(token) } } }, 'logout');
       await prisma.specialistSession.deleteMany({ where: { tokenHash: sha256(token) } });
     }
 
@@ -2856,17 +2905,18 @@ app.post('/doctor/auth/password', async (req, res, next) => {
     const currentToken = getDoctorSessionToken(req);
     const passwordHash = await hashDoctorPassword(body.newPassword);
 
+    const otherSessions = {
+      specialistId: specialist.id,
+      ...(currentToken ? { tokenHash: { not: sha256(currentToken) } } : {}),
+    };
+
     await prisma.$transaction([
       prisma.specialist.update({
         where: { id: specialist.id },
         data: { passwordHash, passwordUpdatedAt: new Date(), ...CLEARED_LOCK_STATE },
       }),
-      prisma.specialistSession.deleteMany({
-        where: {
-          specialistId: specialist.id,
-          ...(currentToken ? { tokenHash: { not: sha256(currentToken) } } : {}),
-        },
-      }),
+      endLoginSessions({ liveSpecialistSession: { is: otherSessions } }, 'password_changed'),
+      prisma.specialistSession.deleteMany({ where: otherSessions }),
     ]);
 
     req.log.info({ doctorUsername: identity.username }, 'Doctor password changed');
@@ -3643,8 +3693,9 @@ app.post('/auth/verify-otp', async (req, res, next) => {
     await prisma.session.create({
       data: {
         tokenHash: sha256(sessionToken),
-        userId: user.id,
+        user: { connect: { id: user.id } },
         expiresAt,
+        loginSession: loginSessionCreate(loginContext(req), { principal: 'patient', userId: user.id }, 'otp', expiresAt),
       },
     });
 
@@ -3704,8 +3755,14 @@ app.post('/auth/beta-login', async (req, res, next) => {
     await prisma.session.create({
       data: {
         tokenHash: sha256(sessionToken),
-        userId: user.id,
+        user: { connect: { id: user.id } },
         expiresAt,
+        loginSession: loginSessionCreate(
+          loginContext(req),
+          { principal: 'patient', userId: user.id },
+          'email_beta',
+          expiresAt,
+        ),
       },
     });
 
@@ -3848,6 +3905,7 @@ app.post('/auth/logout', async (req, res, next) => {
       });
       userId = session?.userId ?? null;
 
+      await endLoginSessions({ liveSession: { is: { tokenHash: sha256(sessionToken) } } }, 'logout');
       await prisma.session.deleteMany({
         where: { tokenHash: sha256(sessionToken) },
       });
@@ -3873,6 +3931,102 @@ app.post('/auth/logout', async (req, res, next) => {
 
     clearSessionCookie(res);
     res.json(logoutResponseSchema.parse({ ok: true }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** How many ended sign-ins "Devices and sign-ins" shows below the active ones. */
+const LOGIN_HISTORY_LIMIT = 20;
+
+/**
+ * Her devices: every sign-in still active, then the most recent ended ones. A sign-in from before
+ * login history existed has no row and is not listed — it ends on its own within the session TTL.
+ */
+app.get('/auth/sessions', async (req, res, next) => {
+  try {
+    setNoStoreHeaders(res);
+    const user = await requireCurrentUser(req);
+    const currentHash = sha256(getSessionToken(req) ?? '');
+
+    const select = {
+      id: true,
+      deviceType: true,
+      os: true,
+      osVersion: true,
+      browser: true,
+      appPlatform: true,
+      ipAddress: true,
+      startedAt: true,
+      lastSeenAt: true,
+      endedAt: true,
+      endReason: true,
+      liveSession: { select: { tokenHash: true } },
+    } as const;
+
+    const [active, ended] = await Promise.all([
+      prisma.loginSession.findMany({
+        where: { userId: user.id, endedAt: null, liveSession: { isNot: null } },
+        select,
+        orderBy: { lastSeenAt: 'desc' },
+      }),
+      prisma.loginSession.findMany({
+        where: { userId: user.id, endedAt: { not: null } },
+        select,
+        orderBy: { endedAt: 'desc' },
+        take: LOGIN_HISTORY_LIMIT,
+      }),
+    ]);
+
+    res.json(
+      loginSessionsResponseSchema.parse({
+        sessions: [...active, ...ended].map(({ liveSession, ...row }) => ({
+          ...row,
+          current: liveSession?.tokenHash === currentHash,
+          active: row.endedAt === null && liveSession !== null,
+          startedAt: row.startedAt.toISOString(),
+          lastSeenAt: row.lastSeenAt.toISOString(),
+          endedAt: row.endedAt?.toISOString() ?? null,
+        })),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Signs one of her other devices out. The device she is holding signs out through /auth/logout,
+ * which also unregisters its push token; ending it here would leave that token live.
+ */
+app.delete('/auth/sessions/:id', async (req, res, next) => {
+  try {
+    setNoStoreHeaders(res);
+    const user = await requireCurrentUser(req);
+    const currentHash = sha256(getSessionToken(req) ?? '');
+
+    const target = await prisma.loginSession.findFirst({
+      where: { id: req.params.id, userId: user.id },
+      select: { id: true, liveSession: { select: { id: true, tokenHash: true } } },
+    });
+
+    if (!target) {
+      throw new HttpError(404, 'Sign-in not found.');
+    }
+
+    if (target.liveSession?.tokenHash === currentHash) {
+      throw new HttpError(400, 'Use sign out to end the session on this device.');
+    }
+
+    if (target.liveSession) {
+      await prisma.$transaction([
+        endLoginSessions({ id: target.id }, 'revoked_by_user'),
+        prisma.session.delete({ where: { id: target.liveSession.id } }),
+      ]);
+      req.log.info({ loginSessionId: target.id }, 'Sign-in ended from another device');
+    }
+
+    res.status(204).end();
   } catch (e) {
     next(e);
   }

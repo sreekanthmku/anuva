@@ -79,6 +79,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     questions,
     tickets,
     devices,
+    signIns,
     trackerLogs,
     familyMembers,
   ] = await Promise.all([
@@ -199,6 +200,27 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
       select: { platform: true, status: true, createdAt: true, updatedAt: true },
       take: MAX_ROWS_PER_COLLECTION,
     }),
+    // Her sign-in history as we hold it, IPs included — they are information about her, and the
+    // ones past retention are already cut down to their network.
+    prisma.loginSession.findMany({
+      where: { userId },
+      select: {
+        method: true,
+        startedAt: true,
+        lastSeenAt: true,
+        endedAt: true,
+        endReason: true,
+        deviceType: true,
+        os: true,
+        osVersion: true,
+        browser: true,
+        appPlatform: true,
+        ipAddress: true,
+        lastSeenIp: true,
+      },
+      orderBy: { startedAt: 'desc' },
+      take: MAX_ROWS_PER_COLLECTION,
+    }),
     dumpTrackerLogs(userId),
     // Who she shared with, and what they did. DPDP §11 covers who else received the data, so an
     // export that omits this is incomplete. Their phone is a third party's, so it is masked here
@@ -279,6 +301,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
       })),
     })),
     devices,
+    signIns,
     trackedHealth: trackerLogs,
   };
 }

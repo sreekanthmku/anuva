@@ -138,6 +138,24 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     createSchema: objectSchema({}),
     updateSchema: objectSchema({ expiresAt: dateString }, true),
   }),
+  /**
+   * Sign-in history for every kind of account. A record of what happened, so nothing is creatable
+   * or editable; ending a live sign-in is done on the session resources above.
+   */
+  def({
+    resource: 'login-sessions',
+    label: 'Login History',
+    prismaModel: 'loginSession',
+    group: 'Auth & Users',
+    searchFields: ['id', 'userId', 'specialistId', 'familyMemberId', 'ipAddress'],
+    filterFields: ['userId', 'specialistId', 'familyMemberId', 'principal', 'endReason'],
+    sortableFields: ['startedAt', 'lastSeenAt', 'endedAt'],
+    defaultSort: 'startedAt',
+    listFields: ['principal', 'user', 'specialist', 'os', 'browser', 'deviceType', 'ipAddress', 'startedAt', 'lastSeenAt', 'endReason'],
+    canCreate: false,
+    createSchema: objectSchema({}),
+    updateSchema: objectSchema({}, true),
+  }),
   def({
     resource: 'otp-challenges',
     label: 'OTP Challenges',

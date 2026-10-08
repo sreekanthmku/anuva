@@ -99,6 +99,7 @@ import { familyMeBody, previewInvite, requestJoinOtp, verifyJoinOtp, type OtpDep
 import { sendFamilyMessage } from './messages.js';
 import { sendFamilyThanks } from './thanks.js';
 import { requestSignInOtp, verifySignInOtp } from './signin.js';
+import { loginContext } from '../loginHistory.js';
 import {
   registerFamilyToken,
   registerFamilyWebPush,
@@ -288,6 +289,7 @@ export function createFamilyRouter({
       const { body: payload, sessionToken, sessionExpiresAt } = await verifyJoinOtp(
         { ...body, phone: normalizePhone(body.phone) },
         otp,
+        loginContext(req),
       );
 
       res.cookie(FAMILY_SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions(sessionExpiresAt));
@@ -330,6 +332,7 @@ export function createFamilyRouter({
       const { body: payload, sessionToken, sessionExpiresAt } = await verifySignInOtp(
         { ...body, phone: normalizePhone(body.phone) },
         otp,
+        loginContext(req),
       );
 
       res.cookie(FAMILY_SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions(sessionExpiresAt));

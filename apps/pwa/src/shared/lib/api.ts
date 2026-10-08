@@ -1,4 +1,5 @@
 import i18n from '../../i18n';
+import { getOrCreateDeviceId } from '../../lib/notifications/deviceId';
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
 
 export class ApiError extends Error {
@@ -29,6 +30,18 @@ export function apiUrl(path: string): string {
   return toAbsoluteUrl(path) as string;
 }
 
+/**
+ * Which surface this is, for the sign-in history the API keeps: `pwa` when installed to the home
+ * screen, `web` in a browser tab. Read on every call because the answer can change under a tab.
+ */
+function appPlatform(): 'pwa' | 'web' {
+  try {
+    return window.matchMedia('(display-mode: standalone)').matches ? 'pwa' : 'web';
+  } catch {
+    return 'web';
+  }
+}
+
 export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(toAbsoluteUrl(input), {
     credentials: 'include',
@@ -39,6 +52,9 @@ export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit):
       // sending it now means server-built copy can follow without another client release.
       // `Accept-Language` is CORS-safelisted, so this adds no preflight.
       'Accept-Language': i18n.language,
+      // Read by the API only when a sign-in starts, to record which device it came from.
+      'X-App-Platform': appPlatform(),
+      'X-Device-Id': getOrCreateDeviceId(),
       ...(init?.headers || {}),
     },
   });

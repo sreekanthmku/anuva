@@ -4,6 +4,13 @@ import { prisma } from '@anuva/database';
 import { FAMILY_SESSION_COOKIE_NAME, FAMILY_SESSION_TTL_DAYS } from './config.js';
 import { FamilyError } from './errors.js';
 import { requestedLanguage } from '../i18n/index.js';
+import {
+  endLoginSessions,
+  loginSessionCreate,
+  shouldTouch,
+  touchLoginSession,
+  type LoginContext,
+} from '../loginHistory.js';
 
 /**
  * Family sessions. Deliberately the same construction as the patient and doctor sessions — an
@@ -50,12 +57,18 @@ export function familySessionExpiry(now: Date): Date {
 export async function createFamilySession(
   familyMemberId: string,
   now: Date,
+  login: LoginContext,
 ): Promise<{ token: string; expiresAt: Date }> {
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = familySessionExpiry(now);
 
   await prisma.familySession.create({
-    data: { tokenHash: sha256(token), familyMemberId, expiresAt },
+    data: {
+      tokenHash: sha256(token),
+      member: { connect: { id: familyMemberId } },
+      expiresAt,
+      loginSession: loginSessionCreate(login, { principal: 'family', familyMemberId }, 'otp', expiresAt),
+    },
   });
 
   return { token, expiresAt };
@@ -81,6 +94,8 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
     select: {
       id: true,
       expiresAt: true,
+      lastSeenAt: true,
+      loginSessionId: true,
       member: {
         select: {
           id: true,
@@ -88,6 +103,7 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
           relationship: true,
           status: true,
           userId: true,
+          preferredLanguage: true,
           user: { select: { name: true, erasedAt: true, familyFeatureOptOut: true } },
         },
       },
@@ -111,14 +127,25 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
   // The language rides along on the lastSeenAt write that happens anyway, so remembering it — for
   // this member's pushes, which have no request to read it from — costs no extra query. Only an
   // explicit header is stored; a client that sends none leaves the choice alone.
-  const language = requestedLanguage(req.headers);
-  await prisma.$transaction([
-    prisma.familySession.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } }),
-    prisma.familyMember.update({
-      where: { id: member.id },
-      data: { lastSeenAt: new Date(), ...(language ? { preferredLanguage: language } : {}) },
-    }),
-  ]);
+  //
+  // Both are throttled like the patient's: a write per request bought nothing a write every few
+  // minutes does not. A language change is the exception and is written at once.
+  const requested = requestedLanguage(req.headers);
+  const language = requested && requested !== member.preferredLanguage ? requested : null;
+  const now = new Date();
+  const touch = shouldTouch(session.lastSeenAt, now);
+  if (touch || language) {
+    await prisma.$transaction([
+      prisma.familySession.update({ where: { id: session.id }, data: { lastSeenAt: now } }),
+      prisma.familyMember.update({
+        where: { id: member.id },
+        data: { lastSeenAt: now, ...(language ? { preferredLanguage: language } : {}) },
+      }),
+    ]);
+  }
+  if (touch) {
+    touchLoginSession(session.loginSessionId, req, now);
+  }
 
   req.log = req.log?.child?.({ familyMemberId: member.id, userId: member.userId }) ?? req.log;
 
@@ -134,5 +161,6 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
 export async function destroyFamilySession(req: Request): Promise<void> {
   const token = getFamilySessionToken(req);
   if (!token) return;
+  await endLoginSessions({ liveFamilySession: { is: { tokenHash: sha256(token) } } }, 'logout');
   await prisma.familySession.deleteMany({ where: { tokenHash: sha256(token) } });
 }

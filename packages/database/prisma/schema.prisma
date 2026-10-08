@@ -33,6 +33,7 @@ model User {
   updatedAt           DateTime  @updatedAt
 
   sessions          Session[]
+  loginSessions     LoginSession[]
   otpChallenges     OtpChallenge[]
   healthProfile     HealthProfile?
   assessments       Assessment[]
@@ -187,6 +188,9 @@ model FcmToken {
   @@index([userId, status])
 }
 
+/// A live sign-in: the token that keeps her signed in, and nothing else. Deleted on logout, which is
+/// what makes logout safe — there is no "revoked" flag for an auth path to forget to check. The
+/// record that the sign-in happened lives on in `LoginSession`.
 model Session {
   id          String   @id @default(cuid())
   tokenHash   String   @unique
@@ -195,8 +199,93 @@ model Session {
   expiresAt   DateTime
   lastSeenAt  DateTime @default(now())
   createdAt   DateTime @default(now())
+  /// Null only for sessions opened before login history existed.
+  loginSessionId String?       @unique
+  loginSession   LoginSession? @relation(fields: [loginSessionId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+}
+
+enum LoginPrincipal {
+  patient
+  family
+  specialist
+}
+
+enum LoginMethod {
+  otp
+  email_beta
+  password
+}
+
+enum LoginEndReason {
+  /// Signed out from that device.
+  logout
+  /// The token lapsed without a logout. Closed by the retention sweep, since nothing else sees it.
+  expired
+  /// Ended from another of her own devices.
+  revoked_by_user
+  /// Ended from the admin panel.
+  admin_revoked
+  /// A doctor changed their password, which signs out every other device.
+  password_changed
+  /// A family member disconnected by the woman they supported.
+  member_revoked
+  /// The live session disappeared by a path that did not say why (an admin row delete, say).
+  ended
+}
+
+/// One row per sign-in, for every kind of account, kept after the live session is gone. This is the
+/// login history: which device, which OS, from where, and how it ended.
+///
+/// The owner is three nullable foreign keys rather than a generic owner id on purpose: the
+/// `user User` relation is what `pnpm check:erasure` keys on, so a patient's history cannot
+/// silently survive her erasure. All three are SetNull, never Cascade — history must outlive a
+/// deleted specialist row, and `eraseAccount` deletes hers (and her family member's) by name.
+///
+/// IPs are personal data with a shorter life than the row: once a sign-in has been idle for
+/// LOGIN_IP_RETENTION_DAYS the retention job truncates them and stamps `ipTruncatedAt`, keeping
+/// device, OS and dates.
+model LoginSession {
+  id             String         @id @default(cuid())
+  principal      LoginPrincipal
+  userId         String?
+  user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  familyMemberId String?
+  familyMember   FamilyMember?  @relation(fields: [familyMemberId], references: [id], onDelete: SetNull)
+  specialistId   String?
+  specialist     Specialist?    @relation(fields: [specialistId], references: [id], onDelete: SetNull)
+
+  method      LoginMethod
+  ipAddress   String?
+  userAgent   String?
+  /// mobile | tablet | desktop, parsed from the user agent at sign-in. Null when it could not tell.
+  deviceType  String?
+  os          String?
+  osVersion   String?
+  browser     String?
+  /// pwa | android | ios, from the client's X-App-Platform header. Never guessed.
+  appPlatform String?
+  deviceId    String?
+
+  startedAt     DateTime        @default(now())
+  /// When the live session was due to lapse. Lets the sweep close a sign-in nobody logged out of.
+  expiresAt     DateTime
+  lastSeenAt    DateTime        @default(now())
+  lastSeenIp    String?
+  endedAt       DateTime?
+  endReason     LoginEndReason?
+  ipTruncatedAt DateTime?
+
+  liveSession           Session?
+  liveFamilySession     FamilySession?
+  liveSpecialistSession SpecialistSession?
+
+  @@index([userId, startedAt])
+  @@index([familyMemberId, startedAt])
+  @@index([specialistId, startedAt])
+  @@index([endedAt, expiresAt])
+  @@index([ipTruncatedAt, lastSeenAt])
 }
 
 enum OtpChallengePurpose {
@@ -355,6 +444,7 @@ model FamilyMember {
 
   invite         FamilyInvite?
   sessions       FamilySession[]
+  loginSessions  LoginSession[]
   supportActions FamilySupportAction[]
   fcmTokens      FamilyFcmToken[]
   webPushSubscriptions FamilyWebPushSubscription[]
@@ -449,6 +539,8 @@ model FamilySession {
   expiresAt      DateTime
   lastSeenAt     DateTime     @default(now())
   createdAt      DateTime     @default(now())
+  loginSessionId String?       @unique
+  loginSession   LoginSession? @relation(fields: [loginSessionId], references: [id], onDelete: SetNull)
 
   @@index([familyMemberId])
 }
@@ -807,6 +899,7 @@ model Specialist {
   failedLoginCount  Int                    @default(0)
   lockedUntil       DateTime?
   sessions          SpecialistSession[]
+  loginSessions     LoginSession[]
   subtitle       String?
   role           String?
   specialization String?
@@ -875,6 +968,8 @@ model SpecialistSession {
   expiresAt    DateTime
   lastSeenAt   DateTime   @default(now())
   createdAt    DateTime   @default(now())
+  loginSessionId String?       @unique
+  loginSession   LoginSession? @relation(fields: [loginSessionId], references: [id], onDelete: SetNull)
 
   @@index([specialistId])
 }

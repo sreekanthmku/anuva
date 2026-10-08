@@ -247,7 +247,13 @@ export async function eraseAccount(userId: string): Promise<ErasureCounts> {
   counts.recordings = await eraseRecordings(userId);
   counts.chatMessages = await eraseChat(userId);
   counts.trackerEntries = await eraseTracker(userId);
-  counts.profileRecords = await deleteByUser(ERASURE_ACCOUNT_MODELS, userId);
+  // Her family member's sign-in history first: it carries no `userId` for the registry pass to find,
+  // and once the member row below is gone it would be left pointing at nobody.
+  const { count: familyLogins } = await prisma.loginSession.deleteMany({
+    where: { familyMember: { is: { userId } } },
+  });
+  counts.profileRecords = familyLogins;
+  counts.profileRecords += await deleteByUser(ERASURE_ACCOUNT_MODELS, userId);
   counts.anonymised = await anonymizeRetainedContent(userId);
   counts.anonymised += await stampClinicalRetention(userId, now);
   counts.profileRecords += await unstageExports(userId);

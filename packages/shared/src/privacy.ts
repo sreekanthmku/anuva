@@ -87,6 +87,10 @@ export const ERASURE_ACCOUNT_MODELS = [
   'familyMember',
   'fcmToken',
   'session',
+  // Sign-in history: device, OS and IP per login. Deleted rather than anonymised — once the account
+  // is a tombstone, nobody can sign in as it, so there is no security question left to answer.
+  // Her family member's history has no `userId` and is deleted by `eraseAccount` separately.
+  'loginSession',
 ] as const;
 
 /**

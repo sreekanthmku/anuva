@@ -1,9 +1,11 @@
 // The jobs that make the privacy screen's promises true.
 //
-// Three of them, each closing a gap that a UI claim would otherwise open:
+// Each closes a gap that a UI claim would otherwise open:
 //   - a scheduled account deletion actually running once its grace period is up
 //   - a staged export disappearing after 24 hours, downloaded or not
 //   - consultation records leaving after the NMC three-year floor rather than living forever
+//   - sign-in IPs cut down to their network once LOGIN_IP_RETENTION_DAYS have passed
+// plus one housekeeping sweep: closing the login history of sessions that lapsed without a logout.
 //
 // Modelled on the support-ticket purge: retention is stamped on the row at the moment the promise
 // is made, and the job only acts on dates it finds there. Changing a policy therefore cannot
@@ -16,6 +18,7 @@ import { logger } from '../logger.js';
 import { resolveConsultationDocumentPath } from '../consultationDocuments.js';
 import { eraseRecordings, eraseScope } from './erasure.js';
 import { unlinkExportFile } from './export.js';
+import { closeLapsedLoginSessions, truncateExpiredLoginIps } from '../loginHistory.js';
 import fs from 'node:fs/promises';
 
 const log = logger.child({ module: 'privacy-retention' });
@@ -148,6 +151,19 @@ export async function purgeExpiredClinicalRecords(): Promise<number> {
   return purged;
 }
 
+/** Hourly, so an expired session's history row is closed within the hour it lapsed. */
+export async function runLoginHistoryJobs(): Promise<void> {
+  try {
+    const closed = await closeLapsedLoginSessions();
+    const truncated = await truncateExpiredLoginIps();
+    if (closed > 0 || truncated > 0) {
+      log.info({ closed, truncated }, 'Login history swept');
+    }
+  } catch (error) {
+    log.error({ err: error }, 'Login history sweep failed');
+  }
+}
+
 export function startPrivacyRetentionJobs(): void {
   if (process.env.PRIVACY_RETENTION_DISABLED === 'true') {
     log.warn('Privacy retention jobs disabled via PRIVACY_RETENTION_DISABLED');
@@ -159,6 +175,7 @@ export function startPrivacyRetentionJobs(): void {
   cron.schedule('20 * * * *', () => void executeDueDeletions(), { timezone: TZ });
   cron.schedule('35 * * * *', () => void purgeExpiredExports(), { timezone: TZ });
   cron.schedule('50 4 * * *', () => void purgeExpiredClinicalRecords(), { timezone: TZ });
+  cron.schedule('5 * * * *', () => void runLoginHistoryJobs(), { timezone: TZ });
 
   log.info({ timezone: TZ }, 'Privacy retention jobs scheduled');
 }

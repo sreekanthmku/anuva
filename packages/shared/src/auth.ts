@@ -98,6 +98,47 @@ export const logoutResponseSchema = z.object({
 
 export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
 
+export const loginEndReasonSchema = z.enum([
+  'logout',
+  'expired',
+  'revoked_by_user',
+  'admin_revoked',
+  'password_changed',
+  'member_revoked',
+  'ended',
+]);
+
+export type LoginEndReason = z.infer<typeof loginEndReasonSchema>;
+
+/**
+ * One sign-in as she sees it on "Devices and sign-ins". `active` means the device is still signed
+ * in; `current` is the device making this request. The IP is hers and shown to her as stored —
+ * after the retention window it is already only a network (`1.2.3.0/24`).
+ */
+export const loginSessionSummarySchema = z.object({
+  id: z.string(),
+  current: z.boolean(),
+  active: z.boolean(),
+  deviceType: z.string().nullable(),
+  os: z.string().nullable(),
+  osVersion: z.string().nullable(),
+  browser: z.string().nullable(),
+  appPlatform: z.string().nullable(),
+  ipAddress: z.string().nullable(),
+  startedAt: z.string().datetime(),
+  lastSeenAt: z.string().datetime(),
+  endedAt: z.string().datetime().nullable(),
+  endReason: loginEndReasonSchema.nullable(),
+});
+
+export type LoginSessionSummary = z.infer<typeof loginSessionSummarySchema>;
+
+export const loginSessionsResponseSchema = z.object({
+  sessions: z.array(loginSessionSummarySchema),
+});
+
+export type LoginSessionsResponse = z.infer<typeof loginSessionsResponseSchema>;
+
 export const startTrialResponseSchema = authUserSchema;
 
 export type StartTrialResponse = z.infer<typeof startTrialResponseSchema>;

@@ -10,6 +10,7 @@ const PRISMA_MODELS = [
   'user',
   'fcmToken',
   'session',
+  'loginSession',
   'otpChallenge',
   'healthProfile',
   'assessmentQuestion',

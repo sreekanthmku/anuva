@@ -28,12 +28,26 @@ function toAbsoluteUrl(input: RequestInfo | URL): RequestInfo | URL {
  * `credentials: 'include'` is the whole of it. The API is a separate origin in production, which
  * is why every request needs it explicitly.
  */
+/**
+ * Which surface this is, for the sign-in history the API keeps: `pwa` when installed to the home
+ * screen, `web` in a browser tab. Read on every call because the answer can change under a tab.
+ */
+function appPlatform(): 'pwa' | 'web' {
+  try {
+    return window.matchMedia('(display-mode: standalone)').matches ? 'pwa' : 'web';
+  } catch {
+    return 'web';
+  }
+}
+
 export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(toAbsoluteUrl(input), {
     credentials: 'include',
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      // Read by the API only at sign-in, to record which device it came from.
+      'X-App-Platform': appPlatform(),
       ...(init?.headers || {}),
     },
   });

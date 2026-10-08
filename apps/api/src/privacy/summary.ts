@@ -6,6 +6,7 @@ import { copy, fill } from '../i18n/index.js';
 // guess what she is about to lose.
 
 import { prisma } from '@anuva/database';
+import { LOGIN_IP_RETENTION_DAYS } from '../loginHistory.js';
 import {
   CLINICAL_RECORD_RETENTION_YEARS,
   ERASURE_TRACKER_MODELS,
@@ -60,7 +61,7 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
     prisma.anonymousQuestion.count({ where: { userId } }),
     prisma.supportTicket.count({ where: { userId } }),
     prisma.fcmToken.count({ where: { userId } }),
-    prisma.session.count({ where: { userId } }),
+    prisma.loginSession.count({ where: { userId } }),
     prisma.familyMember.count({ where: { userId } }),
     prisma.familySupportAction.count({ where: { userId } }),
   ]);
@@ -125,9 +126,11 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
     {
       key: 'devices',
       label: CATEGORY_TEXT.devices.label,
+      // Push registrations plus every sign-in on record, not just the ones still open: the history
+      // is what holds an IP and a device, so it is what she is being told about.
       count: devices + sessions,
       purpose: CATEGORY_TEXT.devices.purpose,
-      retention: null,
+      retention: fill(CATEGORY_TEXT.devices.retention, { days: LOGIN_IP_RETENTION_DAYS }),
     },
     {
       key: 'family',
@@ -182,8 +185,11 @@ const CATEGORY_TEXT = copy('privacy.categories', {
     retention: 'Deleted 6 months after you open the request.',
   },
   devices: {
-    label: 'Devices signed in',
-    purpose: 'Keeping you signed in, and delivering your notifications.',
+    label: 'Devices and sign-ins',
+    purpose:
+      'Keeping you signed in, delivering your notifications, and a record of which device and network you signed in from, so a sign-in that was not you can be spotted.',
+    retention:
+      'The network address of a sign-in is shortened to a rough area after {{days}} days. The rest is deleted with your account.',
   },
   family: {
     label: 'Family sharing',

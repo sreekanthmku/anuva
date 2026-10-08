@@ -4,6 +4,7 @@ import type {
   FamilySignInRequestOtpResponse,
 } from '@anuva/shared';
 import { createFamilySession } from './auth.js';
+import type { LoginContext } from '../loginHistory.js';
 import { FamilyError } from './errors.js';
 import { familyMeBody, type OtpDeps } from './join.js';
 
@@ -143,6 +144,7 @@ export async function requestSignInOtp(
 export async function verifySignInOtp(
   input: { challengeId: string; phone: string; otp: string },
   otp: OtpDeps,
+  login: LoginContext,
 ): Promise<{ body: FamilyMeResponse; sessionToken: string; sessionExpiresAt: Date }> {
   const now = new Date();
 
@@ -203,7 +205,7 @@ export async function verifySignInOtp(
     data: { status: 'verified', verifiedAt: now },
   });
 
-  const session = await createFamilySession(member.id, now);
+  const session = await createFamilySession(member.id, now, login);
 
   return {
     body: familyMeBody({

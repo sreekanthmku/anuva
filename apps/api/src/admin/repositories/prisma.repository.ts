@@ -246,7 +246,14 @@ export class PrismaEntityRepository {
    */
   async revokeSpecialistSessions(specialistId: string): Promise<number> {
     try {
-      const result = await this.prisma.specialistSession.deleteMany({ where: { specialistId } });
+      // History rows are closed while the live rows can still say which ones they were.
+      const [, result] = await this.prisma.$transaction([
+        this.prisma.loginSession.updateMany({
+          where: { liveSpecialistSession: { is: { specialistId } }, endedAt: null },
+          data: { endedAt: new Date(), endReason: 'admin_revoked' },
+        }),
+        this.prisma.specialistSession.deleteMany({ where: { specialistId } }),
+      ]);
       return result.count;
     } catch (err) {
       mapPrismaError(err);

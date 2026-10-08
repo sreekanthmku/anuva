@@ -8,6 +8,7 @@ import type {
 import { FamilyError } from './errors.js';
 import { familySharedScopes } from './content.js';
 import { createFamilySession } from './auth.js';
+import type { LoginContext } from '../loginHistory.js';
 import { inviteTokenHash, parseInviteToken } from './tokens.js';
 
 /**
@@ -229,6 +230,7 @@ export async function verifyJoinOtp(
     relationship: FamilyRelationship;
   },
   otp: OtpDeps,
+  login: LoginContext,
 ): Promise<{ body: FamilyMeResponse; sessionToken: string; sessionExpiresAt: Date }> {
   const now = new Date();
   const invite = await loadInvite(input.token);
@@ -317,7 +319,7 @@ export async function verifyJoinOtp(
     data: { status: 'verified', verifiedAt: now },
   });
 
-  const session = await createFamilySession(member.id, now);
+  const session = await createFamilySession(member.id, now, login);
 
   return {
     body: {
