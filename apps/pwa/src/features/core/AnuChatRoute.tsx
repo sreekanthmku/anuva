@@ -7,13 +7,13 @@ import type {
   AnuChatV3HistoryResponse,
   AnuChatV3Response,
   AnuV3Action,
+  AnuV3BookingOffer,
   AnuV3LogOption,
-  AnuV3Slot,
 } from '@anuva/shared';
 import { apiFetch } from '../../shared/lib/api';
+import { BookingCard } from './anuV3/BookingCard';
 import { LogOptions } from './anuV3/LogOptions';
 import { ReminderOffer } from './anuV3/ReminderOffer';
-import { SlotOffer } from './anuV3/SlotOffer';
 import { BottomNav } from './components/BottomNav';
 import { remainingDelay, replyDelay, wait } from './chatPacing';
 
@@ -25,10 +25,10 @@ type ChatMessage = {
   isEscalation?: boolean;
   /// v3 only: an in-app screen the reply offers, rendered as a button under it.
   action?: AnuV3Action | null;
-  /// v3 only: the recorded turn, appointment times to book and trackers to log
-  /// that the reply offers. ANU chose them; she books or logs by tapping.
+  /// v3 only: the recorded turn, the booking card and the trackers to log that
+  /// the reply offers. ANU chose them; she books or logs right here, by tapping.
   turnId?: string | null;
-  slots?: AnuV3Slot[];
+  booking?: AnuV3BookingOffer | null;
   logOptions?: AnuV3LogOption[];
   reminderOffer?: boolean;
   booked?: boolean;
@@ -42,7 +42,7 @@ function v3Message(data: AnuChatV3Response, booked = false): ChatMessage {
     isEscalation: data.escalation !== null,
     action: data.action,
     turnId: data.turnId,
-    slots: data.slots,
+    booking: data.booking,
     logOptions: data.logOptions,
     reminderOffer: data.reminderOffer,
     booked,
@@ -112,7 +112,7 @@ export default function AnuChatRoute() {
                 isEscalation: turn.escalated,
                 action: turn.action,
                 turnId: turn.id,
-                slots: turn.slots,
+                booking: turn.booking,
                 logOptions: turn.logOptions,
                 reminderOffer: turn.reminderOffer,
                 booked: turn.booked,
@@ -394,9 +394,9 @@ export default function AnuChatRoute() {
               >
                 {message.text}
               </div>
-              {message.slots && message.slots.length > 0 && (
-                <SlotOffer
-                  slots={message.slots}
+              {message.booking && (
+                <BookingCard
+                  offer={message.booking}
                   turnId={message.turnId ?? null}
                   booked={message.booked ?? false}
                   onAnuReply={(data) => {

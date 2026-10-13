@@ -16,9 +16,9 @@ export type CheckInput = {
   /// The medicine judge's verdict (medicineJudge.ts). Absent when the judge
   /// did not run or failed; the patterns below decide then.
   medicineSuggested?: boolean | null;
-  /// How many appointment buttons the reply offers. The buttons carry the exact
-  /// times, so the text must not restate (or misstate) them.
-  offeredSlots?: number;
+  /// The reply shows the booking card. The card carries the exact times, and the
+  /// model is never given them, so any clock time in the text is made up.
+  offersBooking?: boolean;
   /// The booking system has confirmed a booking this turn, so "you're booked"
   /// is true.
   bookingConfirmed?: boolean;
@@ -147,9 +147,9 @@ export function findViolations(input: CheckInput): string[] {
     );
   }
 
-  if ((input.offeredSlots ?? 0) > 0 && CLOCK_TIME.test(message)) {
+  if (input.offersBooking && CLOCK_TIME.test(message)) {
     violations.push(
-      'Your draft writes clock times while offering appointment buttons. Remove the times from "message" — the buttons show the exact times. Mention only who it is with and roughly when (day, morning/evening).',
+      'Your draft writes clock times while offering the booking card. Remove the times from "message" — the card shows the exact times. Mention only who it is with and roughly when (day, morning/afternoon/evening).',
     );
   }
 

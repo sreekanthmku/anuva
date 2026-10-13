@@ -167,7 +167,7 @@ export async function buildRuntimeContext(
     preferred_language: LANGUAGE_NAMES[currentLanguage()],
     current_date: dateOnly(now),
     user_country: env.country(),
-    available_actions: availableActions(professionalTypes),
+    available_actions: availableActions(),
     available_professional_types: professionalTypes,
   };
   const userProfile: Record<string, unknown> = {};

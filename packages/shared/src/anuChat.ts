@@ -67,14 +67,48 @@ export const anuV3ActionSchema = z.object({
   href: z.string(),
 });
 
-/// A free appointment time the reply offers. Shown as a button; she books it by
-/// tapping and confirming through /consultations/book — ANU never books.
+/// A free appointment time in the in-chat booking card. She books it by tapping
+/// and confirming through /consultations/book — ANU never books.
 export const anuV3SlotSchema = z.object({
   slotId: z.string(),
   specialistKey: z.string(),
   specialistName: z.string(),
   startsAt: z.string(),
   endsAt: z.string(),
+});
+
+export const anuV3PartOfDaySchema = z.enum(['morning', 'afternoon', 'evening']);
+
+/// The reply offers to book in the chat itself. The app shows a booking card that
+/// asks which doctor, then morning/afternoon/evening, then the times, and books
+/// the one she confirms — she never leaves the chat. Each field is what she
+/// already said she wants ("Dr Meera", "evening", "Friday"), so the card can skip
+/// that step; null means the card asks.
+export const anuV3BookingOfferSchema = z.object({
+  specialistKey: z.string().nullable(),
+  partOfDay: anuV3PartOfDaySchema.nullable(),
+  /// YYYY-MM-DD, India time.
+  date: z.string().nullable(),
+  /// The professional type the reply recommends; those doctors are listed first.
+  pathway: z.string().nullable(),
+});
+
+/// Everyone the booking card can book, with their free times. Read live when the
+/// card opens, so a reloaded thread never shows a time that has since gone.
+export const anuV3BookingDoctorSchema = z.object({
+  key: z.string(),
+  name: z.string(),
+  /// gynecologist, psychologist, dietitian, menopause_coach…
+  professionalType: z.string(),
+  tag: z.string().nullable(),
+  imageUrl: z.string().nullable(),
+  /// Soonest first. `date` (YYYY-MM-DD) and `partOfDay` are in India time — the
+  /// same split ANU's reply talks in, so "evening" means the same on both.
+  slots: z.array(anuV3SlotSchema.extend({ date: z.string(), partOfDay: anuV3PartOfDaySchema })),
+});
+
+export const anuV3BookingOptionsResponseSchema = z.object({
+  doctors: z.array(anuV3BookingDoctorSchema),
 });
 
 /// A tracker the reply offers to log. The button opens that tracker and she
@@ -89,7 +123,7 @@ export const anuV3LogOptionSchema = z.discriminatedUnion('kind', [
 ]);
 
 export const anuChatV3ResponseSchema = z.object({
-  /// The recorded turn, so a booking made from this reply's slots can be tied
+  /// The recorded turn, so a booking made from this reply's booking card can be tied
   /// back to it. Null only when the audit write failed.
   turnId: z.string().nullable(),
   reply: z.string(),
@@ -100,18 +134,19 @@ export const anuChatV3ResponseSchema = z.object({
   /// as an escalation.
   escalation: anuChatResponseSchema.shape.escalation,
   action: anuV3ActionSchema.nullable(),
-  slots: z.array(anuV3SlotSchema),
+  /// Show the in-chat booking card. Null when the reply does not offer booking.
+  booking: anuV3BookingOfferSchema.nullable(),
   logOptions: z.array(anuV3LogOptionSchema),
   /// Show a "Set a reminder" button. It opens the medication reminder editor
   /// (or her list, when she already has reminders); she sets it up herself.
   reminderOffer: z.boolean(),
 });
 
-/// Sent after she confirmed one of the offered slots and /consultations/book
+/// Sent after she confirmed a time in the booking card and /consultations/book
 /// succeeded; ANU then writes the confirmation in the thread.
 export const anuChatV3BookingBodySchema = z.object({
   consultationId: z.string().min(1),
-  /// The turn whose slots she booked from, so it can show as booked.
+  /// The turn whose booking card she booked from, so it can show as booked.
   turnId: z.string().min(1).optional(),
 });
 
@@ -125,10 +160,10 @@ export const anuChatV3HistoryTurnSchema = z.object({
   source: anuV3TurnSourceSchema,
   escalated: z.boolean(),
   action: anuV3ActionSchema.nullable(),
-  slots: z.array(anuV3SlotSchema),
+  booking: anuV3BookingOfferSchema.nullable(),
   logOptions: z.array(anuV3LogOptionSchema),
   reminderOffer: z.boolean(),
-  /// A slot from this turn has since been booked.
+  /// She has since booked from this turn's booking card.
   booked: z.boolean(),
   createdAt: z.string(),
 });
@@ -139,6 +174,10 @@ export const anuChatV3HistoryResponseSchema = z.object({
 
 export type AnuV3Action = z.infer<typeof anuV3ActionSchema>;
 export type AnuV3Slot = z.infer<typeof anuV3SlotSchema>;
+export type AnuV3PartOfDay = z.infer<typeof anuV3PartOfDaySchema>;
+export type AnuV3BookingOffer = z.infer<typeof anuV3BookingOfferSchema>;
+export type AnuV3BookingDoctor = z.infer<typeof anuV3BookingDoctorSchema>;
+export type AnuV3BookingOptionsResponse = z.infer<typeof anuV3BookingOptionsResponseSchema>;
 export type AnuV3LogOption = z.infer<typeof anuV3LogOptionSchema>;
 export type AnuChatV3BookingBody = z.infer<typeof anuChatV3BookingBodySchema>;
 export type AnuChatV3Response = z.infer<typeof anuChatV3ResponseSchema>;

@@ -1,4 +1,4 @@
-import type { AnuChatV3BookingBody, AnuChatV3Response } from '@anuva/shared';
+import type { AnuChatV3BookingBody, AnuChatV3Response, AnuV3BookingOptionsResponse } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
 
 /// After /consultations/book succeeded: ANU writes the confirmation into the
@@ -8,4 +8,9 @@ export async function confirmBookingWithAnu(body: AnuChatV3BookingBody): Promise
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+/// Who the in-chat booking card can book, with their free times.
+export async function fetchBookingOptions(): Promise<AnuV3BookingOptionsResponse> {
+  return apiFetch<AnuV3BookingOptionsResponse>('/api/anu/v3/booking-options');
 }

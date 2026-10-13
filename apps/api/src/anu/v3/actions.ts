@@ -7,6 +7,10 @@
 // Every action is NAVIGATION. None of them does anything on her behalf, which
 // is what keeps the prompt's tool-integrity rule true by construction: there is
 // no success for the model to misreport.
+//
+// Booking is not here: it never sends her to the booking screen. A reply that
+// offers booking sets `offer_booking`, and the chat shows its own booking card
+// (see booking.ts).
 
 import { prisma } from '@anuva/database';
 import { BOOKABLE_DOCTOR_KEYS, lensesForSpecialist } from '../../bookingCatalog.js';
@@ -16,8 +20,6 @@ export const V3_ACTIONS = {
   // The cycle tracker is the card on the home dashboard.
   TRACK_CYCLE: '/home',
   VIEW_REPORT: '/report',
-  VIEW_GYNECOLOGISTS: '/booking',
-  VIEW_AVAILABLE_APPOINTMENTS: '/booking',
   OPEN_ASSESSMENT: '/detailed-assessment',
   LEARN_MORE: '/library',
 } as const;
@@ -54,15 +56,6 @@ export async function availableProfessionalTypes(): Promise<string[]> {
   return [...types];
 }
 
-export function availableActions(professionalTypes: string[]): V3ActionType[] {
-  const actions: V3ActionType[] = [
-    'LOG_SYMPTOM',
-    'TRACK_CYCLE',
-    'VIEW_REPORT',
-    'OPEN_ASSESSMENT',
-    'LEARN_MORE',
-  ];
-  if (professionalTypes.length > 0) actions.push('VIEW_AVAILABLE_APPOINTMENTS');
-  if (professionalTypes.includes('gynecologist')) actions.push('VIEW_GYNECOLOGISTS');
-  return actions;
+export function availableActions(): V3ActionType[] {
+  return ['LOG_SYMPTOM', 'TRACK_CYCLE', 'VIEW_REPORT', 'OPEN_ASSESSMENT', 'LEARN_MORE'];
 }

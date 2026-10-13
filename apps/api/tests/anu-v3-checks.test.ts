@@ -142,19 +142,19 @@ describe('v3 rewriteDirective', () => {
 });
 
 describe('v3 booking and logging checks', () => {
-  it('flags clock times written beside slot buttons', () => {
+  it('flags clock times written beside the booking card', () => {
     const out = findViolations({
       ...base,
       message: 'Dr Sayed has 5:30 pm on Friday — tap to book.',
-      offeredSlots: 2,
+      offersBooking: true,
     });
     expect(out).toHaveLength(1);
     expect(out[0]).toMatch(/clock times/);
   });
 
-  it('allows days and parts of the day beside slot buttons, and times without buttons', () => {
+  it('allows days and parts of the day beside the booking card, and times without it', () => {
     expect(
-      findViolations({ ...base, message: 'Here are Friday evening times with Dr Sayed — tap one to book.', offeredSlots: 2 }),
+      findViolations({ ...base, message: 'Dr Sayed has evening times on Friday — pick one below.', offersBooking: true }),
     ).toEqual([]);
     expect(findViolations({ ...base, message: 'Your call is on Friday at 6 pm.' })).toEqual([]);
   });

@@ -19,7 +19,8 @@ import { useSleepLog } from '../hooks/useSleepLog';
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 
-/// The Track screen opens these two trackers in a sheet rather than inline.
+/// These two have a fuller form than one row of options (the Track screen opens
+/// them in a sheet); here the same form opens inline, under the reply.
 const SLEEP_NUDGE = 'L1-001';
 const MOOD_NUDGE = 'L1-003';
 
@@ -29,9 +30,9 @@ function optionKey(option: AnuV3LogOption): string {
 
 /**
  * The trackers an ANU v3 reply offers to log. ANU only chose which: each button
- * opens that tracker exactly as the Track screen does — the same sheet, or the
- * same options inline — and she picks the values. Nothing is saved until she
- * does.
+ * opens that tracker's own form — the same questions and options as the Track
+ * screen — inline in the thread, never as a popup, and she picks the values.
+ * Nothing is saved until she does.
  */
 export function LogOptions({ options }: { options: AnuV3LogOption[] }) {
   const { t } = useTranslation();
@@ -153,18 +154,29 @@ export function LogOptions({ options }: { options: AnuV3LogOption[] }) {
         </div>
       )}
 
-      {error && <p className="text-[12px] text-error">{error}</p>}
+      {(active === SLEEP_NUDGE || active === MOOD_NUDGE || active === 'joints') && (
+        <div className="flex flex-col items-start gap-1">
+          {active === SLEEP_NUDGE && (
+            <SleepLogger onClose={close} onSaved={() => markDone(SLEEP_NUDGE)} onError={setError} />
+          )}
+          {active === MOOD_NUDGE && (
+            <MoodLogger onClose={close} onSaved={() => markDone(MOOD_NUDGE)} onError={setError} />
+          )}
+          {active === 'joints' && <JointsLogger onClose={close} onSaved={() => markDone('joints')} onError={setError} />}
+          <button type="button" onClick={close} className="min-h-11 px-1 text-[12px] text-on-surface-variant underline">
+            {t('chat.log.cancel')}
+          </button>
+        </div>
+      )}
 
-      {active === SLEEP_NUDGE && <SleepLogger onClose={close} onSaved={() => markDone(SLEEP_NUDGE)} onError={setError} />}
-      {active === MOOD_NUDGE && <MoodLogger onClose={close} onSaved={() => markDone(MOOD_NUDGE)} onError={setError} />}
-      {active === 'joints' && <JointsLogger onClose={close} onSaved={() => markDone('joints')} onError={setError} />}
+      {error && <p className="text-[12px] text-error">{error}</p>}
     </div>
   );
 }
 
 type LoggerProps = { onClose: () => void; onSaved: () => void; onError: (message: string) => void };
 
-// Each logger mounts only while its sheet is open, so the chat screen does not
+// Each logger mounts only while its form is open, so the chat screen does not
 // load every tracker up front.
 
 function SleepLogger({ onClose, onSaved, onError }: LoggerProps) {
@@ -186,6 +198,7 @@ function SleepLogger({ onClose, onSaved, onError }: LoggerProps) {
   return (
     <SleepLogSheet
       open
+      inline
       initialQuality={today?.quality ?? null}
       initialHours={today?.hours ?? null}
       initialDisruptions={today?.disruptions ?? []}
@@ -215,6 +228,7 @@ function MoodLogger({ onClose, onSaved, onError }: LoggerProps) {
   return (
     <MoodLogSheet
       open
+      inline
       initialFeeling={today?.feeling ?? null}
       initialEmotions={today?.emotions ?? []}
       saving={saving}
@@ -240,6 +254,6 @@ function JointsLogger({ onClose, onSaved, onError }: LoggerProps) {
     }
   };
   return (
-    <JointsLogSheet open initial={jointLog.data?.today ?? null} saving={saving} onClose={onClose} onSave={save} />
+    <JointsLogSheet open inline initial={jointLog.data?.today ?? null} saving={saving} onClose={onClose} onSave={save} />
   );
 }

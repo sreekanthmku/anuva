@@ -141,6 +141,7 @@ import {
   anuChatHistoryResponseSchema,
   anuChatV3ResponseSchema,
   anuChatV3HistoryResponseSchema,
+  anuV3BookingOptionsResponseSchema,
   anuChatV3BookingBodySchema,
   libraryFeedQuerySchema,
   libraryFeedResponseSchema,
@@ -255,6 +256,7 @@ import {
   history as anuV3History,
   V3_MODE,
 } from './anu/v3/engine.js';
+import { loadBookingCatalog as loadAnuV3BookingCatalog } from './anu/v3/booking.js';
 import { getDailyInsight, getLibraryArticle, getLibraryFeed } from './library.js';
 import { buildHomeCard } from './homeCard/build.js';
 import { prismaHomeCardStore, recordHomeCardEvent } from './homeCard/store.js';
@@ -4591,8 +4593,21 @@ app.post('/anu/v3/chat', async (req, res, next) => {
   }
 });
 
-// After she books one of the times a v3 reply offered (through
-// /consultations/book, like the booking screen), ANU writes the confirmation.
+// The doctors and free times the in-chat booking card offers. Read when the card
+// opens rather than carried on the reply, so a reloaded thread never shows a
+// time that has gone since.
+app.get('/anu/v3/booking-options', async (req, res, next) => {
+  try {
+    await requireCurrentUser(req);
+    const { doctors } = await loadAnuV3BookingCatalog();
+    res.json(anuV3BookingOptionsResponseSchema.parse({ doctors }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// After she books a time in the v3 booking card (through /consultations/book,
+// like the booking screen), ANU writes the confirmation.
 // The booking is read back from the database, never taken from the client.
 app.post('/anu/v3/chat/booking', async (req, res, next) => {
   try {

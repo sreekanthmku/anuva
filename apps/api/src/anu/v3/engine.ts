@@ -1,18 +1,19 @@
 // ANU v3 orchestration.
 //
 //   1. Classify  ┐     safety classification (classifier.ts), in parallel with
-//      Context   ┘     the runtime context reads (context.ts), the free
-//                      appointment times (booking.ts), the trackers she can
+//      Context   ┘     the runtime context reads (context.ts), who is free to
+//                      book and when (booking.ts), the trackers she can
 //                      log (trackers.ts) and whether she has medication reminders
 //   2. Reply           the v2.0 production prompt + runtime context + thread,
 //                      returning a structured decision object
 //   3. Check           checks.ts verifies the hard rules (one question, Anuva
 //                      pathways, no template openers, no medicine, crisis
-//                      helplines, no times beside slot buttons, no "I booked"),
+//                      helplines, no clock times beside the booking card, no
+//                      "I booked"),
 //                      with medicineJudge.ts reading any draft that mentions a
 //                      medicine; a broken rule gets ONE model rewrite
-//   4. Enforce         code checks the action, the slot and log buttons, and the
-//                      risk floor — but never writes reply text itself
+//   4. Enforce         code checks the action, the booking card, the log buttons
+//                      and the risk floor — but never writes reply text itself
 //
 // Every word she reads is written by the model. Unlike classic, there is no
 // deterministic red-flag gate and no clinician text served verbatim; safety is
@@ -21,20 +22,22 @@
 // are written to AnuChatTurn with mode "v3", which keeps them out of the
 // classic/probe threads (both filter on mode) and theirs out of this one.
 //
-// Booking, logging and reminders: the model only chooses which buttons to show.
-// She books through /consultations/book, logs through the tracker endpoints and
-// sets up a medication reminder in its editor herself;
-// after a booking the app calls confirmBooking() so ANU can write the
-// confirmation, with the booking read back from the database.
+// Booking, logging and reminders: the model only chooses what to show. Booking
+// happens in the chat: a card asks which doctor, morning or evening and which
+// time, and she books through /consultations/book without leaving the thread.
+// She logs through the tracker endpoints, inline under the reply, and sets up a
+// medication reminder in its editor herself. After a booking the app calls
+// confirmBooking() so ANU can write the confirmation, with the booking read back
+// from the database.
 
 import { prisma } from '@anuva/database';
 import { z } from 'zod';
-import type { AnuChatV3Response, AnuV3LogOption, AnuV3Slot } from '@anuva/shared';
+import type { AnuChatV3Response, AnuV3BookingOffer, AnuV3LogOption } from '@anuva/shared';
 import { logger } from '../../logger.js';
 import { THREAD_IDLE_MS } from '../engine.js';
 import { sanitizeName } from '../prompt.js';
 import { actionHref } from './actions.js';
-import { formatSlotLong, loadSlotCatalog, type SlotCatalog } from './booking.js';
+import { formatSlotLong, loadBookingCatalog, PARTS_OF_DAY, type BookingCatalog } from './booking.js';
 import { findViolations, rewriteDirective } from './checks.js';
 import { classify, riskRank, RISK_LEVELS, type SafetyClassification } from './classifier.js';
 import { buildRuntimeContext, renderRuntimeContext, type RuntimeContext } from './context.js';
@@ -50,7 +53,6 @@ export const V3_MODE = 'v3';
 /// and the answer is meaningless without the question two turns up.
 const THREAD_TURNS = 6;
 
-const MAX_SLOT_BUTTONS = 3;
 const MAX_LOG_BUTTONS = 2;
 
 // As in the classic engine: messages and replies are never logged, only the
@@ -72,7 +74,13 @@ const decisionSchema = z.object({
   clarification_type: z.string().nullable(),
   safety_flag: z.boolean(),
   quick_replies: z.array(z.string()),
-  offer_slots: z.array(z.string()),
+  offer_booking: z
+    .object({
+      doctor: z.string().nullable(),
+      part_of_day: z.enum(['morning', 'afternoon', 'evening']).nullable(),
+      date: z.string().nullable(),
+    })
+    .nullable(),
   log_options: z.array(z.string()),
   offer_reminder: z.boolean(),
 });
@@ -87,17 +95,39 @@ function nullableEnum(values: string[]) {
     : { type: 'null' };
 }
 
-/// Same for slot refs and tracker ids: only this turn's.
+/// Same for tracker ids: only this turn's.
 function enumArray(values: string[]) {
   return values.length > 0
     ? { type: 'array', items: { type: 'string', enum: values } }
     : { type: 'array', items: { type: 'string' }, maxItems: 0 };
 }
 
+/// The booking card, with the doctor and date limited to who is free this turn.
+/// Nobody free → the card cannot be offered at all.
+function bookingOfferSchema(doctorKeys: string[], dateKeys: string[]) {
+  return doctorKeys.length > 0
+    ? {
+        anyOf: [
+          {
+            type: 'object',
+            additionalProperties: false,
+            required: ['doctor', 'part_of_day', 'date'],
+            properties: {
+              doctor: nullableEnum(doctorKeys),
+              part_of_day: nullableEnum([...PARTS_OF_DAY]),
+              date: nullableEnum(dateKeys),
+            },
+          },
+          { type: 'null' },
+        ],
+      }
+    : { type: 'null' };
+}
+
 export function replySchema(
   actions: string[],
   professionalTypes: string[],
-  slotRefs: string[] = [],
+  booking: { doctorKeys: string[]; dateKeys: string[] } = { doctorKeys: [], dateKeys: [] },
   trackerIds: string[] = [],
 ) {
   return {
@@ -113,7 +143,7 @@ export function replySchema(
       'clarification_type',
       'safety_flag',
       'quick_replies',
-      'offer_slots',
+      'offer_booking',
       'log_options',
       'offer_reminder',
     ],
@@ -127,7 +157,7 @@ export function replySchema(
       clarification_type: { type: ['string', 'null'] },
       safety_flag: { type: 'boolean' },
       quick_replies: { type: 'array', items: { type: 'string' } },
-      offer_slots: enumArray(slotRefs),
+      offer_booking: bookingOfferSchema(booking.doctorKeys, booking.dateKeys),
       log_options: enumArray(trackerIds),
       offer_reminder: { type: 'boolean' },
     },
@@ -139,6 +169,8 @@ export function replySchema(
 type StoredDecision = {
   escalated?: unknown;
   action?: unknown;
+  booking_offer?: unknown;
+  /// Turns from before the booking card offered up to three times as buttons.
   offered_slots?: unknown;
   log_options?: unknown;
   reminder_offer?: unknown;
@@ -146,8 +178,41 @@ type StoredDecision = {
   event?: unknown;
 };
 
-function storedSlots(decision: StoredDecision): (AnuV3Slot & { label?: string })[] {
-  return Array.isArray(decision.offered_slots) ? (decision.offered_slots as (AnuV3Slot & { label?: string })[]) : [];
+/// Turns from before the booking card linked to the booking screen with these.
+const OLD_BOOKING_ACTIONS: Record<string, string | null> = {
+  VIEW_GYNECOLOGISTS: 'gynecologist',
+  VIEW_AVAILABLE_APPOINTMENTS: null,
+};
+
+function storedAction(decision: StoredDecision): { type: string; href: string } | null {
+  return decision.action &&
+    typeof decision.action === 'object' &&
+    typeof (decision.action as { type?: unknown }).type === 'string'
+    ? (decision.action as { type: string; href: string })
+    : null;
+}
+
+/// The booking card a turn showed. An older turn that offered time buttons, or
+/// a link to the booking screen, reopens as a card instead — booking never
+/// leaves the chat.
+function storedBookingOffer(decision: StoredDecision): AnuV3BookingOffer | null {
+  if (decision.booking_offer && typeof decision.booking_offer === 'object') {
+    return decision.booking_offer as AnuV3BookingOffer;
+  }
+  const action = storedAction(decision);
+  if (action && action.type in OLD_BOOKING_ACTIONS) {
+    return { specialistKey: null, partOfDay: null, date: null, pathway: OLD_BOOKING_ACTIONS[action.type] ?? null };
+  }
+  if (Array.isArray(decision.offered_slots) && decision.offered_slots.length > 0) {
+    const first = decision.offered_slots[0] as { specialistKey?: unknown };
+    return {
+      specialistKey: typeof first.specialistKey === 'string' ? first.specialistKey : null,
+      partOfDay: null,
+      date: null,
+      pathway: null,
+    };
+  }
+  return null;
 }
 
 function storedLogOptions(decision: StoredDecision): { option: AnuV3LogOption; name: string }[] {
@@ -185,12 +250,11 @@ async function loadThread(userId: string): Promise<ChatMessage[]> {
     messages.push({ role: 'assistant', content: row.reply });
 
     const notes: string[] = [];
-    const slots = storedSlots(decision);
-    if (slots.length > 0) {
+    if (storedBookingOffer(decision)) {
       notes.push(
-        `the app showed appointment buttons for: ${slots
-          .map((slot) => slot.label ?? `${formatSlotLong(new Date(slot.startsAt))} with ${slot.specialistName}`)
-          .join('; ')}${decision.booked ? ' — she booked one of them' : ''}`,
+        `the app showed its booking card (which doctor, then morning/afternoon/evening, then the times)${
+          decision.booked ? ' — she booked from it' : ''
+        }`,
       );
     }
     const logs = storedLogOptions(decision);
@@ -250,7 +314,7 @@ function cleanQuickReplies(replies: string[], userMessage: string): string[] {
   return out;
 }
 
-const EMPTY_SLOTS: SlotCatalog = { context: [], byRef: new Map() };
+const EMPTY_BOOKING: BookingCatalog = { context: [], doctors: [] };
 const EMPTY_TRACKERS: TrackerCatalog = { context: [], byId: new Map() };
 
 /// Generate, check, and rewrite once if a hard rule is broken. Shared by a
@@ -315,6 +379,24 @@ async function generateChecked(options: {
   return { decision, firstViolations, remainingViolations };
 }
 
+/// The booking card a reply asked for, minus anything that is not free: a doctor
+/// with no open time, or a date that doctor (or anyone) has nothing on. The
+/// card then just asks for it.
+export function bookingOffer(decision: Decision, catalog: BookingCatalog): AnuV3BookingOffer | null {
+  const asked = decision.offer_booking;
+  if (!asked || catalog.doctors.length === 0) return null;
+  const doctor = catalog.doctors.find((entry) => entry.key === asked.doctor) ?? null;
+  const freeDates = new Set(
+    (doctor ? [doctor] : catalog.doctors).flatMap((entry) => entry.slots.map((slot) => slot.date)),
+  );
+  return {
+    specialistKey: doctor?.key ?? null,
+    partOfDay: asked.part_of_day,
+    date: asked.date && freeDates.has(asked.date) ? asked.date : null,
+    pathway: decision.professional_pathway,
+  };
+}
+
 /// The audit row already holds the text she read as `reply`.
 function decisionFields(decision: Decision) {
   return Object.fromEntries(Object.entries(decision).filter(([key]) => key !== 'message'));
@@ -332,17 +414,17 @@ export async function answer(
 
   // 1. Classification and context are independent; run them together. A failed
   // classification is not a failed turn — the reply prompt carries its own
-  // crisis rules and is told the risk level is UNKNOWN. Nor is a failed slot or
-  // tracker read: the reply just has no buttons to offer.
-  const [safety, context, slotCatalog, trackerCatalog, reminderCount] = await Promise.all([
+  // crisis rules and is told the risk level is UNKNOWN. Nor is a failed booking
+  // or tracker read: the reply just has no card or buttons to offer.
+  const [safety, context, bookingCatalog, trackerCatalog, reminderCount] = await Promise.all([
     classify(userMessage, thread).catch((e: unknown): SafetyClassification | null => {
       log.error({ err: e, userId }, 'v3: safety classification failed — continuing as UNKNOWN');
       return null;
     }),
     buildRuntimeContext(userId, name),
-    loadSlotCatalog().catch((e: unknown) => {
-      log.error({ err: e, userId }, 'v3: slot read failed — no appointment buttons this turn');
-      return EMPTY_SLOTS;
+    loadBookingCatalog().catch((e: unknown) => {
+      log.error({ err: e, userId }, 'v3: slot read failed — no booking card this turn');
+      return EMPTY_BOOKING;
     }),
     loadTrackerCatalog(userId).catch((e: unknown) => {
       log.error({ err: e, userId }, 'v3: tracker read failed — no log buttons this turn');
@@ -364,11 +446,12 @@ export async function answer(
       recommended_pathway: safety.recommended_pathway,
     };
   }
-  if (slotCatalog.context.length > 0) context.available_slots = slotCatalog.context;
+  if (bookingCatalog.context.length > 0) context.available_doctors = bookingCatalog.context;
   if (trackerCatalog.context.length > 0) context.loggable_trackers = trackerCatalog.context;
   if (reminderCount !== null) context.medication_reminders = { set_up: reminderCount };
 
   const actions = context.available_actions as string[];
+  const bookableDates = new Set(bookingCatalog.doctors.flatMap((doctor) => doctor.slots.map((slot) => slot.date)));
   const professionalTypes = context.available_professional_types as string[];
   const crisis = safety?.crisis === true;
   const inIndia = context.user_country === 'IN';
@@ -377,7 +460,12 @@ export async function answer(
   const { decision, firstViolations, remainingViolations } = await generateChecked({
     userId,
     userMessage,
-    schema: replySchema(actions, professionalTypes, [...slotCatalog.byRef.keys()], [...trackerCatalog.byId.keys()]),
+    schema: replySchema(
+      actions,
+      professionalTypes,
+      { doctorKeys: bookingCatalog.doctors.map((doctor) => doctor.key), dateKeys: [...bookableDates] },
+      [...trackerCatalog.byId.keys()],
+    ),
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'system', content: renderRuntimeContext(context) },
@@ -393,7 +481,7 @@ export async function answer(
         inIndia,
         professionalTypes,
         medicineSuggested,
-        offeredSlots: d.offer_slots.filter((ref) => slotCatalog.byRef.has(ref)).length,
+        offersBooking: d.offer_booking !== null && bookingCatalog.doctors.length > 0,
       }),
   });
 
@@ -406,14 +494,9 @@ export async function answer(
       : decision.risk_level;
   const reply = decision.message;
 
-  // No appointment buttons in an emergency — emergency care comes first — and
-  // no log buttons on any safety turn.
-  const slots =
-    finalRisk === 'L4'
-      ? []
-      : [...new Set(decision.offer_slots)]
-          .flatMap((ref) => slotCatalog.byRef.get(ref) ?? [])
-          .slice(0, MAX_SLOT_BUTTONS);
+  // No booking card in an emergency — emergency care comes first — and no log
+  // buttons on any safety turn.
+  const booking = finalRisk === 'L4' ? null : bookingOffer(decision, bookingCatalog);
   const logIds =
     riskRank(finalRisk) >= riskRank('L3')
       ? []
@@ -422,13 +505,10 @@ export async function answer(
   // A routine-keeping button has no place in a safety reply.
   const reminderOffer = decision.offer_reminder && reminderCount !== null && riskRank(finalRisk) < riskRank('L3');
 
-  // The slot and log buttons already do what these navigation buttons would.
+  // The log buttons already do what this navigation button would.
   let actionType =
     decision.next_action && actions.includes(decision.next_action) ? decision.next_action : null;
   if (logOptions.length > 0 && actionType === 'LOG_SYMPTOM') actionType = null;
-  if (slots.length > 0 && (actionType === 'VIEW_AVAILABLE_APPOINTMENTS' || actionType === 'VIEW_GYNECOLOGISTS')) {
-    actionType = null;
-  }
   const href = actionType ? actionHref(actionType) : null;
   const action = actionType && href ? { type: actionType, href } : null;
 
@@ -458,10 +538,7 @@ export async function answer(
       final_risk_level: finalRisk,
       action,
       escalated,
-      offered_slots: slots.map((slot) => ({
-        ...slot,
-        label: `${formatSlotLong(new Date(slot.startsAt))} with ${slot.specialistName}`,
-      })),
+      booking_offer: booking,
       log_options: logIds.map((id) => ({ option: trackerCatalog.byId.get(id), name: trackerNames.get(id) ?? id })),
       reminder_offer: reminderOffer,
       checks: { first: firstViolations, remaining: remainingViolations },
@@ -480,7 +557,7 @@ export async function answer(
       action: actionType,
       pathway: decision.professional_pathway,
       clarifying: decision.needs_clarification,
-      slotButtons: slots.length,
+      bookingCard: booking !== null,
       logButtons: logOptions.length,
       reminderButton: reminderOffer,
       threadTurns: thread.filter((m) => m.role === 'assistant').length,
@@ -489,7 +566,7 @@ export async function answer(
     'ANU v3 turn served',
   );
 
-  return { turnId, reply, suggestions, source: 'model', escalation, action, slots, logOptions, reminderOffer };
+  return { turnId, reply, suggestions, source: 'model', escalation, action, booking, logOptions, reminderOffer };
 }
 
 /// After she confirmed a slot and /consultations/book succeeded, ANU writes the
@@ -597,7 +674,7 @@ export async function confirmBooking(
     source: 'model',
     escalation: null,
     action: null,
-    slots: [],
+    booking: null,
     logOptions: [],
     reminderOffer: false,
   };
@@ -620,12 +697,8 @@ export async function history(userId: string) {
   });
   return rows.reverse().map((row) => {
     const decision = (row.decision ?? {}) as StoredDecision;
-    const action =
-      decision.action &&
-      typeof decision.action === 'object' &&
-      typeof (decision.action as { type?: unknown }).type === 'string'
-        ? (decision.action as { type: string; href: string })
-        : null;
+    const stored = storedAction(decision);
+    const action = stored && !(stored.type in OLD_BOOKING_ACTIONS) ? stored : null;
     return {
       id: row.id,
       userMessage: row.userMessage,
@@ -634,13 +707,7 @@ export async function history(userId: string) {
       source: 'model' as const,
       escalated: decision.escalated === true,
       action,
-      slots: storedSlots(decision).map(({ slotId, specialistKey, specialistName, startsAt, endsAt }) => ({
-        slotId,
-        specialistKey,
-        specialistName,
-        startsAt,
-        endsAt,
-      })),
+      booking: storedBookingOffer(decision),
       logOptions: storedLogOptions(decision).map((entry) => entry.option),
       reminderOffer: decision.reminder_offer === true,
       booked: Boolean(decision.booked),

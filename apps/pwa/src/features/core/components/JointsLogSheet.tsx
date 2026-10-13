@@ -20,6 +20,7 @@ import {
   JOINT_TIME_OF_DAY_LABELS,
   JOINT_TRIGGER_LABELS,
 } from '@anuva/shared';
+import { LogSheetFrame } from './LogSheetFrame';
 
 /**
  * Joints & Stiffness, in two steps.
@@ -35,6 +36,8 @@ type JointsLogSheetProps = {
   initial?: JointLogEntry | null;
   saving?: boolean;
   onClose: () => void;
+  /** In ANU's chat: render in the thread instead of as a modal. */
+  inline?: boolean;
   onSave: (body: LogJointBody) => void | Promise<void>;
 };
 
@@ -94,6 +97,7 @@ export function JointsLogSheet({
   open,
   initial,
   saving = false,
+  inline = false,
   onClose,
   onSave,
 }: JointsLogSheetProps) {
@@ -120,15 +124,6 @@ export function JointsLogSheet({
     setShowDeeper(Boolean(initial?.timeOfDay) || (initial?.triggers.length ?? 0) > 0);
     setStep(initial && initial.severity !== 'none' ? 2 : 1);
   }, [open, initial]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -162,167 +157,160 @@ export function JointsLogSheet({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-6">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/60"
-        onClick={onClose}
-        aria-label={t('joints.close')}
-      />
+    <LogSheetFrame
+      inline={inline}
+      onClose={onClose}
+      closeLabel={t('joints.close')}
+      maxWidthClass="max-w-[380px]"
+      fontFamily={FONT_BODY}
+    >
       <div
-        role="dialog"
-        aria-modal="true"
-        className="relative w-full max-w-[380px] rounded-[20px] border border-border-default bg-surface-raised px-[22px] py-6"
-        style={{ maxHeight: '88dvh', overflowY: 'auto', fontFamily: FONT_BODY }}
+        className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
+        style={{ fontFamily: FONT_MONO }}
       >
-        <div
-          className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
-          style={{ fontFamily: FONT_MONO }}
-        >
-          <span className="h-px w-3 bg-primary/60" />
-          {t('joints.eyebrow')}
-        </div>
-
-        {step === 1 && (
-          <>
-            <h2
-              className="mb-5 text-[20px] leading-snug text-on-surface"
-              style={{ fontFamily: SERIF, fontWeight: 300 }}
-            >
-              {t('joints.step1Title')}
-            </h2>
-            <div className="flex flex-col gap-2.5">
-              {SEVERITIES.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  disabled={saving}
-                  aria-pressed={severity === value}
-                  onClick={() => handleSeverity(value)}
-                  className="w-full rounded-[16px] border px-4 py-3 text-left text-[14px] text-on-surface disabled:opacity-50"
-                  style={{
-                    borderColor:
-                      severity === value ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
-                    backgroundColor:
-                      severity === value ? 'rgba(94, 53, 102, 0.10)' : 'transparent',
-                  }}
-                >
-                  {t(`joints.severity.${value}`)}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {step === 2 && severity && severity !== 'none' && (
-          <>
-            <h2
-              className="mb-1 text-[20px] leading-snug text-on-surface"
-              style={{ fontFamily: SERIF, fontWeight: 300 }}
-            >
-              {t('joints.step2Title')}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="mb-5 text-[12px] text-primary underline"
-            >
-              {t('joints.changeSeverity', { severity: t(`joints.severity.${severity}`) })}
-            </button>
-
-            <FieldLabel>{t('joints.where')}</FieldLabel>
-            <div className="mb-5 flex flex-wrap gap-2">
-              {AREAS.map((area) => (
-                <Chip
-                  key={area}
-                  label={t(`joints.areas.${area}`)}
-                  selected={areas.includes(area)}
-                  disabled={saving}
-                  onClick={() => setAreas((prev) => toggle(prev, area))}
-                />
-              ))}
-            </div>
-
-            <FieldLabel>{t('joints.what')}</FieldLabel>
-            <div className="mb-5 flex flex-wrap gap-2">
-              {SYMPTOMS.map((symptom) => (
-                <Chip
-                  key={symptom}
-                  label={t(`joints.symptoms.${symptom}`)}
-                  selected={symptoms.includes(symptom)}
-                  disabled={saving}
-                  onClick={() => setSymptoms((prev) => toggle(prev, symptom))}
-                />
-              ))}
-            </div>
-
-            <FieldLabel>{t('joints.impact')}</FieldLabel>
-            <div className="mb-5 flex flex-wrap gap-2">
-              {IMPACTS.map((value) => (
-                <Chip
-                  key={value}
-                  label={t(`joints.impacts.${value}`)}
-                  selected={impact === value}
-                  disabled={saving}
-                  onClick={() => setImpact(value)}
-                />
-              ))}
-            </div>
-
-            {showDeeper ? (
-              <>
-                <FieldLabel optional>{t('joints.when')}</FieldLabel>
-                <div className="mb-5 flex flex-wrap gap-2">
-                  {TIMES.map((value) => (
-                    <Chip
-                      key={value}
-                      label={t(`joints.timeOfDay.${value}`)}
-                      selected={timeOfDay === value}
-                      disabled={saving}
-                      onClick={() => setTimeOfDay((prev) => (prev === value ? null : value))}
-                    />
-                  ))}
-                </div>
-
-                <FieldLabel optional>{t('joints.triggers')}</FieldLabel>
-                <div className="mb-6 flex flex-wrap gap-2">
-                  {TRIGGERS.map((value) => (
-                    <Chip
-                      key={value}
-                      label={t(`joints.triggerOptions.${value}`)}
-                      selected={triggers.includes(value)}
-                      disabled={saving}
-                      onClick={() => setTriggers((prev) => toggle(prev, value))}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowDeeper(true)}
-                className="mb-6 text-[12.5px] text-primary underline"
-              >
-                {t('joints.addMoreDetail')}
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={impact == null || saving}
-              className="w-full rounded-full bg-primary py-3.5 text-[14px] font-medium text-surface transition-opacity active:opacity-80 disabled:opacity-40"
-            >
-              {saving ? t('common.saving') : t('common.save')}
-            </button>
-            {impact == null && (
-              <p className="mt-2 text-center text-[11.5px] text-outline">
-                {t('joints.impactRequired')}
-              </p>
-            )}
-          </>
-        )}
+        <span className="h-px w-3 bg-primary/60" />
+        {t('joints.eyebrow')}
       </div>
-    </div>
+
+      {step === 1 && (
+        <>
+          <h2
+            className="mb-5 text-[20px] leading-snug text-on-surface"
+            style={{ fontFamily: SERIF, fontWeight: 300 }}
+          >
+            {t('joints.step1Title')}
+          </h2>
+          <div className="flex flex-col gap-2.5">
+            {SEVERITIES.map((value) => (
+              <button
+                key={value}
+                type="button"
+                disabled={saving}
+                aria-pressed={severity === value}
+                onClick={() => handleSeverity(value)}
+                className="w-full rounded-[16px] border px-4 py-3 text-left text-[14px] text-on-surface disabled:opacity-50"
+                style={{
+                  borderColor:
+                    severity === value ? '#5E3566' : 'rgba(180, 159, 176, 0.35)',
+                  backgroundColor:
+                    severity === value ? 'rgba(94, 53, 102, 0.10)' : 'transparent',
+                }}
+              >
+                {t(`joints.severity.${value}`)}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === 2 && severity && severity !== 'none' && (
+        <>
+          <h2
+            className="mb-1 text-[20px] leading-snug text-on-surface"
+            style={{ fontFamily: SERIF, fontWeight: 300 }}
+          >
+            {t('joints.step2Title')}
+          </h2>
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            className="mb-5 text-[12px] text-primary underline"
+          >
+            {t('joints.changeSeverity', { severity: t(`joints.severity.${severity}`) })}
+          </button>
+
+          <FieldLabel>{t('joints.where')}</FieldLabel>
+          <div className="mb-5 flex flex-wrap gap-2">
+            {AREAS.map((area) => (
+              <Chip
+                key={area}
+                label={t(`joints.areas.${area}`)}
+                selected={areas.includes(area)}
+                disabled={saving}
+                onClick={() => setAreas((prev) => toggle(prev, area))}
+              />
+            ))}
+          </div>
+
+          <FieldLabel>{t('joints.what')}</FieldLabel>
+          <div className="mb-5 flex flex-wrap gap-2">
+            {SYMPTOMS.map((symptom) => (
+              <Chip
+                key={symptom}
+                label={t(`joints.symptoms.${symptom}`)}
+                selected={symptoms.includes(symptom)}
+                disabled={saving}
+                onClick={() => setSymptoms((prev) => toggle(prev, symptom))}
+              />
+            ))}
+          </div>
+
+          <FieldLabel>{t('joints.impact')}</FieldLabel>
+          <div className="mb-5 flex flex-wrap gap-2">
+            {IMPACTS.map((value) => (
+              <Chip
+                key={value}
+                label={t(`joints.impacts.${value}`)}
+                selected={impact === value}
+                disabled={saving}
+                onClick={() => setImpact(value)}
+              />
+            ))}
+          </div>
+
+          {showDeeper ? (
+            <>
+              <FieldLabel optional>{t('joints.when')}</FieldLabel>
+              <div className="mb-5 flex flex-wrap gap-2">
+                {TIMES.map((value) => (
+                  <Chip
+                    key={value}
+                    label={t(`joints.timeOfDay.${value}`)}
+                    selected={timeOfDay === value}
+                    disabled={saving}
+                    onClick={() => setTimeOfDay((prev) => (prev === value ? null : value))}
+                  />
+                ))}
+              </div>
+
+              <FieldLabel optional>{t('joints.triggers')}</FieldLabel>
+              <div className="mb-6 flex flex-wrap gap-2">
+                {TRIGGERS.map((value) => (
+                  <Chip
+                    key={value}
+                    label={t(`joints.triggerOptions.${value}`)}
+                    selected={triggers.includes(value)}
+                    disabled={saving}
+                    onClick={() => setTriggers((prev) => toggle(prev, value))}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowDeeper(true)}
+              className="mb-6 text-[12.5px] text-primary underline"
+            >
+              {t('joints.addMoreDetail')}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={impact == null || saving}
+            className="w-full rounded-full bg-primary py-3.5 text-[14px] font-medium text-surface transition-opacity active:opacity-80 disabled:opacity-40"
+          >
+            {saving ? t('common.saving') : t('common.save')}
+          </button>
+          {impact == null && (
+            <p className="mt-2 text-center text-[11.5px] text-outline">
+              {t('joints.impactRequired')}
+            </p>
+          )}
+        </>
+      )}
+    </LogSheetFrame>
   );
 }

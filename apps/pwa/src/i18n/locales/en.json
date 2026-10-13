@@ -369,7 +369,33 @@
       "taken": "That time was just taken. Pick another one.",
       "failed": "Couldn't book right now. Please try again.",
       "moreTimes": "More times",
-      "bookedSeeBookings": "Booked · See my bookings"
+      "bookedSeeBookings": "Booked · See my bookings",
+      "whichDoctor": "Which doctor would you like to see?",
+      "suggested": "Suggested",
+      "whichPart": "Morning, afternoon or evening?",
+      "whichPartOn": "On {{day}} — morning, afternoon or evening?",
+      "pickTime": "Pick a time",
+      "otherDays": "Other days",
+      "loading": "Finding free times…",
+      "loadFailed": "Couldn't load the free times.",
+      "retry": "Try again",
+      "noTimes": "No times are open right now. Ask me again in a little while.",
+      "parts": {
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "evening": "Evening"
+      },
+      "partHints": {
+        "morning": "before 12 pm",
+        "afternoon": "12–5 pm",
+        "evening": "after 5 pm"
+      },
+      "types": {
+        "gynecologist": "Gynecologist",
+        "psychologist": "Psychologist",
+        "dietitian": "Dietitian",
+        "menopause_coach": "Menopause coach"
+      }
     },
     "log": {
       "button": "Log {{name}}",
