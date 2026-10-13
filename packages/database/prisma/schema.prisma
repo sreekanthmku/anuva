@@ -1713,7 +1713,8 @@ model AnuChatTurn {
   similarity    Float? // cosine score of the cache lookup, when one ran
   promptVersion Int
 
-  /// Which engine served this turn — "classic" or "probe" (see anu/config.ts).
+  /// Which engine served this turn — "classic" or "probe" (see anu/config.ts),
+  /// or "v3" (see anu/v3/engine.ts), which is switched by the client, not config.
   /// Also the thread boundary: flipping the rollout mid-conversation must not
   /// leave the classic engine replaying ladder questions as though they were
   /// its own, so a mode change starts a fresh thread.
@@ -1735,6 +1736,10 @@ model AnuChatTurn {
   /// resolve. The rung is re-offered once; a second one ends the ladder, because
   /// by then she has said twice over that she would rather talk than tap.
   probeHandbacks Int?
+  /// ANU v3 only (mode "v3"): the safety classification and the reply's
+  /// structured decision — risk level, intent, offered action, pathway — kept
+  /// beside the text she read so a turn can be audited later. Never shown to her.
+  decision      Json?
 
   createdAt     DateTime      @default(now())
 

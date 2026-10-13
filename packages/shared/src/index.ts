@@ -469,6 +469,21 @@ export {
   type AnuChatResponse,
   type AnuChatHistoryTurn,
   type AnuChatHistoryResponse,
+  anuV3TurnSourceSchema,
+  anuV3ActionSchema,
+  anuV3SlotSchema,
+  anuV3LogOptionSchema,
+  anuChatV3BookingBodySchema,
+  anuChatV3ResponseSchema,
+  anuChatV3HistoryTurnSchema,
+  anuChatV3HistoryResponseSchema,
+  type AnuV3Action,
+  type AnuV3Slot,
+  type AnuV3LogOption,
+  type AnuChatV3BookingBody,
+  type AnuChatV3Response,
+  type AnuChatV3HistoryTurn,
+  type AnuChatV3HistoryResponse,
 } from './anuChat.js';
 
 export {

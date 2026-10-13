@@ -139,6 +139,9 @@ import {
   anuChatBodySchema,
   anuChatResponseSchema,
   anuChatHistoryResponseSchema,
+  anuChatV3ResponseSchema,
+  anuChatV3HistoryResponseSchema,
+  anuChatV3BookingBodySchema,
   libraryFeedQuerySchema,
   libraryFeedResponseSchema,
   libraryArticleParamsSchema,
@@ -244,6 +247,12 @@ import { randomQuickLogMessage } from './quickLogMessages.js';
 import { recordQuickSymptom } from './logging/writeThrough.js';
 import { dayKey } from './dayKey.js';
 import { answer as anuAnswer } from './anu/index.js';
+import {
+  answer as anuV3Answer,
+  confirmBooking as anuV3ConfirmBooking,
+  history as anuV3History,
+  V3_MODE,
+} from './anu/v3/engine.js';
 import { getDailyInsight, getLibraryArticle, getLibraryFeed } from './library.js';
 import { buildHomeCard } from './homeCard/build.js';
 import { prismaHomeCardStore, recordHomeCardEvent } from './homeCard/store.js';
@@ -4524,7 +4533,8 @@ app.get('/anu/chat', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     const turns = await prisma.anuChatTurn.findMany({
-      where: { userId: user.id },
+      // v3 keeps its own thread at /anu/v3/chat.
+      where: { userId: user.id, mode: { not: V3_MODE } },
       orderBy: { createdAt: 'desc' },
       take: 50,
       select: {
@@ -4549,6 +4559,51 @@ app.get('/anu/chat', async (req, res, next) => {
         })),
       }),
     );
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ANU v3 — a separate engine with its own thread (see anu/v3/engine.ts). The
+// chat screen switches between this and /anu/chat; neither sees the other's turns.
+app.post('/anu/v3/chat', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    if (!isAnuChatConfigured()) {
+      throw new HttpError(503, 'ANU chat is not configured.');
+    }
+    const { message } = anuChatBodySchema.parse(req.body);
+    const result = await anuV3Answer(user.id, message, user.name);
+    res.json(anuChatV3ResponseSchema.parse(result));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// After she books one of the times a v3 reply offered (through
+// /consultations/book, like the booking screen), ANU writes the confirmation.
+// The booking is read back from the database, never taken from the client.
+app.post('/anu/v3/chat/booking', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    if (!isAnuChatConfigured()) {
+      throw new HttpError(503, 'ANU chat is not configured.');
+    }
+    const { consultationId, turnId } = anuChatV3BookingBodySchema.parse(req.body);
+    const result = await anuV3ConfirmBooking(user.id, consultationId, turnId, user.name);
+    if (!result) {
+      throw new HttpError(404, 'Booking not found.');
+    }
+    res.json(anuChatV3ResponseSchema.parse(result));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/anu/v3/chat', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    res.json(anuChatV3HistoryResponseSchema.parse({ turns: await anuV3History(user.id) }));
   } catch (e) {
     next(e);
   }

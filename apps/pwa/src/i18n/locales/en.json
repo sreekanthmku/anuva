@@ -343,6 +343,38 @@
       "tired": "I feel tired",
       "sleep": "I can't sleep",
       "hotFlashes": "I get hot flashes"
+    },
+    "engine": {
+      "title": "ANU version",
+      "current": "Current",
+      "v3": "ANU v3 (beta)",
+      "v3Badge": "v3"
+    },
+    "actions": {
+      "LOG_SYMPTOM": "Log a symptom",
+      "TRACK_CYCLE": "Open cycle tracker",
+      "VIEW_REPORT": "View my report",
+      "VIEW_GYNECOLOGISTS": "See Anuva gynecologists",
+      "VIEW_AVAILABLE_APPOINTMENTS": "See available consultations",
+      "OPEN_ASSESSMENT": "Open health assessment",
+      "LEARN_MORE": "Read more in the library",
+      "fallback": "Open"
+    },
+    "booking": {
+      "confirmTitle": "Confirm your consultation",
+      "free": "Free consultation",
+      "confirm": "Confirm booking",
+      "booking": "Booking…",
+      "change": "Change",
+      "taken": "That time was just taken. Pick another one.",
+      "failed": "Couldn't book right now. Please try again.",
+      "moreTimes": "More times",
+      "bookedSeeBookings": "Booked · See my bookings"
+    },
+    "log": {
+      "button": "Log {{name}}",
+      "logged": "{{name}} logged",
+      "cancel": "Not now"
     }
   },
   "track": {

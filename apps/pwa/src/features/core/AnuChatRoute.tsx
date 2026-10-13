@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { AnuChatHistoryResponse, AnuChatResponse } from '@anuva/shared';
+import type {
+  AnuChatHistoryResponse,
+  AnuChatResponse,
+  AnuChatV3HistoryResponse,
+  AnuChatV3Response,
+  AnuV3Action,
+  AnuV3LogOption,
+  AnuV3Slot,
+} from '@anuva/shared';
 import { apiFetch } from '../../shared/lib/api';
+import { LogOptions } from './anuV3/LogOptions';
+import { SlotOffer } from './anuV3/SlotOffer';
 import { BottomNav } from './components/BottomNav';
 import { remainingDelay, replyDelay, wait } from './chatPacing';
 
@@ -12,6 +22,56 @@ type ChatMessage = {
   /// Red-flag replies are clinician-authored safety text; they get their own
   /// treatment so they cannot be mistaken for ordinary coaching.
   isEscalation?: boolean;
+  /// v3 only: an in-app screen the reply offers, rendered as a button under it.
+  action?: AnuV3Action | null;
+  /// v3 only: the recorded turn, appointment times to book and trackers to log
+  /// that the reply offers. ANU chose them; she books or logs by tapping.
+  turnId?: string | null;
+  slots?: AnuV3Slot[];
+  logOptions?: AnuV3LogOption[];
+  booked?: boolean;
+};
+
+/// A v3 reply as a chat message.
+function v3Message(data: AnuChatV3Response, booked = false): ChatMessage {
+  return {
+    from: 'anu',
+    text: data.reply,
+    isEscalation: data.escalation !== null,
+    action: data.action,
+    turnId: data.turnId,
+    slots: data.slots,
+    logOptions: data.logOptions,
+    booked,
+  };
+}
+
+/// Which ANU engine this device talks to. `current` is /anu/chat (classic +
+/// probe ladder, chosen server-side); `v3` is /anu/v3/chat. Each keeps its own
+/// thread, so switching swaps the conversation on screen.
+type ChatEngine = 'current' | 'v3';
+
+const ENGINE_STORAGE_KEY = 'anu.chatEngine';
+
+function readEngine(): ChatEngine {
+  try {
+    return window.localStorage.getItem(ENGINE_STORAGE_KEY) === 'v3' ? 'v3' : 'current';
+  } catch {
+    return 'current';
+  }
+}
+
+function writeEngine(engine: ChatEngine): void {
+  try {
+    window.localStorage.setItem(ENGINE_STORAGE_KEY, engine);
+  } catch {
+    // Private mode or blocked storage: the switch still works for this visit.
+  }
+}
+
+const CHAT_PATH: Record<ChatEngine, string> = {
+  current: '/api/anu/chat',
+  v3: '/api/anu/v3/chat',
 };
 
 /// Shown only before the first exchange — after that every chip comes from
@@ -25,6 +85,8 @@ export default function AnuChatRoute() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [engine, setEngine] = useState<ChatEngine>(readEngine);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [input, setInput] = useState('');
@@ -40,19 +102,46 @@ export default function AnuChatRoute() {
 
   useEffect(() => {
     let cancelled = false;
+    setHistoryLoading(true);
+    setMessages([]);
+    setSuggestions([]);
+    setError(null);
+    didInitialScroll.current = false;
 
-    apiFetch<AnuChatHistoryResponse>('/api/anu/chat')
+    const load: Promise<{ messages: ChatMessage[]; suggestions: string[] }> =
+      engine === 'v3'
+        ? apiFetch<AnuChatV3HistoryResponse>(CHAT_PATH.v3).then((data) => ({
+            messages: data.turns.flatMap((turn): ChatMessage[] => [
+              // An app-event turn (a booking confirmation) has no message from her.
+              ...(turn.userMessage ? [{ from: 'user' as const, text: turn.userMessage }] : []),
+              {
+                from: 'anu',
+                text: turn.reply,
+                isEscalation: turn.escalated,
+                action: turn.action,
+                turnId: turn.id,
+                slots: turn.slots,
+                logOptions: turn.logOptions,
+                booked: turn.booked,
+              },
+            ]),
+            suggestions: data.turns.at(-1)?.suggestions ?? [],
+          }))
+        : apiFetch<AnuChatHistoryResponse>(CHAT_PATH.current).then((data) => ({
+            messages: data.turns.flatMap((turn) => [
+              { from: 'user' as const, text: turn.userMessage },
+              { from: 'anu' as const, text: turn.reply, isEscalation: turn.source === 'red_flag' },
+            ]),
+            suggestions: data.turns.at(-1)?.suggestions ?? [],
+          }));
+
+    load
       .then((data) => {
         if (cancelled) return;
-        setMessages(
-          data.turns.flatMap((turn) => [
-            { from: 'user' as const, text: turn.userMessage },
-            { from: 'anu' as const, text: turn.reply, isEscalation: turn.source === 'red_flag' },
-          ]),
-        );
+        setMessages(data.messages);
         // Restore the chips from the last reply so a returning user picks up
         // where she left off.
-        setSuggestions(data.turns.at(-1)?.suggestions ?? []);
+        setSuggestions(data.suggestions);
       })
       .catch(() => {
         if (!cancelled) setError(t('chat.loadFailed'));
@@ -64,7 +153,17 @@ export default function AnuChatRoute() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [engine, t]);
+
+  const switchEngine = useCallback(
+    (next: ChatEngine) => {
+      setMenuOpen(false);
+      if (next === engine || sending) return;
+      writeEngine(next);
+      setEngine(next);
+    },
+    [engine, sending],
+  );
 
   const send = useCallback(
     async (text: string) => {
@@ -85,7 +184,7 @@ export default function AnuChatRoute() {
       const delay = replyDelay();
 
       try {
-        const data = await apiFetch<AnuChatResponse>('/api/anu/chat', {
+        const data = await apiFetch<AnuChatResponse | AnuChatV3Response>(CHAT_PATH[engine], {
           method: 'POST',
           body: JSON.stringify({ message: trimmed }),
         });
@@ -94,7 +193,10 @@ export default function AnuChatRoute() {
 
         setMessages((prev) => [
           ...prev,
-          { from: 'anu', text: data.reply, isEscalation: data.source === 'red_flag' },
+          // v3 escalates classified L3/L4 turns too, not only gate matches.
+          'turnId' in data
+            ? v3Message(data)
+            : { from: 'anu', text: data.reply, isEscalation: data.source === 'red_flag' },
         ]);
         setSuggestions(data.suggestions);
       } catch {
@@ -105,7 +207,7 @@ export default function AnuChatRoute() {
         setSending(false);
       }
     },
-    [sending, t],
+    [engine, sending, t],
   );
 
   // Sent here from the home card: the card's own copy is deterministic, and the
@@ -190,16 +292,64 @@ export default function AnuChatRoute() {
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
               {t('chat.status')}
+              {engine === 'v3' && (
+                <span className="ml-1.5 rounded-full bg-tertiary/15 px-1.5 py-[1px] text-tertiary">
+                  {t('chat.engine.v3Badge')}
+                </span>
+              )}
             </p>
           </div>
 
-          <button
-            type="button"
-            className="bg-transparent p-0 text-[18px] text-outline"
-            aria-label={t('chat.moreOptions')}
-          >
-            ⋯
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              className="inline-flex h-11 w-11 items-center justify-center bg-transparent p-0 text-[18px] text-outline"
+              aria-label={t('chat.moreOptions')}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+            >
+              ⋯
+            </button>
+
+            {menuOpen && (
+              <>
+                {/* Click-away layer: closes the menu without sending the tap through. */}
+                <button
+                  type="button"
+                  className="fixed inset-0 z-40 cursor-default bg-transparent"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-50 mt-1 w-56 rounded-[18px] border border-border-default bg-surface p-1.5 shadow-[0_8px_24px_rgba(94,53,102,0.18)]"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
+                  <p className="px-3 pb-1 pt-1.5 text-[10px] uppercase tracking-[0.08em] text-on-surface-variant">
+                    {t('chat.engine.title')}
+                  </p>
+                  {(['current', 'v3'] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={engine === option}
+                      disabled={sending}
+                      onClick={() => switchEngine(option)}
+                      className={`flex min-h-11 w-full items-center justify-between rounded-[12px] px-3 text-left text-[14px] disabled:opacity-50 ${
+                        engine === option ? 'bg-primary/10 font-semibold text-primary' : 'text-on-surface'
+                      }`}
+                    >
+                      <span>{t(`chat.engine.${option}`)}</span>
+                      {engine === option && <span aria-hidden="true">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </section>
 
         <section className="flex items-center justify-center gap-1.5 bg-primary/15 px-3 py-1.5 text-[9.5px] uppercase tracking-[0.12em] text-primary">
@@ -239,8 +389,9 @@ export default function AnuChatRoute() {
                   className="h-6 w-6 shrink-0 rounded-full border border-border-default bg-surface-container-low p-1"
                 />
               )}
+              <div className={`flex flex-col gap-1.5 ${isUser ? 'items-end' : 'items-start'}`}>
               <div
-                className={`px-[14px] py-[10px] text-[14px] leading-[1.5] ${
+                className={`${engine === 'v3' ? 'whitespace-pre-line ' : ''}px-[14px] py-[10px] text-[14px] leading-[1.5] ${
                   isUser
                     ? 'rounded-[20px_20px_4px_20px] bg-secondary text-on-secondary'
                     : message.isEscalation
@@ -250,6 +401,29 @@ export default function AnuChatRoute() {
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
                 {message.text}
+              </div>
+              {message.slots && message.slots.length > 0 && (
+                <SlotOffer
+                  slots={message.slots}
+                  turnId={message.turnId ?? null}
+                  booked={message.booked ?? false}
+                  onAnuReply={(data) => {
+                    setMessages((prev) => [...prev, v3Message(data)]);
+                    setSuggestions([]);
+                  }}
+                />
+              )}
+              {message.logOptions && message.logOptions.length > 0 && <LogOptions options={message.logOptions} />}
+              {message.action && (
+                <button
+                  type="button"
+                  onClick={() => navigate(message.action!.href)}
+                  className="min-h-11 rounded-full border border-primary/30 bg-surface px-4 py-2 text-[13px] font-semibold text-primary"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                >
+                  {t(`chat.actions.${message.action.type}`, { defaultValue: t('chat.actions.fallback') })} →
+                </button>
+              )}
               </div>
             </div>
           );

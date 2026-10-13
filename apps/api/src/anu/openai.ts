@@ -22,7 +22,7 @@ export function isAnuChatConfigured(): boolean {
   return env.apiKey().length > 0;
 }
 
-async function openaiFetch<T>(path: string, body: unknown): Promise<T> {
+export async function openaiFetch<T>(path: string, body: unknown): Promise<T> {
   const apiKey = env.apiKey();
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is not configured.');
