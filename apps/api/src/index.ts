@@ -226,6 +226,8 @@ import {
   todayDateOnly,
 } from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
+import { createMedicationRouter } from './medication/router.js';
+import { startMedicationReminderJob } from './medication/jobs.js';
 import { startSupportRetentionJob } from './supportRetention.js';
 import { eraseScope } from './privacy/erasure.js';
 import { createDataExport, resolveExportPath, unlinkExportFile } from './privacy/export.js';
@@ -441,6 +443,15 @@ app.use(
       maxSendsPer15Minutes: OTP_MAX_SENDS_PER_15_MINUTES,
       maxVerifyAttempts: OTP_MAX_VERIFY_ATTEMPTS,
     },
+  }),
+);
+
+// Medication reminders — self-contained module under apps/api/src/medication/, same injected-auth
+// shape as report14 and family.
+app.use(
+  '/medication',
+  createMedicationRouter({
+    resolveUserId: async (req) => (await requireCurrentUser(req)).id,
   }),
 );
 
@@ -6708,6 +6719,7 @@ async function startServer() {
   await readyBookingCatalog();
 
   startNudgeScheduler();
+  startMedicationReminderJob();
   startSupportRetentionJob();
   startPrivacyRetentionJobs();
   startFamilyJobs();

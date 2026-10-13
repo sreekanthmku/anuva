@@ -375,6 +375,10 @@
       "button": "Log {{name}}",
       "logged": "{{name}} logged",
       "cancel": "Not now"
+    },
+    "reminder": {
+      "button": "Set a reminder",
+      "set": "Reminder set · See my reminders"
     }
   },
   "track": {
@@ -716,6 +720,10 @@
         "label": "Your consultations",
         "hint": "Upcoming, past & recordings"
       },
+      "reminders": {
+        "label": "Medication reminders",
+        "hint": "Reminders at the times you choose"
+      },
       "privacy": {
         "label": "Privacy & data",
         "hint": "DPDP · export or delete"
@@ -728,6 +736,86 @@
         "label": "Help & support",
         "hint": "Ask us anything · we reply in the app"
       }
+    }
+  },
+  "medication": {
+    "back": "← Profile",
+    "eyebrow": "Reminders",
+    "title": "Medication reminders",
+    "intro": "We'll remind you at the times you choose. You don't need to tell us what you take.",
+    "empty": "No reminders yet.",
+    "add": "Add a reminder",
+    "loadFailed": "Couldn't load your reminders. Please try again.",
+    "paused": "Paused",
+    "activeToggle": "Reminder on",
+    "kind": {
+      "medication": "Medication",
+      "supplement": "Supplement",
+      "none": "Reminder"
+    },
+    "days": {
+      "daily": "Every day",
+      "alternate": "Every other day"
+    },
+    "editor": {
+      "eyebrow": "Medication reminder",
+      "newTitle": "New reminder",
+      "editTitle": "Edit reminder",
+      "kindQuestion": "Is it a medication or a supplement?",
+      "optional": "(optional)",
+      "times": "Times",
+      "maxTimes": "Up to {{count}} a day",
+      "timeLabel": "Time {{number}}",
+      "addTime": "Add a time",
+      "removeTime": "Remove this time",
+      "days": "Days",
+      "dayOptions": {
+        "daily": "Every day",
+        "weekdays": "Specific days",
+        "alternate": "Every other day"
+      },
+      "pickDays": "Choose at least one day.",
+      "save": "Save reminder",
+      "saving": "Saving…",
+      "delete": "Delete reminder",
+      "cancel": "Cancel",
+      "saveFailed": "Couldn't save. Please try again."
+    },
+    "push": {
+      "enableHint": "Reminders arrive as notifications. Turn them on so you don't miss one.",
+      "enable": "Turn on notifications",
+      "blocked": "Notifications are blocked for Anuva, so reminders can't reach you. Turn them on in your phone's settings.",
+      "iosInstall": "On iPhone, reminders only arrive once Anuva is on your Home Screen. Tap Share, then Add to Home Screen, and open Anuva from there.",
+      "unsupported": "This browser can't show notifications, so reminders won't arrive here.",
+      "failed": "Couldn't turn on notifications. Please try again."
+    },
+    "dose": {
+      "eyebrow": "Reminder",
+      "title": {
+        "medication": "Time for your medication",
+        "supplement": "Time for your supplement",
+        "none": "Time for your reminder"
+      },
+      "scheduled": "Set for {{time}}",
+      "taken": "Taken",
+      "snooze": "Snooze {{count}} min",
+      "skip": "Skip",
+      "takenDone": "Marked as taken",
+      "skippedDone": "Skipped for now",
+      "snoozedDone": "We'll remind you again in {{count}} minutes",
+      "status": {
+        "taken": "Taken",
+        "skipped": "Skipped",
+        "missed": "Missed"
+      },
+      "earlierDay": "This reminder was for an earlier day.",
+      "notFound": "This reminder is no longer available.",
+      "failed": "Couldn't save. Please try again.",
+      "close": "Close"
+    },
+    "due": {
+      "eyebrow": "Reminders due",
+      "answer": "Taken?"
     }
   },
   "notificationPrompt": {

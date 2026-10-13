@@ -10,6 +10,7 @@ import { BottomNav } from './components/BottomNav';
 const menuRows: { key: string; to?: string }[] = [
   { key: 'assessmentReport', to: '/assessment-report' },
   { key: 'bookings', to: '/my-bookings' },
+  { key: 'reminders', to: '/profile/reminders' },
   { key: 'privacy', to: '/privacy' },
   { key: 'subscription' },
   { key: 'help', to: '/help' },

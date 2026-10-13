@@ -248,6 +248,35 @@ export {
 } from './quickLog.js';
 
 export {
+  medicationKindSchema,
+  medicationDaysSchema,
+  medicationTimeSchema,
+  MEDICATION_MAX_TIMES,
+  MEDICATION_SNOOZE_MINUTES,
+  MEDICATION_FOLLOW_UP_MINUTES,
+  createMedicationReminderBodySchema,
+  updateMedicationReminderBodySchema,
+  medicationReminderSchema,
+  medicationRemindersResponseSchema,
+  medicationDoseStatusSchema,
+  medicationDoseSchema,
+  medicationDosesResponseSchema,
+  medicationDoseActionSchema,
+  respondMedicationDoseBodySchema,
+  type MedicationKind,
+  type MedicationDays,
+  type CreateMedicationReminderBody,
+  type UpdateMedicationReminderBody,
+  type MedicationReminder,
+  type MedicationRemindersResponse,
+  type MedicationDoseStatus,
+  type MedicationDose,
+  type MedicationDosesResponse,
+  type MedicationDoseAction,
+  type RespondMedicationDoseBody,
+} from './medication.js';
+
+export {
   jointSeveritySchema,
   jointAreaSchema,
   jointSymptomSchema,

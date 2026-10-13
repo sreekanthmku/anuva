@@ -102,6 +102,9 @@ export const anuChatV3ResponseSchema = z.object({
   action: anuV3ActionSchema.nullable(),
   slots: z.array(anuV3SlotSchema),
   logOptions: z.array(anuV3LogOptionSchema),
+  /// Show a "Set a reminder" button. It opens the medication reminder editor
+  /// (or her list, when she already has reminders); she sets it up herself.
+  reminderOffer: z.boolean(),
 });
 
 /// Sent after she confirmed one of the offered slots and /consultations/book
@@ -124,6 +127,7 @@ export const anuChatV3HistoryTurnSchema = z.object({
   action: anuV3ActionSchema.nullable(),
   slots: z.array(anuV3SlotSchema),
   logOptions: z.array(anuV3LogOptionSchema),
+  reminderOffer: z.boolean(),
   /// A slot from this turn has since been booked.
   booked: z.boolean(),
   createdAt: z.string(),

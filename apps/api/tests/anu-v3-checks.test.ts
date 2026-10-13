@@ -181,3 +181,41 @@ describe('v3 booking and logging checks', () => {
     expect(findViolations({ ...base, message: 'You can log last night’s sleep below. Tap a time to book.' })).toEqual([]);
   });
 });
+
+describe('v3 reminder checks', () => {
+  it.each([
+    "I've set a reminder for 8 am.",
+    "I'll set up a daily reminder for you.",
+    "I'll remind you every morning.",
+    'Your reminder is now set.',
+  ])('flags a claim that ANU set a reminder: %s', (message) => {
+    expect(findViolations({ ...base, message })).toHaveLength(1);
+  });
+
+  it('allows the offer, and a reminder for what she already takes is not a medicine suggestion', () => {
+    expect(
+      findViolations({
+        ...base,
+        message: 'You can set a reminder below for the times you take your tablets, so they are easier to remember.',
+      }),
+    ).toEqual([]);
+  });
+
+  it('still flags a reminder that names a medicine for her to take', () => {
+    expect(findViolations({ ...base, message: 'Set a reminder to take melatonin at night.' })).toHaveLength(1);
+  });
+});
+
+describe('v3 offers to act', () => {
+  // Caught by the same check as a claim: "shall I add" contains "I add".
+  it.each(['There is a button below — shall I add that for you?', 'Should I set up a reminder?', 'Can I book Friday for you?'])(
+    'flags ANU offering to do it herself: %s',
+    (message) => {
+      expect(findViolations({ ...base, message })).toHaveLength(1);
+    },
+  );
+
+  it('allows offering to show something', () => {
+    expect(findViolations({ ...base, message: 'I can show you the available Anuva gynecologists.' })).toEqual([]);
+  });
+});

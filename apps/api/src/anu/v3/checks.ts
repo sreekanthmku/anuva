@@ -88,21 +88,31 @@ const MEDICINE_SUGGESTIONS: RegExp[] = [
 /// follow what was prescribed are allowed (section 16), so questions and
 /// sentences about something already prescribed are not read as suggestions.
 /// "prescriber" alone does not exempt a sentence: "check with your prescriber
-/// about which pain reliever" still steers her to a medicine.
+/// about which pain reliever" still steers her to a medicine. Nor does a
+/// reminder for what she already takes ("set a reminder for your tablets") —
+/// but "a reminder to take melatonin" names one, so it needs "your".
 function suggestsMedicine(message: string): boolean {
   return message
     .split(/(?<=[.!?？\n])/)
-    .filter((sentence) => !/[?？]\s*$/.test(sentence) && !/\bprescribed\b/i.test(sentence))
+    .filter(
+      (sentence) =>
+        !/[?？]\s*$/.test(sentence) &&
+        !/\bprescribed\b/i.test(sentence) &&
+        !(/\breminders?\b/i.test(sentence) && /\byour\b/i.test(sentence)),
+    )
     .some((sentence) => MEDICINE_SUGGESTIONS.some((p) => p.test(sentence)));
 }
 
 /// "5:30 pm", "6 PM", "17:30".
 const CLOCK_TIME = /\b\d{1,2}(:\d{2})?\s?(am|pm|a\.m\.|p\.m\.)(?![a-z])|\b\d{1,2}:\d{2}\b/i;
 
-/// ANU never books or logs — the app does, after she confirms. So it may never
-/// say it did.
+/// ANU never books, logs or sets a reminder — the app does, after she confirms.
+/// So it may never say it did.
 const CLAIMS_LOGGED =
   /\bI(['’]ve|['’]ll| have| will)?\s+(just\s+|now\s+|also\s+)?(log(ged)?|record(ed)?|sav(e|ed)|add(ed)?|not(e|ed) (it|this|that|down))\b|^\s*(noted|logged)\b/i;
+/// She sets a reminder up herself in the editor the button opens.
+const CLAIMS_REMINDER_SET =
+  /\bI(['’]ve|['’]ll| have| will)?\s+(just\s+|now\s+|also\s+|go ahead and\s+)?(set|setting|created?|creating|add(ed)?|turn(ed)? on|schedul(e|ed))\s+(up\s+)?((a|the|your|that|this|those|these)\s+)?(daily\s+)?reminders?\b|\breminders? (is|are|has been|have been) (now )?(set|created|added|on|scheduled)\b|\bI(['’]ll| will) remind you\b/i;
 const CLAIMS_BOOKED =
   /\bI(['’]ve|['’]ll| have| will)?\s+(just\s+|now\s+|also\s+)?(book(ed)?|reserv(e|ed)|schedul(e|ed)|confirm(ed)?)\b|\byou(['’]re| are) (now )?(booked|all set|confirmed)\b|\b(appointment|booking|slot|consultation) (is|has been) (booked|confirmed|reserved|scheduled)\b/i;
 
@@ -143,9 +153,13 @@ export function findViolations(input: CheckInput): string[] {
     );
   }
 
-  if (CLAIMS_LOGGED.test(message) || (!input.bookingConfirmed && CLAIMS_BOOKED.test(message))) {
+  if (
+    CLAIMS_LOGGED.test(message) ||
+    CLAIMS_REMINDER_SET.test(message) ||
+    (!input.bookingConfirmed && CLAIMS_BOOKED.test(message))
+  ) {
     violations.push(
-      'Your draft says you booked, logged or saved something. You cannot — she books and logs herself through the buttons in the app. Phrase it as an offer ("You can log it below", "Tap a time to book").',
+      'Your draft says you booked, logged, saved or set a reminder for something. You cannot — she books, logs and sets reminders herself through the buttons in the app. Phrase it as an offer ("You can log it below", "Tap a time to book", "You can set a reminder below").',
     );
   }
 

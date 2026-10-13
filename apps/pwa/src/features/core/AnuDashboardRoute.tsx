@@ -28,6 +28,8 @@ import { MoodLogSheet } from './components/MoodLogSheet';
 import { SleepLogSheet } from './components/SleepLogSheet';
 import { QuickLogMessageDialog } from './components/QuickLogMessageDialog';
 import { NudgeCheckInDialog } from './components/NudgeCheckInDialog';
+import { DoseSheet } from './medication/DoseSheet';
+import { MedicationDueCard } from './medication/MedicationDueCard';
 import { PeriodFlowSheet } from './components/PeriodFlowSheet';
 import { useHomeNotificationPrompt } from './hooks/useHomeNotificationPrompt';
 import { useCycleTracker } from './hooks/useCycleTracker';
@@ -110,6 +112,9 @@ export default function AnuDashboardRoute() {
   const [sleepSaving, setSleepSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [nudgeSlot, setNudgeSlot] = useState<NudgeSlot | null>(null);
+  // A medication reminder's dose card: from `?dose=` (the notification) or the due card.
+  const [doseId, setDoseId] = useState<string | null>(null);
+  const [doseRefresh, setDoseRefresh] = useState(0);
   const toastTimer = useRef<number | null>(null);
 
   const showToast = (message: string) => {
@@ -265,6 +270,21 @@ export default function AnuDashboardRoute() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const requestedDose = searchParams.get('dose');
+    if (requestedDose) setDoseId(requestedDose);
+  }, [searchParams]);
+
+  const closeDoseSheet = () => {
+    setDoseId(null);
+    setDoseRefresh((n) => n + 1);
+    if (searchParams.has('dose')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('dose');
+      setSearchParams(next, { replace: true });
+    }
+  };
+
   // `?cycle=1` — the home card's cycle signals link here, and the tracker is a
   // sheet on this screen rather than a route of its own.
   useEffect(() => {
@@ -378,6 +398,7 @@ export default function AnuDashboardRoute() {
           with — same component, same daily window — so the number she sees on
           home and the number she sees on the summary cannot disagree. */}
       <section className="px-3">
+        <MedicationDueCard refreshKey={doseRefresh} onOpen={setDoseId} />
         {isCalibrating ? (
           <article className="flex items-center gap-4 rounded-[20px] bg-primary-container px-4 py-4">
             <div className="relative h-24 w-24 shrink-0">
@@ -773,6 +794,17 @@ export default function AnuDashboardRoute() {
         onClose={() => setQuickMessage(null)}
       />
 
+      {doseId && (
+        <DoseSheet
+          doseId={doseId}
+          onClose={closeDoseSheet}
+          onAnswered={(message) => {
+            closeDoseSheet();
+            showToast(message);
+          }}
+        />
+      )}
+
       {nudgeSlot && (
         <NudgeCheckInDialog
           slot={nudgeSlot}
@@ -792,6 +824,7 @@ export default function AnuDashboardRoute() {
           flowPrompt.date !== null &&
           !notificationPrompt.open &&
           !nudgeSlot &&
+          !doseId &&
           !cycleOpen &&
           !moodOpen &&
           !sleepOpen &&

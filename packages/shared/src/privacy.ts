@@ -53,6 +53,9 @@ export const ERASURE_TRACKER_MODELS = [
   'bloatingLog',
   'painLog',
   'jointLog',
+  // Whether each medication reminder was taken, skipped or missed. The reminders themselves are
+  // settings, not logs, and go with the account.
+  'medicationDose',
   // Derived, and deleted with the source rather than left behind: a weekly report whose logs are
   // gone is a claim about a week we can no longer support.
   'weeklyReport',
@@ -75,6 +78,7 @@ export const ERASURE_ACCOUNT_MODELS = [
   'assessment',
   'detailedAssessment',
   'cycleSettings',
+  'medicationReminder',
   'userCarePath',
   'careJourneyStage',
   'subscription',

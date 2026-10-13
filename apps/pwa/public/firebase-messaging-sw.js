@@ -63,6 +63,9 @@ self.addEventListener('push', (event) => {
       icon: notification.icon || '/pwa-192.png',
       badge: notification.badge || '/pwa-192.png',
       data,
+      // A medication follow-up or snooze carries the dose's tag, so it replaces the earlier
+      // notification instead of stacking a second one.
+      ...(data.tag ? { tag: data.tag, renotify: true } : {}),
     }),
   );
 });

@@ -73,6 +73,8 @@ model User {
   bloatingLogs       BloatingLog[]
   painLogs           PainLog[]
   jointLogs          JointLog[]
+  medicationReminders MedicationReminder[]
+  medicationDoses    MedicationDose[]
   nudgeDailyStates   NudgeDailyState[]
   nudgeSendLogs      NudgeSendLog[]
   l3TriggerLogs      L3TriggerLog[]
@@ -1631,6 +1633,62 @@ model JointLog {
 
   @@unique([userId, date])
   @@index([userId, date])
+}
+
+// ─────────────────────────────────────────────
+// Medication reminders
+// ─────────────────────────────────────────────
+
+/// A reminder she set up in Profile. No name on purpose — what she takes is hers to know; `kind`
+/// is the one optional thing asked. Ongoing until paused or deleted. Times are local to `timeZone`,
+/// captured from her phone, so 08:00 stays 08:00 wherever the server runs.
+model MedicationReminder {
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind              String? // medication | supplement — optional
+  times             String[] // "HH:mm", 1–4
+  days              String // daily | weekdays | alternate
+  weekdays          Int[] // 0 = Sunday … 6 = Saturday, when days = weekdays
+  timeZone          String
+  /// Her local day it was set up: "every other day" counts from here.
+  startDate         String // YYYY-MM-DD
+  active            Boolean          @default(true)
+  /// Deleting hides it but keeps its dose history.
+  deletedAt         DateTime?
+  /// Only times at or after this are sent, so adding 09:00 at 09:05 does not fire it late.
+  scheduleChangedAt DateTime         @default(now())
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  doses             MedicationDose[]
+
+  @@index([userId])
+  @@index([active, deletedAt])
+}
+
+/// One per reminder per scheduled time — written when the reminder is sent, so the unique key is
+/// also what stops a restart or a second instance from sending it twice. `missed` is not stored:
+/// it is a dose still pending after its day has ended.
+model MedicationDose {
+  id             String             @id @default(cuid())
+  reminderId     String
+  reminder       MedicationReminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheduledFor   DateTime
+  date           String // her local day, YYYY-MM-DD
+  time           String // "HH:mm" as she set it
+  status         String             @default("pending") // pending | taken | skipped
+  sentAt         DateTime?
+  followUpSentAt DateTime?
+  snoozedUntil   DateTime?
+  snoozeSentAt   DateTime?
+  respondedAt    DateTime?
+  createdAt      DateTime           @default(now())
+
+  @@unique([reminderId, scheduledFor])
+  @@index([userId, scheduledFor])
+  @@index([status, sentAt])
 }
 
 // ─────────────────────────────────────────────

@@ -1639,6 +1639,20 @@
       "title": "Your question has an answer 💜",
       "body": "{{doctor}} has replied to the question you asked. Tap to read it whenever you like.",
       "fallbackDoctor": "One of our specialists"
+    },
+    "medication": {
+      "title": {
+        "medication": "Time for your medication",
+        "supplement": "Time for your supplement",
+        "none": "Time for your reminder"
+      },
+      "body": "Tap to mark it taken, or snooze it for 15 minutes.",
+      "followUpTitle": {
+        "medication": "Your medication reminder",
+        "supplement": "Your supplement reminder",
+        "none": "Your reminder"
+      },
+      "followUpBody": "Just checking in — tap to mark it taken, snooze it or skip it."
     }
   },
   "patient": {
@@ -2038,6 +2052,16 @@
       "medicalFlags": "Medical flags to raise with your doctor",
       "recommendations": "Your recommendations",
       "trackerFocus": "What ANU will track with you"
+    }
+  },
+  "medication": {
+    "errors": {
+      "reminderNotFound": "Reminder not found.",
+      "doseNotFound": "Reminder not found.",
+      "invalidTimeZone": "Your phone’s time zone was not recognised.",
+      "tooMany": "You can have up to {{count}} reminders.",
+      "earlierDay": "This reminder was for an earlier day.",
+      "snoozeAnswered": "This reminder has already been answered."
     }
   }
 }

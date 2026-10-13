@@ -21,6 +21,7 @@ import ConsultationBookingRoute from '../features/core/ConsultationBookingRoute'
 import MyBookingsRoute from '../features/core/MyBookingsRoute';
 import ConsultationCallRoute from '../features/core/ConsultationCallRoute';
 import ProfileRoute from '../features/core/ProfileRoute';
+import MedicationRemindersRoute from '../features/core/medication/MedicationRemindersRoute';
 import AssessmentReportRoute from '../features/core/AssessmentReportRoute';
 import PrivacyRoute from '../features/core/PrivacyRoute';
 import HelpRoute from '../features/core/HelpRoute';
@@ -233,6 +234,14 @@ export function AppRouter() {
               element={
                 <ProtectedRoute>
                   <ProfileRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile/reminders"
+              element={
+                <ProtectedRoute>
+                  <MedicationRemindersRoute />
                 </ProtectedRoute>
               }
             />

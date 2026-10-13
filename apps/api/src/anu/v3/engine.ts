@@ -2,8 +2,8 @@
 //
 //   1. Classify  ┐     safety classification (classifier.ts), in parallel with
 //      Context   ┘     the runtime context reads (context.ts), the free
-//                      appointment times (booking.ts) and the trackers she can
-//                      log (trackers.ts)
+//                      appointment times (booking.ts), the trackers she can
+//                      log (trackers.ts) and whether she has medication reminders
 //   2. Reply           the v2.0 production prompt + runtime context + thread,
 //                      returning a structured decision object
 //   3. Check           checks.ts verifies the hard rules (one question, Anuva
@@ -21,8 +21,9 @@
 // are written to AnuChatTurn with mode "v3", which keeps them out of the
 // classic/probe threads (both filter on mode) and theirs out of this one.
 //
-// Booking and logging: the model only chooses which buttons to show. She books
-// through /consultations/book and logs through the tracker endpoints herself;
+// Booking, logging and reminders: the model only chooses which buttons to show.
+// She books through /consultations/book, logs through the tracker endpoints and
+// sets up a medication reminder in its editor herself;
 // after a booking the app calls confirmBooking() so ANU can write the
 // confirmation, with the booking read back from the database.
 
@@ -73,6 +74,7 @@ const decisionSchema = z.object({
   quick_replies: z.array(z.string()),
   offer_slots: z.array(z.string()),
   log_options: z.array(z.string()),
+  offer_reminder: z.boolean(),
 });
 
 type Decision = z.infer<typeof decisionSchema>;
@@ -113,6 +115,7 @@ export function replySchema(
       'quick_replies',
       'offer_slots',
       'log_options',
+      'offer_reminder',
     ],
     properties: {
       message: { type: 'string' },
@@ -126,6 +129,7 @@ export function replySchema(
       quick_replies: { type: 'array', items: { type: 'string' } },
       offer_slots: enumArray(slotRefs),
       log_options: enumArray(trackerIds),
+      offer_reminder: { type: 'boolean' },
     },
   };
 }
@@ -137,6 +141,7 @@ type StoredDecision = {
   action?: unknown;
   offered_slots?: unknown;
   log_options?: unknown;
+  reminder_offer?: unknown;
   booked?: unknown;
   event?: unknown;
 };
@@ -191,6 +196,9 @@ async function loadThread(userId: string): Promise<ChatMessage[]> {
     const logs = storedLogOptions(decision);
     if (logs.length > 0) {
       notes.push(`the app showed log buttons for: ${logs.map((entry) => entry.name).join(', ')}`);
+    }
+    if (decision.reminder_offer === true) {
+      notes.push('the app showed a "Set a reminder" button for her medication or supplement reminders');
     }
     if (notes.length > 0) {
       messages.push({ role: 'system', content: `App note on the reply above: ${notes.join('. ')}.` });
@@ -326,7 +334,7 @@ export async function answer(
   // classification is not a failed turn — the reply prompt carries its own
   // crisis rules and is told the risk level is UNKNOWN. Nor is a failed slot or
   // tracker read: the reply just has no buttons to offer.
-  const [safety, context, slotCatalog, trackerCatalog] = await Promise.all([
+  const [safety, context, slotCatalog, trackerCatalog, reminderCount] = await Promise.all([
     classify(userMessage, thread).catch((e: unknown): SafetyClassification | null => {
       log.error({ err: e, userId }, 'v3: safety classification failed — continuing as UNKNOWN');
       return null;
@@ -339,6 +347,10 @@ export async function answer(
     loadTrackerCatalog(userId).catch((e: unknown) => {
       log.error({ err: e, userId }, 'v3: tracker read failed — no log buttons this turn');
       return EMPTY_TRACKERS;
+    }),
+    prisma.medicationReminder.count({ where: { userId, deletedAt: null } }).catch((e: unknown) => {
+      log.error({ err: e, userId }, 'v3: reminder read failed — no reminder button this turn');
+      return null;
     }),
   ]);
   context.risk_level = safety?.risk_level ?? 'UNKNOWN';
@@ -354,6 +366,7 @@ export async function answer(
   }
   if (slotCatalog.context.length > 0) context.available_slots = slotCatalog.context;
   if (trackerCatalog.context.length > 0) context.loggable_trackers = trackerCatalog.context;
+  if (reminderCount !== null) context.medication_reminders = { set_up: reminderCount };
 
   const actions = context.available_actions as string[];
   const professionalTypes = context.available_professional_types as string[];
@@ -406,6 +419,8 @@ export async function answer(
       ? []
       : [...new Set(decision.log_options)].filter((id) => trackerCatalog.byId.has(id)).slice(0, MAX_LOG_BUTTONS);
   const logOptions = logIds.map((id) => trackerCatalog.byId.get(id)!);
+  // A routine-keeping button has no place in a safety reply.
+  const reminderOffer = decision.offer_reminder && reminderCount !== null && riskRank(finalRisk) < riskRank('L3');
 
   // The slot and log buttons already do what these navigation buttons would.
   let actionType =
@@ -448,6 +463,7 @@ export async function answer(
         label: `${formatSlotLong(new Date(slot.startsAt))} with ${slot.specialistName}`,
       })),
       log_options: logIds.map((id) => ({ option: trackerCatalog.byId.get(id), name: trackerNames.get(id) ?? id })),
+      reminder_offer: reminderOffer,
       checks: { first: firstViolations, remaining: remainingViolations },
       models: { reply: v3Env.replyModel(), classifier: v3Env.classifierModel() },
     },
@@ -466,13 +482,14 @@ export async function answer(
       clarifying: decision.needs_clarification,
       slotButtons: slots.length,
       logButtons: logOptions.length,
+      reminderButton: reminderOffer,
       threadTurns: thread.filter((m) => m.role === 'assistant').length,
       ms: Date.now() - startedAt,
     },
     'ANU v3 turn served',
   );
 
-  return { turnId, reply, suggestions, source: 'model', escalation, action, slots, logOptions };
+  return { turnId, reply, suggestions, source: 'model', escalation, action, slots, logOptions, reminderOffer };
 }
 
 /// After she confirmed a slot and /consultations/book succeeded, ANU writes the
@@ -582,6 +599,7 @@ export async function confirmBooking(
     action: null,
     slots: [],
     logOptions: [],
+    reminderOffer: false,
   };
 }
 
@@ -624,6 +642,7 @@ export async function history(userId: string) {
         endsAt,
       })),
       logOptions: storedLogOptions(decision).map((entry) => entry.option),
+      reminderOffer: decision.reminder_offer === true,
       booked: Boolean(decision.booked),
       createdAt: row.createdAt.toISOString(),
     };

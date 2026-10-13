@@ -12,6 +12,7 @@ import type {
 } from '@anuva/shared';
 import { apiFetch } from '../../shared/lib/api';
 import { LogOptions } from './anuV3/LogOptions';
+import { ReminderOffer } from './anuV3/ReminderOffer';
 import { SlotOffer } from './anuV3/SlotOffer';
 import { BottomNav } from './components/BottomNav';
 import { remainingDelay, replyDelay, wait } from './chatPacing';
@@ -29,6 +30,7 @@ type ChatMessage = {
   turnId?: string | null;
   slots?: AnuV3Slot[];
   logOptions?: AnuV3LogOption[];
+  reminderOffer?: boolean;
   booked?: boolean;
 };
 
@@ -42,6 +44,7 @@ function v3Message(data: AnuChatV3Response, booked = false): ChatMessage {
     turnId: data.turnId,
     slots: data.slots,
     logOptions: data.logOptions,
+    reminderOffer: data.reminderOffer,
     booked,
   };
 }
@@ -122,6 +125,7 @@ export default function AnuChatRoute() {
                 turnId: turn.id,
                 slots: turn.slots,
                 logOptions: turn.logOptions,
+                reminderOffer: turn.reminderOffer,
                 booked: turn.booked,
               },
             ]),
@@ -414,6 +418,7 @@ export default function AnuChatRoute() {
                 />
               )}
               {message.logOptions && message.logOptions.length > 0 && <LogOptions options={message.logOptions} />}
+              {message.reminderOffer && <ReminderOffer />}
               {message.action && (
                 <button
                   type="button"
