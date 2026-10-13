@@ -9,9 +9,9 @@
 -- Every statement here must be idempotent.
 
 -- Dropped in 20260917120000_family_nudges, and dropped here too so a database built by `db push`
--- matches a migrated one. It capped a woman at one connected family member; the cap is now
--- `FAMILY_MAX_MEMBERS` in application code, because the nudge corpus is written for a partner, a
--- teen and a caregiver and one slot could only ever serve one of them.
+-- matches a migrated one. It capped a woman at one connected family member; she may now connect
+-- as many people as she likes, because the nudge corpus is written for a partner, a teen and a
+-- caregiver and one slot could only ever serve one of them.
 --
 -- The race it guarded is still closed: a member is only ever created by claiming an invite, the
 -- index below allows one outstanding invite per woman, and the claim is guarded on

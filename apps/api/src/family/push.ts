@@ -1,7 +1,7 @@
 import { withLanguage } from '../i18n/index.js';
 import { prisma } from '@anuva/database';
 import type { FcmPlatform } from '@anuva/shared';
-import { sendToAudience } from '../push/dispatch.js';
+import { hasReachableDevice, sendToAudience } from '../push/dispatch.js';
 import { languageForFamilyMember } from '../i18n/recipients.js';
 
 /**
@@ -126,10 +126,38 @@ export async function sendToFamilyMember(
     typeof notification === 'function' ? notification() : notification,
   );
 
-  const payload = typeof data === 'function' ? data(content) : data;
+  const payload = withAccount(typeof data === 'function' ? data(content) : data, familyMemberId);
   // Which transport carries it is `PUSH_PROVIDER`'s business, not this module's.
   const { successCount } = await sendToAudience({ kind: 'familyMember', familyMemberId }, content, payload);
   return successCount;
 }
 
 type FamilyNotification = { title: string; body: string };
+
+/**
+ * Names the membership a notification is about in its link (`#as=`). A person connected to two
+ * women gets both women's notifications on one phone, which may be signed into the other one; the
+ * family app switches before it opens the link. In the fragment, like the thank-you, so it never
+ * reaches a server's access log.
+ */
+export function withAccount(payload: Record<string, string>, familyMemberId: string): Record<string, string> {
+  if (!payload.url) return payload;
+  const url = new URL(payload.url, 'https://family.invalid');
+  const fragment = new URLSearchParams(url.hash.replace(/^#/, ''));
+  fragment.set('as', familyMemberId);
+  return { ...payload, url: `${url.pathname}${url.search}#${fragment.toString()}` };
+}
+
+/**
+ * The phones a job can reach, for picking whom to notify. A device counts for every live membership
+ * on its phone (see `familyDeviceOwners` in push/dispatch.ts), so a membership with no device of its
+ * own is still reachable when its phone registered under another one.
+ */
+export async function reachableFamilyPhones(): Promise<string[]> {
+  const rows = await prisma.familyMember.findMany({
+    where: { status: 'active', ...hasReachableDevice() },
+    select: { phone: true },
+    distinct: ['phone'],
+  });
+  return rows.map((row) => row.phone);
+}

@@ -143,6 +143,17 @@
     "resend": "Resend the code",
     "differentNumber": "Use a different number"
   },
+  "accounts": {
+    "eyebrow": "Choose who to check on",
+    "title": "Whose app would you like to open?",
+    "intro": "You are connected to more than one person. You can switch any time from the top of the app.",
+    "joinedAs": "You joined as: {{relationship}}",
+    "opening": "Opening…",
+    "openingName": "Opening {{name}}’s app…",
+    "openNow": "Open now",
+    "switchLabel": "Switch from {{name}}’s app",
+    "failed": "Could not open that account. Please try again."
+  },
   "install": {
     "homeScreenNote": "Look for the <1>Anuva Family</1> icon on your home screen. If it asks for your number again, it is the same one-time code — your phone is what signs you in.",
     "promptTitle": "One last step: add the app",

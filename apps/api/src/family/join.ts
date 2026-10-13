@@ -2,11 +2,13 @@ import { prisma } from '@anuva/database';
 import type {
   FamilyJoinPreviewResponse,
   FamilyJoinRequestOtpResponse,
+  FamilyAccount,
   FamilyMeResponse,
   FamilyRelationship,
 } from '@anuva/shared';
 import { FamilyError } from './errors.js';
 import { familySharedScopes } from './content.js';
+import { familyAccountsForPhone } from './accounts.js';
 import { createFamilySession } from './auth.js';
 import type { LoginContext } from '../loginHistory.js';
 import { inviteTokenHash, parseInviteToken } from './tokens.js';
@@ -40,11 +42,11 @@ function maskPhone(phone: string): string {
   return `${phone.slice(0, Math.max(0, phone.length - 6))}${'*'.repeat(Math.max(0, phone.length - 6))}${phone.slice(-2)}`;
 }
 
-function firstNameOf(name: string | null): string {
+export function firstNameOf(name: string | null): string {
   return name?.trim().split(/\s+/)[0] || 'She';
 }
 
-function initialsOf(name: string): string {
+export function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   const first = parts[0];
   if (!first) return '?';
@@ -274,6 +276,29 @@ export async function verifyJoinOtp(
     throw error;
   }
 
+  // Already connected to her on this phone — a second link from her, opened by someone she already
+  // shares with. Sign them into the membership they have rather than creating a duplicate, and leave
+  // the link unclaimed for whoever she meant it for.
+  const existing = await prisma.familyMember.findFirst({
+    where: { userId: invite.userId, phone: input.phone, status: 'active' },
+    select: { id: true, name: true, relationship: true },
+  });
+  if (existing) {
+    await prisma.otpChallenge.update({
+      where: { id: challenge.id },
+      data: { status: 'verified', verifiedAt: now },
+    });
+    const session = await createFamilySession(existing.id, now, login);
+    return {
+      body: familyMeBody(
+        { name: existing.name, relationship: existing.relationship, patientName: invite.user.name },
+        await familyAccountsForPhone(input.phone, existing.id),
+      ),
+      sessionToken: session.token,
+      sessionExpiresAt: session.expiresAt,
+    };
+  }
+
   // One transaction, because a member without an accepted invite would let the link be claimed
   // twice, and an accepted invite without a member would lock her out of inviting anyone.
   let member: { id: string; name: string; relationship: FamilyRelationship };
@@ -305,9 +330,9 @@ export async function verifyJoinOtp(
     });
   } catch (error) {
     // A unique violation here means a second person claimed the same link in the same instant.
-    // This used to be `FamilyMember_single_active`, which was dropped when the cap moved to
-    // `FAMILY_MAX_MEMBERS`; the guarded `updateMany` above and `FamilyInvite_single_pending` are
-    // what close the race now, and both surface the same way.
+    // This used to be `FamilyMember_single_active`, dropped when one woman could connect more than
+    // one person; the guarded `updateMany` above and `FamilyInvite_single_pending` are what close
+    // the race now, and both surface the same way.
     if (typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 'P2002') {
       throw new FamilyError(409, 'invite_claimed', 'Someone has already joined with this link.');
     }
@@ -322,25 +347,23 @@ export async function verifyJoinOtp(
   const session = await createFamilySession(member.id, now, login);
 
   return {
-    body: {
-      member: {
-        firstName: firstNameOf(member.name),
-        initials: initialsOf(member.name),
-        relationship: member.relationship,
-      },
-      patientFirstName: firstNameOf(invite.user.name),
-      sharedScopes: familySharedScopes(),
-    },
+    body: familyMeBody(
+      { name: member.name, relationship: member.relationship, patientName: invite.user.name },
+      await familyAccountsForPhone(input.phone, member.id),
+    ),
     sessionToken: session.token,
     sessionExpiresAt: session.expiresAt,
   };
 }
 
-export function familyMeBody(identity: {
-  name: string;
-  relationship: FamilyRelationship;
-  patientName: string | null;
-}): FamilyMeResponse {
+export function familyMeBody(
+  identity: {
+    name: string;
+    relationship: FamilyRelationship;
+    patientName: string | null;
+  },
+  accounts: FamilyAccount[],
+): FamilyMeResponse {
   return {
     member: {
       firstName: firstNameOf(identity.name),
@@ -349,5 +372,6 @@ export function familyMeBody(identity: {
     },
     patientFirstName: firstNameOf(identity.patientName),
     sharedScopes: familySharedScopes(),
+    accounts,
   };
 }

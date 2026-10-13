@@ -94,10 +94,8 @@ export const familyStatusResponseSchema = z.object({
    * New code reads `members`.
    */
   member: familyMemberSummarySchema.nullable(),
-  /** Everyone currently connected, newest first. Capped server-side by `FAMILY_MAX_MEMBERS`. */
+  /** Everyone currently connected, newest first. There is no cap: she may invite as many as she likes. */
   members: z.array(familyMemberSummarySchema),
-  /** How many more she may invite. Zero means the gate offers no new link. */
-  slotsRemaining: z.number().int().nonnegative(),
   /**
    * `User.familyFeatureOptOut`. Not settable from the gate — it is an ops and support relief valve
    * for a woman with nobody to invite, and the gate honours it so that relief actually works.
@@ -193,8 +191,8 @@ export const familyJoinRequestOtpResponseSchema = z.object({
 
 /**
  * `name` and `relationship` are re-sent here rather than remembered from the request-OTP step:
- * `OtpChallenge` has no metadata column, and creating the member row early would occupy the single
- * active-member slot before the phone was proven. Both fields are self-declared either way.
+ * `OtpChallenge` has no metadata column, and creating the member row early would create a
+ * membership before the phone was proven. Both fields are self-declared either way.
  */
 export const familyJoinVerifyBodySchema = z.object({
   token: z.string().min(16),
@@ -203,6 +201,20 @@ export const familyJoinVerifyBodySchema = z.object({
   otp: z.string().min(4).max(8),
   name: z.string().trim().min(1).max(80),
   relationship: familyRelationshipSchema,
+});
+
+/**
+ * One woman this family member's phone is connected to. A person supporting two women holds two
+ * memberships (two `FamilyMember` rows, the same verified phone); the app signs into one at a time
+ * and offers the others to switch to.
+ */
+export const familyAccountSchema = z.object({
+  memberId: z.string(),
+  patientFirstName: z.string(),
+  /** Their relationship to her, as they declared it when joining her. */
+  relationship: familyRelationshipSchema,
+  /** The membership this session is signed into. */
+  current: z.boolean(),
 });
 
 export const familyMeResponseSchema = z.object({
@@ -214,6 +226,13 @@ export const familyMeResponseSchema = z.object({
   patientFirstName: z.string(),
   /** Plain labels for what this member can currently see, for the privacy tab. */
   sharedScopes: z.array(z.string()),
+  /** Every active membership on this phone, the current one included. More than one means ask. */
+  accounts: z.array(familyAccountSchema),
+});
+
+/** Move this session to another membership on the same verified phone. */
+export const familySwitchAccountBodySchema = z.object({
+  memberId: z.string().min(1),
 });
 
 export const familyJoinVerifyResponseSchema = familyMeResponseSchema;
@@ -520,6 +539,8 @@ export type FamilyGate = z.infer<typeof familyGateSchema>;
 export type FamilyInvite = z.infer<typeof familyInviteSchema>;
 export type FamilyMemberSummary = z.infer<typeof familyMemberSummarySchema>;
 export type FamilyStatusResponse = z.infer<typeof familyStatusResponseSchema>;
+export type FamilyAccount = z.infer<typeof familyAccountSchema>;
+export type FamilySwitchAccountBody = z.infer<typeof familySwitchAccountBodySchema>;
 export type CreateFamilyInviteResponse = z.infer<typeof createFamilyInviteResponseSchema>;
 export type FamilyActivityResponse = z.infer<typeof familyActivityResponseSchema>;
 export type MarkFamilyInviteSharedBody = z.infer<typeof markFamilyInviteSharedBodySchema>;

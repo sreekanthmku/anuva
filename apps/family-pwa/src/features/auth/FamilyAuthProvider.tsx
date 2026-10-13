@@ -3,7 +3,7 @@ import type { FamilyMeResponse } from '@anuva/shared';
 import { ApiError } from '../../shared/lib/api';
 import { setFamilyScope } from '../../lib/sentry';
 import { FamilyAuthContext, type FamilyAuthStatus } from './family-auth-context';
-import { fetchFamilyMe, logoutFamily } from './session';
+import { fetchFamilyMe, logoutFamily, switchFamilyAccount } from './session';
 
 export function FamilyAuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<FamilyAuthStatus>('loading');
@@ -44,6 +44,12 @@ export function FamilyAuthProvider({ children }: { children: ReactNode }) {
         setFamilyScope(next.member.relationship);
       },
       refresh,
+      switchAccount: async (memberId: string) => {
+        const next = await switchFamilyAccount(memberId);
+        setMe(next);
+        setStatus('authenticated');
+        setFamilyScope(next.member.relationship);
+      },
       logout: async () => {
         await logoutFamily();
         setMe(null);

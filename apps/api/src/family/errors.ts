@@ -35,7 +35,6 @@ copy('errors.family', {
   somethingWentWrong: 'Something went wrong. Please try again.',
   codeCooldown_one: 'Please wait {{count}} second before asking for another code.',
   codeCooldown_other: 'Please wait {{count}} seconds before asking for another code.',
-  memberSlotsFull: 'You can have {{count}} people connected at a time. Remove someone first to invite anyone else.',
 });
 
 /** Raised by the family module. Mirrors Report14Error: the router turns it into its status. */

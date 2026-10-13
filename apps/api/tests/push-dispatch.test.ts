@@ -11,6 +11,7 @@ const familyFcmToken = { findMany: vi.fn() };
 const familyWebPushSubscription = { findMany: vi.fn(), deleteMany: vi.fn() };
 const specialistFcmToken = { findMany: vi.fn() };
 const specialistWebPushSubscription = { findMany: vi.fn(), deleteMany: vi.fn() };
+const familyMember = { findUnique: vi.fn(), findMany: vi.fn() };
 
 vi.mock('@anuva/database', () => ({
   prisma: {
@@ -20,6 +21,7 @@ vi.mock('@anuva/database', () => ({
     familyWebPushSubscription,
     specialistFcmToken,
     specialistWebPushSubscription,
+    familyMember,
   },
 }));
 
@@ -47,6 +49,8 @@ beforeEach(() => {
     model.findMany.mockReset().mockResolvedValue([]);
     model.deleteMany.mockReset().mockResolvedValue({ count: 0 });
   }
+  familyMember.findUnique.mockReset().mockResolvedValue(null);
+  familyMember.findMany.mockReset().mockResolvedValue([]);
   sendPushToAllTokens.mockReset().mockResolvedValue({ successCount: 1, failureCount: 0 });
   sendWebPush.mockReset().mockResolvedValue({ successCount: 1, failureCount: 0, goneEndpoints: [] });
 });
@@ -180,6 +184,24 @@ describe('sendToAudience', () => {
     expect(specialistWebPushSubscription.findMany).toHaveBeenCalled();
   });
 
+  it('reaches a family member on devices registered under their other memberships on the same phone', async () => {
+    process.env.PUSH_PROVIDER = 'both';
+    familyMember.findUnique.mockResolvedValue({ phone: '+919800000001' });
+    familyMember.findMany.mockResolvedValue([{ id: 'member-1' }, { id: 'member-2' }]);
+
+    await sendToAudience({ kind: 'familyMember', familyMemberId: 'member-1' }, NOTIFICATION);
+
+    expect(familyMember.findMany.mock.calls[0]![0].where).toEqual({ phone: '+919800000001', status: 'active' });
+    expect(familyFcmToken.findMany.mock.calls[0]![0].where).toEqual({
+      familyMemberId: { in: ['member-1', 'member-2'] },
+      status: 'ACTIVE',
+    });
+    expect(familyWebPushSubscription.findMany.mock.calls[0]![0].where).toEqual({
+      familyMemberId: { in: ['member-1', 'member-2'] },
+      status: 'ACTIVE',
+    });
+  });
+
   it('never throws: a failed notification must not fail the action that triggered it', async () => {
     process.env.PUSH_PROVIDER = 'fcm';
     fcmToken.findMany.mockRejectedValue(new Error('database is down'));
@@ -203,5 +225,19 @@ describe('countDevices', () => {
   it('reports none when she has no devices', async () => {
     process.env.PUSH_PROVIDER = 'both';
     await expect(countDevices({ kind: 'user', userId: 'user-1' })).resolves.toBe(0);
+  });
+});
+
+describe('withAccount', async () => {
+  const { withAccount } = await import('../src/family/push.js');
+
+  it('names the membership in the fragment, keeping whatever the link already carried', () => {
+    expect(withAccount({ url: '/' }, 'member-2').url).toBe('/#as=member-2');
+    expect(withAccount({ url: '/learn' }, 'member-2').url).toBe('/learn#as=member-2');
+    expect(withAccount({ url: '/#familyThanks=message' }, 'member-2').url).toBe('/#familyThanks=message&as=member-2');
+  });
+
+  it('leaves a payload with no link alone', () => {
+    expect(withAccount({ nudgeLayer: 'act' }, 'member-2')).toEqual({ nudgeLayer: 'act' });
   });
 });

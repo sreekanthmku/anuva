@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFamilyAuth } from '../auth/family-auth-context';
 import { LanguageToggle } from '../../i18n/LanguageToggle';
@@ -8,9 +9,11 @@ import { Wordmark } from './Wordmark';
 
 function TopBar() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { me } = useFamilyAuth();
   const firstName = me?.member.firstName ?? '';
   const initials = me?.member.initials ?? '·';
+  const canSwitch = (me?.accounts.length ?? 0) > 1;
 
   return (
     <header className="sticky top-0 z-30 border-b border-secondary/15 bg-[#F7F0E8]/85 backdrop-blur-xl">
@@ -19,6 +22,18 @@ function TopBar() {
         {/* Compact here: the wordmark already fills the row, and the language name beside the globe
             would push the avatar off the edge on a small phone. */}
         <LanguageToggle variant="compact" />
+        {/* Only for someone connected to more than one woman: whose app this is, and a way to switch. */}
+        {canSwitch ? (
+          <button
+            type="button"
+            onClick={() => navigate('/choose', { state: { switching: true } })}
+            aria-label={t('accounts.switchLabel', { name: me?.patientFirstName ?? '' })}
+            className="inline-flex min-h-11 max-w-[9rem] shrink-0 items-center gap-1 rounded-full border border-primary/20 bg-surface-raised px-3 text-[13px] font-semibold text-primary shadow-soft"
+          >
+            <span className="truncate">{me?.patientFirstName}</span>
+            <span aria-hidden>▾</span>
+          </button>
+        ) : null}
         <span
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-primary/15 bg-primary-fixed font-display text-[13px] font-semibold text-primary shadow-soft"
           aria-label={firstName ? t('shell.signedInAs', { name: firstName }) : t('shell.signedIn')}

@@ -8,6 +8,8 @@ export type FamilyAuthContextValue = {
   me: FamilyMeResponse | null;
   setSession: (me: FamilyMeResponse) => void;
   refresh: () => Promise<void>;
+  /** Open another woman this phone is connected to (`me.accounts`). */
+  switchAccount: (memberId: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 

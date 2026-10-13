@@ -55,6 +55,7 @@ import {
   familyLearnResponseSchema,
   familyLogoutResponseSchema,
   familyMeResponseSchema,
+  familySwitchAccountBodySchema,
   familyMessageBodySchema,
   familyMessageResponseSchema,
   familyPrivacyResponseSchema,
@@ -83,6 +84,7 @@ import {
   revokeFamilyInviteResponseSchema,
 } from '@anuva/shared';
 import { FAMILY_SESSION_COOKIE_NAME } from './config.js';
+import { familyAccountsForMember, switchFamilyAccount } from './accounts.js';
 import { destroyFamilySession, requireFamilyMember } from './auth.js';
 import { FamilyError } from './errors.js';
 import {
@@ -349,7 +351,37 @@ export function createFamilyRouter({
     try {
       noStore(res);
       const identity = await requireFamilyMember(req);
-      res.json(familyMeResponseSchema.parse(familyMeBody(identity)));
+      res.json(
+        familyMeResponseSchema.parse(familyMeBody(identity, await familyAccountsForMember(identity.memberId))),
+      );
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  // Someone connected to more than one woman picks which one to open. The target must be on the
+  // phone this session already verified (see accounts.ts); the old session ends and a new one,
+  // signed into the target, replaces the cookie.
+  router.post('/switch', async (req, res, next) => {
+    try {
+      noStore(res);
+      const identity = await requireFamilyMember(req);
+      const { memberId } = familySwitchAccountBodySchema.parse(req.body);
+      if (memberId === identity.memberId) {
+        res.json(
+          familyMeResponseSchema.parse(familyMeBody(identity, await familyAccountsForMember(identity.memberId))),
+        );
+        return;
+      }
+      const { body, sessionToken, sessionExpiresAt } = await switchFamilyAccount(
+        identity.memberId,
+        memberId,
+        loginContext(req),
+      );
+      await destroyFamilySession(req);
+      res.cookie(FAMILY_SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions(sessionExpiresAt));
+      req.log?.info?.('family: switched account');
+      res.json(familyMeResponseSchema.parse(body));
     } catch (e) {
       next(e);
     }

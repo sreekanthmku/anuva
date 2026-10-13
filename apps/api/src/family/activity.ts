@@ -1,7 +1,6 @@
 import { copy, dateLocale, fill } from '../i18n/index.js';
 import { prisma } from '@anuva/database';
 import type { FamilyActivityResponse, FamilySupportActionKind } from '@anuva/shared';
-import { FAMILY_MAX_MEMBERS } from './config.js';
 import { dayKey } from '../dayKey.js';
 
 /**
@@ -79,7 +78,6 @@ export async function buildFamilyActivity(userId: string): Promise<FamilyActivit
   const members = await prisma.familyMember.findMany({
     where: { userId, status: 'active' },
     orderBy: { createdAt: 'desc' },
-    take: FAMILY_MAX_MEMBERS,
     select: {
       id: true,
       name: true,

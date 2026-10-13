@@ -4,7 +4,6 @@ import type { FamilyGate, FamilyInvite, FamilyStatusResponse } from '@anuva/shar
 import {
   FAMILY_CONSENT_VERSION,
   FAMILY_INVITE_TTL_DAYS,
-  FAMILY_MAX_MEMBERS,
   FAMILY_REPROMPT_MINUTES,
 } from './config.js';
 import { FamilyError } from './errors.js';
@@ -138,18 +137,16 @@ async function loadUser(userId: string) {
 /**
  * Everyone currently connected, newest first.
  *
- * Was a single `findFirst`. The nudge corpus is written for a partner, a teen and a caregiver, and
- * one slot meant only one of the three could ever receive it — so the cap moved to
- * `FAMILY_MAX_MEMBERS` and this returns a list. Newest first because the most recent joiner is the
- * one she is most likely to be looking for, and because the patient PWA's single-slot `member` field
- * is served from the head of it.
+ * There is no cap: she may invite as many people as she likes. Each member already holds their own
+ * session, push devices and nudge ledger, so another member changes nothing downstream. Newest
+ * first because the most recent joiner is the one she is most likely to be looking for, and because
+ * the patient PWA's older single-slot `member` field is served from the head of it.
  */
 function activeMembers(userId: string) {
   return prisma.familyMember.findMany({
     where: { userId, status: 'active' },
     select: MEMBER_SELECT,
     orderBy: { createdAt: 'desc' },
-    take: FAMILY_MAX_MEMBERS,
   });
 }
 
@@ -234,10 +231,9 @@ export async function getFamilyStatus(userId: string): Promise<FamilyStatusRespo
   const user = await loadUser(userId);
   const members = await activeMembers(userId);
 
-  // Nothing to invite anyone to once every slot is taken, and nothing to show if she opted out —
-  // in both cases minting a link would be pointless work and a pointless secret.
-  const full = members.length >= FAMILY_MAX_MEMBERS;
-  const invite = full || user.familyFeatureOptOut ? null : await ensurePendingInvite(userId, now);
+  // There is always a link to invite one more person with — except for a woman who opted out, for
+  // whom minting one would be pointless work and a pointless secret.
+  const invite = user.familyFeatureOptOut ? null : await ensurePendingInvite(userId, now);
 
   return buildStatus(user, members, invite, now);
 }
@@ -278,7 +274,6 @@ function buildStatus(
     invite: invite ? withShareMessage(serializeInvite(invite), firstName) : null,
     member: serialized[0] ?? null,
     members: serialized,
-    slotsRemaining: Math.max(0, FAMILY_MAX_MEMBERS - members.length),
     optedOut: user.familyFeatureOptOut,
   };
 }
@@ -290,16 +285,6 @@ function buildStatus(
 export async function rotateInvite(userId: string): Promise<FamilyInvite> {
   const now = new Date();
   const user = await loadUser(userId);
-
-  const members = await activeMembers(userId);
-  if (members.length >= FAMILY_MAX_MEMBERS) {
-    throw new FamilyError(
-      409,
-      'member_slots_full',
-      `You can have ${FAMILY_MAX_MEMBERS} people connected at a time. Remove someone first to invite anyone else.`,
-      { key: 'errors.family.memberSlotsFull', vars: { count: FAMILY_MAX_MEMBERS } },
-    );
-  }
 
   const invite = await prisma.$transaction(async (tx) => {
     await tx.familyInvite.updateMany({
@@ -386,7 +371,7 @@ export async function revokeInvite(userId: string, inviteId: string): Promise<vo
 }
 
 /**
- * Revoking a member frees the single-active slot and drops their sessions immediately, so access
+ * Revoking a member drops their sessions immediately, so access
  * ends on their next request rather than whenever their cookie happens to expire. The accepted
  * invite row is left as it is — it is the record of who joined and when.
  */

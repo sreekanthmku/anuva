@@ -3,6 +3,7 @@ import type {
   FamilyMeResponse,
   FamilySignInRequestOtpResponse,
 } from '@anuva/shared';
+import { familyAccountsForPhone } from './accounts.js';
 import { createFamilySession } from './auth.js';
 import type { LoginContext } from '../loginHistory.js';
 import { FamilyError } from './errors.js';
@@ -33,12 +34,11 @@ function maskPhone(phone: string): string {
 }
 
 /**
- * The membership this phone signs into.
+ * The membership this phone signs into first.
  *
- * A phone can support two women — that is two rows, and nothing in the schema forbids it. The most
- * recently active one wins, which is the right guess for someone returning to the app; switching
- * between them is not a thing the app offers yet, and inventing an account-picker here would be a
- * screen with no product behind it.
+ * A phone can support several women — one row each. The most recently active one is signed into,
+ * and the response lists all of them (`accounts`): with more than one, the family app asks which
+ * woman to open before showing anything, and can switch later (see accounts.ts).
  *
  * A revoked member, an erased patient, or a patient who turned family sharing off all read the same
  * to the caller as a phone that never joined: "no active connection". Telling a caller apart from
@@ -208,11 +208,14 @@ export async function verifySignInOtp(
   const session = await createFamilySession(member.id, now, login);
 
   return {
-    body: familyMeBody({
-      name: member.name,
-      relationship: member.relationship,
-      patientName: member.user.name,
-    }),
+    body: familyMeBody(
+      {
+        name: member.name,
+        relationship: member.relationship,
+        patientName: member.user.name,
+      },
+      await familyAccountsForPhone(input.phone, member.id),
+    ),
     sessionToken: session.token,
     sessionExpiresAt: session.expiresAt,
   };

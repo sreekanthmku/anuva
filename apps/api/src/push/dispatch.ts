@@ -28,6 +28,27 @@ export type Audience =
 type TokenRow = { token: string; deviceId: string | null };
 type SubscriptionRow = StoredSubscription & { deviceId: string | null };
 
+/**
+ * Whose devices a family member's notification goes to.
+ *
+ * Someone connected to several women holds one membership per woman but carries one phone, and a
+ * device registers under whichever membership was signed in when it did. So every live membership
+ * on that verified phone shares its devices: a note about one woman must still reach the phone
+ * while it is signed into another. The tap opens the right woman — see `sendToFamilyMember`.
+ */
+async function familyDeviceOwners(familyMemberId: string): Promise<string[]> {
+  const member = await prisma.familyMember.findUnique({
+    where: { id: familyMemberId },
+    select: { phone: true },
+  });
+  if (!member) return [familyMemberId];
+  const siblings = await prisma.familyMember.findMany({
+    where: { phone: member.phone, status: 'active' },
+    select: { id: true },
+  });
+  return [...new Set([familyMemberId, ...siblings.map((sibling) => sibling.id)])];
+}
+
 /** The FCM tokens and Web Push subscriptions belonging to one audience, active only. */
 async function activeDevices(
   audience: Audience,
@@ -45,7 +66,8 @@ async function activeDevices(
       return { tokens, subscriptions };
     }
     case 'familyMember': {
-      const where = { familyMemberId: audience.familyMemberId, status: 'ACTIVE' } as const;
+      const owners = await familyDeviceOwners(audience.familyMemberId);
+      const where = { familyMemberId: { in: owners }, status: 'ACTIVE' } as const;
       const [tokens, subscriptions] = await Promise.all([
         usesFcm() ? prisma.familyFcmToken.findMany({ where, select }) : [],
         usesWebPush() ? prisma.familyWebPushSubscription.findMany({ where, select: subSelect }) : [],

@@ -55,6 +55,17 @@ export function verifySignInCode(
   });
 }
 
+/**
+ * Open another woman this phone is connected to. The server checks she is on the same verified
+ * phone, ends this session and sets a new cookie for the chosen one.
+ */
+export function switchFamilyAccount(memberId: string): Promise<FamilyMeResponse> {
+  return apiFetch<FamilyMeResponse>('/api/family/switch', {
+    method: 'POST',
+    body: JSON.stringify({ memberId }),
+  });
+}
+
 export function fetchFamilyMe(): Promise<FamilyMeResponse> {
   return apiFetch<FamilyMeResponse>('/api/family/me', { cache: 'no-store' });
 }

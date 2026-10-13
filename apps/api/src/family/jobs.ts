@@ -2,13 +2,12 @@ import { copy, fill } from '../i18n/index.js';
 import cron from 'node-cron';
 import { prisma } from '@anuva/database';
 import { logger } from '../logger.js';
-import { hasReachableDevice } from '../push/dispatch.js';
 import { buildSummaryForSignals, weeklyLearnNudge } from './digest.js';
 import { readerFor } from './articles.js';
 import { ACTION_PENDING_REMINDER } from './content.js';
 import { resolveTodayNudge } from './nudgeLog.js';
 import type { FamilyNudgeLayer } from './nudges.js';
-import { sendToFamilyMember } from './push.js';
+import { reachableFamilyPhones, sendToFamilyMember } from './push.js';
 
 const log = logger.child({ module: 'family-jobs' });
 
@@ -126,7 +125,7 @@ export async function sendWeeklyLearnNudge(now = new Date()): Promise<number> {
     where: {
       status: 'active',
       user: { familyFeatureOptOut: false, erasedAt: null },
-      ...hasReachableDevice(),
+      phone: { in: await reachableFamilyPhones() },
     },
     select: { id: true },
   });
@@ -185,7 +184,7 @@ export async function sendCadenceNudge(
     where: {
       status: 'active',
       user: { familyFeatureOptOut: false, erasedAt: null },
-      ...hasReachableDevice(),
+      phone: { in: await reachableFamilyPhones() },
     },
     select: { id: true, relationship: true, userId: true },
   });

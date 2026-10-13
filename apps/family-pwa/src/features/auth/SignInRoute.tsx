@@ -61,7 +61,8 @@ export default function SignInRoute() {
     try {
       const me = await verifySignInCode({ challengeId, phone, otp: code.trim() });
       setSession(me);
-      navigate('/', { replace: true });
+      // Connected to more than one woman: ask whose app to open before showing anyone's.
+      navigate(me.accounts.length > 1 ? '/choose' : '/', { replace: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : t('errors.badCode'));
       // The membership went away between the code being sent and typed — she revoked it, or turned
