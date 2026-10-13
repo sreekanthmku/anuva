@@ -49,28 +49,17 @@ function v3Message(data: AnuChatV3Response, booked = false): ChatMessage {
   };
 }
 
-/// Which ANU engine this device talks to. `current` is /anu/chat (classic +
-/// probe ladder, chosen server-side); `v3` is /anu/v3/chat. Each keeps its own
+/// Which ANU engine the chat talks to. `current` is /anu/chat (classic + probe
+/// ladder, chosen server-side); `v3` is /anu/v3/chat. Each keeps its own
 /// thread, so switching swaps the conversation on screen.
+///
+/// v3 is what opens, every time. The ⋯ menu can still switch to `current` for
+/// the rest of the visit, but the choice is not remembered: a device that
+/// picked the old engine before v3 became the default opens on v3 like any
+/// other.
 type ChatEngine = 'current' | 'v3';
 
-const ENGINE_STORAGE_KEY = 'anu.chatEngine';
-
-function readEngine(): ChatEngine {
-  try {
-    return window.localStorage.getItem(ENGINE_STORAGE_KEY) === 'v3' ? 'v3' : 'current';
-  } catch {
-    return 'current';
-  }
-}
-
-function writeEngine(engine: ChatEngine): void {
-  try {
-    window.localStorage.setItem(ENGINE_STORAGE_KEY, engine);
-  } catch {
-    // Private mode or blocked storage: the switch still works for this visit.
-  }
-}
+const DEFAULT_ENGINE: ChatEngine = 'v3';
 
 const CHAT_PATH: Record<ChatEngine, string> = {
   current: '/api/anu/chat',
@@ -88,7 +77,7 @@ export default function AnuChatRoute() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [engine, setEngine] = useState<ChatEngine>(readEngine);
+  const [engine, setEngine] = useState<ChatEngine>(DEFAULT_ENGINE);
   const [menuOpen, setMenuOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -163,7 +152,6 @@ export default function AnuChatRoute() {
     (next: ChatEngine) => {
       setMenuOpen(false);
       if (next === engine || sending) return;
-      writeEngine(next);
       setEngine(next);
     },
     [engine, sending],
