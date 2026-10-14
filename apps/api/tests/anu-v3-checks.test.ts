@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findViolations, rewriteDirective } from '../src/anu/v3/checks.js';
+import { findViolations, removeDashes, rewriteDirective } from '../src/anu/v3/checks.js';
 
 const base = {
   riskLevel: 'L1',
@@ -45,6 +45,8 @@ describe('v3 findViolations', () => {
       'Hi Priya. What would you like help with today?',
       'Good to hear from you. What can I help you with?',
       'Got it. How else can I help?',
+      'Hi Priya! How are you feeling today, what’s been on your mind?',
+      "Hey! What's on your mind?",
     ]) {
       expect(findViolations({ ...base, message }), message).toHaveLength(1);
     }
@@ -74,7 +76,7 @@ describe('v3 findViolations', () => {
 
   it('allows describing herself as a companion', () => {
     for (const message of [
-      "I'm here to listen and help you make sense of what your body is going through. What's been on your mind?",
+      "I'm here to listen and help you make sense of what your body is going through. How have things been lately?",
       'I can see why that worries you. How long has it been going on?',
       'You can book an Anuva gynecologist below.',
     ]) {
@@ -287,10 +289,40 @@ describe('v3 already-logged and serious-concern checks', () => {
     expect(out[0]).toMatch(/already logged Joints & stiffness today/);
   });
 
-  it('requires the booking card for a serious concern', () => {
+  it('requires asking about booking for a serious concern', () => {
     const message = 'Two weeks of joint pain is worth having looked at by an Anuva gynecologist.';
     expect(findViolations({ ...base, riskLevel: 'L2', message, bookingDue: true })).toHaveLength(1);
-    expect(findViolations({ ...base, riskLevel: 'L2', message, bookingDue: true, offersBooking: true })).toEqual([]);
+    expect(
+      findViolations({ ...base, riskLevel: 'L2', message: `${message} Would you like to book a time?`, bookingDue: true, asksToBook: true }),
+    ).toEqual([]);
     expect(findViolations({ ...base, riskLevel: 'L2', message, bookingDue: false })).toEqual([]);
+  });
+
+  it('lets a safety question come before the booking question', () => {
+    const message = 'An Anuva psychologist could help. Have you had thoughts of hurting yourself?';
+    expect(findViolations({ ...base, riskLevel: 'L2', message, bookingDue: true, asksSafetyQuestion: true })).toEqual([]);
+  });
+
+  it('flags the booking card before she has asked or said yes', () => {
+    const out = findViolations({ ...base, riskLevel: 'L2', message: 'You can book below.', offersBooking: true, bookingUnconfirmed: true });
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatch(/not asked to book/);
+  });
+});
+
+describe('v3 removeDashes', () => {
+  it.each([
+    ['Hi Priya! How are you feeling today — what’s up?', 'Hi Priya! How are you feeling today, what’s up?'],
+    ['Bleeding every hour—for months—needs care today.', 'Bleeding every hour, for months, needs care today.'],
+    ['Hi Priya! — how was your day?', 'Hi Priya! How was your day?'],
+    ['Try this - it helps.', 'Try this, it helps.'],
+    ['It passes soon —', 'It passes soon'],
+  ])('%s', (text, expected) => {
+    expect(removeDashes(text)).toBe(expected);
+  });
+
+  it('leaves hyphenated words, number ranges and list bullets alone', () => {
+    expect(removeDashes('Over 2–3 days, a follow-up helps.')).toBe('Over 2–3 days, a follow-up helps.');
+    expect(removeDashes('Tonight:\n- a cool room\n- water nearby')).toBe('Tonight:\n- a cool room\n- water nearby');
   });
 });

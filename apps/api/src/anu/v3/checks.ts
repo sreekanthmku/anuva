@@ -32,11 +32,19 @@ export type CheckInput = {
   /// offered, a doctor is free, and the card has not been shown in this
   /// conversation yet.
   bookingDue?: boolean;
+  /// The draft asks whether she would like to book ("asks_to_book").
+  asksToBook?: boolean;
+  /// The draft's one question checks her safety (self-harm thoughts, fainting);
+  /// the booking question waits for the next reply.
+  asksSafetyQuestion?: boolean;
+  /// The draft shows the booking card although she has neither asked to book
+  /// nor said yes to ANU's question.
+  bookingUnconfirmed?: boolean;
 };
 
 const QUESTION_MARK = /[?？]/g;
 
-/// Stock sympathy and assistant lines the prompt (sections 8, 32, 37, 39) rules out. Curly and
+/// Stock sympathy and assistant lines the prompt (sections 8, 37, 39) rules out. Curly and
 /// straight apostrophes both, since the model writes either.
 const TEMPLATE_PHRASES: RegExp[] = [
   /\bI['’]m (really |so |very |truly )?sorry (you['’]re|you are|to hear)\b/i,
@@ -51,6 +59,9 @@ const TEMPLATE_PHRASES: RegExp[] = [
   /\bhow (can|may|could) I (help|assist)( you)?\b/i,
   /\bwhat (would you like|do you need|can I help you with)( help)?( with)?( today)?\s*\?/i,
   /\bhow else can I help\b/i,
+  // Counsellor lines: a friend asks how her day was, not what is on her mind.
+  /\bwhat['’]s (been )?on your mind\b/i,
+  /\bwhat has been on your mind\b/i,
 ];
 
 /// ANU describing app actions as her own abilities ("I can book appointments
@@ -58,6 +69,19 @@ const TEMPLATE_PHRASES: RegExp[] = [
 /// list; booking, logging and reminders appear only when they fit (section 39).
 const CAPABILITY_CLAIM =
   /\bI can (also |even )?(help you )?(book|schedule|arrange|log|track|record|set( up)? (a |your )?reminders?|remind)\b|\bI(['’]m| am) able to (book|schedule|log|track|set reminders?)\b/i;
+
+/// ANU never writes a dash between words (section 37, rule 7): people do not text like
+/// that. The prompt keeps most out; this catches the rest before she reads it.
+/// A dash between words becomes a comma. Hyphens inside a word, number ranges
+/// ("2–3 days") and a "- " list bullet at the start of a line are left alone.
+export function removeDashes(text: string): string {
+  return text
+    .replace(/[ \t]*[—―][ \t]*/g, ', ')
+    .replace(/[ \t]+[–-][ \t]+/g, ', ')
+    .replace(/^(\s*), /gm, '$1')
+    .replace(/, (?=[,.;:!?]|$)/gm, '')
+    .replace(/([.!?]), (\p{Ll})/gu, (_, end: string, letter: string) => `${end} ${letter.toUpperCase()}`);
+}
 
 /// Sending her outside Anuva for a professional Anuva offers.
 const EXTERNAL_REFERRAL =
@@ -105,7 +129,7 @@ const MEDICINE_SUGGESTIONS: RegExp[] = [
 ];
 
 /// Asking what she already takes ("Are you taking HRT?") and reminding her to
-/// follow what was prescribed are allowed (section 16), so questions and
+/// follow what was prescribed are allowed (section 37, rule 5), so questions and
 /// sentences about something already prescribed are not read as suggestions.
 /// "prescriber" alone does not exempt a sentence: "check with your prescriber
 /// about which pain reliever" still steers her to a medicine. Nor does a
@@ -206,9 +230,13 @@ export function findViolations(input: CheckInput): string[] {
     );
   }
 
-  if (input.bookingDue && !input.offersBooking) {
+  if (input.bookingUnconfirmed) {
     violations.push(
-      'This concern deserves a professional review (risk L2/L3), and an Anuva doctor is free. Recommend the matching Anuva professional in "message", set "professional_pathway", and set "offer_booking" so the booking card shows under your reply (doctor/part_of_day/date null unless she said them). Say the card is below; do not ask whether she wants to book.',
+      'She has not asked to book, and has not said yes to booking. Do not show the booking card yet: set "offer_booking" to null. Recommend the matching Anuva professional and ask whether she would like to book a time ("Would you like to book a time with an Anuva gynecologist?"), set "asks_to_book" to true, and give "quick_replies" such as "Yes, let\'s book" and "Not now".',
+    );
+  } else if (input.bookingDue && !input.offersBooking && !input.asksToBook && !input.asksSafetyQuestion) {
+    violations.push(
+      'This concern deserves a professional review (risk L2/L3), and an Anuva doctor is free. Say briefly why it is worth having it looked at, recommend the matching Anuva professional, set "professional_pathway", and ask whether she would like to book a time ("Would you like to book a time with an Anuva gynecologist?"). Set "asks_to_book" to true, "offer_booking" to null, and give "quick_replies" such as "Yes, let\'s book" and "Not now".',
     );
   }
 

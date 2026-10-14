@@ -75,6 +75,7 @@ function decision(offer: { doctor: string | null; part_of_day: 'evening' | null;
     offer_booking: offer,
     log_options: [],
     offer_reminder: false,
+    asks_to_book: false,
   };
 }
 

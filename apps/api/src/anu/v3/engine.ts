@@ -38,7 +38,7 @@ import { THREAD_IDLE_MS } from '../engine.js';
 import { sanitizeName } from '../prompt.js';
 import { actionHref } from './actions.js';
 import { formatSlotLong, loadBookingCatalog, PARTS_OF_DAY, type BookingCatalog } from './booking.js';
-import { findViolations, rewriteDirective } from './checks.js';
+import { findViolations, removeDashes, rewriteDirective } from './checks.js';
 import { classify, riskRank, RISK_LEVELS, type SafetyClassification } from './classifier.js';
 import { buildRuntimeContext, renderRuntimeContext, type RuntimeContext } from './context.js';
 import { chatJson, v3Env, type ChatMessage } from './llm.js';
@@ -58,6 +58,11 @@ const MAX_LOG_BUTTONS = 2;
 // As in the classic engine: messages and replies are never logged, only the
 // routing decision.
 const log = logger.child({ module: 'anu', engine: V3_MODE });
+
+/// Her message asks to book or to see someone, so the card may show without
+/// ANU asking first. Otherwise ANU asks, and the card waits for her yes.
+const ASKS_TO_BOOK =
+  /\b(book|booking|appointment|appt|consult(ation)?|slots?|schedule|reschedule|available|free (on|at|this|next|tomorrow|today)|see (a|an|the|my|your) \w*\s?(doctor|gyn\w*|psycholog\w*|dietitian|coach|specialist|physio\w*)|doctor se|milna)\b/i;
 
 const CRISIS_HELPLINES_IN = [
   { name: 'Emergency', number: '112' },
@@ -83,6 +88,7 @@ const decisionSchema = z.object({
     .nullable(),
   log_options: z.array(z.string()),
   offer_reminder: z.boolean(),
+  asks_to_book: z.boolean(),
 });
 
 type Decision = z.infer<typeof decisionSchema>;
@@ -146,6 +152,7 @@ export function replySchema(
       'offer_booking',
       'log_options',
       'offer_reminder',
+      'asks_to_book',
     ],
     properties: {
       message: { type: 'string' },
@@ -160,6 +167,7 @@ export function replySchema(
       offer_booking: bookingOfferSchema(booking.doctorKeys, booking.dateKeys),
       log_options: enumArray(trackerIds),
       offer_reminder: { type: 'boolean' },
+      asks_to_book: { type: 'boolean' },
     },
   };
 }
@@ -176,6 +184,8 @@ type StoredDecision = {
   reminder_offer?: unknown;
   booked?: unknown;
   event?: unknown;
+  /// The model's own fields for the turn (decisionFields), e.g. asks_to_book.
+  reply?: unknown;
 };
 
 /// Turns from before the booking card linked to the booking screen with these.
@@ -226,6 +236,10 @@ type Thread = {
   /// A recent turn already showed the booking card. A serious concern offers it
   /// once; after that she has seen it, and showing it every turn would nag.
   bookingShown: boolean;
+  /// ANU has asked "would you like to book?" in this conversation.
+  bookingAsked: boolean;
+  /// ...and it was the last thing she was asked, so this message answers it.
+  lastAskedToBook: boolean;
 };
 
 async function loadThread(userId: string): Promise<Thread> {
@@ -243,8 +257,13 @@ async function loadThread(userId: string): Promise<Thread> {
   // reply as the answer to it. The buttons a reply showed are replayed as app
   // notes, so "the Friday one" or "I logged it" has something to refer to.
   let bookingShown = false;
+  let bookingAsked = false;
+  let lastAskedToBook = false;
   const messages = rows.reverse().flatMap((row) => {
     const decision = (row.decision ?? {}) as StoredDecision;
+    const asked = (decision.reply as { asks_to_book?: unknown } | undefined)?.asks_to_book === true;
+    if (asked) bookingAsked = true;
+    lastAskedToBook = asked;
     const messages: ChatMessage[] = [];
     const event = decision.event as { type?: string; with?: string; date_time?: string } | undefined;
     if (event?.type === 'booking_confirmed') {
@@ -270,6 +289,11 @@ async function loadThread(userId: string): Promise<Thread> {
     if (logs.length > 0) {
       notes.push(`the app showed log buttons for: ${logs.map((entry) => entry.name).join(', ')}`);
     }
+    if (asked && !storedBookingOffer(decision)) {
+      notes.push(
+        'ANU asked whether she would like to book an appointment. If she says yes now, show the booking card ("offer_booking"); if she says no, do not ask again',
+      );
+    }
     if (decision.reminder_offer === true) {
       notes.push('the app showed a "Set a reminder" button for her medication or supplement reminders');
     }
@@ -278,7 +302,7 @@ async function loadThread(userId: string): Promise<Thread> {
     }
     return messages;
   });
-  return { messages, bookingShown };
+  return { messages, bookingShown, bookingAsked, lastAskedToBook };
 }
 
 async function recordTurn(turn: {
@@ -386,6 +410,11 @@ async function generateChecked(options: {
       log.warn({ userId, remaining: remainingViolations.length }, 'v3: reply still breaks a hard check after rewrite');
     }
   }
+  decision = {
+    ...decision,
+    message: removeDashes(decision.message),
+    quick_replies: decision.quick_replies.map(removeDashes),
+  };
   return { decision, firstViolations, remainingViolations };
 }
 
@@ -420,7 +449,7 @@ export async function answer(
   const startedAt = Date.now();
   const name = sanitizeName(userName);
 
-  const { messages: thread, bookingShown } = await loadThread(userId);
+  const { messages: thread, bookingShown, bookingAsked, lastAskedToBook } = await loadThread(userId);
 
   // 1. Classification and context are independent; run them together. A failed
   // classification is not a failed turn — the reply prompt carries its own
@@ -516,10 +545,20 @@ export async function answer(
         offersBooking: d.offer_booking !== null && bookingCatalog.doctors.length > 0,
         herMessage: userMessage,
         offersLoggedToday: d.log_options.filter((id) => loggedToday.has(id)).map((id) => loggedToday.get(id)!),
-        // A serious concern gets the appointment offered, not just "keep an eye
-        // on it" — once per conversation, and never in a crisis or emergency.
+        // A serious concern gets an appointment offered, not just "keep an eye
+        // on it": ANU asks whether she would like to book, once per
+        // conversation, and never in a crisis or emergency.
         bookingDue:
-          (risk === 'L2' || risk === 'L3') && !crisis && bookingCatalog.doctors.length > 0 && !bookingShown,
+          (risk === 'L2' || risk === 'L3') &&
+          !crisis &&
+          bookingCatalog.doctors.length > 0 &&
+          !bookingShown &&
+          !bookingAsked,
+        asksToBook: d.asks_to_book,
+        asksSafetyQuestion: d.clarification_type === 'safety_screen',
+        // The card only once she has said yes or asked to book herself.
+        bookingUnconfirmed:
+          d.offer_booking !== null && !lastAskedToBook && !ASKS_TO_BOOK.test(userMessage),
       });
     },
   });
@@ -534,8 +573,11 @@ export async function answer(
   const reply = decision.message;
 
   // No booking card in an emergency — emergency care comes first — and no log
-  // buttons on any safety turn.
-  const booking = finalRisk === 'L4' ? null : bookingOffer(decision, bookingCatalog);
+  // buttons on any safety turn. Nor before she has asked to book or said yes to
+  // ANU's question, even if the rewrite still set it.
+  const bookingConfirmed = lastAskedToBook || ASKS_TO_BOOK.test(userMessage);
+  const booking =
+    finalRisk === 'L4' || !bookingConfirmed ? null : bookingOffer(decision, bookingCatalog);
   const logIds =
     riskRank(finalRisk) >= riskRank('L3')
       ? []

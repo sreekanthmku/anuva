@@ -9,6 +9,7 @@ import { prisma } from '@anuva/database';
 import { buildCycleStateResponse } from '../../cycleCalc.js';
 import { LANGUAGE_NAMES, currentLanguage } from '../../i18n/index.js';
 import { availableActions, availableProfessionalTypes } from './actions.js';
+import { v3TimeZone } from './booking.js';
 
 const RECENT_DAYS = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -148,6 +149,16 @@ async function bookingContext(userId: string, now: Date) {
 
 export type RuntimeContext = Record<string, unknown>;
 
+function localTime(now: Date): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: v3TimeZone(),
+    weekday: 'long',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(now);
+}
+
 export async function buildRuntimeContext(
   userId: string,
   name: string | null,
@@ -168,6 +179,9 @@ export async function buildRuntimeContext(
   const context: RuntimeContext = {
     preferred_language: LANGUAGE_NAMES[currentLanguage()],
     current_date: dateOnly(now),
+    // "Wednesday 9:40 pm", her time: a greeting can then fit her day ("How was
+    // your day?" in the evening) instead of a stock "how are you feeling".
+    local_time: localTime(now),
     user_country: env.country(),
     available_actions: availableActions(),
     available_professional_types: professionalTypes,
