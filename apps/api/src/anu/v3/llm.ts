@@ -5,23 +5,34 @@
 import { openaiFetch } from '../openai.js';
 
 // Read lazily — see the note in openai.ts.
+//
+// v3 does not fall back to ANU_CHAT_MODEL: that setting belongs to the classic
+// engine, and a server that still had it on gpt-4o-mini silently ran v3 — whose
+// prompt was written for a reasoning model — on it too.
+export const V3_DEFAULT_MODEL = 'gpt-6-luna';
+
 export const v3Env = {
-  replyModel: () =>
-    process.env.ANU_V3_MODEL?.trim() || process.env.ANU_CHAT_MODEL?.trim() || 'gpt-5-mini',
+  replyModel: () => process.env.ANU_V3_MODEL?.trim() || V3_DEFAULT_MODEL,
   classifierModel: () =>
-    process.env.ANU_V3_CLASSIFIER_MODEL?.trim() ||
-    process.env.ANU_V3_MODEL?.trim() ||
-    process.env.ANU_CHAT_MODEL?.trim() ||
-    'gpt-5-mini',
+    process.env.ANU_V3_CLASSIFIER_MODEL?.trim() || process.env.ANU_V3_MODEL?.trim() || V3_DEFAULT_MODEL,
   // The reply follows a long clinical-safety prompt, so it is given a little
-  // room to think; the classifier is a short rubric and stays at minimal.
+  // room to think; the classifier is a short rubric and stays at the lowest
+  // effort the model takes.
   replyEffort: () => process.env.ANU_V3_REASONING_EFFORT?.trim() || 'low',
-  classifierEffort: () => process.env.ANU_V3_CLASSIFIER_REASONING_EFFORT?.trim() || 'minimal',
+  classifierEffort: () => process.env.ANU_V3_CLASSIFIER_REASONING_EFFORT?.trim() || 'low',
 };
 
-/// Same split as openai.ts: the GPT-5 / o-series family rejects `temperature`
-/// and spends its token cap on reasoning before it writes, so the cap is loose.
-const REASONING_MODEL = /^(gpt-5|o[134])/;
+/// Same split as openai.ts: the GPT-5 / GPT-6 / o-series families reject
+/// `temperature` and spend their token cap on reasoning before they write, so
+/// the cap is loose.
+const REASONING_MODEL = /^(gpt-5|gpt-6|o[134])/;
+
+/// GPT-6 takes none/low/medium/high/xhigh/max — no "minimal", which GPT-5 uses
+/// and the env example once set for the classifier. Sent as is it is a 400, so
+/// it is read as the nearest effort GPT-6 has.
+function effortFor(model: string, effort: string): string {
+  return /^gpt-6/.test(model) && effort === 'minimal' ? 'low' : effort;
+}
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
@@ -37,7 +48,7 @@ export async function chatJson(options: {
 }): Promise<unknown> {
   const { model } = options;
   const sampling = REASONING_MODEL.test(model)
-    ? { max_completion_tokens: 3000, reasoning_effort: options.effort }
+    ? { max_completion_tokens: 3000, reasoning_effort: effortFor(model, options.effort) }
     : { temperature: options.temperature, max_tokens: 700 };
 
   const json = await openaiFetch<ChatResponse>('/chat/completions', {
