@@ -50,6 +50,12 @@ const TEMPLATE_PHRASES: RegExp[] = [
   /\bhow else can I help\b/i,
 ];
 
+/// ANU describing app actions as her own abilities ("I can book appointments
+/// for you", "I can also log your symptoms"). She is a companion, not a feature
+/// list; booking, logging and reminders appear only when they fit (section 39).
+const CAPABILITY_CLAIM =
+  /\bI can (also |even )?(help you )?(book|schedule|arrange|log|track|record|set( up)? (a |your )?reminders?|remind)\b|\bI(['’]m| am) able to (book|schedule|log|track|set reminders?)\b/i;
+
 /// Sending her outside Anuva for a professional Anuva offers.
 const EXTERNAL_REFERRAL =
   /\b(nearby|local)\s+(gyn(a)?ecologist|doctor|clinic|specialist|physician)s?\b|\b(gyn(a)?ecologist|doctor|clinic|specialist)s?\s+near\s+you\b/i;
@@ -142,6 +148,12 @@ export function findViolations(input: CheckInput): string[] {
   if (TEMPLATE_PHRASES.some((p) => p.test(message))) {
     violations.push(
       'Your draft uses a stock sympathy, filler or assistant line (e.g. "I\'m sorry you\'re…", "Don\'t worry", "How can I help you today?"). Remove it and put something warm and specific to what she said in its place — ANU is her companion, not a help desk (sections 8 and 39).',
+    );
+  }
+
+  if (CAPABILITY_CLAIM.test(message)) {
+    violations.push(
+      'Your draft presents an app action as something you can do ("I can book appointments", "I can log your symptoms", "I can set reminders"). Remove it. ANU is her companion, not a list of features: say what you are to her — someone to listen, help her make sense of things and notice patterns — and let the app show booking, logging or reminders only when they fit (sections 38 and 39).',
     );
   }
 

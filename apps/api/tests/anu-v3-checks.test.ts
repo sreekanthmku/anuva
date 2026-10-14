@@ -59,6 +59,27 @@ describe('v3 findViolations', () => {
     }
   });
 
+  it('flags app actions presented as what ANU can do', () => {
+    for (const message of [
+      'I can book appointments for you with our gynecologists.',
+      "I'm here to listen, and I can also log your symptoms and set reminders.",
+      'I can help you track your cycle.',
+      'I am able to schedule a consultation.',
+    ]) {
+      expect(findViolations({ ...base, message }), message).toHaveLength(1);
+    }
+  });
+
+  it('allows describing herself as a companion', () => {
+    for (const message of [
+      "I'm here to listen and help you make sense of what your body is going through. What's been on your mind?",
+      'I can see why that worries you. How long has it been going on?',
+      'You can book an Anuva gynecologist below.',
+    ]) {
+      expect(findViolations({ ...base, message }), message).toEqual([]);
+    }
+  });
+
   it('flags a nearby/local professional when Anuva offers one', () => {
     expect(findViolations({ ...base, message: 'I can show a nearby gynecologist.' })).toHaveLength(1);
     expect(findViolations({ ...base, message: 'See a doctor near you.' })).toHaveLength(1);
