@@ -36,6 +36,29 @@ describe('v3 findViolations', () => {
     expect(findViolations({ ...base, message: "Don't worry, this is common." })).toHaveLength(1);
   });
 
+  it('flags assistant lines — ANU is a companion, not a help desk', () => {
+    for (const message of [
+      'Hi Priya — welcome back. How can I help you today?',
+      'Hello! How may I assist you?',
+      'Hi Priya. What would you like help with today?',
+      'Good to hear from you. What can I help you with?',
+      'Got it. How else can I help?',
+    ]) {
+      expect(findViolations({ ...base, message }), message).toHaveLength(1);
+    }
+  });
+
+  it('allows a companion greeting and ordinary "would you like" offers', () => {
+    for (const message of [
+      "Hi! It's lovely to hear from you. How have you been feeling these days?",
+      "I'm well, thank you for asking! More importantly — how are you holding up?",
+      'Would you like to log this symptom?',
+      'What would you like to talk about first — your sleep or the hot flashes?',
+    ]) {
+      expect(findViolations({ ...base, message }), message).toEqual([]);
+    }
+  });
+
   it('flags a nearby/local professional when Anuva offers one', () => {
     expect(findViolations({ ...base, message: 'I can show a nearby gynecologist.' })).toHaveLength(1);
     expect(findViolations({ ...base, message: 'See a doctor near you.' })).toHaveLength(1);

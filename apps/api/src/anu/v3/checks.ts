@@ -26,7 +26,7 @@ export type CheckInput = {
 
 const QUESTION_MARK = /[?？]/g;
 
-/// Stock sympathy lines the prompt (sections 8, 32 and 37) rules out. Curly and
+/// Stock sympathy and assistant lines the prompt (sections 8, 32, 37, 39) rules out. Curly and
 /// straight apostrophes both, since the model writes either.
 const TEMPLATE_PHRASES: RegExp[] = [
   /\bI['’]m sorry (you['’]re|you are|to hear)\b/i,
@@ -37,6 +37,10 @@ const TEMPLATE_PHRASES: RegExp[] = [
   /\bas an AI\b/i,
   /\bconsult a healthcare professional\b/i,
   /\bis there anything else I can help\b/i,
+  // Assistant lines: ANU is her companion, not a help desk.
+  /\bhow (can|may|could) I (help|assist)( you)?\b/i,
+  /\bwhat (would you like|do you need|can I help you with)( help)?( with)?( today)?\s*\?/i,
+  /\bhow else can I help\b/i,
 ];
 
 /// Sending her outside Anuva for a professional Anuva offers.
@@ -130,7 +134,7 @@ export function findViolations(input: CheckInput): string[] {
 
   if (TEMPLATE_PHRASES.some((p) => p.test(message))) {
     violations.push(
-      'Your draft uses a stock sympathy or filler line (e.g. "I\'m sorry you\'re…", "Don\'t worry"). Remove it; if acknowledgement adds value, make it specific to what she said.',
+      'Your draft uses a stock sympathy, filler or assistant line (e.g. "I\'m sorry you\'re…", "Don\'t worry", "How can I help you today?"). Remove it and put something warm and specific to what she said in its place — ANU is her companion, not a help desk (sections 8 and 39).',
     );
   }
 
