@@ -50,6 +50,7 @@ Examples — FALSE:
 - "Are you taking any prescription medicines right now?"
 - "Please follow the instructions that came with your prescribed patch."
 - "You can set a reminder below for the times you take your tablets, so they're easier to remember." (a reminder for what she already takes)
+- "You can set a reminder below for the times you take your calcium tablets." (names what she already takes, only to remind her)
 
 Examples — TRUE:
 - "HRT reduces hot flashes for many people, but whether it's right for you depends on your history." (vouches for it)

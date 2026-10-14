@@ -34,6 +34,8 @@ describe('v3 findViolations', () => {
     expect(findViolations({ ...base, message: "I'm sorry you're feeling this way." })).toHaveLength(1);
     expect(findViolations({ ...base, message: 'I’m sorry to hear that.' })).toHaveLength(1);
     expect(findViolations({ ...base, message: "Don't worry, this is common." })).toHaveLength(1);
+    expect(findViolations({ ...base, message: "I'm really sorry to hear that." })).toHaveLength(1);
+    expect(findViolations({ ...base, message: 'I am so sorry you are going through this.' })).toHaveLength(1);
   });
 
   it('flags assistant lines — ANU is a companion, not a help desk', () => {
@@ -194,6 +196,16 @@ describe('v3 booking and logging checks', () => {
     });
     expect(out).toHaveLength(1);
     expect(out[0]).toMatch(/clock times/);
+  });
+
+  it('allows a time she wrote herself beside the booking card, but not a new one', () => {
+    const herMessage = 'I keep waking up at 3 am every night';
+    expect(
+      findViolations({ ...base, herMessage, offersBooking: true, message: 'Waking at 3am every night wears you down. You can book below.' }),
+    ).toEqual([]);
+    expect(
+      findViolations({ ...base, herMessage, offersBooking: true, message: 'Waking at 3 am is hard. Dr Sayed has 5:30 pm on Friday.' }),
+    ).toHaveLength(1);
   });
 
   it('allows days and parts of the day beside the booking card, and times without it', () => {

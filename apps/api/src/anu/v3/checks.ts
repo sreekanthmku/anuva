@@ -19,6 +19,9 @@ export type CheckInput = {
   /// The reply shows the booking card. The card carries the exact times, and the
   /// model is never given them, so any clock time in the text is made up.
   offersBooking?: boolean;
+  /// Her message, so a time she wrote herself ("I wake at 3 am") is not taken
+  /// for a made-up appointment time when ANU repeats it.
+  herMessage?: string;
   /// The booking system has confirmed a booking this turn, so "you're booked"
   /// is true.
   bookingConfirmed?: boolean;
@@ -36,8 +39,8 @@ const QUESTION_MARK = /[?？]/g;
 /// Stock sympathy and assistant lines the prompt (sections 8, 32, 37, 39) rules out. Curly and
 /// straight apostrophes both, since the model writes either.
 const TEMPLATE_PHRASES: RegExp[] = [
-  /\bI['’]m sorry (you['’]re|you are|to hear)\b/i,
-  /\bI am sorry (you['’]re|you are|to hear)\b/i,
+  /\bI['’]m (really |so |very |truly )?sorry (you['’]re|you are|to hear)\b/i,
+  /\bI am (really |so |very |truly )?sorry (you['’]re|you are|to hear)\b/i,
   /\bthat sounds (so )?(frustrating|exhausting)\b/i,
   /\byour feelings are (completely |totally )?valid\b/i,
   /\bdon['’]t worry\b/i,
@@ -121,7 +124,18 @@ function suggestsMedicine(message: string): boolean {
 }
 
 /// "5:30 pm", "6 PM", "17:30".
-const CLOCK_TIME = /\b\d{1,2}(:\d{2})?\s?(am|pm|a\.m\.|p\.m\.)(?![a-z])|\b\d{1,2}:\d{2}\b/i;
+const CLOCK_TIME = /\b\d{1,2}(:\d{2})?\s?(am|pm|a\.m\.|p\.m\.)(?![a-z])|\b\d{1,2}:\d{2}\b/gi;
+
+/// "3 am", "3am" and "3 a.m." are one time.
+function normaliseTime(time: string): string {
+  return time.toLowerCase().replace(/[\s.]/g, '');
+}
+
+/// Clock times in the reply that she did not write herself.
+function madeUpTimes(message: string, herMessage: string | undefined): string[] {
+  const hers = new Set((herMessage?.match(CLOCK_TIME) ?? []).map(normaliseTime));
+  return (message.match(CLOCK_TIME) ?? []).filter((time) => !hers.has(normaliseTime(time)));
+}
 
 /// ANU never books, logs or sets a reminder — the app does, after she confirms.
 /// So it may never say it did.
@@ -170,7 +184,7 @@ export function findViolations(input: CheckInput): string[] {
     );
   }
 
-  if (input.offersBooking && CLOCK_TIME.test(message)) {
+  if (input.offersBooking && madeUpTimes(message, input.herMessage).length > 0) {
     violations.push(
       'Your draft writes clock times while offering the booking card. Remove the times from "message" — the card shows the exact times. Mention only who it is with and roughly when (day, morning/afternoon/evening).',
     );

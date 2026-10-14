@@ -514,6 +514,7 @@ export async function answer(
         professionalTypes,
         medicineSuggested,
         offersBooking: d.offer_booking !== null && bookingCatalog.doctors.length > 0,
+        herMessage: userMessage,
         offersLoggedToday: d.log_options.filter((id) => loggedToday.has(id)).map((id) => loggedToday.get(id)!),
         // A serious concern gets the appointment offered, not just "keep an eye
         // on it" — once per conversation, and never in a crisis or emergency.
