@@ -665,7 +665,13 @@
     "avgPeriod": "சராசரி பீரியட்",
     "daysValue": "{{count}} நாட்கள்",
     "loggedCycles_one": "{{count}} பதிவு செய்த சுழற்சி",
-    "loggedCycles_other": "{{count}} பதிவு செய்த சுழற்சிகள்"
+    "loggedCycles_other": "{{count}} பதிவு செய்த சுழற்சிகள்",
+    "startTimeTitle": "பீரியட் பகலில் தொடங்கியதா, இரவிலா?",
+    "startTimeBody": "உங்கள் பீரியட் {{date}} அன்று தொடங்கியது.",
+    "startedDay": "பகல்",
+    "startedNight": "இரவு",
+    "startedDuringDay": "பகலில் தொடங்கியது",
+    "startedAtNight": "இரவில் தொடங்கியது"
   },
   "profile": {
     "backHome": "← முகப்பு",

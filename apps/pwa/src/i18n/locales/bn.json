@@ -665,7 +665,13 @@
     "avgPeriod": "গড় পিরিয়ড",
     "daysValue": "{{count}} দিন",
     "loggedCycles_one": "{{count}}টি লগ করা সাইকেল",
-    "loggedCycles_other": "{{count}}টি লগ করা সাইকেল"
+    "loggedCycles_other": "{{count}}টি লগ করা সাইকেল",
+    "startTimeTitle": "পিরিয়ড দিনে শুরু হয়েছে নাকি রাতে?",
+    "startTimeBody": "আপনার পিরিয়ড {{date}} শুরু হয়েছে।",
+    "startedDay": "দিনে",
+    "startedNight": "রাতে",
+    "startedDuringDay": "দিনে শুরু হয়েছে",
+    "startedAtNight": "রাতে শুরু হয়েছে"
   },
   "profile": {
     "backHome": "← হোম",

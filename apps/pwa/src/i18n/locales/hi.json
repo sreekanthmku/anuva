@@ -665,7 +665,13 @@
     "avgPeriod": "औसत पीरियड",
     "daysValue": "{{count}} दिन",
     "loggedCycles_one": "{{count}} लॉग की गई साइकिल",
-    "loggedCycles_other": "{{count}} लॉग की गई साइकिल"
+    "loggedCycles_other": "{{count}} लॉग की गई साइकिल",
+    "startTimeTitle": "पीरियड दिन में शुरू हुआ या रात में?",
+    "startTimeBody": "आपका पीरियड {{date}} को शुरू हुआ।",
+    "startedDay": "दिन",
+    "startedNight": "रात",
+    "startedDuringDay": "दिन में शुरू हुआ",
+    "startedAtNight": "रात में शुरू हुआ"
   },
   "profile": {
     "backHome": "← होम",

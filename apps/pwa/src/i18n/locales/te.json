@@ -665,7 +665,13 @@
     "avgPeriod": "సగటు పీరియడ్",
     "daysValue": "{{count}} రోజులు",
     "loggedCycles_one": "{{count}} లాగ్ చేసిన సైకిల్",
-    "loggedCycles_other": "{{count}} లాగ్ చేసిన సైకిళ్లు"
+    "loggedCycles_other": "{{count}} లాగ్ చేసిన సైకిళ్లు",
+    "startTimeTitle": "పీరియడ్ పగలు మొదలైందా, రాత్రి మొదలైందా?",
+    "startTimeBody": "మీ పీరియడ్ {{date}} న మొదలైంది.",
+    "startedDay": "పగలు",
+    "startedNight": "రాత్రి",
+    "startedDuringDay": "పగలు మొదలైంది",
+    "startedAtNight": "రాత్రి మొదలైంది"
   },
   "profile": {
     "backHome": "← హోమ్",

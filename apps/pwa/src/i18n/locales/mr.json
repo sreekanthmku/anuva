@@ -665,7 +665,13 @@
     "avgPeriod": "सरासरी पाळी",
     "daysValue": "{{count}} दिवस",
     "loggedCycles_one": "{{count}} नोंदवलेली सायकल",
-    "loggedCycles_other": "{{count}} नोंदवलेल्या सायकल"
+    "loggedCycles_other": "{{count}} नोंदवलेल्या सायकल",
+    "startTimeTitle": "पाळी दिवसा सुरू झाली की रात्री?",
+    "startTimeBody": "तुमची पाळी {{date}} रोजी सुरू झाली.",
+    "startedDay": "दिवसा",
+    "startedNight": "रात्री",
+    "startedDuringDay": "दिवसा सुरू झाली",
+    "startedAtNight": "रात्री सुरू झाली"
   },
   "profile": {
     "backHome": "← मुख्यपृष्ठ",

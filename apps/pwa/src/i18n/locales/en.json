@@ -727,7 +727,13 @@
     "avgPeriod": "Avg period",
     "daysValue": "{{count}} days",
     "loggedCycles_one": "{{count}} logged cycle",
-    "loggedCycles_other": "{{count}} logged cycles"
+    "loggedCycles_other": "{{count}} logged cycles",
+    "startTimeTitle": "Did it start in the day or at night?",
+    "startTimeBody": "Your period started on {{date}}.",
+    "startedDay": "Day",
+    "startedNight": "Night",
+    "startedDuringDay": "Started during the day",
+    "startedAtNight": "Started at night"
   },
   "profile": {
     "backHome": "← Home",

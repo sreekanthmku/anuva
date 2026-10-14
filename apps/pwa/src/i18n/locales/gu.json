@@ -665,7 +665,13 @@
     "avgPeriod": "સરેરાશ પિરિયડ",
     "daysValue": "{{count}} દિવસ",
     "loggedCycles_one": "{{count}} લોગ કરેલી સાયકલ",
-    "loggedCycles_other": "{{count}} લોગ કરેલી સાયકલ"
+    "loggedCycles_other": "{{count}} લોગ કરેલી સાયકલ",
+    "startTimeTitle": "પિરિયડ દિવસે શરૂ થયો કે રાત્રે?",
+    "startTimeBody": "તમારો પિરિયડ {{date}} ના રોજ શરૂ થયો.",
+    "startedDay": "દિવસે",
+    "startedNight": "રાત્રે",
+    "startedDuringDay": "દિવસે શરૂ થયો",
+    "startedAtNight": "રાત્રે શરૂ થયો"
   },
   "profile": {
     "backHome": "← હોમ",

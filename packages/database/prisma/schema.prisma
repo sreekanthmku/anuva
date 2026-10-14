@@ -1291,6 +1291,9 @@ model PeriodLog {
   /// is shown as an estimate and never teaches the period-length average, or the
   /// guess would keep confirming itself.
   endDateSource String @default("user")
+  /// Whether it started in the day or at night — `day` | `night`, asked when she
+  /// logs the start. Null for periods logged before we asked, or set up without it.
+  startTimeOfDay String?
   /// Removal is reversible: the row is marked, never erased, so her flow answers
   /// survive an accidental confirm.
   deletedAt DateTime?

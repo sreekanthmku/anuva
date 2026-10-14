@@ -4672,12 +4672,15 @@ function serializePeriodLog(p: {
   startDate: Date;
   endDate: Date | null;
   endDateSource?: string;
+  startTimeOfDay?: string | null;
 }) {
   return {
     id: p.id,
     startDate: p.startDate.toISOString().split('T')[0]!,
     endDate: p.endDate ? p.endDate.toISOString().split('T')[0]! : null,
     endDateSource: p.endDateSource === 'inferred' ? ('inferred' as const) : ('user' as const),
+    startTimeOfDay:
+      p.startTimeOfDay === 'day' ? ('day' as const) : p.startTimeOfDay === 'night' ? ('night' as const) : null,
   };
 }
 
@@ -4721,7 +4724,7 @@ app.get('/cycle', async (req, res, next) => {
 app.post('/cycle/setup', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
-    const { lastPeriodStart, cycleLength, periodLength } = cycleSetupBodySchema.parse(req.body);
+    const { lastPeriodStart, startTimeOfDay, cycleLength, periodLength } = cycleSetupBodySchema.parse(req.body);
 
     await prisma.$transaction([
       prisma.cycleSettings.upsert({
@@ -4736,10 +4739,11 @@ app.post('/cycle/setup', async (req, res, next) => {
           startDate: new Date(lastPeriodStart),
           endDate: new Date(assumedEndDate(lastPeriodStart, periodLength)),
           endDateSource: 'inferred',
+          startTimeOfDay: startTimeOfDay ?? null,
         },
         // Setting up again on a day she once removed brings that record back
         // rather than leaving a tombstone holding the date.
-        update: { deletedAt: null },
+        update: { deletedAt: null, ...(startTimeOfDay ? { startTimeOfDay } : {}) },
       }),
     ]);
 
@@ -4841,7 +4845,7 @@ async function refileFlowLogs(
 app.post('/cycle/period', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
-    const { startDate } = logPeriodBodySchema.parse(req.body);
+    const { startDate, startTimeOfDay } = logPeriodBodySchema.parse(req.body);
     const now = new Date();
 
     // A start date in the future would poison every prediction downstream.
@@ -4902,8 +4906,9 @@ app.post('/cycle/period', async (req, res, next) => {
           startDate: new Date(startDate),
           endDate: predictedEnd,
           endDateSource: 'inferred',
+          startTimeOfDay: startTimeOfDay ?? null,
         },
-        update: { deletedAt: null },
+        update: { deletedAt: null, ...(startTimeOfDay ? { startTimeOfDay } : {}) },
       });
     });
 
@@ -4918,7 +4923,7 @@ app.post('/cycle/period', async (req, res, next) => {
         effectivePeriodLength,
       );
     }
-    req.log.info({ periodId: created.id, startDate }, 'Period logged');
+    req.log.info({ periodId: created.id, startDate, startTimeOfDay }, 'Period logged');
 
     res.status(201).json(await cycleStatePayload(user.id, now));
   } catch (e) {
@@ -4937,7 +4942,7 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     const { id } = req.params;
-    const { startDate, endDate } = updatePeriodBodySchema.parse(req.body);
+    const { startDate, endDate, startTimeOfDay } = updatePeriodBodySchema.parse(req.body);
     const now = new Date();
     const todayStr = todayDateOnly(now);
 
@@ -5012,6 +5017,12 @@ app.patch('/cycle/period/:id', async (req, res, next) => {
         endDate: nextEnd == null ? null : new Date(nextEnd),
         // Any date she sets herself is hers, not an assumption of ours.
         endDateSource: endIsConfirmed ? 'user' : 'inferred',
+        // A new start day gets her new answer; the old one was about another day.
+        ...(startTimeOfDay
+          ? { startTimeOfDay }
+          : nextStart !== existing.startDate
+            ? { startTimeOfDay: null }
+            : {}),
       },
     });
 

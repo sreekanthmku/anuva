@@ -1,7 +1,11 @@
 import { z } from 'zod';
 
+/** Whether her period started in the day or at night — asked when she logs a start. */
+export const periodStartTimeOfDaySchema = z.enum(['day', 'night']);
+
 export const cycleSetupBodySchema = z.object({
   lastPeriodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  startTimeOfDay: periodStartTimeOfDaySchema.optional(),
   cycleLength: z.number().int().min(21).max(45).default(28),
   periodLength: z.number().int().min(1).max(10).default(5),
 });
@@ -13,6 +17,7 @@ export const cycleSettingsBodySchema = z.object({
 
 export const logPeriodBodySchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  startTimeOfDay: periodStartTimeOfDaySchema.optional(),
 });
 
 /**
@@ -29,6 +34,8 @@ export const updatePeriodBodySchema = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD')
       .optional(),
+    /** Asked again when she moves the start — the old answer was about another day. */
+    startTimeOfDay: periodStartTimeOfDaySchema.optional(),
   })
   .refine((body) => body.startDate != null || body.endDate != null, {
     message: 'Give a start date, an end date, or both.',
@@ -61,6 +68,8 @@ export const periodLogSchema = z.object({
    * Absent means she closed the period herself.
    */
   endDateSource: endDateSourceSchema.optional(),
+  /** Day or night; null when she logged it before we asked. */
+  startTimeOfDay: periodStartTimeOfDaySchema.nullable().optional(),
 });
 
 export const cyclePhaseSchema = z.enum(['period', 'follicular', 'ovulatory', 'luteal']);
@@ -131,6 +140,7 @@ export type CycleSettingsBody = z.infer<typeof cycleSettingsBodySchema>;
 export type LogPeriodBody = z.infer<typeof logPeriodBodySchema>;
 export type UpdatePeriodBody = z.infer<typeof updatePeriodBodySchema>;
 export type EndDateSource = z.infer<typeof endDateSourceSchema>;
+export type PeriodStartTimeOfDay = z.infer<typeof periodStartTimeOfDaySchema>;
 export type CycleStateResponse = z.infer<typeof cycleStateResponseSchema>;
 export type PeriodLogEntry = z.infer<typeof periodLogSchema>;
 export type PeriodFlow = z.infer<typeof periodFlowSchema>;

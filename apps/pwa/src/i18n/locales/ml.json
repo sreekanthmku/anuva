@@ -665,7 +665,13 @@
     "avgPeriod": "ശരാശരി പിരീഡ്",
     "daysValue": "{{count}} ദിവസം",
     "loggedCycles_one": "{{count}} സൈക്കിൾ ലോഗ് ചെയ്തു",
-    "loggedCycles_other": "{{count}} സൈക്കിളുകൾ ലോഗ് ചെയ്തു"
+    "loggedCycles_other": "{{count}} സൈക്കിളുകൾ ലോഗ് ചെയ്തു",
+    "startTimeTitle": "പിരീഡ് പകലാണോ രാത്രിയാണോ തുടങ്ങിയത്?",
+    "startTimeBody": "നിങ്ങളുടെ പിരീഡ് {{date}} ന് തുടങ്ങി.",
+    "startedDay": "പകൽ",
+    "startedNight": "രാത്രി",
+    "startedDuringDay": "പകൽ തുടങ്ങി",
+    "startedAtNight": "രാത്രി തുടങ്ങി"
   },
   "profile": {
     "backHome": "← ഹോം",

@@ -665,7 +665,13 @@
     "avgPeriod": "ಸರಾಸರಿ ಪಿರಿಯಡ್",
     "daysValue": "{{count}} ದಿನ",
     "loggedCycles_one": "{{count}} ಸೈಕಲ್ ಲಾಗ್ ಆಗಿದೆ",
-    "loggedCycles_other": "{{count}} ಸೈಕಲ್‌ಗಳು ಲಾಗ್ ಆಗಿವೆ"
+    "loggedCycles_other": "{{count}} ಸೈಕಲ್‌ಗಳು ಲಾಗ್ ಆಗಿವೆ",
+    "startTimeTitle": "ಪಿರಿಯಡ್ ಹಗಲಿನಲ್ಲಿ ಆರಂಭವಾಯಿತೇ ಅಥವಾ ರಾತ್ರಿಯಲ್ಲೇ?",
+    "startTimeBody": "ನಿಮ್ಮ ಪಿರಿಯಡ್ {{date}} ರಂದು ಆರಂಭವಾಯಿತು.",
+    "startedDay": "ಹಗಲು",
+    "startedNight": "ರಾತ್ರಿ",
+    "startedDuringDay": "ಹಗಲಿನಲ್ಲಿ ಆರಂಭವಾಯಿತು",
+    "startedAtNight": "ರಾತ್ರಿಯಲ್ಲಿ ಆರಂಭವಾಯಿತು"
   },
   "profile": {
     "backHome": "← ಹೋಮ್",

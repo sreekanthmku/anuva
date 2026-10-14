@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { CycleStateResponse, PeriodFlow } from '@anuva/shared';
+import type { CycleStateResponse, PeriodFlow, PeriodStartTimeOfDay } from '@anuva/shared';
 import { CycleCalendar } from './CycleCalendar';
+import { PeriodStartTimeDialog } from './PeriodStartTimeDialog';
 import { CyclePhaseBadge, CycleTrackerSummary } from './CycleTrackerSummary';
 import {
   buildCycleDayMarks,
@@ -110,10 +111,18 @@ type Props = {
   onClose: () => void;
   cycleData: CycleStateResponse | null;
   loading: boolean;
-  onSetup: (lastPeriodStart: string, cycleLength: number, periodLength: number) => Promise<unknown>;
-  onLogPeriod: (startDate: string) => Promise<void>;
+  onSetup: (
+    lastPeriodStart: string,
+    cycleLength: number,
+    periodLength: number,
+    startTimeOfDay?: PeriodStartTimeOfDay,
+  ) => Promise<unknown>;
+  onLogPeriod: (startDate: string, startTimeOfDay?: PeriodStartTimeOfDay) => Promise<void>;
   onEndPeriod: (id: string, endDate: string) => Promise<void>;
-  onUpdatePeriod: (id: string, dates: { startDate?: string; endDate?: string }) => Promise<void>;
+  onUpdatePeriod: (
+    id: string,
+    dates: { startDate?: string; endDate?: string; startTimeOfDay?: PeriodStartTimeOfDay },
+  ) => Promise<void>;
   onLogFlow: (date: string, flow: PeriodFlow, source?: 'prompt' | 'calendar') => Promise<void>;
   onDeletePeriod: (id: string) => Promise<void>;
   onRestorePeriod: (id: string) => Promise<void>;
@@ -162,6 +171,16 @@ export function CycleTrackerSheet({
   /** Just-removed period, offered back for as long as the sheet stays open. */
   const [undoRemovedId, setUndoRemovedId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  /**
+   * A start she is about to log, waiting on "day or night?". Every way of saying
+   * her period started goes through this popup before anything is saved.
+   */
+  const [askStartTime, setAskStartTime] = useState<{
+    date: string;
+    then: (timeOfDay: PeriodStartTimeOfDay) => void;
+  } | null>(null);
+  /** The setup flow's answer, held until its last step saves everything. */
+  const [setupStartTime, setSetupStartTime] = useState<PeriodStartTimeOfDay | undefined>(undefined);
 
   // Only reset the view when the sheet opens — logging a period from the calendar
   // changes cycleData, and that must not throw the user back to the main view.
@@ -177,6 +196,8 @@ export function CycleTrackerSheet({
     if (!open) return;
     setView(readyRef.current ? 'main' : 'setup-date');
     setSelectedDate(todayISO());
+    setAskStartTime(null);
+    setSetupStartTime(undefined);
   }, [open]);
 
   useEffect(() => {
@@ -186,13 +207,13 @@ export function CycleTrackerSheet({
   }, [cycleData?.settings]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || askStartTime) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open, onClose, askStartTime]);
 
   const selectedMark = useMemo(
     () => buildCycleDayMarks(cycleData, selectedDate, selectedDate)[0] ?? null,
@@ -255,21 +276,25 @@ export function CycleTrackerSheet({
   const handleSetup = async () => {
     setSaving(true);
     try {
-      await onSetup(selectedDate, selectedCycleLength, selectedPeriodLength);
+      await onSetup(selectedDate, selectedCycleLength, selectedPeriodLength, setupStartTime);
       onClose();
     } finally {
       setSaving(false);
     }
   };
 
-  const handleLogPeriod = async (startDate = todayISO()) => {
-    setSaving(true);
-    try {
-      await onLogPeriod(startDate);
-    } finally {
-      setSaving(false);
-    }
-  };
+  const handleLogPeriod = (startDate = todayISO()) =>
+    setAskStartTime({
+      date: startDate,
+      then: async (timeOfDay) => {
+        setSaving(true);
+        try {
+          await onLogPeriod(startDate, timeOfDay);
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
 
   const handleEndPeriod = async (id: string, endDate = todayISO()) => {
     setSaving(true);
@@ -317,10 +342,14 @@ export function CycleTrackerSheet({
     if (ok) setUndoRemovedId(null);
   };
 
-  const handleCorrectStart = async (id: string, startDate: string) => {
-    const ok = await run(() => onUpdatePeriod(id, { startDate }));
-    if (ok) setView('calendar');
-  };
+  const handleCorrectStart = (id: string, startDate: string) =>
+    setAskStartTime({
+      date: startDate,
+      then: async (startTimeOfDay) => {
+        const ok = await run(() => onUpdatePeriod(id, { startDate, startTimeOfDay }));
+        if (ok) setView('calendar');
+      },
+    });
 
   const handleUpdateSettings = async () => {
     setSaving(true);
@@ -406,7 +435,15 @@ export function CycleTrackerSheet({
 
             <button
               type="button"
-              onClick={() => setView('setup-cycle-length')}
+              onClick={() =>
+                setAskStartTime({
+                  date: selectedDate,
+                  then: (timeOfDay) => {
+                    setSetupStartTime(timeOfDay);
+                    setView('setup-cycle-length');
+                  },
+                })
+              }
               className="w-full rounded-full bg-primary py-[14px] text-[14px] font-semibold text-on-secondary"
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
             >
@@ -876,6 +913,15 @@ export function CycleTrackerSheet({
                   </p>
                 ) : selectedPeriodLog ? (
                   <>
+                    {selectedPeriodLog.startDate === selectedDate && selectedPeriodLog.startTimeOfDay && (
+                      <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
+                        {t(
+                          selectedPeriodLog.startTimeOfDay === 'day'
+                            ? 'cycleSheet.startedDuringDay'
+                            : 'cycleSheet.startedAtNight',
+                        )}
+                      </p>
+                    )}
                     {selectedIsEditable && (
                       <button
                         type="button"
@@ -1141,6 +1187,18 @@ export function CycleTrackerSheet({
           </div>
         )}
       </div>
+
+      {askStartTime && (
+        <PeriodStartTimeDialog
+          date={askStartTime.date}
+          onCancel={() => setAskStartTime(null)}
+          onChoose={(timeOfDay) => {
+            const { then } = askStartTime;
+            setAskStartTime(null);
+            then(timeOfDay);
+          }}
+        />
+      )}
     </>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { CycleStateResponse, PeriodFlow } from '@anuva/shared';
+import type { CycleStateResponse, PeriodFlow, PeriodStartTimeOfDay } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
 import i18n from '../../../i18n';
 
@@ -27,10 +27,15 @@ export function useCycleTracker() {
   }, [load]);
 
   const setup = useCallback(
-    async (lastPeriodStart: string, cycleLength: number, periodLength: number) => {
+    async (
+      lastPeriodStart: string,
+      cycleLength: number,
+      periodLength: number,
+      startTimeOfDay?: PeriodStartTimeOfDay,
+    ) => {
       const data = await apiFetch<CycleStateResponse>('/api/cycle/setup', {
         method: 'POST',
-        body: JSON.stringify({ lastPeriodStart, cycleLength, periodLength }),
+        body: JSON.stringify({ lastPeriodStart, cycleLength, periodLength, startTimeOfDay }),
       });
       setState({ data, loading: false, error: null });
       return data;
@@ -40,10 +45,10 @@ export function useCycleTracker() {
 
   // The write routes return the recomputed cycle state, so the UI updates
   // without a second round trip.
-  const logPeriod = useCallback(async (startDate: string) => {
+  const logPeriod = useCallback(async (startDate: string, startTimeOfDay?: PeriodStartTimeOfDay) => {
     const data = await apiFetch<CycleStateResponse>('/api/cycle/period', {
       method: 'POST',
-      body: JSON.stringify({ startDate }),
+      body: JSON.stringify({ startDate, startTimeOfDay }),
     });
     setState({ data, loading: false, error: null });
   }, []);
@@ -53,7 +58,10 @@ export function useCycleTracker() {
    * if the result would overlap the period before it or run impossibly long.
    */
   const updatePeriod = useCallback(
-    async (id: string, dates: { startDate?: string; endDate?: string }) => {
+    async (
+      id: string,
+      dates: { startDate?: string; endDate?: string; startTimeOfDay?: PeriodStartTimeOfDay },
+    ) => {
       const data = await apiFetch<CycleStateResponse>(`/api/cycle/period/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(dates),
