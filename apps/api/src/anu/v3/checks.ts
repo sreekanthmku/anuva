@@ -22,6 +22,13 @@ export type CheckInput = {
   /// The booking system has confirmed a booking this turn, so "you're booked"
   /// is true.
   bookingConfirmed?: boolean;
+  /// Names of trackers the draft offers to log that she has already logged
+  /// today. She has done it; asking again reads as if ANU was not listening.
+  offersLoggedToday?: string[];
+  /// The concern is serious enough (L2/L3) that an Anuva appointment should be
+  /// offered, a doctor is free, and the card has not been shown in this
+  /// conversation yet.
+  bookingDue?: boolean;
 };
 
 const QUESTION_MARK = /[?？]/g;
@@ -164,6 +171,18 @@ export function findViolations(input: CheckInput): string[] {
   ) {
     violations.push(
       'Your draft says you booked, logged, saved or set a reminder for something. You cannot — she books, logs and sets reminders herself through the buttons in the app. Phrase it as an offer ("You can log it below", "Tap a time to book", "You can set a reminder below").',
+    );
+  }
+
+  if (input.offersLoggedToday && input.offersLoggedToday.length > 0) {
+    violations.push(
+      `She has already logged ${input.offersLoggedToday.join(' and ')} today. Do not offer it again or ask her to log it — remove it from "log_options" and from "message". You can briefly acknowledge that she has logged it.`,
+    );
+  }
+
+  if (input.bookingDue && !input.offersBooking) {
+    violations.push(
+      'This concern deserves a professional review (risk L2/L3), and an Anuva doctor is free. Recommend the matching Anuva professional in "message", set "professional_pathway", and set "offer_booking" so the booking card shows under your reply (doctor/part_of_day/date null unless she said them). Say the card is below; do not ask whether she wants to book.',
     );
   }
 

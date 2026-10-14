@@ -242,3 +242,22 @@ describe('v3 offers to act', () => {
     expect(findViolations({ ...base, message: 'I can show you the available Anuva gynecologists.' })).toEqual([]);
   });
 });
+
+describe('v3 already-logged and serious-concern checks', () => {
+  it('flags offering a tracker she already logged today', () => {
+    const out = findViolations({
+      ...base,
+      message: 'Would you like to log your joint pain now?',
+      offersLoggedToday: ['Joints & stiffness'],
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatch(/already logged Joints & stiffness today/);
+  });
+
+  it('requires the booking card for a serious concern', () => {
+    const message = 'Two weeks of joint pain is worth having looked at by an Anuva gynecologist.';
+    expect(findViolations({ ...base, riskLevel: 'L2', message, bookingDue: true })).toHaveLength(1);
+    expect(findViolations({ ...base, riskLevel: 'L2', message, bookingDue: true, offersBooking: true })).toEqual([]);
+    expect(findViolations({ ...base, riskLevel: 'L2', message, bookingDue: false })).toEqual([]);
+  });
+});

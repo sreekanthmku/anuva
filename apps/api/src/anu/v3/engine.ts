@@ -221,7 +221,14 @@ function storedLogOptions(decision: StoredDecision): { option: AnuV3LogOption; n
     : [];
 }
 
-async function loadThread(userId: string): Promise<ChatMessage[]> {
+type Thread = {
+  messages: ChatMessage[];
+  /// A recent turn already showed the booking card. A serious concern offers it
+  /// once; after that she has seen it, and showing it every turn would nag.
+  bookingShown: boolean;
+};
+
+async function loadThread(userId: string): Promise<Thread> {
   const rows = await prisma.anuChatTurn.findMany({
     where: {
       userId,
@@ -235,7 +242,8 @@ async function loadThread(userId: string): Promise<ChatMessage[]> {
   // Crisis turns stay in: the classifier has to read "yes" after a crisis
   // reply as the answer to it. The buttons a reply showed are replayed as app
   // notes, so "the Friday one" or "I logged it" has something to refer to.
-  return rows.reverse().flatMap((row) => {
+  let bookingShown = false;
+  const messages = rows.reverse().flatMap((row) => {
     const decision = (row.decision ?? {}) as StoredDecision;
     const messages: ChatMessage[] = [];
     const event = decision.event as { type?: string; with?: string; date_time?: string } | undefined;
@@ -251,6 +259,7 @@ async function loadThread(userId: string): Promise<ChatMessage[]> {
 
     const notes: string[] = [];
     if (storedBookingOffer(decision)) {
+      bookingShown = true;
       notes.push(
         `the app showed its booking card (which doctor, then morning/afternoon/evening, then the times)${
           decision.booked ? ' — she booked from it' : ''
@@ -269,6 +278,7 @@ async function loadThread(userId: string): Promise<ChatMessage[]> {
     }
     return messages;
   });
+  return { messages, bookingShown };
 }
 
 async function recordTurn(turn: {
@@ -410,7 +420,7 @@ export async function answer(
   const startedAt = Date.now();
   const name = sanitizeName(userName);
 
-  const thread = await loadThread(userId);
+  const { messages: thread, bookingShown } = await loadThread(userId);
 
   // 1. Classification and context are independent; run them together. A failed
   // classification is not a failed turn — the reply prompt carries its own
@@ -456,6 +466,26 @@ export async function answer(
   const crisis = safety?.crisis === true;
   const inIndia = context.user_country === 'IN';
 
+  // Daily trackers and joints are one answer a day; she has already given it.
+  // Quick-log symptoms are episodes and can be logged again.
+  const loggedToday = new Map(
+    trackerCatalog.context
+      .filter((tracker) => tracker.logged_today && !tracker.id.startsWith('quick:'))
+      .map((tracker) => [tracker.id, tracker.name]),
+  );
+  // Said right before her message, where it cannot be missed: the runtime
+  // context also carries logged_today, but a live run still asked her to log
+  // joints a turn after she had.
+  const loggedNote: ChatMessage[] =
+    loggedToday.size > 0
+      ? [
+          {
+            role: 'system',
+            content: `App note: she has already logged today: ${[...loggedToday.values()].join(', ')}. Do not offer these again or ask her to log them.`,
+          },
+        ]
+      : [];
+
   // 2–3. Reply and check.
   const { decision, firstViolations, remainingViolations } = await generateChecked({
     userId,
@@ -470,19 +500,27 @@ export async function answer(
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'system', content: renderRuntimeContext(context) },
       ...thread,
+      ...loggedNote,
       { role: 'user', content: userMessage },
     ],
-    check: (d, medicineSuggested) =>
-      findViolations({
+    check: (d, medicineSuggested) => {
+      const risk =
+        safety && riskRank(safety.risk_level) > riskRank(d.risk_level) ? safety.risk_level : d.risk_level;
+      return findViolations({
         message: d.message,
-        riskLevel:
-          safety && riskRank(safety.risk_level) > riskRank(d.risk_level) ? safety.risk_level : d.risk_level,
+        riskLevel: risk,
         crisis,
         inIndia,
         professionalTypes,
         medicineSuggested,
         offersBooking: d.offer_booking !== null && bookingCatalog.doctors.length > 0,
-      }),
+        offersLoggedToday: d.log_options.filter((id) => loggedToday.has(id)).map((id) => loggedToday.get(id)!),
+        // A serious concern gets the appointment offered, not just "keep an eye
+        // on it" — once per conversation, and never in a crisis or emergency.
+        bookingDue:
+          (risk === 'L2' || risk === 'L3') && !crisis && bookingCatalog.doctors.length > 0 && !bookingShown,
+      });
+    },
   });
 
   // 4. Enforce. The schema already limits these, but the lists are re-checked
@@ -500,7 +538,9 @@ export async function answer(
   const logIds =
     riskRank(finalRisk) >= riskRank('L3')
       ? []
-      : [...new Set(decision.log_options)].filter((id) => trackerCatalog.byId.has(id)).slice(0, MAX_LOG_BUTTONS);
+      : [...new Set(decision.log_options)]
+          .filter((id) => trackerCatalog.byId.has(id) && !loggedToday.has(id))
+          .slice(0, MAX_LOG_BUTTONS);
   const logOptions = logIds.map((id) => trackerCatalog.byId.get(id)!);
   // A routine-keeping button has no place in a safety reply.
   const reminderOffer = decision.offer_reminder && reminderCount !== null && riskRank(finalRisk) < riskRank('L3');
@@ -586,7 +626,7 @@ export async function confirmBooking(
   if (!consultation) return null;
 
   const name = sanitizeName(userName);
-  const [thread, context] = await Promise.all([loadThread(userId), buildRuntimeContext(userId, name)]);
+  const [{ messages: thread }, context] = await Promise.all([loadThread(userId), buildRuntimeContext(userId, name)]);
   const event = {
     type: 'booking_confirmed',
     consultation_id: consultation.id,
