@@ -174,6 +174,15 @@ export type ConsultationCallRecording = z.infer<typeof consultationCallRecording
 
 export const consultationCallStateSchema = z.object({
   consultationId: z.string(),
+  /**
+   * Off unless the API runs with CONSULTATION_VIDEO_ENABLED=true. When off, both apps show voice
+   * avatars and no camera control, and the LiveKit token only allows a microphone.
+   */
+  videoEnabled: z.boolean(),
+  /** For the avatar on the patient's call screen. */
+  doctor: z.object({ name: z.string(), imageUrl: z.string().nullable() }),
+  /** For the avatar on the doctor's call screen. Null when she has not given a name. */
+  patientName: z.string().nullable(),
   roomName: z.string().nullable(),
   status: consultationCallStatusSchema.nullable(),
   doctorStartedAt: z.string().datetime().nullable(),

@@ -64,6 +64,14 @@ export function VideoIcon({ size = 18, className, strokeWidth = 1.7 }: IconProps
   );
 }
 
+export function PhoneIcon({ size = 18, className, strokeWidth = 1.7 }: IconProps) {
+  return (
+    <svg {...base(size, className)} strokeWidth={strokeWidth}>
+      <path d="M5.2 3.5h3l1.5 4.2-2 1.3a11 11 0 005.3 5.3l1.3-2 4.2 1.5v3a2 2 0 01-2.2 2A16.5 16.5 0 013.2 5.7a2 2 0 012-2.2z" />
+    </svg>
+  );
+}
+
 export function FileIcon({ size = 18, className, strokeWidth = 1.7 }: IconProps) {
   return (
     <svg {...base(size, className)} strokeWidth={strokeWidth}>

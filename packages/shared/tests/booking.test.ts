@@ -44,6 +44,9 @@ const specialist = {
 
 const callState = {
   consultationId: 'con_1',
+  videoEnabled: false,
+  doctor: { name: 'Dr Asha Rao', imageUrl: null },
+  patientName: 'Priya',
   roomName: 'room-1',
   status: 'waiting' as const,
   doctorStartedAt: null,
@@ -336,6 +339,13 @@ describe('consultationCallStateSchema / join response', () => {
         call: callState,
       }),
     ).toMatchObject({ token: 'tok_abc' });
+  });
+
+  it('requires the video switch and the people on the call', () => {
+    const withoutVideo: Partial<typeof callState> = { ...callState };
+    delete withoutVideo.videoEnabled;
+    expect(consultationCallStateSchema.safeParse(withoutVideo).success).toBe(false);
+    expect(consultationCallStateSchema.safeParse({ ...callState, patientName: null }).success).toBe(true);
   });
 
   it('rejects non-url livekitUrl', () => {

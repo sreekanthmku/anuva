@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Room, RoomEvent, Track, type RemoteTrack } from 'livekit-client';
 import type { ConsultationCallState } from '@anuva/shared';
 import { endDoctorCall, startDoctorCall } from '../bookings/api';
+import { VoiceAvatar } from './VoiceAvatar';
 
 type ConnectState = 'connecting' | 'connected' | 'ended' | 'error';
 
@@ -31,7 +32,12 @@ export function DoctorCallRoute() {
   const [cameraOn, setCameraOn] = useState(false);
   const [remoteConnected, setRemoteConnected] = useState(false);
   const [remoteVideoOn, setRemoteVideoOn] = useState(false);
+  // The two audio tracks, for the voice rings on the avatars.
+  const [remoteAudio, setRemoteAudio] = useState<MediaStreamTrack | null>(null);
+  const [localAudio, setLocalAudio] = useState<MediaStreamTrack | null>(null);
   const [ending, setEnding] = useState(false);
+  const videoEnabled = call?.videoEnabled ?? false;
+  const patientLabel = call?.patientName ?? 'Patient';
 
   useEffect(() => {
     let cancelled = false;
@@ -47,11 +53,17 @@ export function DoctorCallRoute() {
       if (track.kind === Track.Kind.Video) {
         setRemoteVideoOn(true);
       }
+      if (track.kind === Track.Kind.Audio) {
+        setRemoteAudio(track.mediaStreamTrack);
+      }
     };
     const handleTrackUnsubscribed = (track: RemoteTrack) => {
       track.detach();
       if (track.kind === Track.Kind.Video) {
         setRemoteVideoOn(false);
+      }
+      if (track.kind === Track.Kind.Audio) {
+        setRemoteAudio(null);
       }
     };
 
@@ -61,6 +73,7 @@ export function DoctorCallRoute() {
     room.on(RoomEvent.ParticipantDisconnected, () => {
       setRemoteConnected(false);
       setRemoteVideoOn(false);
+      setRemoteAudio(null);
     });
     room.on(RoomEvent.Disconnected, () => {
       if (!cancelled) {
@@ -85,7 +98,8 @@ export function DoctorCallRoute() {
         if (cancelled) return;
 
         // Audio only to begin with — the camera is published only if the doctor turns it on.
-        await room.localParticipant.setMicrophoneEnabled(true);
+        const microphone = await room.localParticipant.setMicrophoneEnabled(true);
+        setLocalAudio(microphone?.track?.mediaStreamTrack ?? null);
         setState('connected');
       } catch (err) {
         if (cancelled) return;
@@ -114,8 +128,10 @@ export function DoctorCallRoute() {
 
     const next = !micOn;
     try {
-      await room.localParticipant.setMicrophoneEnabled(next);
+      const microphone = await room.localParticipant.setMicrophoneEnabled(next);
       setMicOn(next);
+      // Unmuting can publish a fresh track; the self ring has to follow it.
+      if (next) setLocalAudio(microphone?.track?.mediaStreamTrack ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not change the microphone.');
     }
@@ -184,7 +200,34 @@ export function DoctorCallRoute() {
       </header>
 
       <section className="px-4 py-4">
-        {state === 'connecting' || state === 'connected' ? (
+        {(state === 'connecting' || state === 'connected') && !videoEnabled ? (
+          <div className="relative aspect-[3/4] overflow-hidden rounded-[20px] border border-border-default bg-inverse-surface text-inverse-on-surface shadow-[0_16px_35px_rgba(62,37,66,0.14)] sm:aspect-video">
+            <audio ref={remoteAudioRef} autoPlay />
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
+              <VoiceAvatar name={patientLabel} track={remoteAudio} size={128} active={remoteConnected} />
+              <div className="mt-6 font-display text-[24px] leading-tight">
+                {remoteConnected ? patientLabel : 'Waiting for patient'}
+              </div>
+              <p className="mt-2 text-[13px] leading-[1.5] text-[#EADFEF]">
+                {remoteConnected ? 'On a voice call' : 'They will see the consent screen before joining.'}
+              </p>
+            </div>
+            <div className="absolute bottom-3 right-3 flex flex-col items-center gap-1.5 rounded-[16px] border border-white/20 bg-[#4A3050] px-3 pb-2 pt-3 shadow-lg">
+              <VoiceAvatar
+                name={call?.doctor.name ?? ''}
+                imageUrl={call?.doctor.imageUrl}
+                track={localAudio}
+                size={52}
+                active={state === 'connected'}
+                muted={!micOn}
+                mutedLabel="Muted"
+              />
+              <span className="text-[11px] font-semibold text-[#EADFEF]">You</span>
+            </div>
+          </div>
+        ) : null}
+
+        {(state === 'connecting' || state === 'connected') && videoEnabled ? (
           <div className="relative aspect-[3/4] overflow-hidden rounded-[20px] border border-border-default bg-inverse-surface text-inverse-on-surface shadow-[0_16px_35px_rgba(62,37,66,0.14)] sm:aspect-video">
             <video ref={remoteVideoRef} className="h-full w-full bg-[#2F2034] object-cover" autoPlay playsInline />
             <audio ref={remoteAudioRef} autoPlay />
@@ -231,7 +274,7 @@ export function DoctorCallRoute() {
         ) : null}
 
         {state === 'connecting' || state === 'connected' ? (
-          <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className={`mt-4 grid gap-3 ${videoEnabled ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <button
               type="button"
               onClick={toggleMic}
@@ -240,14 +283,16 @@ export function DoctorCallRoute() {
             >
               {micOn ? 'Mute' : 'Unmute'}
             </button>
-            <button
-              type="button"
-              onClick={toggleCamera}
-              disabled={state !== 'connected'}
-              className="rounded-full border border-border-default bg-surface-raised px-3 py-3 text-[13px] font-semibold disabled:opacity-45"
-            >
-              {cameraOn ? 'Camera off' : 'Camera on'}
-            </button>
+            {videoEnabled ? (
+              <button
+                type="button"
+                onClick={toggleCamera}
+                disabled={state !== 'connected'}
+                className="rounded-full border border-border-default bg-surface-raised px-3 py-3 text-[13px] font-semibold disabled:opacity-45"
+              >
+                {cameraOn ? 'Camera off' : 'Camera on'}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={endCall}

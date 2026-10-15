@@ -12,6 +12,7 @@ import {
   fetchConsultationCall,
   joinConsultationCall,
 } from './call/api';
+import { VoiceAvatar } from './call/VoiceAvatar';
 
 type ScreenState = 'loading' | 'waiting' | 'consent' | 'connecting' | 'connected' | 'ended' | 'error';
 
@@ -40,7 +41,11 @@ export default function ConsultationCallRoute() {
   const [cameraOn, setCameraOn] = useState(false);
   const [remoteConnected, setRemoteConnected] = useState(false);
   const [remoteVideoOn, setRemoteVideoOn] = useState(false);
+  // The two audio tracks, for the voice rings on the avatars.
+  const [remoteAudio, setRemoteAudio] = useState<MediaStreamTrack | null>(null);
+  const [localAudio, setLocalAudio] = useState<MediaStreamTrack | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const videoEnabled = call?.videoEnabled ?? false;
 
   useEffect(() => {
     let cancelled = false;
@@ -99,11 +104,17 @@ export default function ConsultationCallRoute() {
       if (track.kind === Track.Kind.Video) {
         setRemoteVideoOn(true);
       }
+      if (track.kind === Track.Kind.Audio) {
+        setRemoteAudio(track.mediaStreamTrack);
+      }
     };
     const handleTrackUnsubscribed = (track: RemoteTrack) => {
       track.detach();
       if (track.kind === Track.Kind.Video) {
         setRemoteVideoOn(false);
+      }
+      if (track.kind === Track.Kind.Audio) {
+        setRemoteAudio(null);
       }
     };
 
@@ -113,6 +124,7 @@ export default function ConsultationCallRoute() {
     room.on(RoomEvent.ParticipantDisconnected, () => {
       setRemoteConnected(false);
       setRemoteVideoOn(false);
+      setRemoteAudio(null);
     });
     // Fires when the doctor ends the call: the API deletes the room, which disconnects us.
     // Must not clobber a failure message, since leaving also disconnects.
@@ -130,7 +142,8 @@ export default function ConsultationCallRoute() {
       setCall(response.call);
       await room.connect(response.livekitUrl, response.token);
       // Audio only to begin with — the camera is published only if the patient turns it on.
-      await room.localParticipant.setMicrophoneEnabled(true);
+      const microphone = await room.localParticipant.setMicrophoneEnabled(true);
+      setLocalAudio(microphone?.track?.mediaStreamTrack ?? null);
       setScreen('connected');
     } catch (err) {
       room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed);
@@ -151,8 +164,10 @@ export default function ConsultationCallRoute() {
 
     const next = !micOn;
     try {
-      await room.localParticipant.setMicrophoneEnabled(next);
+      const microphone = await room.localParticipant.setMicrophoneEnabled(next);
       setMicOn(next);
+      // Unmuting can publish a fresh track; the self ring has to follow it.
+      if (next) setLocalAudio(microphone?.track?.mediaStreamTrack ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : i18n.t('call.micFailed'));
     }
@@ -241,7 +256,11 @@ export default function ConsultationCallRoute() {
               {call?.patientConsentRequired ? t('call.consentTitle') : t('call.joinTitle')}
             </h2>
             <p className="mt-3 text-[13px] leading-[1.6] text-on-surface-variant">
-              {call?.patientConsentRequired ? t('call.consentBody') : t('call.joinBody')}
+              {call?.patientConsentRequired
+                ? t('call.consentBody')
+                : call?.videoEnabled
+                  ? t('call.joinBody')
+                  : t('call.joinBodyVoice')}
             </p>
             <button
               type="button"
@@ -255,6 +274,35 @@ export default function ConsultationCallRoute() {
 
         {screen === 'connecting' || screen === 'connected' ? (
           <>
+            {!videoEnabled ? (
+              <div className="relative aspect-[3/4] overflow-hidden rounded-[20px] border border-border-default bg-inverse-surface text-inverse-on-surface shadow-[0_16px_35px_rgba(62,37,66,0.14)]">
+                <audio ref={remoteAudioRef} autoPlay />
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
+                  <VoiceAvatar
+                    name={call?.doctor.name ?? ''}
+                    imageUrl={call?.doctor.imageUrl}
+                    track={remoteAudio}
+                    size={128}
+                    active={remoteConnected}
+                  />
+                  <div className="mt-6 font-display text-[24px] leading-tight">{call?.doctor.name}</div>
+                  <p className="mt-2 text-[13px] leading-[1.5] text-[#EADFEF]">
+                    {remoteConnected ? t('call.onVoiceCall') : t('call.keepOpen')}
+                  </p>
+                </div>
+                <div className="absolute bottom-3 right-3 flex flex-col items-center gap-1.5 rounded-[16px] border border-white/20 bg-[#4A3050] px-3 pb-2 pt-3 shadow-lg">
+                  <VoiceAvatar
+                    name={call?.patientName ?? ''}
+                    track={localAudio}
+                    size={52}
+                    active={screen === 'connected'}
+                    muted={!micOn}
+                    mutedLabel={t('call.muted')}
+                  />
+                  <span className="text-[11px] font-semibold text-[#EADFEF]">{t('call.you')}</span>
+                </div>
+              </div>
+            ) : (
             <div className="relative aspect-[3/4] overflow-hidden rounded-[20px] border border-border-default bg-inverse-surface text-inverse-on-surface shadow-[0_16px_35px_rgba(62,37,66,0.14)]">
               <video ref={remoteVideoRef} className="h-full w-full bg-[#2F2034] object-cover" autoPlay playsInline />
               <audio ref={remoteAudioRef} autoPlay />
@@ -286,8 +334,9 @@ export default function ConsultationCallRoute() {
                 ) : null}
               </div>
             </div>
+            )}
 
-            <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className={`mt-4 grid gap-3 ${videoEnabled ? 'grid-cols-3' : 'grid-cols-2'}`}>
               <button
                 type="button"
                 onClick={toggleMic}
@@ -296,14 +345,16 @@ export default function ConsultationCallRoute() {
               >
                 {micOn ? t('call.mute') : t('call.unmute')}
               </button>
-              <button
-                type="button"
-                onClick={toggleCamera}
-                disabled={screen !== 'connected'}
-                className="rounded-full border border-border-default bg-surface-raised px-3 py-3 text-[13px] font-semibold disabled:opacity-45"
-              >
-                {cameraOn ? t('call.cameraOff') : t('call.cameraOn')}
-              </button>
+              {videoEnabled ? (
+                <button
+                  type="button"
+                  onClick={toggleCamera}
+                  disabled={screen !== 'connected'}
+                  className="rounded-full border border-border-default bg-surface-raised px-3 py-3 text-[13px] font-semibold disabled:opacity-45"
+                >
+                  {cameraOn ? t('call.cameraOff') : t('call.cameraOn')}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={leaveCall}

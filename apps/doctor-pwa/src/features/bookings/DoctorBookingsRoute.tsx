@@ -3,7 +3,7 @@ import type { DoctorConsultationBooking } from '@anuva/shared';
 import { useNavigate } from 'react-router-dom';
 import { useDoctorIdentity } from '../auth/identity';
 import { Avatar, PageHeading } from '../shell/AppShell';
-import { ClipboardIcon, FileIcon, NoteIcon, VideoIcon } from '../shell/icons';
+import { ClipboardIcon, FileIcon, NoteIcon, PhoneIcon } from '../shell/icons';
 import { Card, EmptyState, ErrorNote, Pill, Segmented, SkeletonCard, StatTile } from '../shell/ui';
 import { fetchDoctorBookings } from './api';
 import { ConsultationDocumentsSheet } from './ConsultationDocumentsSheet';
@@ -132,7 +132,7 @@ function BookingCard({
           onClick={() => onStartCall(booking.consultationId)}
           className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full bg-secondary px-4 text-[13px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <VideoIcon size={17} />
+          <PhoneIcon size={17} />
           {callLabel(booking)}
         </button>
 

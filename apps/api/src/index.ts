@@ -233,6 +233,7 @@ import {
   createDoctorNotesRouter,
   createHealthNotesRouter,
 } from './healthNotes/router.js';
+import { consultationPublishGrant, consultationVideoEnabled } from './consultationCallMedia.js';
 import { startMedicationReminderJob } from './medication/jobs.js';
 import { startSupportRetentionJob } from './supportRetention.js';
 import { eraseScope } from './privacy/erasure.js';
@@ -1168,13 +1169,23 @@ function aggregateRecording(allRecordings: ConsultationRecordingRecord[] | undef
   };
 }
 
+/** Who is on the call, for the avatar each side shows while video is off. */
+type CallPeople = {
+  specialist: { name: string; imageUrl: string | null };
+  user: { name: string | null } | null;
+};
+
 function serializeConsultationCallState(
   consultationId: string,
   call: ConsultationCallRecord | null,
   patientConsented: boolean,
+  people: CallPeople,
 ): ConsultationCallState {
   return consultationCallStateSchema.parse({
     consultationId,
+    videoEnabled: consultationVideoEnabled(),
+    doctor: { name: people.specialist.name, imageUrl: people.specialist.imageUrl },
+    patientName: people.user?.name?.trim() || null,
     roomName: call?.roomName ?? null,
     status: call?.status ?? null,
     doctorStartedAt: call?.doctorStartedAt?.toISOString() ?? null,
@@ -1208,7 +1219,8 @@ async function createJoinToken(args: {
   token.addGrant({
     roomJoin: true,
     room: args.roomName,
-    canPublish: true,
+    // Microphone only while video is off, enforced by LiveKit rather than trusted to the app.
+    ...consultationPublishGrant(),
     canSubscribe: true,
     canPublishData: true,
   });
@@ -1243,7 +1255,7 @@ async function getDoctorConsultation(consultationId: string, identity: DoctorIde
   const consultation = await prisma.consultation.findFirst({
     where: { id: consultationId, ...doctorConsultationScope(identity) },
     include: {
-      specialist: { select: { name: true } },
+      specialist: { select: { name: true, imageUrl: true } },
       // No phone: the doctor portal never shows patient contact details.
       user: { select: { id: true, name: true } },
       call: {
@@ -1273,7 +1285,9 @@ async function getPatientConsultation(consultationId: string, userId: string) {
       userId,
     },
     include: {
-      specialist: { select: { name: true } },
+      specialist: { select: { name: true, imageUrl: true } },
+      // Her own name, for her avatar on the call screen.
+      user: { select: { name: true } },
       call: {
         include: {
           recordings: true,
@@ -3199,6 +3213,7 @@ app.post('/doctor/consultations/:id/call/start', async (req, res, next) => {
           consultation.id,
           call,
           hasPatientConsent(call, consultation.user.id),
+          consultation,
         ),
       }),
     );
@@ -3230,6 +3245,7 @@ app.get('/doctor/consultations/:id/call', async (req, res, next) => {
           consultation.id,
           consultation.call,
           hasPatientConsent(consultation.call, consultation.user.id),
+          consultation,
         ),
       }),
     );
@@ -3254,6 +3270,7 @@ app.post('/doctor/consultations/:id/call/end', async (req, res, next) => {
           consultation.id,
           refreshed,
           hasPatientConsent(refreshed, consultation.user.id),
+          consultation,
         ),
       }),
     );
@@ -3280,7 +3297,7 @@ app.post('/consultations/:id/call/end', async (req, res, next) => {
     res.json(
       consultationCallEndResponseSchema.parse({
         ok: true,
-        call: serializeConsultationCallState(consultation.id, refreshed, true),
+        call: serializeConsultationCallState(consultation.id, refreshed, true, consultation),
       }),
     );
   } catch (e) {
@@ -3299,6 +3316,7 @@ app.get('/consultations/:id/call', async (req, res, next) => {
           consultation.id,
           consultation.call,
           hasPatientConsent(consultation.call, user.id),
+          consultation,
         ),
       }),
     );
@@ -3349,7 +3367,7 @@ app.post('/consultations/:id/call/consent', async (req, res, next) => {
     res.json(
       consultationCallConsentResponseSchema.parse({
         ok: true,
-        call: serializeConsultationCallState(consultation.id, refreshed, true),
+        call: serializeConsultationCallState(consultation.id, refreshed, true, consultation),
       }),
     );
   } catch (e) {
@@ -3410,7 +3428,7 @@ app.post('/consultations/:id/call/join', async (req, res, next) => {
       consultationCallJoinResponseSchema.parse({
         livekitUrl: LIVEKIT_URL,
         token,
-        call: serializeConsultationCallState(consultation.id, refreshed, true),
+        call: serializeConsultationCallState(consultation.id, refreshed, true, consultation),
       }),
     );
   } catch (e) {
