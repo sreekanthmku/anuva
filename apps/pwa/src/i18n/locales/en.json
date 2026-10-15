@@ -729,12 +729,21 @@
     "daysValue": "{{count}} days",
     "loggedCycles_one": "{{count}} logged cycle",
     "loggedCycles_other": "{{count}} logged cycles",
-    "startTimeTitle": "Did it start in the day or at night?",
+    "startTimeTitle": "When did your period start?",
     "startTimeBody": "Your period started on {{date}}.",
-    "startedDay": "Day",
-    "startedNight": "Night",
-    "startedDuringDay": "Started during the day",
-    "startedAtNight": "Started at night"
+    "startTimeOptions": {
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening",
+      "night": "Night"
+    },
+    "startedAtTime": {
+      "morning": "Started in the morning",
+      "afternoon": "Started in the afternoon",
+      "evening": "Started in the evening",
+      "night": "Started at night",
+      "day": "Started during the day"
+    }
   },
   "profile": {
     "backHome": "← Home",

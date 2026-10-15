@@ -666,12 +666,21 @@
     "daysValue": "{{count}} दिन",
     "loggedCycles_one": "{{count}} लॉग की गई साइकिल",
     "loggedCycles_other": "{{count}} लॉग की गई साइकिल",
-    "startTimeTitle": "पीरियड दिन में शुरू हुआ या रात में?",
+    "startTimeTitle": "पीरियड कब शुरू हुआ?",
     "startTimeBody": "आपका पीरियड {{date}} को शुरू हुआ।",
-    "startedDay": "दिन",
-    "startedNight": "रात",
-    "startedDuringDay": "दिन में शुरू हुआ",
-    "startedAtNight": "रात में शुरू हुआ"
+    "startTimeOptions": {
+      "morning": "सुबह",
+      "afternoon": "दोपहर",
+      "evening": "शाम",
+      "night": "रात"
+    },
+    "startedAtTime": {
+      "morning": "सुबह शुरू हुआ",
+      "afternoon": "दोपहर में शुरू हुआ",
+      "evening": "शाम को शुरू हुआ",
+      "night": "रात में शुरू हुआ",
+      "day": "दिन में शुरू हुआ"
+    }
   },
   "profile": {
     "backHome": "← होम",

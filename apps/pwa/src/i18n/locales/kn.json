@@ -666,12 +666,21 @@
     "daysValue": "{{count}} ದಿನ",
     "loggedCycles_one": "{{count}} ಸೈಕಲ್ ಲಾಗ್ ಆಗಿದೆ",
     "loggedCycles_other": "{{count}} ಸೈಕಲ್‌ಗಳು ಲಾಗ್ ಆಗಿವೆ",
-    "startTimeTitle": "ಪಿರಿಯಡ್ ಹಗಲಿನಲ್ಲಿ ಆರಂಭವಾಯಿತೇ ಅಥವಾ ರಾತ್ರಿಯಲ್ಲೇ?",
+    "startTimeTitle": "ಪಿರಿಯಡ್ ಯಾವಾಗ ಆರಂಭವಾಯಿತು?",
     "startTimeBody": "ನಿಮ್ಮ ಪಿರಿಯಡ್ {{date}} ರಂದು ಆರಂಭವಾಯಿತು.",
-    "startedDay": "ಹಗಲು",
-    "startedNight": "ರಾತ್ರಿ",
-    "startedDuringDay": "ಹಗಲಿನಲ್ಲಿ ಆರಂಭವಾಯಿತು",
-    "startedAtNight": "ರಾತ್ರಿಯಲ್ಲಿ ಆರಂಭವಾಯಿತು"
+    "startTimeOptions": {
+      "morning": "ಬೆಳಿಗ್ಗೆ",
+      "afternoon": "ಮಧ್ಯಾಹ್ನ",
+      "evening": "ಸಂಜೆ",
+      "night": "ರಾತ್ರಿ"
+    },
+    "startedAtTime": {
+      "morning": "ಬೆಳಿಗ್ಗೆ ಆರಂಭವಾಯಿತು",
+      "afternoon": "ಮಧ್ಯಾಹ್ನ ಆರಂಭವಾಯಿತು",
+      "evening": "ಸಂಜೆ ಆರಂಭವಾಯಿತು",
+      "night": "ರಾತ್ರಿಯಲ್ಲಿ ಆರಂಭವಾಯಿತು",
+      "day": "ಹಗಲಿನಲ್ಲಿ ಆರಂಭವಾಯಿತು"
+    }
   },
   "profile": {
     "backHome": "← ಹೋಮ್",

@@ -69,7 +69,8 @@ async function cycleContext(userId: string, now: Date) {
   const last = periods[0]!;
   return {
     last_period_start_date: dateOnly(last.startDate),
-    // Day or night, when she told us; null for starts logged before we asked.
+    // Morning, afternoon, evening or night when she told us ("day" on older logs); null for
+    // starts logged before we asked.
     last_period_started_at: last.startTimeOfDay ?? null,
     days_since_last_period_started: Math.round((now.getTime() - last.startDate.getTime()) / DAY_MS),
     typical_cycle_length_days: state.effectiveCycleLength,

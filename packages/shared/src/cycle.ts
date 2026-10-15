@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
-/** Whether her period started in the day or at night — asked when she logs a start. */
-export const periodStartTimeOfDaySchema = z.enum(['day', 'night']);
+/** The part of the day her period started in, as she is asked when she logs a start. */
+export const PERIOD_START_TIMES = ['morning', 'afternoon', 'evening', 'night'] as const;
+
+/**
+ * Her answer to "when did it start?". `day` is the older, coarser answer (day or night) that some
+ * periods were logged with; it is still accepted, so an app from before the change keeps working,
+ * but it is no longer offered.
+ */
+export const periodStartTimeOfDaySchema = z.enum([...PERIOD_START_TIMES, 'day']);
 
 export const cycleSetupBodySchema = z.object({
   lastPeriodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
@@ -68,7 +75,7 @@ export const periodLogSchema = z.object({
    * Absent means she closed the period herself.
    */
   endDateSource: endDateSourceSchema.optional(),
-  /** Day or night; null when she logged it before we asked. */
+  /** Morning, afternoon, evening or night (`day` on older logs); null when she logged it before we asked. */
   startTimeOfDay: periodStartTimeOfDaySchema.nullable().optional(),
 });
 

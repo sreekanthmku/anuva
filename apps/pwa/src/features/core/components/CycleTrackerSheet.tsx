@@ -915,11 +915,7 @@ export function CycleTrackerSheet({
                   <>
                     {selectedPeriodLog.startDate === selectedDate && selectedPeriodLog.startTimeOfDay && (
                       <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
-                        {t(
-                          selectedPeriodLog.startTimeOfDay === 'day'
-                            ? 'cycleSheet.startedDuringDay'
-                            : 'cycleSheet.startedAtNight',
-                        )}
+                        {t(`cycleSheet.startedAtTime.${selectedPeriodLog.startTimeOfDay}`)}
                       </p>
                     )}
                     {selectedIsEditable && (

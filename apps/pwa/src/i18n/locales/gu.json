@@ -666,12 +666,21 @@
     "daysValue": "{{count}} દિવસ",
     "loggedCycles_one": "{{count}} લોગ કરેલી સાયકલ",
     "loggedCycles_other": "{{count}} લોગ કરેલી સાયકલ",
-    "startTimeTitle": "પિરિયડ દિવસે શરૂ થયો કે રાત્રે?",
+    "startTimeTitle": "પિરિયડ ક્યારે શરૂ થયો?",
     "startTimeBody": "તમારો પિરિયડ {{date}} ના રોજ શરૂ થયો.",
-    "startedDay": "દિવસે",
-    "startedNight": "રાત્રે",
-    "startedDuringDay": "દિવસે શરૂ થયો",
-    "startedAtNight": "રાત્રે શરૂ થયો"
+    "startTimeOptions": {
+      "morning": "સવાર",
+      "afternoon": "બપોર",
+      "evening": "સાંજ",
+      "night": "રાત"
+    },
+    "startedAtTime": {
+      "morning": "સવારે શરૂ થયો",
+      "afternoon": "બપોરે શરૂ થયો",
+      "evening": "સાંજે શરૂ થયો",
+      "night": "રાત્રે શરૂ થયો",
+      "day": "દિવસે શરૂ થયો"
+    }
   },
   "profile": {
     "backHome": "← હોમ",

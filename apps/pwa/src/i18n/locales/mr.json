@@ -666,12 +666,21 @@
     "daysValue": "{{count}} दिवस",
     "loggedCycles_one": "{{count}} नोंदवलेली सायकल",
     "loggedCycles_other": "{{count}} नोंदवलेल्या सायकल",
-    "startTimeTitle": "पाळी दिवसा सुरू झाली की रात्री?",
+    "startTimeTitle": "पाळी कधी सुरू झाली?",
     "startTimeBody": "तुमची पाळी {{date}} रोजी सुरू झाली.",
-    "startedDay": "दिवसा",
-    "startedNight": "रात्री",
-    "startedDuringDay": "दिवसा सुरू झाली",
-    "startedAtNight": "रात्री सुरू झाली"
+    "startTimeOptions": {
+      "morning": "सकाळ",
+      "afternoon": "दुपार",
+      "evening": "संध्याकाळ",
+      "night": "रात्र"
+    },
+    "startedAtTime": {
+      "morning": "सकाळी सुरू झाली",
+      "afternoon": "दुपारी सुरू झाली",
+      "evening": "संध्याकाळी सुरू झाली",
+      "night": "रात्री सुरू झाली",
+      "day": "दिवसा सुरू झाली"
+    }
   },
   "profile": {
     "backHome": "← मुख्यपृष्ठ",

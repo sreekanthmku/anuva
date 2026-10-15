@@ -109,6 +109,7 @@ import {
   jointDiscomfortScore,
   type JointSeverity,
   logPeriodBodySchema,
+  periodStartTimeOfDaySchema,
   updatePeriodBodySchema,
   cycleStateResponseSchema,
   logMoodBodySchema,
@@ -4723,8 +4724,7 @@ function serializePeriodLog(p: {
     startDate: p.startDate.toISOString().split('T')[0]!,
     endDate: p.endDate ? p.endDate.toISOString().split('T')[0]! : null,
     endDateSource: p.endDateSource === 'inferred' ? ('inferred' as const) : ('user' as const),
-    startTimeOfDay:
-      p.startTimeOfDay === 'day' ? ('day' as const) : p.startTimeOfDay === 'night' ? ('night' as const) : null,
+    startTimeOfDay: periodStartTimeOfDaySchema.safeParse(p.startTimeOfDay).data ?? null,
   };
 }
 

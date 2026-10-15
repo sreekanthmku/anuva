@@ -666,12 +666,21 @@
     "daysValue": "{{count}} ଦିନ",
     "loggedCycles_one": "{{count}} ଲଗ୍ ହୋଇଥିବା ଚକ୍ର",
     "loggedCycles_other": "{{count}} ଲଗ୍ ହୋଇଥିବା ଚକ୍ର",
-    "startTimeTitle": "ପିରିୟଡ୍ ଦିନରେ ଆରମ୍ଭ ହେଲା ନା ରାତିରେ?",
+    "startTimeTitle": "ପିରିୟଡ୍ କେବେ ଆରମ୍ଭ ହେଲା?",
     "startTimeBody": "ଆପଣଙ୍କ ପିରିୟଡ୍ {{date}} ରେ ଆରମ୍ଭ ହେଲା।",
-    "startedDay": "ଦିନ",
-    "startedNight": "ରାତି",
-    "startedDuringDay": "ଦିନରେ ଆରମ୍ଭ ହେଲା",
-    "startedAtNight": "ରାତିରେ ଆରମ୍ଭ ହେଲା"
+    "startTimeOptions": {
+      "morning": "ସକାଳ",
+      "afternoon": "ଅପରାହ୍ନ",
+      "evening": "ସନ୍ଧ୍ୟା",
+      "night": "ରାତି"
+    },
+    "startedAtTime": {
+      "morning": "ସକାଳେ ଆରମ୍ଭ ହେଲା",
+      "afternoon": "ଅପରାହ୍ନରେ ଆରମ୍ଭ ହେଲା",
+      "evening": "ସନ୍ଧ୍ୟାରେ ଆରମ୍ଭ ହେଲା",
+      "night": "ରାତିରେ ଆରମ୍ଭ ହେଲା",
+      "day": "ଦିନରେ ଆରମ୍ଭ ହେଲା"
+    }
   },
   "profile": {
     "backHome": "← ହୋମ୍",

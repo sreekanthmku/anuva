@@ -666,12 +666,21 @@
     "daysValue": "{{count}} দিন",
     "loggedCycles_one": "{{count}}টি লগ করা সাইকেল",
     "loggedCycles_other": "{{count}}টি লগ করা সাইকেল",
-    "startTimeTitle": "পিরিয়ড দিনে শুরু হয়েছে নাকি রাতে?",
+    "startTimeTitle": "পিরিয়ড কখন শুরু হয়েছে?",
     "startTimeBody": "আপনার পিরিয়ড {{date}} শুরু হয়েছে।",
-    "startedDay": "দিনে",
-    "startedNight": "রাতে",
-    "startedDuringDay": "দিনে শুরু হয়েছে",
-    "startedAtNight": "রাতে শুরু হয়েছে"
+    "startTimeOptions": {
+      "morning": "সকাল",
+      "afternoon": "দুপুর",
+      "evening": "সন্ধ্যা",
+      "night": "রাত"
+    },
+    "startedAtTime": {
+      "morning": "সকালে শুরু হয়েছে",
+      "afternoon": "দুপুরে শুরু হয়েছে",
+      "evening": "সন্ধ্যায় শুরু হয়েছে",
+      "night": "রাতে শুরু হয়েছে",
+      "day": "দিনে শুরু হয়েছে"
+    }
   },
   "profile": {
     "backHome": "← হোম",

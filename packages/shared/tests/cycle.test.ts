@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  PERIOD_START_TIMES,
   cycleSetupBodySchema,
   cycleSettingsBodySchema,
   cycleStateResponseSchema,
@@ -83,6 +84,19 @@ describe('logPeriodBodySchema / updatePeriodBodySchema', () => {
 
   it('rejects a correction that changes nothing', () => {
     expect(updatePeriodBodySchema.safeParse({}).success).toBe(false);
+  });
+
+  it('takes the part of the day it started, and still the older "day" answer', () => {
+    for (const startTimeOfDay of [...PERIOD_START_TIMES, 'day'] as const) {
+      expect(logPeriodBodySchema.parse({ startDate: '2026-03-10', startTimeOfDay })).toEqual({
+        startDate: '2026-03-10',
+        startTimeOfDay,
+      });
+    }
+    expect(PERIOD_START_TIMES).toEqual(['morning', 'afternoon', 'evening', 'night']);
+    expect(
+      logPeriodBodySchema.safeParse({ startDate: '2026-03-10', startTimeOfDay: 'noon' }).success,
+    ).toBe(false);
   });
 });
 
