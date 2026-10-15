@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findViolations, removeDashes, rewriteDirective } from '../src/anu/v3/checks.js';
+import { findViolations, removeDashes, rewriteDirective, withFullBrand } from '../src/anu/v3/checks.js';
 
 const base = {
   riskLevel: 'L1',
@@ -324,5 +324,23 @@ describe('v3 removeDashes', () => {
   it('leaves hyphenated words, number ranges and list bullets alone', () => {
     expect(removeDashes('Over 2–3 days, a follow-up helps.')).toBe('Over 2–3 days, a follow-up helps.');
     expect(removeDashes('Tonight:\n- a cool room\n- water nearby')).toBe('Tonight:\n- a cool room\n- water nearby');
+  });
+});
+
+describe('v3 withFullBrand', () => {
+  it.each([
+    ['An Anuva gynecologist can look at this.', 'An Anuva Wellness gynecologist can look at this.'],
+    ['Would you like to see one of Anuva’s psychologists?', 'Would you like to see one of Anuva Wellness psychologists?'],
+    ["Anuva's doctors are free this week.", 'Anuva Wellness doctors are free this week.'],
+    ['Book with an Anuva dietitian or the anuva team.', 'Book with an Anuva Wellness dietitian or the Anuva Wellness team.'],
+    ['Anuva ki gynecologist se baat karein?', 'Anuva Wellness ki gynecologist se baat karein?'],
+    ['Anuva की डॉक्टर से बात करें?', 'Anuva Wellness की डॉक्टर से बात करें?'],
+  ])('%s', (text, expected) => {
+    expect(withFullBrand(text)).toBe(expected);
+  });
+
+  it('leaves the full name, and Anuva used on its own, alone', () => {
+    const text = 'An Anuva Wellness gynecologist is free. You can log it in Anuva, and Anuva reminds you.';
+    expect(withFullBrand(text)).toBe(text);
   });
 });

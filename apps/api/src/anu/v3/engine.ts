@@ -38,7 +38,7 @@ import { THREAD_IDLE_MS } from '../engine.js';
 import { sanitizeName } from '../prompt.js';
 import { actionHref } from './actions.js';
 import { formatSlotLong, loadBookingCatalog, PARTS_OF_DAY, type BookingCatalog } from './booking.js';
-import { findViolations, removeDashes, rewriteDirective } from './checks.js';
+import { findViolations, removeDashes, rewriteDirective, withFullBrand } from './checks.js';
 import { classify, riskRank, RISK_LEVELS, type SafetyClassification } from './classifier.js';
 import { buildRuntimeContext, renderRuntimeContext, type RuntimeContext } from './context.js';
 import { chatJson, v3Env, type ChatMessage } from './llm.js';
@@ -412,8 +412,8 @@ async function generateChecked(options: {
   }
   decision = {
     ...decision,
-    message: removeDashes(decision.message),
-    quick_replies: decision.quick_replies.map(removeDashes),
+    message: withFullBrand(removeDashes(decision.message)),
+    quick_replies: decision.quick_replies.map((reply) => withFullBrand(removeDashes(reply))),
   };
   return { decision, firstViolations, remainingViolations };
 }

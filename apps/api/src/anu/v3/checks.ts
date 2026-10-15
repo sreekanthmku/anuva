@@ -83,6 +83,19 @@ export function removeDashes(text: string): string {
     .replace(/([.!?]), (\p{Ll})/gu, (_, end: string, letter: string) => `${end} ${letter.toUpperCase()}`);
 }
 
+/// Anuva's professionals always carry the full name: "an Anuva Wellness gynecologist", never "an
+/// Anuva doctor" or "Anuva's psychologists". The prompt asks for it; this fixes the replies that
+/// still shorten it, in English and in Hinglish or Hindi ("Anuva ki doctor", "Anuva की डॉक्टर").
+const PROFESSIONAL_NOUN = String.raw`(?:gyn(?:a)?ecologists?|gynaes?|doctors?|psychologists?|psychiatrists?|dieti[ct]ians?|nutritionists?|specialists?|professionals?|experts?|counsell?ors?|therapists?|physicians?|endocrinologists?|consultants?|team)\b|डॉक्टर|मनोवैज्ञानिक|विशेषज्ञ|गायनेकोलॉजिस्ट|स्त्री रोग`;
+const SHORT_BRAND = new RegExp(
+  String.raw`\bAnuva(?:['’]s)?(?!\s+Wellness\b)(\s+(?:(?:ki|ke|ka|ni|na|no|chi|che|cha|की|के|का)\s+)?)(?=${PROFESSIONAL_NOUN})`,
+  'gi',
+);
+
+export function withFullBrand(text: string): string {
+  return text.replace(SHORT_BRAND, 'Anuva Wellness$1');
+}
+
 /// Sending her outside Anuva for a professional Anuva offers.
 const EXTERNAL_REFERRAL =
   /\b(nearby|local)\s+(gyn(a)?ecologist|doctor|clinic|specialist|physician)s?\b|\b(gyn(a)?ecologist|doctor|clinic|specialist)s?\s+near\s+you\b/i;
@@ -197,14 +210,14 @@ export function findViolations(input: CheckInput): string[] {
 
   if (input.professionalTypes.length > 0 && EXTERNAL_REFERRAL.test(message)) {
     violations.push(
-      'Your draft sends her to a "nearby"/"local" professional. Refer to the professional as Anuva\'s (e.g. "the available Anuva gynecologists").',
+      'Your draft sends her to a "nearby"/"local" professional. Refer to the professional by the full name "Anuva Wellness" (e.g. "the available Anuva Wellness gynecologists").',
     );
   }
 
   const suggested = input.medicineSuggested ?? suggestsMedicine(message);
   if (MEDICINE_DOSE.test(message) || suggested) {
     violations.push(
-      'Your draft suggests a medicine, supplement or remedy, vouches for one ("effective", "can help", "can reduce"), or gives a dose. Remove it entirely — never suggest, rate, list as an option or dose any medicine, even in an emergency and even when she names it herself. Say only that whether a medicine suits her is for an Anuva gynecologist, and offer that pathway.',
+      'Your draft suggests a medicine, supplement or remedy, vouches for one ("effective", "can help", "can reduce"), or gives a dose. Remove it entirely — never suggest, rate, list as an option or dose any medicine, even in an emergency and even when she names it herself. Say only that whether a medicine suits her is for an Anuva Wellness gynecologist, and offer that pathway.',
     );
   }
 
@@ -232,11 +245,11 @@ export function findViolations(input: CheckInput): string[] {
 
   if (input.bookingUnconfirmed) {
     violations.push(
-      'She has not asked to book, and has not said yes to booking. Do not show the booking card yet: set "offer_booking" to null. Recommend the matching Anuva professional and ask whether she would like to book a time ("Would you like to book a time with an Anuva gynecologist?"), set "asks_to_book" to true, and give "quick_replies" such as "Yes, let\'s book" and "Not now".',
+      'She has not asked to book, and has not said yes to booking. Do not show the booking card yet: set "offer_booking" to null. Recommend the matching Anuva Wellness professional and ask whether she would like to book a time ("Would you like to book a time with an Anuva Wellness gynecologist?"), set "asks_to_book" to true, and give "quick_replies" such as "Yes, let\'s book" and "Not now".',
     );
   } else if (input.bookingDue && !input.offersBooking && !input.asksToBook && !input.asksSafetyQuestion) {
     violations.push(
-      'This concern deserves a professional review (risk L2/L3), and an Anuva doctor is free. Say briefly why it is worth having it looked at, recommend the matching Anuva professional, set "professional_pathway", and ask whether she would like to book a time ("Would you like to book a time with an Anuva gynecologist?"). Set "asks_to_book" to true, "offer_booking" to null, and give "quick_replies" such as "Yes, let\'s book" and "Not now".',
+      'This concern deserves a professional review (risk L2/L3), and an Anuva Wellness doctor is free. Say briefly why it is worth having it looked at, recommend the matching Anuva Wellness professional, set "professional_pathway", and ask whether she would like to book a time ("Would you like to book a time with an Anuva Wellness gynecologist?"). Set "asks_to_book" to true, "offer_booking" to null, and give "quick_replies" such as "Yes, let\'s book" and "Not now".',
     );
   }
 
