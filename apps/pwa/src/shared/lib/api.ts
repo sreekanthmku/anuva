@@ -47,7 +47,8 @@ export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit):
     credentials: 'include',
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      // A file upload sets its own multipart boundary; forcing JSON here would break it.
+      ...(init?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       // The language she chose in the toggle, not the browser's. The API does not localise yet;
       // sending it now means server-built copy can follow without another client release.
       // `Accept-Language` is CORS-safelisted, so this adds no preflight.

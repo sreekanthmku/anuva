@@ -7,6 +7,7 @@ import type {
   DeleteConsultationDocumentResponse,
   DoctorConsultationBookingsResponse,
   DoctorDetailedAssessmentResponse,
+  DoctorSharedNotesResponse,
   UploadConsultationDocumentResponse,
 } from '@anuva/shared';
 import { consultationDocumentFileName } from '@anuva/shared';
@@ -148,4 +149,29 @@ export async function deleteConsultationDocument(
     `/api/doctor/consultations/${consultationId}/documents/${documentId}`,
     { method: 'DELETE' },
   );
+}
+
+/** The notes she chose to share with this consultation — the frozen copies, read-only. */
+export async function fetchSharedNotes(consultationId: string): Promise<DoctorSharedNotesResponse> {
+  return apiFetch<DoctorSharedNotesResponse>(`/api/doctor/consultations/${consultationId}/notes`);
+}
+
+/** The photo a shared note was made from. Fetched as a blob for the same cookie reason as documents. */
+export async function fetchSharedNoteImage(args: {
+  consultationId: string;
+  shareId: string;
+  imageId: string;
+}): Promise<Blob> {
+  const response = await fetch(
+    apiUrl(
+      `/api/doctor/consultations/${args.consultationId}/notes/${args.shareId}/images/${args.imageId}`,
+    ),
+    { credentials: 'include' },
+  );
+
+  if (!response.ok) {
+    throw new ApiError(response.status, 'This photo could not be opened.');
+  }
+
+  return response.blob();
 }

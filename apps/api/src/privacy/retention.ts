@@ -5,6 +5,7 @@
 //   - a staged export disappearing after 24 hours, downloaded or not
 //   - consultation records leaving after the NMC three-year floor rather than living forever
 //   - sign-in IPs cut down to their network once LOGIN_IP_RETENTION_DAYS have passed
+//   - note drafts she never confirmed, recording or photo included, gone after a day
 // plus one housekeeping sweep: closing the login history of sessions that lapsed without a logout.
 //
 // Modelled on the support-ticket purge: retention is stamped on the row at the moment the promise
@@ -19,6 +20,7 @@ import { resolveConsultationDocumentPath } from '../consultationDocuments.js';
 import { eraseRecordings, eraseScope } from './erasure.js';
 import { unlinkExportFile } from './export.js';
 import { closeLapsedLoginSessions, truncateExpiredLoginIps } from '../loginHistory.js';
+import { purgeReleasedNotes, purgeStaleNoteDrafts } from '../healthNotes/lifecycle.js';
 import fs from 'node:fs/promises';
 
 const log = logger.child({ module: 'privacy-retention' });
@@ -151,6 +153,19 @@ export async function purgeExpiredClinicalRecords(): Promise<number> {
   return purged;
 }
 
+/**
+ * Note drafts she never confirmed — with their recording or photo — and deleted notes whose shared
+ * copy no longer needs keeping, because the consultation was purged or the share taken back.
+ */
+export async function runHealthNoteJobs(): Promise<void> {
+  try {
+    await purgeStaleNoteDrafts();
+    await purgeReleasedNotes();
+  } catch (error) {
+    log.error({ err: error }, 'Health note sweep failed');
+  }
+}
+
 /** Hourly, so an expired session's history row is closed within the hour it lapsed. */
 export async function runLoginHistoryJobs(): Promise<void> {
   try {
@@ -176,6 +191,9 @@ export function startPrivacyRetentionJobs(): void {
   cron.schedule('35 * * * *', () => void purgeExpiredExports(), { timezone: TZ });
   cron.schedule('50 4 * * *', () => void purgeExpiredClinicalRecords(), { timezone: TZ });
   cron.schedule('5 * * * *', () => void runLoginHistoryJobs(), { timezone: TZ });
+  // Hourly, so a draft's 24 hours do not stretch to 48. Released notes ride along: the clinical
+  // purge above runs once a day, and they are swept within the hour after it.
+  cron.schedule('45 * * * *', () => void runHealthNoteJobs(), { timezone: TZ });
 
   log.info({ timezone: TZ }, 'Privacy retention jobs scheduled');
 }

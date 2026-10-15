@@ -3,11 +3,12 @@ import type { DoctorConsultationBooking } from '@anuva/shared';
 import { useNavigate } from 'react-router-dom';
 import { useDoctorIdentity } from '../auth/identity';
 import { Avatar, PageHeading } from '../shell/AppShell';
-import { ClipboardIcon, FileIcon, VideoIcon } from '../shell/icons';
+import { ClipboardIcon, FileIcon, NoteIcon, VideoIcon } from '../shell/icons';
 import { Card, EmptyState, ErrorNote, Pill, Segmented, SkeletonCard, StatTile } from '../shell/ui';
 import { fetchDoctorBookings } from './api';
 import { ConsultationDocumentsSheet } from './ConsultationDocumentsSheet';
 import { DetailedAssessmentSheet } from './DetailedAssessmentSheet';
+import { SharedNotesSheet } from './SharedNotesSheet';
 import { formatTimeRange } from './dateTime';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -67,6 +68,7 @@ function BookingCard({
   onStartCall,
   onOpenDocuments,
   onOpenAssessment,
+  onOpenNotes,
 }: {
   booking: DoctorConsultationBooking;
   /** The admin login sees every doctor's list, so the specialist has to be named on the card. */
@@ -75,6 +77,7 @@ function BookingCard({
   onStartCall: (consultationId: string) => void;
   onOpenDocuments: (booking: DoctorConsultationBooking) => void;
   onOpenAssessment: (booking: DoctorConsultationBooking) => void;
+  onOpenNotes: (booking: DoctorConsultationBooking) => void;
 }) {
   const patientLabel = booking.patientName?.trim() || 'Patient name unavailable';
   const canStartCall = booking.status === 'confirmed' && booking.callStatus !== 'ended';
@@ -162,6 +165,16 @@ function BookingCard({
         >
           <ClipboardIcon />
         </button>
+
+        {/* Notes she chose to share for this consultation, frozen as she shared them. */}
+        <button
+          type="button"
+          onClick={() => onOpenNotes(booking)}
+          aria-label="View her notes"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border-default bg-surface-raised text-primary"
+        >
+          <NoteIcon />
+        </button>
       </div>
     </Card>
   );
@@ -177,6 +190,7 @@ export function DoctorBookingsRoute() {
   const [tab, setTab] = useState<Tab>('today');
   const [documentsFor, setDocumentsFor] = useState<DoctorConsultationBooking | null>(null);
   const [assessmentFor, setAssessmentFor] = useState<DoctorConsultationBooking | null>(null);
+  const [notesFor, setNotesFor] = useState<DoctorConsultationBooking | null>(null);
   // Recomputed on every load so "In 20 min" does not go stale behind a long-open tab.
   const [now, setNow] = useState(() => Date.now());
 
@@ -300,6 +314,7 @@ export function DoctorBookingsRoute() {
             onStartCall={(consultationId) => navigate(`/call/${consultationId}`)}
             onOpenDocuments={setDocumentsFor}
             onOpenAssessment={setAssessmentFor}
+            onOpenNotes={setNotesFor}
           />
         ))}
       </div>
@@ -320,6 +335,14 @@ export function DoctorBookingsRoute() {
           consultationId={assessmentFor.consultationId}
           patientLabel={assessmentFor.patientName?.trim() || 'this patient'}
           onClose={() => setAssessmentFor(null)}
+        />
+      ) : null}
+
+      {notesFor ? (
+        <SharedNotesSheet
+          consultationId={notesFor.consultationId}
+          patientLabel={notesFor.patientName?.trim() || 'this patient'}
+          onClose={() => setNotesFor(null)}
         />
       ) : null}
     </>

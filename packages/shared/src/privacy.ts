@@ -102,7 +102,14 @@ export const ERASURE_ACCOUNT_MODELS = [
  * mid-conversation with a human, a published Q&A answer is read by other women, and a consultation
  * is a medical record under the NMC floor.
  */
-export const ERASURE_ANONYMIZED_MODELS = ['supportTicket', 'anonymousQuestion'] as const;
+export const ERASURE_ANONYMIZED_MODELS = [
+  'supportTicket',
+  'anonymousQuestion',
+  // Her notes are deleted, recordings and photos included — except a note she shared with a
+  // consultation, whose frozen copy is that doctor's clinical record. Her own text on it is cleared
+  // and the row waits out the consultation's retention clock.
+  'healthNote',
+] as const;
 
 /**
  * Survives an account erasure by design. `otpChallenge` is the exception in this list — it is
@@ -112,6 +119,9 @@ export const ERASURE_ANONYMIZED_MODELS = ['supportTicket', 'anonymousQuestion'] 
 export const ERASURE_RETAINED_MODELS = [
   'consultation',
   'consultationCallConsent',
+  // Proof of what she consented to, and when — the record a fiduciary must be able to produce. It
+  // holds a purpose and a wording version, nothing she said.
+  'consentRecord',
   'otpChallenge',
   'dataDeletionRequest',
   'dataExportRequest',
@@ -246,8 +256,9 @@ export const DATA_RECIPIENTS: {
 }[] = [
   {
     name: 'OpenAI',
-    purpose: 'Generating Anu’s answers to your questions',
-    dataShared: 'The text of what you ask Anu. Not your name, phone number or account.',
+    purpose: 'Generating Anu’s answers to your questions, and turning voice notes and note photos into text',
+    dataShared:
+      'The text of what you ask Anu, and the voice notes and photos you choose to turn into text. Not your name, phone number or account.',
     reachesDeletion: false,
   },
   {

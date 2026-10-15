@@ -30,6 +30,7 @@ import { QuickLogMessageDialog } from './components/QuickLogMessageDialog';
 import { NudgeCheckInDialog } from './components/NudgeCheckInDialog';
 import { DoseSheet } from './medication/DoseSheet';
 import { MedicationDueCard } from './medication/MedicationDueCard';
+import { NoteForDoctorBar } from './notes/NoteForDoctorBar';
 import { PeriodFlowSheet } from './components/PeriodFlowSheet';
 import { useHomeNotificationPrompt } from './hooks/useHomeNotificationPrompt';
 import { useCycleTracker } from './hooks/useCycleTracker';
@@ -668,6 +669,8 @@ export default function AnuDashboardRoute() {
           </button>
         )}
       </section>
+
+      <NoteForDoctorBar />
 
       <FamilyCheckInCard activity={familyActivity.data} />
 

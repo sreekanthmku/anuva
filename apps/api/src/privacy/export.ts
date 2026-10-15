@@ -82,6 +82,8 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     signIns,
     trackerLogs,
     familyMembers,
+    healthNotes,
+    consentRecords,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -242,13 +244,42 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
         },
       },
     }),
+    // Her notes, and the frozen copy each doctor holds. The recording and photo stay behind the
+    // ownership-checked route, like prescription files. A note she deleted is absent: its text is gone.
+    prisma.healthNote.findMany({
+      where: { userId, deletedAt: null },
+      select: {
+        source: true,
+        status: true,
+        body: true,
+        createdAt: true,
+        updatedAt: true,
+        attachments: { select: { kind: true, mimeType: true, sizeBytes: true, createdAt: true } },
+        shares: {
+          select: {
+            consultationId: true,
+            snapshotBody: true,
+            consentTextVersion: true,
+            consentedAt: true,
+            revokedAt: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: MAX_ROWS_PER_COLLECTION,
+    }),
+    prisma.consentRecord.findMany({
+      where: { userId },
+      select: { purpose: true, textVersion: true, grantedAt: true, withdrawnAt: true },
+      orderBy: { grantedAt: 'desc' },
+    }),
   ]);
 
   return {
     export: {
       generatedAt: generatedAt.toISOString(),
       format: 'anuva-data-export/1',
-      note: 'Everything Anuva holds about you, as of the date above. Recording audio and document files are not included in this file. Download those from Your consultations in the app.',
+      note: 'Everything Anuva holds about you, as of the date above. Recording audio, document files and note photos are not included in this file. Download those from the app.',
       rowLimitPerCollection: MAX_ROWS_PER_COLLECTION,
     },
     /**
@@ -280,7 +311,8 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     subscription,
     carePaths,
     consultations,
-    consentsGiven: callConsents,
+    consentsGiven: { callRecording: callConsents, other: consentRecords },
+    notes: healthNotes,
     chat: { threads: chatThreads, anuTurns },
     anonymousQuestions: questions,
     supportRequests: tickets,

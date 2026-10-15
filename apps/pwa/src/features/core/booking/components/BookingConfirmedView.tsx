@@ -7,6 +7,8 @@ type BookingConfirmedViewProps = {
   dateYmd: string;
   timeLabel: string;
   onBackHome: () => void;
+  /** Opens the sheet for sharing notes with this doctor. */
+  onAddNotes?: () => void;
 };
 
 export function BookingConfirmedView({
@@ -14,6 +16,7 @@ export function BookingConfirmedView({
   dateYmd,
   timeLabel,
   onBackHome,
+  onAddNotes,
 }: BookingConfirmedViewProps) {
   const { t } = useTranslation();
 
@@ -75,10 +78,21 @@ export function BookingConfirmedView({
         </dl>
       </article>
 
+      {onAddNotes ? (
+        <button
+          type="button"
+          onClick={onAddNotes}
+          className="mt-8 inline-flex min-h-11 w-full max-w-[20rem] items-center justify-center rounded-full border border-primary/30 px-[22px] py-[12px] text-[14px] font-semibold text-primary"
+          style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+        >
+          {t('notes.addForDoctor')}
+        </button>
+      ) : null}
+
       <button
         type="button"
         onClick={onBackHome}
-        className="mt-8 inline-flex w-full max-w-[20rem] items-center justify-center rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-semibold text-on-secondary"
+        className={`${onAddNotes ? 'mt-3' : 'mt-8'} inline-flex w-full max-w-[20rem] items-center justify-center rounded-full bg-secondary px-[22px] py-[14px] text-[14px] font-semibold text-on-secondary`}
         style={{
           fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
           letterSpacing: '-0.005em',

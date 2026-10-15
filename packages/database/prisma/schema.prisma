@@ -86,6 +86,8 @@ model User {
   familyInvites        FamilyInvite[]
   familyMembers        FamilyMember[]
   familySupportActions FamilySupportAction[]
+  healthNotes          HealthNote[]
+  consentRecords       ConsentRecord[]
 }
 
 // ─────────────────────────────────────────────
@@ -1043,6 +1045,7 @@ model Consultation {
   slot         ConsultationSlot?
   call         ConsultationCall?
   documents    ConsultationDocument[]
+  noteShares   HealthNoteShare[]
   feedback     ConsultationFeedback?
 
   @@index([userId])
@@ -1985,4 +1988,110 @@ model SpecialistWebPushSubscription {
   updatedAt    DateTime       @updatedAt
 
   @@index([specialistId, status])
+}
+
+// ─────────────────────────────────────────────
+// Notes for the doctor — typed, spoken or photographed
+// ─────────────────────────────────────────────
+
+enum HealthNoteSource {
+  text
+  voice
+  photo
+}
+
+/// `draft` is text a model produced that she has not confirmed yet. Only `ready` notes can be shared.
+enum HealthNoteStatus {
+  draft
+  ready
+  failed
+}
+
+enum HealthNoteAttachmentKind {
+  audio
+  image
+}
+
+/// Something she jotted down to remember or to tell her doctor. Private to her until she shares it
+/// with a consultation, which freezes a copy on `HealthNoteShare`.
+model HealthNote {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source    HealthNoteSource
+  status    HealthNoteStatus @default(ready)
+  /// The text she saved. Null on a draft that failed, and on a deleted note kept for a doctor.
+  body      String?
+  /// What the speech or photo model returned, before her edits — kept to measure how often they
+  /// get it wrong. Never shown to a doctor.
+  rawText   String?
+  /// The photo reader could not make out part of it, or was unsure of a medicine, dose or number.
+  unclear   Boolean          @default(false)
+  language  String?
+  /// Model names, audio seconds and tokens. Cost tracking only.
+  aiUsage   Json?
+  /// She deleted it, but a doctor holds a shared copy, so the row and its photo stay until that
+  /// consultation's record is purged. Her own text is cleared at the same moment.
+  deletedAt DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  attachments HealthNoteAttachment[]
+  shares      HealthNoteShare[]
+
+  @@index([userId, deletedAt, createdAt])
+  @@index([status, createdAt])
+}
+
+/// The recording or photo a note was made from. Files live in HEALTH_NOTE_DIR; `storagePath` is
+/// server-generated and never sent to a client. A recording is deleted once she confirms its text.
+model HealthNoteAttachment {
+  id          String                   @id @default(cuid())
+  noteId      String
+  note        HealthNote               @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  kind        HealthNoteAttachmentKind
+  mimeType    String
+  sizeBytes   Int
+  storagePath String
+  createdAt   DateTime                 @default(now())
+
+  @@index([noteId])
+}
+
+/// One note shared with one consultation. `snapshotBody` is what the doctor reads: frozen when she
+/// shared it, so a later edit or delete does not change the clinical record. The consent she gave
+/// for this share is recorded on the row itself.
+model HealthNoteShare {
+  id                 String       @id @default(cuid())
+  noteId             String
+  note               HealthNote   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  consultationId     String
+  consultation       Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  snapshotBody       String
+  consentTextVersion String
+  consentedAt        DateTime     @default(now())
+  /// She took it back before the consultation began. The doctor no longer sees it.
+  revokedAt          DateTime?
+
+  @@unique([noteId, consultationId])
+  @@index([consultationId, revokedAt])
+}
+
+enum ConsentPurpose {
+  /// Sending her voice notes and note photos to OpenAI to be turned into text.
+  note_ai_processing
+}
+
+/// Consent she gave for a purpose, and which wording she saw. Append-only: withdrawing stamps
+/// `withdrawnAt`, and agreeing again writes a new row, so the history of what she agreed to stays.
+model ConsentRecord {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose     ConsentPurpose
+  textVersion String
+  grantedAt   DateTime       @default(now())
+  withdrawnAt DateTime?
+
+  @@index([userId, purpose, grantedAt])
 }

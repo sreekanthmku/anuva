@@ -12,6 +12,7 @@ import DetailedAssessmentRoute from '../features/core/DetailedAssessmentRoute';
 import AnuChatRoute from '../features/core/AnuChatRoute';
 import SymptomTrackRoute from '../features/core/SymptomTrackRoute';
 import WeeklyReportRoute from '../features/core/WeeklyReportRoute';
+import NotesRoute from '../features/core/notes/NotesRoute';
 import MetricDetailRoute from '../features/core/MetricDetailRoute';
 import CareDirectionRoute from '../features/core/CareDirectionRoute';
 import LibraryRoute from '../features/core/LibraryRoute';
@@ -210,6 +211,14 @@ export function AppRouter() {
               element={
                 <ProtectedRoute>
                   <ConsultationBookingRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notes"
+              element={
+                <ProtectedRoute>
+                  <NotesRoute />
                 </ProtectedRoute>
               }
             />

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BottomNav } from './components/BottomNav';
@@ -7,13 +8,16 @@ import { DateSlotSection } from './booking/components/DateSlotSection';
 import { SpecialistPicker } from './booking/components/SpecialistPicker';
 import { TimeSlotSection } from './booking/components/TimeSlotSection';
 import { useConsultationBooking } from './booking/hooks/useConsultationBooking';
+import { ShareNotesSheet } from './notes/ShareNotesSheet';
 
 export default function ConsultationBookingRoute() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const booking = useConsultationBooking();
+  const [sharingNotes, setSharingNotes] = useState(false);
 
   if (booking.phase === 'confirmed' && booking.confirmedDateYmd) {
+    const consultationId = booking.confirmedConsultationId;
     return (
       <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
         <BookingConfirmedView
@@ -21,7 +25,15 @@ export default function ConsultationBookingRoute() {
           dateYmd={booking.confirmedDateYmd}
           timeLabel={booking.timeLabel}
           onBackHome={() => navigate('/home')}
+          onAddNotes={consultationId ? () => setSharingNotes(true) : undefined}
         />
+        {sharingNotes && consultationId ? (
+          <ShareNotesSheet
+            consultationId={consultationId}
+            specialistName={booking.specialistLabel}
+            onClose={() => setSharingNotes(false)}
+          />
+        ) : null}
         <BottomNav />
       </main>
     );

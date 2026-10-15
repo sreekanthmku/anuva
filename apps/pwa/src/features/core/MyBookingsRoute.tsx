@@ -10,6 +10,8 @@ import type {
   MyConsultation,
 } from '@anuva/shared';
 import { shareOrDownloadFile } from '../../shared/lib/shareFile';
+import { fetchSharedNotes } from './notes/api';
+import { ShareNotesSheet } from './notes/ShareNotesSheet';
 import {
   cancelConsultation,
   fetchConsultationDocumentFile,
@@ -532,6 +534,48 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
   );
 }
 
+/** Which of her notes this doctor will see, and the way to choose them. */
+function NotesForBooking({ booking }: { booking: MyConsultation }) {
+  const { t } = useTranslation();
+  const [count, setCount] = useState<number | null>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchSharedNotes(booking.consultationId)
+      .then((notes) => {
+        if (!cancelled) setCount(notes.length);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [booking.consultationId]);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-3 flex min-h-11 w-full items-center justify-between rounded-[14px] bg-surface-container-low px-3 py-2.5 text-left text-[13px]"
+      >
+        <span className="font-semibold text-on-surface">{t('notes.forThisDoctor')}</span>
+        <span className="text-primary">
+          {count ? t('notes.sharedCount', { count }) : t('notes.addShort')} →
+        </span>
+      </button>
+      {open ? (
+        <ShareNotesSheet
+          consultationId={booking.consultationId}
+          specialistName={booking.specialistName}
+          onClose={() => setOpen(false)}
+          onChanged={setCount}
+        />
+      ) : null}
+    </>
+  );
+}
+
 export default function MyBookingsRoute() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -714,6 +758,10 @@ export default function MyBookingsRoute() {
                     </button>
                   ) : null}
                 </div>
+              ) : null}
+
+              {tab === 'upcoming' && booking.status !== 'cancelled' ? (
+                <NotesForBooking booking={booking} />
               ) : null}
 
               {booking.documentCount > 0 ? (

@@ -83,6 +83,15 @@ export function ClipboardIcon({ size = 18, className, strokeWidth = 1.7 }: IconP
   );
 }
 
+export function NoteIcon({ size = 18, className, strokeWidth = 1.7 }: IconProps) {
+  return (
+    <svg {...base(size, className)} strokeWidth={strokeWidth}>
+      <path d="M5 5.5A2.5 2.5 0 017.5 3h9A2.5 2.5 0 0119 5.5v9.5l-6 6H7.5A2.5 2.5 0 015 18.5z" />
+      <path d="M19 15h-3.5a2.5 2.5 0 00-2.5 2.5V21M8.5 8h7M8.5 11.5h5" />
+    </svg>
+  );
+}
+
 export function ChevronRightIcon({ size = 18, className, strokeWidth = 1.8 }: IconProps) {
   return (
     <svg {...base(size, className)} strokeWidth={strokeWidth}>

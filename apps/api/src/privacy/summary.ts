@@ -48,6 +48,7 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
     sessions,
     familyMembers,
     familySupportActions,
+    notes,
   ] = await Promise.all([
     prisma.chatMessage.count({ where: { thread: { userId } } }),
     prisma.anuChatTurn.count({ where: { userId } }),
@@ -64,6 +65,7 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
     prisma.loginSession.count({ where: { userId } }),
     prisma.familyMember.count({ where: { userId } }),
     prisma.familySupportAction.count({ where: { userId } }),
+    prisma.healthNote.count({ where: { userId, deletedAt: null } }),
   ]);
 
   return [
@@ -101,6 +103,13 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
       count: documents,
       purpose: CATEGORY_TEXT.documents.purpose,
       retention: fill(CATEGORY_TEXT.documents.retention, { years: CLINICAL_RECORD_RETENTION_YEARS }),
+    },
+    {
+      key: 'notes',
+      label: CATEGORY_TEXT.notes.label,
+      count: notes,
+      purpose: CATEGORY_TEXT.notes.purpose,
+      retention: fill(CATEGORY_TEXT.notes.retention, { years: CLINICAL_RECORD_RETENTION_YEARS }),
     },
     {
       key: 'assessments',
@@ -170,6 +179,13 @@ const CATEGORY_TEXT = copy('privacy.categories', {
     label: 'Prescriptions & diet plans',
     purpose: 'Documents your doctor shared with you after a consultation.',
     retention: 'Kept {{years}} years, for the same reason.',
+  },
+  notes: {
+    label: 'Notes for your doctor',
+    purpose:
+      'Notes you typed, recorded or photographed, and which doctor you shared each one with. Only the notes you choose to share are seen by a doctor.',
+    retention:
+      'A recording is deleted once you save its text. A note you shared stays in that consultation’s record, which is kept {{years}} years.',
   },
   assessments: {
     label: 'Assessments',

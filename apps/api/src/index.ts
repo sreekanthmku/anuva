@@ -228,6 +228,11 @@ import {
 } from './cycleCalc.js';
 import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
 import { createMedicationRouter } from './medication/router.js';
+import {
+  createConsultationNotesRouter,
+  createDoctorNotesRouter,
+  createHealthNotesRouter,
+} from './healthNotes/router.js';
 import { startMedicationReminderJob } from './medication/jobs.js';
 import { startSupportRetentionJob } from './supportRetention.js';
 import { eraseScope } from './privacy/erasure.js';
@@ -462,6 +467,27 @@ app.use(
 app.use('/doctor', (req, res, next) => {
   void requireDoctorAccess(req, res, next);
 });
+
+// Notes for the doctor — self-contained module under apps/api/src/healthNotes/. Her notes, sharing
+// them with a consultation, and the doctor's read-only view (behind the /doctor guard above).
+app.use(
+  '/health-notes',
+  createHealthNotesRouter({
+    resolveUserId: async (req) => (await requireCurrentUser(req)).id,
+  }),
+);
+app.use(
+  '/consultations/:id/notes',
+  createConsultationNotesRouter({
+    resolveUserId: async (req) => (await requireCurrentUser(req)).id,
+  }),
+);
+app.use(
+  '/doctor/consultations/:id/notes',
+  createDoctorNotesRouter({
+    resolveConsultationScope: (req) => doctorConsultationScope(requireDoctorIdentity(req)),
+  }),
+);
 
 class HttpError extends Error {
   status: number;

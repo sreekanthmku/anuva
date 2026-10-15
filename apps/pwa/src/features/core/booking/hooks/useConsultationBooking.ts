@@ -16,6 +16,7 @@ import {
 export type ConsultationBookingPhase = 'form' | 'confirmed';
 
 type ConfirmedBooking = {
+  consultationId: string;
   specialistName: string;
   startsAt: string;
 };
@@ -205,6 +206,7 @@ export function useConsultationBooking() {
     try {
       const response = await bookConsultation({ slotId: pickedTimeId });
       setConfirmedBooking({
+        consultationId: response.consultationId,
         specialistName: response.specialistName,
         startsAt: response.startsAt,
       });
@@ -255,6 +257,7 @@ export function useConsultationBooking() {
     specialistLabel,
     timeLabel,
     confirmedDateYmd,
+    confirmedConsultationId: confirmedBooking?.consultationId ?? null,
     confirmBooking,
     hasSlotsInWindow: slotDates.length > 0,
     slotDates,

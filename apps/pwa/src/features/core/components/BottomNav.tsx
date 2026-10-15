@@ -11,7 +11,7 @@ type NavItem = {
   isMore?: boolean;
 };
 
-const moreRelatedPaths = ['/care', '/library', '/qa', '/booking', '/my-bookings', '/profile'];
+const moreRelatedPaths = ['/care', '/library', '/qa', '/booking', '/my-bookings', '/profile', '/notes'];
 
 const navItems: NavItem[] = [
   { to: '/home', labelKey: 'nav.home', icon: 'home' },

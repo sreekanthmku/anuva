@@ -56,6 +56,18 @@ describe('apiFetch', () => {
     });
   });
 
+  it('leaves Content-Type unset for a file upload, so the browser can add the multipart boundary', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({}));
+    const form = new FormData();
+    form.append('file', new Blob(['x'], { type: 'audio/webm' }), 'note.webm');
+
+    await apiFetch('/api/health-notes/voice', { method: 'POST', body: form });
+
+    const [, init] = fetchMock.mock.calls[0]!;
+    expect(init.body).toBe(form);
+    expect(init.headers).not.toHaveProperty('Content-Type');
+  });
+
   it('merges caller headers and init over defaults', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({}));
 

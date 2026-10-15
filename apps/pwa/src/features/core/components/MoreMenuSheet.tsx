@@ -15,6 +15,7 @@ const items: MoreMenuItem[] = [
   { num: '10', to: '/library', labelKey: 'nav.library' },
   { num: '11', to: '/qa', labelKey: 'nav.anonymousQa' },
   { num: '12', to: '/booking', labelKey: 'nav.consultationBooking' },
+  { num: '13', to: '/notes', labelKey: 'nav.notes' },
 ];
 
 type MoreMenuSheetProps = {
