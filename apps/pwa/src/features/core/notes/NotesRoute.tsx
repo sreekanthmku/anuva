@@ -5,7 +5,7 @@ import type { HealthNote, NoteAiConsent } from '@anuva/shared';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
 import { BottomNav } from '../components/BottomNav';
 import { deleteNote, fetchAiConsent, fetchNotes, withdrawAiConsent } from './api';
-import { NoteComposerSheet } from './NoteComposerSheet';
+import { NoteComposerSheet, NotePhoto } from './NoteComposerSheet';
 import { NoteForDoctorBar } from './NoteForDoctorBar';
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -110,6 +110,8 @@ export default function NotesRoute() {
 
               {note.body ? (
                 <p className="mt-2 whitespace-pre-wrap text-[14.5px] leading-[1.5] text-on-surface">{note.body}</p>
+              ) : note.status === 'ready' ? (
+                <NotePhoto note={note} className="mt-2 max-h-56 w-full rounded-[14px] object-cover" />
               ) : null}
 
               {note.shares.length > 0 ? (

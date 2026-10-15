@@ -102,7 +102,9 @@ export function ShareNotesSheet({
           <ul className="mt-2 flex flex-col gap-2">
             {shared.map((note) => (
               <li key={note.noteId} className="rounded-[14px] bg-primary-fixed px-3 py-2.5">
-                <p className="line-clamp-3 whitespace-pre-wrap text-[13.5px] leading-snug text-on-surface">{note.body}</p>
+                <p className="line-clamp-3 whitespace-pre-wrap text-[13.5px] leading-snug text-on-surface">
+                  {note.body || t('notes.photoOnly')}
+                </p>
                 {note.canRevoke ? (
                   <button
                     type="button"
@@ -144,7 +146,7 @@ export function ShareNotesSheet({
                     className="mt-1 h-5 w-5 shrink-0 accent-[#5E3566]"
                   />
                   <span className="line-clamp-3 whitespace-pre-wrap text-[13.5px] leading-snug text-on-surface">
-                    {note.body}
+                    {note.body || t('notes.photoOnly')}
                   </span>
                 </label>
               </li>

@@ -33,7 +33,7 @@ import {
   type HealthNote,
 } from '@anuva/shared';
 import { currentLanguage, fill } from '../i18n/index.js';
-import { readNotePhoto, transcribeVoiceNote, type NoteAiResult } from './ai.js';
+import { readNotePhoto, transcribeVoiceNote, type NoteAiResult, type NotePhotoResult } from './ai.js';
 import { NOTE_TEXT } from './copy.js';
 import {
   deleteRecordings,
@@ -299,26 +299,29 @@ export function createHealthNotesRouter(deps: HealthNotesRouterDeps): Router {
   /**
    * Runs the model and stores what it returned as a draft for her to check. A failure, or a recording
    * with no speech in it, leaves the note `failed` with its file kept, so she can try again or type
-   * it instead — the request itself still succeeds.
+   * it instead — the request itself still succeeds. A photo with no writing and no food in it is not
+   * a failure: the photo is the note, and she can add words to it if she wants.
    */
   async function runModel(
     req: Request,
     noteId: string,
-    run: () => Promise<NoteAiResult>,
+    run: () => Promise<NoteAiResult | NotePhotoResult>,
   ): Promise<void> {
     try {
       const result = await run();
+      const photoKind = 'kind' in result ? result.kind : null;
       await prisma.healthNote.update({
         where: { id: noteId },
         data: {
-          status: result.text ? 'draft' : 'failed',
+          status: result.text || photoKind ? 'draft' : 'failed',
           body: result.text || null,
           rawText: result.text || null,
           unclear: result.unclear,
           language: result.language,
-          aiUsage: result.usage as object,
+          aiUsage: (photoKind ? { ...result.usage, photoKind } : result.usage) as object,
         },
       });
+      if (photoKind) req.log.info({ noteId, photoKind }, 'Health note photo read');
     } catch (error) {
       req.log.error({ err: error, noteId }, 'Health note could not be turned into text');
       await prisma.healthNote.update({ where: { id: noteId }, data: { status: 'failed' } });
@@ -453,19 +456,28 @@ export function createHealthNotesRouter(deps: HealthNotesRouterDeps): Router {
   /**
    * Saves her text. On a draft this is her confirming what the model heard or read, so the note
    * becomes `ready` and the recording, having done its job, is deleted. A shared copy is not touched.
+   * A note with a photo may be saved with no text: the photo says it.
    */
   router.patch('/:id', async (req, res, next) => {
     try {
       const userId = await deps.resolveUserId(req);
       const body = updateHealthNoteBodySchema.parse(req.body);
-      const updated = await prisma.healthNote.updateMany({
+      const note = await prisma.healthNote.findFirst({
         where: { id: req.params.id, userId, deletedAt: null },
-        data: { body: body.body, status: 'ready' },
+        select: { id: true, attachments: { where: { kind: 'image' }, select: { id: true } } },
       });
-      if (updated.count === 0) {
+      if (!note) {
         notFound(res, NOTE_TEXT.noteNotFound);
         return;
       }
+      if (!body.body && note.attachments.length === 0) {
+        res.status(400).json({ error: NOTE_TEXT.writeSomething });
+        return;
+      }
+      await prisma.healthNote.update({
+        where: { id: note.id },
+        data: { body: body.body || null, status: 'ready' },
+      });
       await deleteRecordings(req.params.id);
       res.json(healthNoteResponseSchema.parse({ note: await readNote(req.params.id) }));
     } catch (e) {
@@ -595,13 +607,19 @@ export function createConsultationNotesRouter(deps: HealthNotesRouterDeps): Rout
       const noteIds = [...new Set(body.noteIds)];
       const notes = await prisma.healthNote.findMany({
         where: { id: { in: noteIds }, userId, deletedAt: null },
-        select: { id: true, status: true, body: true },
+        select: {
+          id: true,
+          status: true,
+          body: true,
+          attachments: { where: { kind: 'image' }, select: { id: true } },
+        },
       });
       if (notes.length !== noteIds.length) {
         notFound(res, NOTE_TEXT.noteNotFound);
         return;
       }
-      if (notes.some((note) => note.status !== 'ready' || !note.body)) {
+      // A photo-only note is shared as its photo, with no text.
+      if (notes.some((note) => note.status !== 'ready' || (!note.body && note.attachments.length === 0))) {
         res.status(409).json({ error: NOTE_TEXT.noteNotReady });
         return;
       }
@@ -628,11 +646,11 @@ export function createConsultationNotesRouter(deps: HealthNotesRouterDeps): Rout
           create: {
             noteId: note.id,
             consultationId: consultation.id,
-            snapshotBody: note.body as string,
+            snapshotBody: note.body ?? '',
             consentTextVersion: body.consentTextVersion,
           },
           update: {
-            snapshotBody: note.body as string,
+            snapshotBody: note.body ?? '',
             consentTextVersion: body.consentTextVersion,
             consentedAt: now,
             revokedAt: null,

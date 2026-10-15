@@ -1966,18 +1966,18 @@
     "recordUnsupported": "This browser can't record audio. You can type your note instead.",
     "micBlocked": "Anuva can't use your microphone. Allow it in your phone's settings, or type your note instead.",
     "listening": "Turning your voice into text…",
-    "reading": "Reading your note…",
+    "reading": "Looking at your photo…",
     "tryingAgain": "Trying again…",
     "workingHint": "This usually takes a few seconds.",
-    "photoTitle": "Photo of a note",
-    "photoHint": "A page you wrote, a list or a printed note. Hold the phone straight over it in good light.",
+    "photoTitle": "Add a photo",
+    "photoHint": "A note you wrote, a printed page, or your meal. We'll copy the writing, or estimate the calories and macros in food. Any other photo is saved as it is.",
     "takePhoto": "Take a photo",
     "choosePhoto": "Choose from gallery",
     "photoUnreadable": "That photo couldn't be opened. Try taking it again.",
     "photoFailed": "Couldn't load the photo.",
     "failedTitle": "We couldn't make that out",
     "failedVoice": "The recording didn't turn into text. It may have been too quiet or too short.",
-    "failedPhoto": "We couldn't read the writing in that photo.",
+    "failedPhoto": "We couldn't read that photo.",
     "tryAgain": "Try again",
     "typeInstead": "Type it instead",
     "shareFailed": "Couldn't update sharing. Please try again.",
@@ -1992,7 +1992,7 @@
     },
     "aiConsent": {
       "title": "Turn your voice and photos into text",
-      "what": "To do this, Anuva sends your recording or photo to OpenAI, which turns it into text for us. Your name and phone number are not sent, and OpenAI does not use it to train its models.",
+      "what": "To do this, Anuva sends your recording or photo to OpenAI, which turns it into text for us. If the photo is of food, it also estimates what's on the plate, with calories, protein, carbs and fat. Your name and phone number are not sent, and OpenAI does not use it to train its models.",
       "kept": "You check the text before it's saved. Your recording is deleted once you save. A photo stays with its note, so a doctor you share it with can see the original.",
       "choice": "This is optional. You can turn it off any time from your notes, and typing a note never needs it.",
       "agree": "I agree",
@@ -2018,6 +2018,10 @@
       "cta_one": "Share {{count}} note",
       "cta_other": "Share {{count}} notes",
       "cta_zero": "Choose notes to share"
-    }
+    },
+    "reviewHintPhoto": "This is what we read or estimated from your photo. Fix anything that's wrong before you save it.",
+    "photoOnlyHint": "There's no writing or food to read in this photo, so it's saved as it is. Add a few words if you like.",
+    "photoOnlyPlaceholder": "Add a few words about this photo (optional)",
+    "photoOnly": "Photo"
   }
 }

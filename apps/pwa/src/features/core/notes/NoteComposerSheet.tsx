@@ -18,6 +18,11 @@ import { NoteAiConsentPanel } from './NoteAiConsentPanel';
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 
+/** A note made from a photo can be saved with no text: the photo is the note. */
+function hasPhoto(note: HealthNote): boolean {
+  return note.attachments.some((attachment) => attachment.kind === 'image');
+}
+
 export type NoteComposerMode = 'text' | 'voice' | 'photo';
 
 type Step =
@@ -188,7 +193,13 @@ export function NoteComposerSheet({
                 {step.note.status === 'ready' ? t('notes.editTitle') : t('notes.reviewTitle')}
               </h2>
               {step.note.status !== 'ready' ? (
-                <p className="mt-1 text-[12.5px] leading-snug text-on-surface-variant">{t('notes.reviewHint')}</p>
+                <p className="mt-1 text-[12.5px] leading-snug text-on-surface-variant">
+                  {step.note.source !== 'photo'
+                    ? t('notes.reviewHint')
+                    : step.note.body
+                      ? t('notes.reviewHintPhoto')
+                      : t('notes.photoOnlyHint')}
+                </p>
               ) : null}
               <NotePhoto note={step.note} />
               {step.note.unclear ? (
@@ -196,8 +207,15 @@ export function NoteComposerSheet({
                   {t('notes.unclearWarning')}
                 </p>
               ) : null}
-              <NoteTextArea value={text} onChange={setText} placeholder={t('notes.writePlaceholder')} />
-              <PrimaryButton disabled={saving || !text.trim()} onClick={() => void confirm(step.note)}>
+              <NoteTextArea
+                value={text}
+                onChange={setText}
+                placeholder={hasPhoto(step.note) ? t('notes.photoOnlyPlaceholder') : t('notes.writePlaceholder')}
+              />
+              <PrimaryButton
+                disabled={saving || (!text.trim() && !hasPhoto(step.note))}
+                onClick={() => void confirm(step.note)}
+              >
                 {saving ? t('notes.saving') : t('notes.save')}
               </PrimaryButton>
               <button
@@ -293,8 +311,14 @@ function PrimaryButton({
   );
 }
 
-/** The photo a draft was read from, so she can compare it with the text. */
-function NotePhoto({ note }: { note: HealthNote }) {
+/** The photo a note was made from, so she can compare it with the text, or see it when it is the note. */
+export function NotePhoto({
+  note,
+  className = 'mt-3 max-h-48 w-full rounded-[14px] object-contain',
+}: {
+  note: HealthNote;
+  className?: string;
+}) {
   const image = note.attachments.find((attachment) => attachment.kind === 'image');
   const [url, setUrl] = useState<string | null>(null);
 
@@ -316,7 +340,7 @@ function NotePhoto({ note }: { note: HealthNote }) {
   }, [note.id, image]);
 
   if (!image || !url) return null;
-  return <img src={url} alt="" className="mt-3 max-h-48 w-full rounded-[14px] object-contain" />;
+  return <img src={url} alt="" className={className} />;
 }
 
 function Recorder({ onRecorded }: { onRecorded: (blob: Blob, extension: string) => void }) {

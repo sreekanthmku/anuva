@@ -414,6 +414,53 @@ describe('voice and photo notes', () => {
     expect(retried.body.note).toMatchObject({ status: 'draft', unclear: true, body: 'Thyronorm [unclear] mcg' });
   });
 
+  it('a photo with nothing to read is kept as the photo, saved and shared without text', async () => {
+    await grantConsent();
+    readPhoto.mockResolvedValue({ kind: 'other', food: [], text: '', unclear: false, language: null, usage: {} });
+    const consultationId = seedConsultation();
+    const created = await request(app)
+      .post('/health-notes/photo')
+      .set('x-user', 'priya')
+      .attach('file', jpeg(), { filename: 'rash.jpg', contentType: 'image/jpeg' })
+      .expect(201);
+    expect(created.body.note).toMatchObject({ source: 'photo', status: 'draft', body: null });
+    expect(db.healthNote![0]!.aiUsage).toMatchObject({ photoKind: 'other' });
+
+    const saved = await request(app)
+      .patch(`/health-notes/${created.body.note.id}`)
+      .set('x-user', 'priya')
+      .send({ body: '  ' })
+      .expect(200);
+    expect(saved.body.note).toMatchObject({ status: 'ready', body: null });
+    expect(saved.body.note.attachments).toHaveLength(1);
+
+    await request(app)
+      .post(`/consultations/${consultationId}/notes`)
+      .set('x-user', 'priya')
+      .send({ noteIds: [created.body.note.id], consentTextVersion: shared.NOTE_SHARE_CONSENT_VERSION })
+      .expect(201);
+    const view = await request(app).get(`/doctor/consultations/${consultationId}/notes`).set('x-doctor', 'doc-1').expect(200);
+    expect(view.body.notes[0]).toMatchObject({ source: 'photo', body: '' });
+    expect(view.body.notes[0].images).toHaveLength(1);
+  });
+
+  it('only a note with a photo can be saved without text', async () => {
+    const note = await typedNote('Hot flashes at night');
+    await request(app).patch(`/health-notes/${note.id}`).set('x-user', 'priya').send({ body: '' }).expect(400);
+    expect(db.healthNote![0]!.body).toBe('Hot flashes at night');
+
+    // A failed voice note has no photo either.
+    await grantConsent();
+    transcribe.mockResolvedValue({ text: '', unclear: false, language: null, usage: {} });
+    const voice = await request(app)
+      .post('/health-notes/voice')
+      .set('x-user', 'priya')
+      .attach('file', webm(), { filename: 'note.webm', contentType: 'audio/webm' })
+      .expect(201);
+    expect(voice.body.note.status).toBe('failed');
+    await request(app).patch(`/health-notes/${voice.body.note.id}`).set('x-user', 'priya').send({ body: '' }).expect(400);
+  });
+
   it('rejects a file that is not really audio', async () => {
     await grantConsent();
     await request(app)

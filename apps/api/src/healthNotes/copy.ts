@@ -2,6 +2,7 @@ import { copy } from '../i18n/index.js';
 
 export const NOTE_TEXT = copy('healthNotes.errors', {
   noteNotFound: 'Note not found.',
+  writeSomething: 'Write something first.',
   fileNotFound: 'File not found.',
   fileMissing: 'The file is missing from storage.',
   consultationNotFound: 'Consultation not found.',

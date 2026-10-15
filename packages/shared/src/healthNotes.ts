@@ -11,8 +11,11 @@ import { z } from 'zod';
  * an older version no longer counts, so she is asked again with the new wording.
  */
 
-/** Consent to send voice notes and note photos to OpenAI to be turned into text. */
-export const NOTE_AI_CONSENT_VERSION = 'notes-ai-v1';
+/**
+ * Consent to send voice notes and note photos to OpenAI to be turned into text. v2 added estimating
+ * the food in a food photo.
+ */
+export const NOTE_AI_CONSENT_VERSION = 'notes-ai-v2';
 
 /** Consent to share the chosen notes with the doctor of one consultation. */
 export const NOTE_SHARE_CONSENT_VERSION = 'notes-share-v1';
@@ -94,8 +97,11 @@ const noteBody = z.string().trim().min(1, 'Write something first').max(HEALTH_NO
 export const createHealthNoteBodySchema = z.object({ body: noteBody });
 export type CreateHealthNoteBody = z.infer<typeof createHealthNoteBodySchema>;
 
-/** Saving her edited text. On a draft this is also her confirming it. */
-export const updateHealthNoteBodySchema = z.object({ body: noteBody });
+/**
+ * Saving her edited text. On a draft this is also her confirming it. Empty is allowed only on a note
+ * with a photo, where the photo is the note; the server checks that.
+ */
+export const updateHealthNoteBodySchema = z.object({ body: z.string().trim().max(HEALTH_NOTE_TEXT_MAX) });
 export type UpdateHealthNoteBody = z.infer<typeof updateHealthNoteBodySchema>;
 
 export const deleteHealthNoteResponseSchema = z.object({ ok: z.literal(true) });

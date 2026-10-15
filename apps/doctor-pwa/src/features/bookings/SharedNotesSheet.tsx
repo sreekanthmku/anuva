@@ -119,7 +119,9 @@ export function SharedNotesSheet({ consultationId, patientLabel, onClose }: Prop
                   </p>
                 )}
 
-                <p className="mt-1.5 whitespace-pre-wrap text-[14px] leading-[1.5]">{note.body}</p>
+                {note.body ? (
+                  <p className="mt-1.5 whitespace-pre-wrap text-[14px] leading-[1.5]">{note.body}</p>
+                ) : null}
 
                 {note.images.some((image) => thumbs[image.id]) && (
                   <div className="mt-2 flex flex-wrap gap-2">
