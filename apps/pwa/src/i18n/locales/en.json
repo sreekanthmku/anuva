@@ -2036,5 +2036,46 @@
     "photoOnlyHint": "There's no writing or food to read in this photo, so it's saved as it is. Add a few words if you like.",
     "photoOnlyPlaceholder": "Add a few words about this photo (optional)",
     "photoOnly": "Photo"
+  },
+  "visitSummary": {
+    "eyebrow": "For your doctor",
+    "title": "Summary for {{name}}",
+    "sharedTitle": "Shared with {{name}}",
+    "sharedOn": "shared {{date}}",
+    "intro": "This is what you've logged in that time. Untick anything you'd rather keep to yourself. Nothing is shared until you tap Share.",
+    "building": "Putting your summary together…",
+    "buildFailed": "Couldn't put your summary together. Please try again.",
+    "retry": "Try again",
+    "include": "Include",
+    "leftOut": "Left out",
+    "includeSection": "Include {{section}}",
+    "discussLabel": "What would you like to discuss?",
+    "discussPlaceholder": "For example: my periods have got heavier since my last visit",
+    "notesTitle": "Your notes from this time",
+    "notesHint": "Tick any you'd like the doctor to read too.",
+    "consentWhat": "{{name}} will be able to read the parts of this summary you keep, what you'd like to discuss and any notes you tick, for this consultation only.",
+    "consentKeep": "You can take the summary back until the consultation starts. After that it stays in your consultation record.",
+    "share": "Share with {{name}}",
+    "working": "One moment…",
+    "shareFailed": "Couldn't share right now. Please try again.",
+    "takeBack": "Take it back",
+    "locked": "The consultation has started, so the doctor keeps this summary.",
+    "makeFresh": "Make a fresh summary",
+    "notNow": "Not now",
+    "done": "Done",
+    "close": "Close",
+    "offer": {
+      "title": "Share a summary with {{name}}?",
+      "body": "A summary of what you've logged since your last visit helps {{name}} get to know you before the call. You'll see all of it first and choose what to share.",
+      "yes": "Yes, make one",
+      "no": "Not now",
+      "declined": "No summary for now. You can still share one from My bookings.",
+      "shared": "Summary shared with {{name}}"
+    },
+    "booking": {
+      "label": "Summary for this doctor",
+      "shared": "Shared",
+      "make": "Make one"
+    }
   }
 }

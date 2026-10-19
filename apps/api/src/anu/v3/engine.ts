@@ -32,8 +32,9 @@
 
 import { prisma } from '@anuva/database';
 import { z } from 'zod';
-import type { AnuChatV3Response, AnuV3BookingOffer, AnuV3LogOption } from '@anuva/shared';
+import type { AnuChatV3Response, AnuV3BookingOffer, AnuV3LogOption, AnuV3SummaryOffer } from '@anuva/shared';
 import { logger } from '../../logger.js';
+import { consultationsWithSharedSummary } from '../../visitSummary/lifecycle.js';
 import { THREAD_IDLE_MS } from '../engine.js';
 import { sanitizeName } from '../prompt.js';
 import { actionHref } from './actions.js';
@@ -183,6 +184,9 @@ type StoredDecision = {
   log_options?: unknown;
   reminder_offer?: unknown;
   booked?: unknown;
+  /// On a booking confirmation: the app offered to share a visit summary with
+  /// that doctor. `declined` once she tapped "Not now".
+  summary_offer?: unknown;
   event?: unknown;
   /// The model's own fields for the turn (decisionFields), e.g. asks_to_book.
   reply?: unknown;
@@ -229,6 +233,26 @@ function storedLogOptions(decision: StoredDecision): { option: AnuV3LogOption; n
   return Array.isArray(decision.log_options)
     ? (decision.log_options as { option: AnuV3LogOption; name: string }[])
     : [];
+}
+
+type StoredSummaryOffer = { consultation_id: string; specialist_name: string; declined?: boolean };
+
+function storedSummaryOffer(decision: StoredDecision): StoredSummaryOffer | null {
+  const offer = decision.summary_offer as Partial<StoredSummaryOffer> | undefined;
+  return offer && typeof offer.consultation_id === 'string' && typeof offer.specialist_name === 'string'
+    ? (offer as StoredSummaryOffer)
+    : null;
+}
+
+/// The offer as the chat shows it. Shared wins over declined: she may have said
+/// "Not now" here and shared from My bookings later.
+function summaryOfferView(offer: StoredSummaryOffer | null, shared: Set<string>): AnuV3SummaryOffer | null {
+  if (!offer) return null;
+  return {
+    consultationId: offer.consultation_id,
+    specialistName: offer.specialist_name,
+    state: shared.has(offer.consultation_id) ? 'shared' : offer.declined ? 'declined' : 'open',
+  };
 }
 
 type Thread = {
@@ -296,6 +320,13 @@ async function loadThread(userId: string): Promise<Thread> {
     }
     if (decision.reminder_offer === true) {
       notes.push('the app showed a "Set a reminder" button for her medication or supplement reminders');
+    }
+    if (storedSummaryOffer(decision)) {
+      notes.push(
+        `the app showed a card offering to put together a summary of her logs for ${
+          storedSummaryOffer(decision)!.specialist_name
+        }; she reviews it and decides herself whether to share it. ANU does not make, see or send the summary`,
+      );
     }
     if (notes.length > 0) {
       messages.push({ role: 'system', content: `App note on the reply above: ${notes.join('. ')}.` });
@@ -649,7 +680,18 @@ export async function answer(
     'ANU v3 turn served',
   );
 
-  return { turnId, reply, suggestions, source: 'model', escalation, action, booking, logOptions, reminderOffer };
+  return {
+    turnId,
+    reply,
+    suggestions,
+    source: 'model',
+    escalation,
+    action,
+    booking,
+    logOptions,
+    reminderOffer,
+    summaryOffer: null,
+  };
 }
 
 /// After she confirmed a slot and /consultations/book succeeded, ANU writes the
@@ -669,7 +711,16 @@ export async function confirmBooking(
   if (!consultation) return null;
 
   const name = sanitizeName(userName);
-  const [{ messages: thread }, context] = await Promise.all([loadThread(userId), buildRuntimeContext(userId, name)]);
+  const [{ messages: thread }, context, alreadyShared] = await Promise.all([
+    loadThread(userId),
+    buildRuntimeContext(userId, name),
+    consultationsWithSharedSummary(userId, [consultation.id]),
+  ]);
+  // Not the model's choice: every confirmed booking offers the summary, in the app's own words.
+  const summaryOffer: StoredSummaryOffer = {
+    consultation_id: consultation.id,
+    specialist_name: consultation.specialist.name,
+  };
   const event = {
     type: 'booking_confirmed',
     consultation_id: consultation.id,
@@ -727,6 +778,7 @@ export async function confirmBooking(
       escalated: false,
       checks: { first: firstViolations, remaining: remainingViolations },
       models: { reply: v3Env.replyModel() },
+      summary_offer: summaryOffer,
     },
   });
 
@@ -760,7 +812,26 @@ export async function confirmBooking(
     booking: null,
     logOptions: [],
     reminderOffer: false,
+    summaryOffer: summaryOfferView(summaryOffer, alreadyShared),
   };
+}
+
+/// She tapped "Not now" on a summary offer. Recorded on the turn so the card
+/// stays dismissed on reload; she can still share from My bookings. Returns
+/// false when the turn is not hers or carries no offer.
+export async function declineSummaryOffer(userId: string, turnId: string): Promise<boolean> {
+  const turn = await prisma.anuChatTurn.findFirst({
+    where: { id: turnId, userId, mode: V3_MODE },
+    select: { id: true, decision: true },
+  });
+  const decision = (turn?.decision ?? {}) as StoredDecision;
+  const offer = storedSummaryOffer(decision);
+  if (!turn || !offer) return false;
+  await prisma.anuChatTurn.update({
+    where: { id: turn.id },
+    data: { decision: { ...decision, summary_offer: { ...offer, declined: true } } as object },
+  });
+  return true;
 }
 
 /// Her v3 thread, oldest first, for the chat screen to restore.
@@ -778,6 +849,10 @@ export async function history(userId: string) {
       createdAt: true,
     },
   });
+  const offered = rows
+    .map((row) => storedSummaryOffer((row.decision ?? {}) as StoredDecision)?.consultation_id)
+    .filter((id): id is string => Boolean(id));
+  const shared = await consultationsWithSharedSummary(userId, offered);
   return rows.reverse().map((row) => {
     const decision = (row.decision ?? {}) as StoredDecision;
     const stored = storedAction(decision);
@@ -793,6 +868,7 @@ export async function history(userId: string) {
       booking: storedBookingOffer(decision),
       logOptions: storedLogOptions(decision).map((entry) => entry.option),
       reminderOffer: decision.reminder_offer === true,
+      summaryOffer: summaryOfferView(storedSummaryOffer(decision), shared),
       booked: Boolean(decision.booked),
       createdAt: row.createdAt.toISOString(),
     };

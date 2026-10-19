@@ -100,6 +100,16 @@ export function NoteIcon({ size = 18, className, strokeWidth = 1.7 }: IconProps)
   );
 }
 
+/** A sheet with a pulse line: her pre-visit summary. */
+export function SummaryIcon({ size = 18, className, strokeWidth = 1.7 }: IconProps) {
+  return (
+    <svg {...base(size, className)} strokeWidth={strokeWidth}>
+      <path d="M7.5 3h9A2.5 2.5 0 0119 5.5v13a2.5 2.5 0 01-2.5 2.5h-9A2.5 2.5 0 015 18.5v-13A2.5 2.5 0 017.5 3z" />
+      <path d="M8 12.5h2l1.5-3 2 6 1.5-3H16M8.5 7h7" />
+    </svg>
+  );
+}
+
 export function ChevronRightIcon({ size = 18, className, strokeWidth = 1.8 }: IconProps) {
   return (
     <svg {...base(size, className)} strokeWidth={strokeWidth}>

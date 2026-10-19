@@ -8,6 +8,7 @@ import type {
   DoctorConsultationBookingsResponse,
   DoctorDetailedAssessmentResponse,
   DoctorSharedNotesResponse,
+  DoctorVisitSummaryResponse,
   UploadConsultationDocumentResponse,
 } from '@anuva/shared';
 import { consultationDocumentFileName } from '@anuva/shared';
@@ -154,6 +155,11 @@ export async function deleteConsultationDocument(
 /** The notes she chose to share with this consultation — the frozen copies, read-only. */
 export async function fetchSharedNotes(consultationId: string): Promise<DoctorSharedNotesResponse> {
   return apiFetch<DoctorSharedNotesResponse>(`/api/doctor/consultations/${consultationId}/notes`);
+}
+
+/** The summary she shared for this consultation, minus the sections she left out. Null if none. */
+export async function fetchVisitSummary(consultationId: string): Promise<DoctorVisitSummaryResponse> {
+  return apiFetch<DoctorVisitSummaryResponse>(`/api/doctor/consultations/${consultationId}/summary`);
 }
 
 /** The photo a shared note was made from. Fetched as a blob for the same cookie reason as documents. */

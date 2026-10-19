@@ -3,12 +3,13 @@ import type { DoctorConsultationBooking } from '@anuva/shared';
 import { useNavigate } from 'react-router-dom';
 import { useDoctorIdentity } from '../auth/identity';
 import { Avatar, PageHeading } from '../shell/AppShell';
-import { ClipboardIcon, FileIcon, NoteIcon, PhoneIcon } from '../shell/icons';
+import { ClipboardIcon, FileIcon, NoteIcon, PhoneIcon, SummaryIcon } from '../shell/icons';
 import { Card, EmptyState, ErrorNote, Pill, Segmented, SkeletonCard, StatTile } from '../shell/ui';
 import { fetchDoctorBookings } from './api';
 import { ConsultationDocumentsSheet } from './ConsultationDocumentsSheet';
 import { DetailedAssessmentSheet } from './DetailedAssessmentSheet';
 import { SharedNotesSheet } from './SharedNotesSheet';
+import { VisitSummarySheet } from './VisitSummarySheet';
 import { formatTimeRange } from './dateTime';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -69,6 +70,7 @@ function BookingCard({
   onOpenDocuments,
   onOpenAssessment,
   onOpenNotes,
+  onOpenSummary,
 }: {
   booking: DoctorConsultationBooking;
   /** The admin login sees every doctor's list, so the specialist has to be named on the card. */
@@ -78,6 +80,7 @@ function BookingCard({
   onOpenDocuments: (booking: DoctorConsultationBooking) => void;
   onOpenAssessment: (booking: DoctorConsultationBooking) => void;
   onOpenNotes: (booking: DoctorConsultationBooking) => void;
+  onOpenSummary: (booking: DoctorConsultationBooking) => void;
 }) {
   const patientLabel = booking.patientName?.trim() || 'Patient name unavailable';
   const canStartCall = booking.status === 'confirmed' && booking.callStatus !== 'ended';
@@ -175,6 +178,16 @@ function BookingCard({
         >
           <NoteIcon />
         </button>
+
+        {/* The pre-visit summary she shared, with only the sections she chose to include. */}
+        <button
+          type="button"
+          onClick={() => onOpenSummary(booking)}
+          aria-label="View her pre-visit summary"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border-default bg-surface-raised text-primary"
+        >
+          <SummaryIcon />
+        </button>
       </div>
     </Card>
   );
@@ -191,6 +204,7 @@ export function DoctorBookingsRoute() {
   const [documentsFor, setDocumentsFor] = useState<DoctorConsultationBooking | null>(null);
   const [assessmentFor, setAssessmentFor] = useState<DoctorConsultationBooking | null>(null);
   const [notesFor, setNotesFor] = useState<DoctorConsultationBooking | null>(null);
+  const [summaryFor, setSummaryFor] = useState<DoctorConsultationBooking | null>(null);
   // Recomputed on every load so "In 20 min" does not go stale behind a long-open tab.
   const [now, setNow] = useState(() => Date.now());
 
@@ -315,6 +329,7 @@ export function DoctorBookingsRoute() {
             onOpenDocuments={setDocumentsFor}
             onOpenAssessment={setAssessmentFor}
             onOpenNotes={setNotesFor}
+            onOpenSummary={setSummaryFor}
           />
         ))}
       </div>
@@ -343,6 +358,14 @@ export function DoctorBookingsRoute() {
           consultationId={notesFor.consultationId}
           patientLabel={notesFor.patientName?.trim() || 'this patient'}
           onClose={() => setNotesFor(null)}
+        />
+      ) : null}
+
+      {summaryFor ? (
+        <VisitSummarySheet
+          consultationId={summaryFor.consultationId}
+          patientLabel={summaryFor.patientName?.trim() || 'this patient'}
+          onClose={() => setSummaryFor(null)}
         />
       ) : null}
     </>

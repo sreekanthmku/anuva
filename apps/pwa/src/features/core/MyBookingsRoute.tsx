@@ -12,6 +12,8 @@ import type {
 import { shareOrDownloadFile } from '../../shared/lib/shareFile';
 import { fetchSharedNotes } from './notes/api';
 import { ShareNotesSheet } from './notes/ShareNotesSheet';
+import { fetchSharedSummary } from './visitSummary/api';
+import { VisitSummarySheet } from './visitSummary/VisitSummarySheet';
 import {
   cancelConsultation,
   fetchConsultationDocumentFile,
@@ -576,6 +578,48 @@ function NotesForBooking({ booking }: { booking: MyConsultation }) {
   );
 }
 
+/** The summary of her logs this doctor has, or the way to make one. */
+function SummaryForBooking({ booking }: { booking: MyConsultation }) {
+  const { t } = useTranslation();
+  const [shared, setShared] = useState<boolean | null>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchSharedSummary(booking.consultationId)
+      .then((summary) => {
+        if (!cancelled) setShared(summary !== null);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [booking.consultationId]);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-2 flex min-h-11 w-full items-center justify-between rounded-[14px] bg-surface-container-low px-3 py-2.5 text-left text-[13px]"
+      >
+        <span className="font-semibold text-on-surface">{t('visitSummary.booking.label')}</span>
+        <span className="text-primary">
+          {shared ? t('visitSummary.booking.shared') : t('visitSummary.booking.make')} →
+        </span>
+      </button>
+      {open ? (
+        <VisitSummarySheet
+          consultationId={booking.consultationId}
+          specialistName={booking.specialistName}
+          onClose={() => setOpen(false)}
+          onShared={setShared}
+        />
+      ) : null}
+    </>
+  );
+}
+
 export default function MyBookingsRoute() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -761,7 +805,10 @@ export default function MyBookingsRoute() {
               ) : null}
 
               {tab === 'upcoming' && booking.status !== 'cancelled' ? (
-                <NotesForBooking booking={booking} />
+                <>
+                  <NotesForBooking booking={booking} />
+                  <SummaryForBooking booking={booking} />
+                </>
               ) : null}
 
               {booking.documentCount > 0 ? (

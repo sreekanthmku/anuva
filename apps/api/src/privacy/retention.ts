@@ -6,6 +6,7 @@
 //   - consultation records leaving after the NMC three-year floor rather than living forever
 //   - sign-in IPs cut down to their network once LOGIN_IP_RETENTION_DAYS have passed
 //   - note drafts she never confirmed, recording or photo included, gone after a day
+//   - visit summary drafts she never shared, gone after a day
 // plus one housekeeping sweep: closing the login history of sessions that lapsed without a logout.
 //
 // Modelled on the support-ticket purge: retention is stamped on the row at the moment the promise
@@ -21,6 +22,7 @@ import { eraseRecordings, eraseScope } from './erasure.js';
 import { unlinkExportFile } from './export.js';
 import { closeLapsedLoginSessions, truncateExpiredLoginIps } from '../loginHistory.js';
 import { purgeReleasedNotes, purgeStaleNoteDrafts } from '../healthNotes/lifecycle.js';
+import { purgeStaleSummaryDrafts } from '../visitSummary/lifecycle.js';
 import fs from 'node:fs/promises';
 
 const log = logger.child({ module: 'privacy-retention' });
@@ -166,6 +168,15 @@ export async function runHealthNoteJobs(): Promise<void> {
   }
 }
 
+/** Visit summaries she built but never shared. A shared one leaves with its consultation. */
+export async function runVisitSummaryJobs(): Promise<void> {
+  try {
+    await purgeStaleSummaryDrafts();
+  } catch (error) {
+    log.error({ err: error }, 'Visit summary sweep failed');
+  }
+}
+
 /** Hourly, so an expired session's history row is closed within the hour it lapsed. */
 export async function runLoginHistoryJobs(): Promise<void> {
   try {
@@ -194,6 +205,7 @@ export function startPrivacyRetentionJobs(): void {
   // Hourly, so a draft's 24 hours do not stretch to 48. Released notes ride along: the clinical
   // purge above runs once a day, and they are swept within the hour after it.
   cron.schedule('45 * * * *', () => void runHealthNoteJobs(), { timezone: TZ });
+  cron.schedule('55 * * * *', () => void runVisitSummaryJobs(), { timezone: TZ });
 
   log.info({ timezone: TZ }, 'Privacy retention jobs scheduled');
 }

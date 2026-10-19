@@ -9,11 +9,13 @@ import type {
   AnuV3Action,
   AnuV3BookingOffer,
   AnuV3LogOption,
+  AnuV3SummaryOffer,
 } from '@anuva/shared';
 import { apiFetch } from '../../shared/lib/api';
 import { BookingCard } from './anuV3/BookingCard';
 import { LogOptions } from './anuV3/LogOptions';
 import { ReminderOffer } from './anuV3/ReminderOffer';
+import { SummaryOfferCard } from './anuV3/SummaryOfferCard';
 import { BottomNav } from './components/BottomNav';
 import { remainingDelay, replyDelay, wait } from './chatPacing';
 
@@ -31,6 +33,8 @@ type ChatMessage = {
   booking?: AnuV3BookingOffer | null;
   logOptions?: AnuV3LogOption[];
   reminderOffer?: boolean;
+  /// Under a booking confirmation: the offer to share a summary with that doctor.
+  summaryOffer?: AnuV3SummaryOffer | null;
   booked?: boolean;
 };
 
@@ -45,6 +49,7 @@ function v3Message(data: AnuChatV3Response, booked = false): ChatMessage {
     booking: data.booking,
     logOptions: data.logOptions,
     reminderOffer: data.reminderOffer,
+    summaryOffer: data.summaryOffer,
     booked,
   };
 }
@@ -115,6 +120,7 @@ export default function AnuChatRoute() {
                 booking: turn.booking,
                 logOptions: turn.logOptions,
                 reminderOffer: turn.reminderOffer,
+                summaryOffer: turn.summaryOffer,
                 booked: turn.booked,
               },
             ]),
@@ -407,6 +413,9 @@ export default function AnuChatRoute() {
               )}
               {message.logOptions && message.logOptions.length > 0 && <LogOptions options={message.logOptions} />}
               {message.reminderOffer && <ReminderOffer />}
+              {message.summaryOffer && (
+                <SummaryOfferCard offer={message.summaryOffer} turnId={message.turnId ?? null} />
+              )}
               {message.action && (
                 <button
                   type="button"

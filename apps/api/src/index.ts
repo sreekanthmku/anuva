@@ -142,6 +142,7 @@ import {
   anuChatHistoryResponseSchema,
   anuChatV3ResponseSchema,
   anuChatV3HistoryResponseSchema,
+  anuChatV3SummaryOfferBodySchema,
   anuV3BookingOptionsResponseSchema,
   anuChatV3BookingBodySchema,
   libraryFeedQuerySchema,
@@ -235,6 +236,7 @@ import {
   createHealthNotesRouter,
 } from './healthNotes/router.js';
 import { consultationPublishGrant, consultationVideoEnabled } from './consultationCallMedia.js';
+import { createDoctorVisitSummaryRouter, createVisitSummaryRouter } from './visitSummary/router.js';
 import { startMedicationReminderJob } from './medication/jobs.js';
 import { startSupportRetentionJob } from './supportRetention.js';
 import { eraseScope } from './privacy/erasure.js';
@@ -260,6 +262,7 @@ import { answer as anuAnswer } from './anu/index.js';
 import {
   answer as anuV3Answer,
   confirmBooking as anuV3ConfirmBooking,
+  declineSummaryOffer as anuV3DeclineSummaryOffer,
   history as anuV3History,
   V3_MODE,
 } from './anu/v3/engine.js';
@@ -487,6 +490,21 @@ app.use(
 app.use(
   '/doctor/consultations/:id/notes',
   createDoctorNotesRouter({
+    resolveConsultationScope: (req) => doctorConsultationScope(requireDoctorIdentity(req)),
+  }),
+);
+
+// Visit summary — self-contained module under apps/api/src/visitSummary/. Her data since her last
+// visit, built as a draft she reviews, shared with one consultation's doctor only with her consent.
+app.use(
+  '/consultations/:id/summary',
+  createVisitSummaryRouter({
+    resolveUserId: async (req) => (await requireCurrentUser(req)).id,
+  }),
+);
+app.use(
+  '/doctor/consultations/:id/summary',
+  createDoctorVisitSummaryRouter({
     resolveConsultationScope: (req) => doctorConsultationScope(requireDoctorIdentity(req)),
   }),
 );
@@ -4666,6 +4684,20 @@ app.post('/anu/v3/chat/booking', async (req, res, next) => {
       throw new HttpError(404, 'Booking not found.');
     }
     res.json(anuChatV3ResponseSchema.parse(result));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// She tapped "Not now" on the summary offer under a booking confirmation.
+app.post('/anu/v3/chat/summary-offer/decline', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { turnId } = anuChatV3SummaryOfferBodySchema.parse(req.body);
+    if (!(await anuV3DeclineSummaryOffer(user.id, turnId))) {
+      throw new HttpError(404, 'Turn not found.');
+    }
+    res.json({ ok: true });
   } catch (e) {
     next(e);
   }

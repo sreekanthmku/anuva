@@ -40,6 +40,7 @@ import {
   grantNoteAiConsent,
   readNoteAiConsent,
   removeNote,
+  shareNotesWithConsultation,
   withdrawNoteAiConsent,
 } from './lifecycle.js';
 import {
@@ -109,7 +110,7 @@ type NoteRow = {
  * She can take a shared note back until the doctor could have read it in the consultation: before
  * its start time, and before the doctor opened the call.
  */
-function canRevoke(consultation: ConsultationForShare, now: Date): boolean {
+export function canRevoke(consultation: ConsultationForShare, now: Date): boolean {
   return (
     (consultation.status === 'pending' || consultation.status === 'confirmed') &&
     consultation.scheduledAt > now &&
@@ -604,62 +605,28 @@ export function createConsultationNotesRouter(deps: HealthNotesRouterDeps): Rout
         return;
       }
 
-      const noteIds = [...new Set(body.noteIds)];
-      const notes = await prisma.healthNote.findMany({
-        where: { id: { in: noteIds }, userId, deletedAt: null },
-        select: {
-          id: true,
-          status: true,
-          body: true,
-          attachments: { where: { kind: 'image' }, select: { id: true } },
-        },
+      const outcome = await shareNotesWithConsultation({
+        userId,
+        consultationId: consultation.id,
+        noteIds: body.noteIds,
+        consentTextVersion: body.consentTextVersion,
+        updatable: canRevoke(consultation, new Date()),
       });
-      if (notes.length !== noteIds.length) {
-        notFound(res, NOTE_TEXT.noteNotFound);
+      if (!outcome.ok) {
+        if (outcome.reason === 'not_found') {
+          notFound(res, NOTE_TEXT.noteNotFound);
+        } else if (outcome.reason === 'not_ready') {
+          res.status(409).json({ error: NOTE_TEXT.noteNotReady });
+        } else {
+          res.status(409).json({
+            error: fill(NOTE_TEXT.tooManyShared, { count: HEALTH_NOTE_MAX_SHARED_PER_CONSULTATION }),
+          });
+        }
         return;
-      }
-      // A photo-only note is shared as its photo, with no text.
-      if (notes.some((note) => note.status !== 'ready' || (!note.body && note.attachments.length === 0))) {
-        res.status(409).json({ error: NOTE_TEXT.noteNotReady });
-        return;
-      }
-
-      const alreadyShared = await prisma.healthNoteShare.findMany({
-        where: { consultationId: consultation.id, revokedAt: null },
-        select: { noteId: true },
-      });
-      const total = new Set([...alreadyShared.map((share) => share.noteId), ...noteIds]).size;
-      if (total > HEALTH_NOTE_MAX_SHARED_PER_CONSULTATION) {
-        res.status(409).json({
-          error: fill(NOTE_TEXT.tooManyShared, { count: HEALTH_NOTE_MAX_SHARED_PER_CONSULTATION }),
-        });
-        return;
-      }
-
-      const live = new Set(alreadyShared.map((share) => share.noteId));
-      const updatable = canRevoke(consultation, new Date());
-      const now = new Date();
-      for (const note of notes) {
-        if (live.has(note.id) && !updatable) continue;
-        await prisma.healthNoteShare.upsert({
-          where: { noteId_consultationId: { noteId: note.id, consultationId: consultation.id } },
-          create: {
-            noteId: note.id,
-            consultationId: consultation.id,
-            snapshotBody: note.body ?? '',
-            consentTextVersion: body.consentTextVersion,
-          },
-          update: {
-            snapshotBody: note.body ?? '',
-            consentTextVersion: body.consentTextVersion,
-            consentedAt: now,
-            revokedAt: null,
-          },
-        });
       }
 
       req.log.info(
-        { consultationId: consultation.id, notes: notes.length, consentTextVersion: body.consentTextVersion },
+        { consultationId: consultation.id, notes: outcome.shared, consentTextVersion: body.consentTextVersion },
         'Health notes shared with consultation',
       );
       res.status(201).json(await sharedNotes(consultation));

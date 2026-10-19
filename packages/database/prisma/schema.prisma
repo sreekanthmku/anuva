@@ -88,6 +88,7 @@ model User {
   familySupportActions FamilySupportAction[]
   healthNotes          HealthNote[]
   consentRecords       ConsentRecord[]
+  visitSummaries       VisitSummary[]
 }
 
 // ─────────────────────────────────────────────
@@ -943,6 +944,7 @@ enum DoctorNotificationType {
   consultation_cancelled
   consultation_rescheduled
   question_asked
+  visit_summary_shared
 }
 
 /// The in-app notification feed for one doctor. Written alongside every push so the portal can
@@ -1046,6 +1048,7 @@ model Consultation {
   call         ConsultationCall?
   documents    ConsultationDocument[]
   noteShares   HealthNoteShare[]
+  visitSummaries VisitSummary[]
   feedback     ConsultationFeedback?
 
   @@index([userId])
@@ -2094,4 +2097,50 @@ model ConsentRecord {
   withdrawnAt DateTime?
 
   @@index([userId, purpose, grantedAt])
+}
+
+// ─────────────────────────────────────────────
+// Visit summary — her data since her last visit, shared with one consultation's doctor
+// ─────────────────────────────────────────────
+
+enum VisitSummaryStatus {
+  /// Built for her to review. Nobody but her sees it; purged if she never shares it.
+  draft
+  /// She agreed to the sharing notice and the doctor of `consultationId` can read it.
+  shared
+  /// She took it back before the consultation began, or replaced it with a newer one.
+  revoked
+}
+
+/// A summary of what she logged between her last completed consultation (or her first log) and
+/// now, built for one booked consultation. `data` holds the numbers and stored answers, not
+/// sentences: it is rendered on read, in her language for her and in the doctor's for the doctor,
+/// so both read the same frozen record. Sharing freezes the very row she reviewed; a new draft
+/// is a new row, so what a doctor saw is never rewritten.
+model VisitSummary {
+  id                  String             @id @default(cuid())
+  userId              String
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultationId      String
+  consultation        Consultation       @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  /// The completed consultation the window starts from. Null when she has had none.
+  sinceConsultationId String?
+  windowStart         DateTime
+  windowEnd           DateTime
+  /// The builder's shape version, so a renderer can still read an older frozen summary.
+  dataVersion         Int
+  data                Json
+  /// Section keys she switched off before sharing. The doctor never receives them.
+  excludedSections    String[]
+  /// "What I want to discuss", in her own words.
+  patientNote         String?
+  status              VisitSummaryStatus @default(draft)
+  consentTextVersion  String?
+  sharedAt            DateTime?
+  revokedAt           DateTime?
+  createdAt           DateTime           @default(now())
+
+  @@index([consultationId, status])
+  @@index([userId, status, createdAt])
+  @@index([status, createdAt])
 }

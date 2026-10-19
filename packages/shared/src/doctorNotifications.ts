@@ -5,6 +5,7 @@ export const doctorNotificationTypeSchema = z.enum([
   'consultation_cancelled',
   'consultation_rescheduled',
   'question_asked',
+  'visit_summary_shared',
 ]);
 
 export type DoctorNotificationType = z.infer<typeof doctorNotificationTypeSchema>;

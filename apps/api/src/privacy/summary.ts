@@ -49,6 +49,7 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
     familyMembers,
     familySupportActions,
     notes,
+    visitSummaries,
   ] = await Promise.all([
     prisma.chatMessage.count({ where: { thread: { userId } } }),
     prisma.anuChatTurn.count({ where: { userId } }),
@@ -66,6 +67,7 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
     prisma.familyMember.count({ where: { userId } }),
     prisma.familySupportAction.count({ where: { userId } }),
     prisma.healthNote.count({ where: { userId, deletedAt: null } }),
+    prisma.visitSummary.count({ where: { userId, status: { not: 'draft' } } }),
   ]);
 
   return [
@@ -110,6 +112,13 @@ export async function buildPrivacyCategories(userId: string): Promise<PrivacyDat
       count: notes,
       purpose: CATEGORY_TEXT.notes.purpose,
       retention: fill(CATEGORY_TEXT.notes.retention, { years: CLINICAL_RECORD_RETENTION_YEARS }),
+    },
+    {
+      key: 'visitSummaries',
+      label: CATEGORY_TEXT.visitSummaries.label,
+      count: visitSummaries,
+      purpose: CATEGORY_TEXT.visitSummaries.purpose,
+      retention: fill(CATEGORY_TEXT.visitSummaries.retention, { years: CLINICAL_RECORD_RETENTION_YEARS }),
     },
     {
       key: 'assessments',
@@ -186,6 +195,13 @@ const CATEGORY_TEXT = copy('privacy.categories', {
       'Notes you typed, recorded or photographed, and which doctor you shared each one with. Only the notes you choose to share are seen by a doctor.',
     retention:
       'A recording is deleted once you save its text. A note you shared stays in that consultation’s record, which is kept {{years}} years.',
+  },
+  visitSummaries: {
+    label: 'Summaries shared with doctors',
+    purpose:
+      'Summaries of your logs that you chose to share with a doctor before a consultation, and which parts you left out.',
+    retention:
+      'A summary you did not share is deleted after a day. One you shared stays in that consultation’s record, which is kept {{years}} years.',
   },
   assessments: {
     label: 'Assessments',

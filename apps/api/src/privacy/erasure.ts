@@ -23,6 +23,7 @@ import {
 import { logger } from '../logger.js';
 import { anonymizeSupportTicketsForUser } from '../supportRetention.js';
 import { eraseHealthNotes } from '../healthNotes/lifecycle.js';
+import { eraseVisitSummaries } from '../visitSummary/lifecycle.js';
 import { unlinkExportFile } from './export.js';
 
 const log = logger.child({ module: 'privacy-erasure' });
@@ -163,11 +164,13 @@ export async function eraseTracker(userId: string): Promise<number> {
  * Detaches what cannot simply be deleted. Support threads may be mid-conversation with a human and
  * carry her words; an unanswered anonymous question is read by nobody and goes; an answered one
  * stays, because other women are reading the expert reply, but it stops pointing at her. Her notes
- * go too, except the frozen copy of one she shared with a consultation, which is the doctor's record.
+ * go too, except the frozen copy of one she shared with a consultation, which is the doctor's record;
+ * visit summaries the same way.
  */
 async function anonymizeRetainedContent(userId: string): Promise<number> {
   const tickets = await anonymizeSupportTicketsForUser(userId);
   const notes = await eraseHealthNotes(userId);
+  const summaries = await eraseVisitSummaries(userId);
 
   const { count: pendingQuestions } = await prisma.anonymousQuestion.deleteMany({
     where: { userId, answeredAt: null },
@@ -178,7 +181,7 @@ async function anonymizeRetainedContent(userId: string): Promise<number> {
     data: { userId: null },
   });
 
-  return tickets + notes + pendingQuestions + answeredQuestions;
+  return tickets + notes + summaries + pendingQuestions + answeredQuestions;
 }
 
 /**

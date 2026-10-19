@@ -142,6 +142,25 @@ export async function notifyDoctorConsultationCancelled(args: {
   });
 }
 
+/** She shared a pre-visit summary with this consultation. Says only that it exists, never what is in it. */
+export async function notifyDoctorVisitSummaryShared(args: {
+  specialistId: string;
+  consultationId: string;
+  patientName: string | null;
+  scheduledAt: Date;
+}): Promise<void> {
+  const patient = args.patientName?.trim() || 'A patient';
+
+  await createDoctorNotification({
+    specialistId: args.specialistId,
+    type: 'visit_summary_shared',
+    title: 'Pre-visit summary shared',
+    body: `${patient} shared a summary for the consultation on ${formatConsultationWhen(args.scheduledAt)}.`,
+    url: '/',
+    consultationId: args.consultationId,
+  });
+}
+
 /**
  * A reschedule can move the booking to a different doctor, so both sides are told: the doctor
  * losing the slot sees it leave their day, the doctor gaining it sees it arrive.

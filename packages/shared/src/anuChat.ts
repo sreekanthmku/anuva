@@ -122,6 +122,17 @@ export const anuV3LogOptionSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('quick'), symptom: z.enum(['anxiety', 'chills', 'irritability']) }),
 ]);
 
+/// Shown under ANU's booking confirmation: would she like to share a summary of
+/// her data since her last visit with this doctor? Added by the app, not chosen
+/// by the model, so it is always there after a booking and never anywhere else.
+/// `state` is read back on reload: `shared` once a summary is with the doctor,
+/// `declined` once she tapped "Not now".
+export const anuV3SummaryOfferSchema = z.object({
+  consultationId: z.string(),
+  specialistName: z.string(),
+  state: z.enum(['open', 'shared', 'declined']),
+});
+
 export const anuChatV3ResponseSchema = z.object({
   /// The recorded turn, so a booking made from this reply's booking card can be tied
   /// back to it. Null only when the audit write failed.
@@ -140,6 +151,7 @@ export const anuChatV3ResponseSchema = z.object({
   /// Show a "Set a reminder" button. It opens the medication reminder editor
   /// (or her list, when she already has reminders); she sets it up herself.
   reminderOffer: z.boolean(),
+  summaryOffer: anuV3SummaryOfferSchema.nullable(),
 });
 
 /// Sent after she confirmed a time in the booking card and /consultations/book
@@ -148,6 +160,11 @@ export const anuChatV3BookingBodySchema = z.object({
   consultationId: z.string().min(1),
   /// The turn whose booking card she booked from, so it can show as booked.
   turnId: z.string().min(1).optional(),
+});
+
+/// She tapped "Not now" on a summary offer; the card stays dismissed on reload.
+export const anuChatV3SummaryOfferBodySchema = z.object({
+  turnId: z.string().min(1),
 });
 
 export const anuChatV3HistoryTurnSchema = z.object({
@@ -163,6 +180,7 @@ export const anuChatV3HistoryTurnSchema = z.object({
   booking: anuV3BookingOfferSchema.nullable(),
   logOptions: z.array(anuV3LogOptionSchema),
   reminderOffer: z.boolean(),
+  summaryOffer: anuV3SummaryOfferSchema.nullable(),
   /// She has since booked from this turn's booking card.
   booked: z.boolean(),
   createdAt: z.string(),
@@ -180,6 +198,8 @@ export type AnuV3BookingDoctor = z.infer<typeof anuV3BookingDoctorSchema>;
 export type AnuV3BookingOptionsResponse = z.infer<typeof anuV3BookingOptionsResponseSchema>;
 export type AnuV3LogOption = z.infer<typeof anuV3LogOptionSchema>;
 export type AnuChatV3BookingBody = z.infer<typeof anuChatV3BookingBodySchema>;
+export type AnuV3SummaryOffer = z.infer<typeof anuV3SummaryOfferSchema>;
+export type AnuChatV3SummaryOfferBody = z.infer<typeof anuChatV3SummaryOfferBodySchema>;
 export type AnuChatV3Response = z.infer<typeof anuChatV3ResponseSchema>;
 export type AnuChatV3HistoryTurn = z.infer<typeof anuChatV3HistoryTurnSchema>;
 export type AnuChatV3HistoryResponse = z.infer<typeof anuChatV3HistoryResponseSchema>;

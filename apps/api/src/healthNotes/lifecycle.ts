@@ -6,7 +6,12 @@
 // is purged. A note nobody holds a copy of is deleted outright, files first.
 
 import { prisma } from '@anuva/database';
-import { HEALTH_NOTE_DRAFT_TTL_HOURS, NOTE_AI_CONSENT_VERSION, type NoteAiConsent } from '@anuva/shared';
+import {
+  HEALTH_NOTE_DRAFT_TTL_HOURS,
+  HEALTH_NOTE_MAX_SHARED_PER_CONSULTATION,
+  NOTE_AI_CONSENT_VERSION,
+  type NoteAiConsent,
+} from '@anuva/shared';
 import { logger } from '../logger.js';
 import { unlinkNoteFile } from './storage.js';
 
@@ -60,6 +65,70 @@ export async function removeNote(noteId: string): Promise<'deleted' | 'kept'> {
   // Revoked shares cascade with the note: the doctor no longer sees them, so there is nothing to keep.
   await prisma.healthNote.delete({ where: { id: noteId } });
   return 'deleted';
+}
+
+export type ShareNotesOutcome =
+  | { ok: true; shared: number }
+  | { ok: false; reason: 'not_found' | 'not_ready' | 'too_many' };
+
+/**
+ * Shares her chosen notes with one consultation, freezing each text as it is now and recording the
+ * notice she agreed to on every share. Used by Notes and by the visit summary, which shares notes
+ * under its own notice. Sharing a note again updates the copy only while `updatable` — before the
+ * consultation begins; after that the doctor's copy stands. The caller has checked the consultation
+ * is hers and still open.
+ */
+export async function shareNotesWithConsultation(args: {
+  userId: string;
+  consultationId: string;
+  noteIds: string[];
+  consentTextVersion: string;
+  updatable: boolean;
+}): Promise<ShareNotesOutcome> {
+  const noteIds = [...new Set(args.noteIds)];
+  const notes = await prisma.healthNote.findMany({
+    where: { id: { in: noteIds }, userId: args.userId, deletedAt: null },
+    select: {
+      id: true,
+      status: true,
+      body: true,
+      attachments: { where: { kind: 'image' }, select: { id: true } },
+    },
+  });
+  if (notes.length !== noteIds.length) return { ok: false, reason: 'not_found' };
+  // A photo-only note is shared as its photo, with no text.
+  if (notes.some((note) => note.status !== 'ready' || (!note.body && note.attachments.length === 0))) {
+    return { ok: false, reason: 'not_ready' };
+  }
+
+  const alreadyShared = await prisma.healthNoteShare.findMany({
+    where: { consultationId: args.consultationId, revokedAt: null },
+    select: { noteId: true },
+  });
+  const total = new Set([...alreadyShared.map((share) => share.noteId), ...noteIds]).size;
+  if (total > HEALTH_NOTE_MAX_SHARED_PER_CONSULTATION) return { ok: false, reason: 'too_many' };
+
+  const live = new Set(alreadyShared.map((share) => share.noteId));
+  const now = new Date();
+  for (const note of notes) {
+    if (live.has(note.id) && !args.updatable) continue;
+    await prisma.healthNoteShare.upsert({
+      where: { noteId_consultationId: { noteId: note.id, consultationId: args.consultationId } },
+      create: {
+        noteId: note.id,
+        consultationId: args.consultationId,
+        snapshotBody: note.body ?? '',
+        consentTextVersion: args.consentTextVersion,
+      },
+      update: {
+        snapshotBody: note.body ?? '',
+        consentTextVersion: args.consentTextVersion,
+        consentedAt: now,
+        revokedAt: null,
+      },
+    });
+  }
+  return { ok: true, shared: notes.length };
 }
 
 /** Account erasure: every note goes, except the shared copies a doctor holds. */

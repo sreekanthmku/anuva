@@ -84,6 +84,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     familyMembers,
     healthNotes,
     consentRecords,
+    visitSummaries,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -273,6 +274,25 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
       select: { purpose: true, textVersion: true, grantedAt: true, withdrawnAt: true },
       orderBy: { grantedAt: 'desc' },
     }),
+    // Summaries she shared or took back, with exactly what was frozen. Drafts are a day old at most
+    // and were never seen by anyone, so they are left out.
+    prisma.visitSummary.findMany({
+      where: { userId, status: { not: 'draft' } },
+      select: {
+        consultationId: true,
+        status: true,
+        windowStart: true,
+        windowEnd: true,
+        data: true,
+        excludedSections: true,
+        patientNote: true,
+        consentTextVersion: true,
+        sharedAt: true,
+        revokedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: MAX_ROWS_PER_COLLECTION,
+    }),
   ]);
 
   return {
@@ -313,6 +333,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     consultations,
     consentsGiven: { callRecording: callConsents, other: consentRecords },
     notes: healthNotes,
+    visitSummaries,
     chat: { threads: chatThreads, anuTurns },
     anonymousQuestions: questions,
     supportRequests: tickets,

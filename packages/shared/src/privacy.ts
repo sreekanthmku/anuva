@@ -109,6 +109,9 @@ export const ERASURE_ANONYMIZED_MODELS = [
   // consultation, whose frozen copy is that doctor's clinical record. Her own text on it is cleared
   // and the row waits out the consultation's retention clock.
   'healthNote',
+  // Drafts go. A summary she shared is that doctor's record of what she brought to the
+  // consultation, so it stays with the consultation and leaves when the consultation is purged.
+  'visitSummary',
 ] as const;
 
 /**

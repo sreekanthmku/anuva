@@ -4,7 +4,8 @@
 --
 -- Run after any `db push` against a fresh database: `pnpm db:indexes` (the root `db:push` script
 -- already chains it). The deployed database reaches the same state through the
--- 20260827120000_family_sharing and 20260917120000_family_nudges migrations.
+-- 20260827120000_family_sharing, 20260917120000_family_nudges and 20261019120000_visit_summary
+-- migrations.
 --
 -- Every statement here must be idempotent.
 
@@ -22,3 +23,8 @@ DROP INDEX IF EXISTS "FamilyMember_single_active";
 -- One pending family invite per woman.
 CREATE UNIQUE INDEX IF NOT EXISTS "FamilyInvite_single_pending"
   ON "FamilyInvite"("userId") WHERE "status" = 'pending';
+
+-- One shared visit summary per consultation. Sharing a newer one revokes the old one in the same
+-- transaction; this catches two shares racing each other. Also in 20261019120000_visit_summary.
+CREATE UNIQUE INDEX IF NOT EXISTS "VisitSummary_one_shared_per_consultation"
+  ON "VisitSummary"("consultationId") WHERE "status" = 'shared';
