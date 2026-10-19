@@ -258,7 +258,7 @@ const AUTHORED_ARTICLES: Authored[] = [
       'Support should make things easier, not turn her cycle into a family conversation she has not agreed to.',
     ],
     partnerAction:
-      'Offer to buy her preferred period products or help arrange an appointment if she wants. Do not ask for access to her cycle logs.',
+      'Offer to buy her preferred period products or help arrange an appointment if she wants. If she chooses to share her period updates with you, they appear on your Today screen. Do not ask for more than she shares.',
     teenAction:
       'Treat period products as ordinary essentials. Avoid jokes about leaks, stains or bathroom breaks.',
     saying: 'Would you like me to pick anything up or help with something practical?',

@@ -85,6 +85,7 @@ export async function buildFamilyActivity(userId: string): Promise<FamilyActivit
       phone: true,
       createdAt: true,
       lastSeenAt: true,
+      periodSharing: true,
     },
   });
 
@@ -99,6 +100,7 @@ export async function buildFamilyActivity(userId: string): Promise<FamilyActivit
     maskedPhone: maskPhone(member.phone),
     joinedAt: member.createdAt.toISOString(),
     lastSeenAt: member.lastSeenAt.toISOString(),
+    periodSharing: member.periodSharing,
   }));
 
   const firstNames = new Map(members.map((member) => [member.id, firstNameOf(member.name)]));

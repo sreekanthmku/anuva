@@ -125,6 +125,8 @@ export const ERASURE_RETAINED_MODELS = [
   // Proof of what she consented to, and when — the record a fiduciary must be able to produce. It
   // holds a purpose and a wording version, nothing she said.
   'consentRecord',
+  // The same for what she chose to share with her family, and when she changed her mind.
+  'familyShareConsent',
   'otpChallenge',
   'dataDeletionRequest',
   'dataExportRequest',

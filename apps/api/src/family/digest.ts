@@ -9,17 +9,21 @@ import type {
   FamilyMetricKey,
   FamilyPrivacyResponse,
   FamilyTodayResponse,
+  CycleStateResponse,
+  FamilyCard,
   ReportDeltaTone,
   ReportRing,
 } from '@anuva/shared';
 import { buildSummary } from '../report/build.js';
+import { loadCycleState } from '../cycleData.js';
 import { summaryAnchor } from '../report/calendar.js';
 import {
   CONSULTATION_LABEL,
   EDUCATION_BY_METRIC,
   EDUCATION_GENERAL,
   FAMILY_METRIC_KEYS,
-  FAMILY_PRIVATE_ITEMS,
+  FAMILY_CYCLE_TEXT,
+  familyPrivateItems,
   familySharedScopes,
   LEARN_NUDGES,
   LEARN_TIPS,
@@ -351,6 +355,63 @@ async function buildUpcoming(userId: string) {
   };
 }
 
+/** Within this many days of the predicted start, the card says "may start in the next few days". */
+const DUE_SOON_DAYS = 3;
+
+/**
+ * The "Her cycle" card, from her cycle state. Pure, so the disclosure rules are pinned by tests.
+ *
+ * Says one of three things: she is on her period (and which day), it may start in the next few
+ * days, or roughly when it is next due. Everything else is null — and deliberately so for a period
+ * that is overdue or a prediction that has passed: "late" read by a family member points straight
+ * at pregnancy, so the card simply has nothing to say, exactly as when she has not logged at all.
+ * Never flow, fertile window or ovulation, whatever the state holds.
+ */
+export function buildCycleCard(
+  state: Pick<
+    CycleStateResponse,
+    'status' | 'phase' | 'currentCycleDay' | 'daysUntilNextPeriod' | 'nextPeriodDate' | 'pendingPeriodConfirm'
+  >,
+): FamilyCard | null {
+  if (state.status !== 'active' || state.pendingPeriodConfirm) return null;
+
+  if (state.phase === 'period' && state.currentCycleDay != null) {
+    return {
+      label: FAMILY_CYCLE_TEXT.label,
+      headline: fill(FAMILY_CYCLE_TEXT.onPeriodHeadline, { day: state.currentCycleDay }),
+      body: FAMILY_CYCLE_TEXT.onPeriodBody,
+    };
+  }
+
+  if (state.daysUntilNextPeriod == null || state.daysUntilNextPeriod < 0 || !state.nextPeriodDate) return null;
+
+  if (state.daysUntilNextPeriod <= DUE_SOON_DAYS) {
+    return {
+      label: FAMILY_CYCLE_TEXT.label,
+      headline: FAMILY_CYCLE_TEXT.dueSoonHeadline,
+      body: FAMILY_CYCLE_TEXT.dueSoonBody,
+    };
+  }
+
+  const date = new Date(`${state.nextPeriodDate}T12:00:00+05:30`).toLocaleDateString(dateLocale(), {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'Asia/Kolkata',
+  });
+  return {
+    label: FAMILY_CYCLE_TEXT.label,
+    headline: fill(FAMILY_CYCLE_TEXT.dueLaterHeadline, { date }),
+    body: FAMILY_CYCLE_TEXT.dueLaterBody,
+  };
+}
+
+/** Read only for a member she shares it with: anyone else never causes her periods to be loaded. */
+async function buildCycle(userId: string, periodSharing: boolean): Promise<FamilyCard | null> {
+  if (!periodSharing) return null;
+  return buildCycleCard(await loadCycleState(userId));
+}
+
 function greetingFor(firstName: string, now: Date): string {
   const hour = Number(
     now.toLocaleString('en-IN', { hour: 'numeric', hour12: false, timeZone: 'Asia/Kolkata' }),
@@ -413,9 +474,15 @@ export async function buildFamilyToday(input: {
   completedKinds: FamilySupportActionKind[];
   /** An action selected but not yet confirmed. Only ever `call`. */
   pendingKind: FamilySupportActionKind | null;
+  /** She chose to share her period updates with this member. */
+  periodSharing: boolean;
 }): Promise<FamilyTodayResponse> {
   const now = new Date();
-  const [summary, upcoming] = await Promise.all([loadSummary(input.userId), buildUpcoming(input.userId)]);
+  const [summary, upcoming, cycle] = await Promise.all([
+    loadSummary(input.userId),
+    buildUpcoming(input.userId),
+    buildCycle(input.userId, input.periodSharing),
+  ]);
 
   // After the summary, because the nudge is chosen from it — and deliberately not in the Promise.all
   // above for that reason.
@@ -465,6 +532,7 @@ export async function buildFamilyToday(input: {
     },
     progress: buildProgress(summary),
     upcoming,
+    cycle,
   };
 }
 
@@ -513,15 +581,14 @@ export function buildFamilyLearn(
   };
 }
 
-export function buildFamilyPrivacy(patientFirstName: string): FamilyPrivacyResponse {
+export function buildFamilyPrivacy(patientFirstName: string, periodSharing = false): FamilyPrivacyResponse {
   return {
     eyebrow: DIGEST.privacyEyebrow,
     title: DIGEST.privacyTitle,
     subline: fill(DIGEST.privacySubline, { name: patientFirstName }),
     sharedLabel: DIGEST.privacySharedLabel,
-    shared: familySharedScopes(),
+    shared: familySharedScopes({ periodSharing }),
     privateLabel: DIGEST.privacyPrivateLabel,
-    // Copied out of the localising proxy, so the response carries a plain array.
-    privateItems: [...FAMILY_PRIVATE_ITEMS],
+    privateItems: familyPrivateItems({ periodSharing }),
   };
 }

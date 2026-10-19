@@ -1007,7 +1007,7 @@
       "title": "Family sharing",
       "nameAndRelationship": "{{name}} · {{relationship}}",
       "phoneAndJoined": "{{phone}} · joined {{date}}",
-      "whatTheySee": "They see your sleep, mood, stress and energy in words only — never your records, notes, or conversations with Anu.",
+      "whatTheySee": "They see your sleep, mood, stress and energy in words only, and your period only if you turn it on for them. Never your records, notes, or conversations with Anu.",
       "confirmDisconnect": "Disconnect {{name}}? They lose access straight away, and you can invite someone else afterwards.",
       "disconnecting": "Disconnecting…",
       "yesDisconnect": "Yes, disconnect",
@@ -1058,7 +1058,13 @@
       "thankYou": "Thank you 💛",
       "getsSmiley": "{{name}} gets a smiley on their phone."
     },
-    "fromFallback": "Your family"
+    "fromFallback": "Your family",
+    "period": {
+      "label": "Also share my period updates",
+      "labelFor": "Share my period updates with {{name}}",
+      "notice": "They'll see whether you're on your period and roughly when the next one is due. Never flow, symptoms, fertility or a late period. You can turn this off any time.",
+      "failed": "Couldn't save that. Please try again."
+    }
   },
   "install": {
     "homeScreenNote": "Look for the <1>Anuva Wellness</1> icon on your home screen.",

@@ -109,7 +109,6 @@ import {
   jointDiscomfortScore,
   type JointSeverity,
   logPeriodBodySchema,
-  periodStartTimeOfDaySchema,
   updatePeriodBodySchema,
   cycleStateResponseSchema,
   logMoodBodySchema,
@@ -237,6 +236,7 @@ import {
 } from './healthNotes/router.js';
 import { consultationPublishGrant, consultationVideoEnabled } from './consultationCallMedia.js';
 import { createDoctorVisitSummaryRouter, createVisitSummaryRouter } from './visitSummary/router.js';
+import { getCycleData, serializePeriodFlowLog, serializePeriodLog } from './cycleData.js';
 import { startMedicationReminderJob } from './medication/jobs.js';
 import { startSupportRetentionJob } from './supportRetention.js';
 import { eraseScope } from './privacy/erasure.js';
@@ -4719,50 +4719,6 @@ app.get('/anu/cache-stats', (_req, res) => {
 // ─────────────────────────────────────────────
 // Cycle tracking
 // ─────────────────────────────────────────────
-
-async function getCycleData(userId: string) {
-  const [settings, periods, flows] = await Promise.all([
-    prisma.cycleSettings.findUnique({ where: { userId } }),
-    prisma.periodLog.findMany({
-      // A removed period is marked, not erased, so every read has to skip it.
-      where: { userId, deletedAt: null },
-      orderBy: { startDate: 'desc' },
-      // Two years of logs: enough for the calendar to scroll back and for
-      // cycle-length learning to have real history to average.
-      take: 24,
-    }),
-    // Same depth as the period logs, so every bleeding day the calendar can
-    // render carries the flow answer that belongs to it. Answers detached by a
-    // correction, or riding along under a removed period, stay in the table but
-    // out of the response — nothing describes a bleed she has since revised away.
-    prisma.periodFlowLog.findMany({
-      where: { userId, periodLogId: { not: null }, periodLog: { deletedAt: null } },
-      orderBy: { date: 'desc' },
-      take: 24 * PERIOD_LENGTH_MAX,
-    }),
-  ]);
-  return { settings, periods, flows };
-}
-
-function serializePeriodLog(p: {
-  id: string;
-  startDate: Date;
-  endDate: Date | null;
-  endDateSource?: string;
-  startTimeOfDay?: string | null;
-}) {
-  return {
-    id: p.id,
-    startDate: p.startDate.toISOString().split('T')[0]!,
-    endDate: p.endDate ? p.endDate.toISOString().split('T')[0]! : null,
-    endDateSource: p.endDateSource === 'inferred' ? ('inferred' as const) : ('user' as const),
-    startTimeOfDay: periodStartTimeOfDaySchema.safeParse(p.startTimeOfDay).data ?? null,
-  };
-}
-
-function serializePeriodFlowLog(f: { date: Date; flow: string }) {
-  return { date: f.date.toISOString().split('T')[0]!, flow: f.flow };
-}
 
 async function cycleStatePayload(userId: string, now = new Date()) {
   const { settings, periods, flows } = await getCycleData(userId);

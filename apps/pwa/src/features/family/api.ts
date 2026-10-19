@@ -1,3 +1,10 @@
+import {
+  FAMILY_PERIOD_SHARING_CONSENT_VERSION,
+  type FamilyInvite,
+  type FamilyMemberSummary,
+  type SetInvitePeriodSharingResponse,
+  type SetMemberPeriodSharingResponse,
+} from '@anuva/shared';
 import type {
   CreateFamilyInviteResponse,
   FamilyActivityResponse,
@@ -44,4 +51,31 @@ export function sendFamilyThanks(body: FamilyThanksBody = {}): Promise<FamilyTha
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+/** Turning it on sends the version of the notice she was shown; the API refuses a stale one. */
+function periodSharingBody(enabled: boolean): string {
+  return JSON.stringify(
+    enabled ? { enabled, consentTextVersion: FAMILY_PERIOD_SHARING_CONSENT_VERSION } : { enabled },
+  );
+}
+
+/** Whether whoever claims her pending link will also see her period updates. */
+export async function setInvitePeriodSharing(inviteId: string, enabled: boolean): Promise<FamilyInvite> {
+  return (
+    await apiFetch<SetInvitePeriodSharingResponse>(`/api/family/invites/${inviteId}/period-sharing`, {
+      method: 'POST',
+      body: periodSharingBody(enabled),
+    })
+  ).invite;
+}
+
+/** Period sharing on or off for one connected person. */
+export async function setMemberPeriodSharing(memberId: string, enabled: boolean): Promise<FamilyMemberSummary> {
+  return (
+    await apiFetch<SetMemberPeriodSharingResponse>(`/api/family/members/${memberId}/period-sharing`, {
+      method: 'POST',
+      body: periodSharingBody(enabled),
+    })
+  ).member;
 }

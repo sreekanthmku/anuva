@@ -1,6 +1,12 @@
 import crypto from 'node:crypto';
 import { prisma } from '@anuva/database';
-import type { FamilyGate, FamilyInvite, FamilyStatusResponse } from '@anuva/shared';
+import {
+  FAMILY_PERIOD_SHARING_CONSENT_VERSION,
+  type FamilyGate,
+  type FamilyInvite,
+  type FamilyMemberSummary,
+  type FamilyStatusResponse,
+} from '@anuva/shared';
 import {
   FAMILY_CONSENT_VERSION,
   FAMILY_INVITE_TTL_DAYS,
@@ -24,6 +30,7 @@ type InviteRow = {
   expiresAt: Date;
   sharedAt: Date | null;
   shareCount: number;
+  sharePeriod: boolean;
 };
 
 type MemberRow = {
@@ -33,9 +40,10 @@ type MemberRow = {
   phone: string;
   createdAt: Date;
   lastSeenAt: Date;
+  periodSharing: boolean;
 };
 
-const INVITE_SELECT = { id: true, expiresAt: true, sharedAt: true, shareCount: true } as const;
+const INVITE_SELECT = { id: true, expiresAt: true, sharedAt: true, shareCount: true, sharePeriod: true } as const;
 
 const MEMBER_SELECT = {
   id: true,
@@ -44,6 +52,7 @@ const MEMBER_SELECT = {
   phone: true,
   createdAt: true,
   lastSeenAt: true,
+  periodSharing: true,
 } as const;
 
 function addDays(date: Date, days: number): Date {
@@ -74,6 +83,7 @@ function serializeInvite(row: InviteRow): FamilyInvite {
     expiresAt: row.expiresAt.toISOString(),
     sharedAt: row.sharedAt?.toISOString() ?? null,
     shareCount: row.shareCount,
+    sharePeriod: row.sharePeriod,
   };
 }
 
@@ -238,7 +248,7 @@ export async function getFamilyStatus(userId: string): Promise<FamilyStatusRespo
   return buildStatus(user, members, invite, now);
 }
 
-function serializeMember(member: MemberRow) {
+function serializeMember(member: MemberRow): FamilyMemberSummary {
   return {
     id: member.id,
     name: member.name,
@@ -246,6 +256,7 @@ function serializeMember(member: MemberRow) {
     maskedPhone: maskPhone(member.phone),
     joinedAt: member.createdAt.toISOString(),
     lastSeenAt: member.lastSeenAt.toISOString(),
+    periodSharing: member.periodSharing,
   };
 }
 
@@ -393,4 +404,92 @@ export async function removeMember(userId: string, memberId: string): Promise<vo
       data: { status: 'revoked', revokedAt: new Date() },
     }),
   ]);
+}
+
+// ─────────────────────────────────────────────
+// Period sharing — her choice, per link and per person
+// ─────────────────────────────────────────────
+
+/** Turning it on needs the notice she just read; turning it off needs nothing. */
+function assertPeriodConsent(enabled: boolean, consentTextVersion: string | undefined): void {
+  if (enabled && consentTextVersion !== FAMILY_PERIOD_SHARING_CONSENT_VERSION) {
+    throw new FamilyError(
+      409,
+      'consent_outdated',
+      'The wording about sharing your period has changed. Please read it again.',
+    );
+  }
+}
+
+/**
+ * Whether whoever claims her pending link will also see her period updates. Only a pending link:
+ * once someone has joined, the choice lives on them and is changed with `setMemberPeriodSharing`.
+ */
+export async function setInvitePeriodSharing(
+  userId: string,
+  inviteId: string,
+  input: { enabled: boolean; consentTextVersion?: string },
+): Promise<FamilyInvite> {
+  assertPeriodConsent(input.enabled, input.consentTextVersion);
+  const now = new Date();
+  const user = await loadUser(userId);
+
+  const invite = await prisma.familyInvite.findFirst({
+    where: { id: inviteId, userId },
+    select: { id: true, status: true, expiresAt: true },
+  });
+  if (!invite) {
+    throw new FamilyError(404, 'invite_not_found', 'That invite no longer exists.');
+  }
+  if (invite.status !== 'pending' || invite.expiresAt <= now) {
+    throw new FamilyError(410, 'invite_stale', 'That link is no longer valid. Get a new one.');
+  }
+
+  const version = input.enabled ? FAMILY_PERIOD_SHARING_CONSENT_VERSION : null;
+  const [updated] = await prisma.$transaction([
+    prisma.familyInvite.update({
+      where: { id: invite.id },
+      data: { sharePeriod: input.enabled, periodSharingVersion: version },
+      select: INVITE_SELECT,
+    }),
+    prisma.familyShareConsent.create({
+      data: { userId, inviteId: invite.id, scope: 'period', granted: input.enabled, textVersion: version },
+    }),
+  ]);
+
+  return withShareMessage(serializeInvite(updated), firstNameOf(user.name));
+}
+
+/**
+ * Turns period sharing on or off for one connected person. Their app reads the flag on every
+ * request, so turning it off takes the card away on their next refresh, not at some later sync.
+ */
+export async function setMemberPeriodSharing(
+  userId: string,
+  memberId: string,
+  input: { enabled: boolean; consentTextVersion?: string },
+): Promise<FamilyMemberSummary> {
+  assertPeriodConsent(input.enabled, input.consentTextVersion);
+
+  const member = await prisma.familyMember.findFirst({
+    where: { id: memberId, userId, status: 'active' },
+    select: { id: true },
+  });
+  if (!member) {
+    throw new FamilyError(404, 'member_not_found', 'That family member is not connected.');
+  }
+
+  const version = input.enabled ? FAMILY_PERIOD_SHARING_CONSENT_VERSION : null;
+  const [updated] = await prisma.$transaction([
+    prisma.familyMember.update({
+      where: { id: member.id },
+      data: { periodSharing: input.enabled, periodSharingVersion: version, periodSharingChangedAt: new Date() },
+      select: MEMBER_SELECT,
+    }),
+    prisma.familyShareConsent.create({
+      data: { userId, memberId: member.id, scope: 'period', granted: input.enabled, textVersion: version },
+    }),
+  ]);
+
+  return serializeMember(updated);
 }

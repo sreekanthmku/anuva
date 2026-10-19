@@ -89,6 +89,7 @@ model User {
   healthNotes          HealthNote[]
   consentRecords       ConsentRecord[]
   visitSummaries       VisitSummary[]
+  familyShareConsents  FamilyShareConsent[]
 }
 
 // ─────────────────────────────────────────────
@@ -407,6 +408,12 @@ model FamilyInvite {
   /// whenever the gate's wording changes materially — this row is the record of what she consented to.
   consentVersion String
 
+  /// Whether whoever claims this link also sees her period updates. Off unless she turns it on
+  /// before they join; copied onto the member at claim. `periodSharingVersion` is the wording of
+  /// the period notice she agreed to, null while it is off.
+  sharePeriod          Boolean @default(false)
+  periodSharingVersion String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -444,6 +451,14 @@ model FamilyMember {
   /// second action should move it rather than queue behind it.
   pendingActionKind FamilySupportActionKind?
   pendingActionAt   DateTime?
+
+  /// She chose to share her period updates with this person: whether she is on her period, and
+  /// roughly when the next one is due. Never flow, symptoms, fertility or a late period. Per member,
+  /// off by default, and read on every family request so turning it off takes effect at once.
+  periodSharing          Boolean   @default(false)
+  /// The wording of the period notice she agreed to. Null while sharing is off.
+  periodSharingVersion   String?
+  periodSharingChangedAt DateTime?
 
   createdAt DateTime @default(now())
 
@@ -2143,4 +2158,33 @@ model VisitSummary {
   @@index([consultationId, status])
   @@index([userId, status, createdAt])
   @@index([status, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Family sharing consents — what she chose to share with whom, beyond the default digest
+// ─────────────────────────────────────────────
+
+enum FamilyShareScope {
+  /// Whether she is on her period and roughly when the next one is due.
+  period
+}
+
+/// Append-only: every time she turns an extra kind of sharing on or off, for an invite or a
+/// connected person. The record of what she agreed to, with which wording, and when — kept after
+/// the person is disconnected, so `memberId` and `inviteId` are plain ids, not relations. Holds a
+/// scope and a version, nothing she logged.
+model FamilyShareConsent {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId    String?
+  inviteId    String?
+  scope       FamilyShareScope
+  granted     Boolean
+  /// The notice wording she saw. Null on a withdrawal, which needs no wording.
+  textVersion String?
+  createdAt   DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([memberId])
 }

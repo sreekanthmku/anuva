@@ -252,6 +252,10 @@ const SHARED_SCOPE_TEXT = copy('family.sharedScopes', {
     'A daily suggestion, chosen from how her week is going — including whether she has been having heat episodes. It never shows a symptom, a count or a score.',
   tracking: 'How many days this week she has tracked',
   consultation: 'That a consultation is booked, and when. Never which specialist or why.',
+  // Only for a member she chose to share it with. Says what is left out as plainly as what is in,
+  // because "her period" alone would promise more than the card shows.
+  period:
+    'Her period: whether she is on it, and roughly when the next one is due. Never flow, symptoms, fertility or a late period.',
 });
 
 /**
@@ -259,12 +263,13 @@ const SHARED_SCOPE_TEXT = copy('family.sharedScopes', {
  * the data export. A function rather than a constant: the first line is built from the metric nouns,
  * which only have wording once there is a language to word them in.
  */
-export function familySharedScopes(): string[] {
+export function familySharedScopes(options: { periodSharing?: boolean } = {}): string[] {
   return [
     interpolateMetrics(SHARED_SCOPE_TEXT.metrics),
     SHARED_SCOPE_TEXT.nudge,
     SHARED_SCOPE_TEXT.tracking,
     SHARED_SCOPE_TEXT.consultation,
+    ...(options.periodSharing ? [SHARED_SCOPE_TEXT.period] : []),
   ];
 }
 
@@ -272,6 +277,41 @@ function interpolateMetrics(template: string): string {
   const metrics = FAMILY_METRIC_KEYS.map((key) => METRIC_NOUNS[key].toLocaleLowerCase()).join(', ');
   return template.replace('{{metrics}}', metrics);
 }
+
+/**
+ * What stays private about her period. The first line is listed only when she has not chosen to
+ * share period updates with this member; the second always, because even when she shares, the
+ * card never carries any of it.
+ */
+export const FAMILY_PERIOD_PRIVATE = copy('family.periodPrivate', {
+  notShared: 'Her period and cycle',
+  details: 'Her period details: flow, period symptoms, fertility, and whether a period is late',
+});
+
+/** The private list for one member, in the current language. */
+export function familyPrivateItems(options: { periodSharing?: boolean } = {}): string[] {
+  return [
+    ...FAMILY_PRIVATE_ITEMS,
+    ...(options.periodSharing ? [] : [FAMILY_PERIOD_PRIVATE.notShared]),
+    FAMILY_PERIOD_PRIVATE.details,
+  ];
+}
+
+/**
+ * The "Her cycle" card on the Today screen. Written to help, not to report: each state says what
+ * is happening in the plainest words and then what would actually make her day easier.
+ */
+export const FAMILY_CYCLE_TEXT = copy('family.cycle', {
+  label: 'Her cycle',
+  onPeriodHeadline: 'She’s on her period · day {{day}}',
+  onPeriodBody:
+    'Periods can bring cramps, tiredness and low energy. Taking a chore off her plate, a hot water bottle or an early night can help more than asking how she feels.',
+  dueSoonHeadline: 'Her period may start in the next few days',
+  dueSoonBody:
+    'Some women feel tired, bloated or short-tempered just before a period. Patience and a lighter load this week go a long way.',
+  dueLaterHeadline: 'Her next period is due around {{date}}',
+  dueLaterBody: 'This is an estimate from what she logs. Nothing to do yet, just something to keep in mind.',
+});
 
 export const FAMILY_PRIVATE_ITEMS: string[] = copy('family.privateItems', [
   'Medical records, notes and prescriptions',

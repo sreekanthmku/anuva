@@ -28,6 +28,8 @@ export type FamilyIdentity = {
   /** The patient this member supports. Every content route scopes to it. */
   userId: string;
   patientName: string | null;
+  /** She shares her period updates with this member. Read fresh on every request. */
+  periodSharing: boolean;
 };
 
 function sha256(value: string): string {
@@ -104,6 +106,7 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
           status: true,
           userId: true,
           preferredLanguage: true,
+          periodSharing: true,
           user: { select: { name: true, erasedAt: true, familyFeatureOptOut: true } },
         },
       },
@@ -155,6 +158,7 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
     relationship: member.relationship,
     userId: member.userId,
     patientName: member.user.name,
+    periodSharing: member.periodSharing,
   };
 }
 

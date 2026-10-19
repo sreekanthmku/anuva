@@ -9,6 +9,8 @@ import {
   openWhatsAppShare,
 } from './shareInvite';
 import type { FamilyGateState } from './useFamilyGate';
+import { setInvitePeriodSharing } from './api';
+import { PeriodSharingSwitch } from './PeriodSharingSwitch';
 
 /**
  * The invite gate: blocking by design.
@@ -31,7 +33,7 @@ function formatExpiry(iso: string): string {
 
 export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
   const { t } = useTranslation();
-  const { open, status, isSharing, error, share } = gate;
+  const { open, status, isSharing, error, share, updateInvite } = gate;
   const [copied, setCopied] = useState(false);
   const primaryRef = useRef<HTMLButtonElement | null>(null);
 
@@ -115,6 +117,12 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
             {t('family.gate.expires', { date: formatExpiry(invite.expiresAt) })}
           </p>
         </div>
+
+        {/* Asked before the link goes out: whoever joins with it gets what she chose here. */}
+        <PeriodSharingSwitch
+          enabled={invite.sharePeriod}
+          onChange={async (enabled) => updateInvite(await setInvitePeriodSharing(invite.id, enabled))}
+        />
 
         {error ? (
           <p className="mt-4 text-[12px] leading-relaxed text-error" style={mulish} role="alert">

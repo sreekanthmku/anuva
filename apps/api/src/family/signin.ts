@@ -56,6 +56,7 @@ async function findActiveMembership(phone: string) {
       id: true,
       name: true,
       relationship: true,
+      periodSharing: true,
       user: { select: { name: true } },
     },
   });
@@ -213,6 +214,7 @@ export async function verifySignInOtp(
         name: member.name,
         relationship: member.relationship,
         patientName: member.user.name,
+        periodSharing: member.periodSharing,
       },
       await familyAccountsForPhone(input.phone, member.id),
     ),

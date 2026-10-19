@@ -64,6 +64,13 @@ export const familyGateSchema = z.object({
   repromptAfterSeconds: z.number().int().nonnegative().nullable(),
 });
 
+/**
+ * Consent to share her period updates with one family member: whether she is on her period, and
+ * roughly when the next one is due. Never flow, symptoms, fertility or a late period. Bump it when
+ * that notice's wording changes materially; the version is stored with every choice she makes.
+ */
+export const FAMILY_PERIOD_SHARING_CONSENT_VERSION = 'family-period-v1';
+
 export const familyInviteSchema = z.object({
   id: z.string(),
   /** Full magic link, token in the fragment. Built server-side from FAMILY_PWA_BASE_URL. */
@@ -73,6 +80,8 @@ export const familyInviteSchema = z.object({
   expiresAt: z.string(),
   sharedAt: z.string().nullable(),
   shareCount: z.number().int().nonnegative(),
+  /** Whoever claims this link will also see her period updates. Off unless she turned it on. */
+  sharePeriod: z.boolean(),
 });
 
 /** What she is shown about the person who claimed her link. Phone is masked, never full. */
@@ -83,6 +92,8 @@ export const familyMemberSummarySchema = z.object({
   maskedPhone: z.string(),
   joinedAt: z.string(),
   lastSeenAt: z.string(),
+  /** She shares her period updates with this person. */
+  periodSharing: z.boolean(),
 });
 
 export const familyStatusResponseSchema = z.object({
@@ -157,6 +168,18 @@ export const markFamilyInviteSharedResponseSchema = z.object({
   gate: familyGateSchema,
   invite: familyInviteSchema,
 });
+
+/**
+ * Turning period sharing on or off, for her pending link or for one connected person. Turning it on
+ * needs the version of the notice that was on her screen; turning it off needs nothing.
+ */
+export const setFamilyPeriodSharingBodySchema = z.object({
+  enabled: z.boolean(),
+  consentTextVersion: z.string().trim().min(1).max(40).optional(),
+});
+
+export const setInvitePeriodSharingResponseSchema = z.object({ invite: familyInviteSchema });
+export const setMemberPeriodSharingResponseSchema = z.object({ member: familyMemberSummarySchema });
 
 export const revokeFamilyInviteResponseSchema = z.object({ revoked: z.literal(true) });
 
@@ -350,6 +373,12 @@ export const familyTodayResponseSchema = z.object({
   education: familyCardSchema,
   progress: familyProgressCardSchema.nullable(),
   upcoming: familyCardSchema.nullable(),
+  /**
+   * Her period, only for a member she chose to share it with: on her period (and which day), or
+   * when the next one is roughly due, with a way to help. Null when she does not share it with
+   * them, and whenever there is nothing safe to say — no period logged, or one that is overdue.
+   */
+  cycle: familyCardSchema.nullable(),
 });
 
 /**
@@ -583,3 +612,7 @@ export type FamilyConfirmActionResponse = z.infer<typeof familyConfirmActionResp
 export type FamilyRemindLaterResponse = z.infer<typeof familyRemindLaterResponseSchema>;
 export type FamilyThanksBody = z.infer<typeof familyThanksBodySchema>;
 export type FamilyThanksResponse = z.infer<typeof familyThanksResponseSchema>;
+
+export type SetFamilyPeriodSharingBody = z.infer<typeof setFamilyPeriodSharingBodySchema>;
+export type SetInvitePeriodSharingResponse = z.infer<typeof setInvitePeriodSharingResponseSchema>;
+export type SetMemberPeriodSharingResponse = z.infer<typeof setMemberPeriodSharingResponseSchema>;

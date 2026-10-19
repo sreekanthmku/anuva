@@ -281,7 +281,7 @@ export async function verifyJoinOtp(
   // the link unclaimed for whoever she meant it for.
   const existing = await prisma.familyMember.findFirst({
     where: { userId: invite.userId, phone: input.phone, status: 'active' },
-    select: { id: true, name: true, relationship: true },
+    select: { id: true, name: true, relationship: true, periodSharing: true },
   });
   if (existing) {
     await prisma.otpChallenge.update({
@@ -291,7 +291,12 @@ export async function verifyJoinOtp(
     const session = await createFamilySession(existing.id, now, login);
     return {
       body: familyMeBody(
-        { name: existing.name, relationship: existing.relationship, patientName: invite.user.name },
+        {
+          name: existing.name,
+          relationship: existing.relationship,
+          patientName: invite.user.name,
+          periodSharing: existing.periodSharing,
+        },
         await familyAccountsForPhone(input.phone, existing.id),
       ),
       sessionToken: session.token,
@@ -301,9 +306,17 @@ export async function verifyJoinOtp(
 
   // One transaction, because a member without an accepted invite would let the link be claimed
   // twice, and an accepted invite without a member would lock her out of inviting anyone.
-  let member: { id: string; name: string; relationship: FamilyRelationship };
+  let member: { id: string; name: string; relationship: FamilyRelationship; periodSharing: boolean };
   try {
     member = await prisma.$transaction(async (tx) => {
+      // Read again inside the claim, not from the invite loaded before the OTP: she may have just
+      // switched period sharing off on this link, and her latest choice is the one that counts.
+      const choice = await tx.familyInvite.findUnique({
+        where: { id: invite.id },
+        select: { sharePeriod: true, periodSharingVersion: true },
+      });
+      const sharePeriod = choice?.sharePeriod ?? false;
+
       const created = await tx.familyMember.create({
         data: {
           userId: invite.userId,
@@ -311,9 +324,27 @@ export async function verifyJoinOtp(
           relationship: input.relationship,
           phone: input.phone,
           phoneVerifiedAt: now,
+          // What she chose on the link before they joined. Her consent was recorded then, against
+          // the invite; this row records that it now applies to this person.
+          ...(sharePeriod
+            ? { periodSharing: true, periodSharingVersion: choice!.periodSharingVersion, periodSharingChangedAt: now }
+            : {}),
         },
-        select: { id: true, name: true, relationship: true },
+        select: { id: true, name: true, relationship: true, periodSharing: true },
       });
+
+      if (sharePeriod) {
+        await tx.familyShareConsent.create({
+          data: {
+            userId: invite.userId,
+            memberId: created.id,
+            inviteId: invite.id,
+            scope: 'period',
+            granted: true,
+            textVersion: choice!.periodSharingVersion,
+          },
+        });
+      }
 
       // Guarded on `status: 'pending'` so two verifies racing to the same link cannot both accept
       // it: the loser updates zero rows and is rolled back below.
@@ -348,7 +379,12 @@ export async function verifyJoinOtp(
 
   return {
     body: familyMeBody(
-      { name: member.name, relationship: member.relationship, patientName: invite.user.name },
+      {
+        name: member.name,
+        relationship: member.relationship,
+        patientName: invite.user.name,
+        periodSharing: member.periodSharing,
+      },
       await familyAccountsForPhone(input.phone, member.id),
     ),
     sessionToken: session.token,
@@ -361,6 +397,8 @@ export function familyMeBody(
     name: string;
     relationship: FamilyRelationship;
     patientName: string | null;
+    /** What they see depends on it, so the scopes list says so. Absent reads as not shared. */
+    periodSharing?: boolean;
   },
   accounts: FamilyAccount[],
 ): FamilyMeResponse {
@@ -371,7 +409,7 @@ export function familyMeBody(
       relationship: identity.relationship,
     },
     patientFirstName: firstNameOf(identity.patientName),
-    sharedScopes: familySharedScopes(),
+    sharedScopes: familySharedScopes({ periodSharing: identity.periodSharing }),
     accounts,
   };
 }

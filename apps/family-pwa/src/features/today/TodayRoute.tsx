@@ -108,7 +108,7 @@ export function TodayRoute() {
     return <ErrorCard message={error ?? t('errors.loadWeek')} onRetry={() => void reload()} />;
   }
 
-  const { status, nudge, support, education, progress, upcoming } = data;
+  const { status, nudge, support, education, progress, upcoming, cycle } = data;
   const progressPercent = progress
     ? Math.min(100, Math.round((progress.loggedDays / progress.totalDays) * 100))
     : 0;
@@ -269,6 +269,16 @@ export function TodayRoute() {
               {progress.loggedDays}/{progress.totalDays}
             </span>
           </div>
+        </Card>
+      ) : null}
+
+      {/* Only when she chose to share her period with this person, and only when there is something
+          safe to say. The server decides both; this lays out what it is handed. */}
+      {cycle ? (
+        <Card tone="quiet" className="px-5 py-5">
+          <Eyebrow>{cycle.label}</Eyebrow>
+          <h2 className="font-display text-[18px] font-medium leading-snug text-on-surface">{cycle.headline}</h2>
+          <p className="mt-2 text-[14px] leading-[1.6] text-on-surface-variant">{cycle.body}</p>
         </Card>
       ) : null}
 

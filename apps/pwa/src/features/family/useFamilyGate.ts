@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { FamilyShareChannel, FamilyStatusResponse } from '@anuva/shared';
+import type { FamilyInvite, FamilyShareChannel, FamilyStatusResponse } from '@anuva/shared';
 import { fetchFamilyStatus, markFamilyInviteShared } from './api';
 import i18n from '../../i18n';
 
@@ -28,6 +28,8 @@ export type FamilyGateState = {
   share: (channel: FamilyShareChannel, action: () => void | Promise<void>) => Promise<void>;
   refresh: () => Promise<void>;
   dismissJoinedNotice: () => void;
+  /** Puts a changed invite (e.g. its period-sharing choice) into the state without a refetch. */
+  updateInvite: (invite: FamilyInvite) => void;
 };
 
 export function useFamilyGate(enabled: boolean): FamilyGateState {
@@ -145,5 +147,6 @@ export function useFamilyGate(enabled: boolean): FamilyGateState {
     share,
     refresh: load,
     dismissJoinedNotice: () => setJustJoinedName(null),
+    updateInvite: (invite) => setStatus((current) => (current ? { ...current, invite } : current)),
   };
 }

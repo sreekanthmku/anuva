@@ -2,7 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import type { FamilyShareChannel, FamilyStatusResponse } from '@anuva/shared';
-import { fetchFamilyStatus, markFamilyInviteShared, removeFamilyMember } from './api';
+import {
+  fetchFamilyStatus,
+  markFamilyInviteShared,
+  removeFamilyMember,
+  setInvitePeriodSharing,
+  setMemberPeriodSharing,
+} from './api';
+import { PeriodSharingSwitch } from './PeriodSharingSwitch';
 import { canNativeShare, copyToClipboard, openNativeShare, openWhatsAppShare } from './shareInvite';
 
 /**
@@ -124,6 +131,22 @@ export function FamilyConnectionSection() {
                   })}
                 </p>
 
+                <PeriodSharingSwitch
+                  name={member.name}
+                  enabled={member.periodSharing}
+                  onChange={async (enabled) => {
+                    const updated = await setMemberPeriodSharing(member.id, enabled);
+                    setStatus((current) =>
+                      current
+                        ? {
+                            ...current,
+                            members: current.members.map((entry) => (entry.id === updated.id ? updated : entry)),
+                          }
+                        : current,
+                    );
+                  }}
+                />
+
                 {confirmingId === member.id ? (
                   <div className="mt-2.5 rounded-[14px] border border-error/30 bg-error-container/40 px-3.5 py-3">
                     <p className="text-[12.5px] leading-[1.5] text-on-surface" style={mulish}>
@@ -181,6 +204,13 @@ export function FamilyConnectionSection() {
           <p className="mt-1 text-[12px] leading-[1.5] text-on-surface-variant" style={mulish}>
             {t('family.sharing.inviteHint')}
           </p>
+          <PeriodSharingSwitch
+            enabled={invite.sharePeriod}
+            onChange={async (enabled) => {
+              const updated = await setInvitePeriodSharing(invite.id, enabled);
+              setStatus((current) => (current ? { ...current, invite: updated } : current));
+            }}
+          />
           <div className="mt-3 flex flex-col gap-2">
             <button
               type="button"

@@ -81,6 +81,9 @@ import {
   unregisterFcmResponseSchema,
   markFamilyInviteSharedResponseSchema,
   removeFamilyMemberResponseSchema,
+  setFamilyPeriodSharingBodySchema,
+  setInvitePeriodSharingResponseSchema,
+  setMemberPeriodSharingResponseSchema,
   revokeFamilyInviteResponseSchema,
 } from '@anuva/shared';
 import { FAMILY_SESSION_COOKIE_NAME } from './config.js';
@@ -92,6 +95,8 @@ import {
   markInviteShared,
   removeMember,
   revokeInvite,
+  setInvitePeriodSharing,
+  setMemberPeriodSharing,
   rotateInvite,
 } from './invites.js';
 import { buildFamilyActivity } from './activity.js';
@@ -225,6 +230,34 @@ export function createFamilyRouter({
       await revokeInvite(userId, req.params.id);
       req.log?.info?.({ inviteId: req.params.id }, 'family: invite revoked');
       res.json(revokeFamilyInviteResponseSchema.parse({ revoked: true }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  /** Whether whoever claims her pending link also sees her period updates. */
+  router.post('/invites/:id/period-sharing', async (req, res, next) => {
+    try {
+      noStore(res);
+      const userId = await resolveUserId(req);
+      const body = setFamilyPeriodSharingBodySchema.parse(req.body ?? {});
+      const invite = await setInvitePeriodSharing(userId, req.params.id, body);
+      req.log?.info?.({ inviteId: invite.id, enabled: body.enabled }, 'family: invite period sharing set');
+      res.json(setInvitePeriodSharingResponseSchema.parse({ invite }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  /** Period sharing on or off for one connected person. */
+  router.post('/members/:id/period-sharing', async (req, res, next) => {
+    try {
+      noStore(res);
+      const userId = await resolveUserId(req);
+      const body = setFamilyPeriodSharingBodySchema.parse(req.body ?? {});
+      const member = await setMemberPeriodSharing(userId, req.params.id, body);
+      req.log?.info?.({ memberId: member.id, enabled: body.enabled }, 'family: member period sharing set');
+      res.json(setMemberPeriodSharingResponseSchema.parse({ member }));
     } catch (e) {
       next(e);
     }
@@ -403,6 +436,7 @@ export function createFamilyRouter({
         patientFirstName: identity.patientName?.trim().split(/\s+/)[0] || 'She',
         completedKinds,
         pendingKind,
+        periodSharing: identity.periodSharing,
       });
       res.json(familyTodayResponseSchema.parse(body));
     } catch (e) {
@@ -443,7 +477,7 @@ export function createFamilyRouter({
       noStore(res);
       const identity = await requireFamilyMember(req);
       const her = identity.patientName?.trim().split(/\s+/)[0] || 'She';
-      res.json(familyPrivacyResponseSchema.parse(buildFamilyPrivacy(her)));
+      res.json(familyPrivacyResponseSchema.parse(buildFamilyPrivacy(her, identity.periodSharing)));
     } catch (e) {
       next(e);
     }

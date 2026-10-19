@@ -85,6 +85,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     healthNotes,
     consentRecords,
     visitSummaries,
+    familyShareConsents,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -238,6 +239,9 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
         phoneVerifiedAt: true,
         createdAt: true,
         revokedAt: true,
+        periodSharing: true,
+        periodSharingVersion: true,
+        periodSharingChangedAt: true,
         supportActions: {
           select: { kind: true, date: true, createdAt: true },
           take: MAX_ROWS_PER_COLLECTION,
@@ -293,6 +297,13 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
       orderBy: { createdAt: 'desc' },
       take: MAX_ROWS_PER_COLLECTION,
     }),
+    // Every time she turned period sharing on or off, for a link or a person.
+    prisma.familyShareConsent.findMany({
+      where: { userId },
+      select: { memberId: true, inviteId: true, scope: true, granted: true, textVersion: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: MAX_ROWS_PER_COLLECTION,
+    }),
   ]);
 
   return {
@@ -320,7 +331,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
           relationship: member.relationship,
           maskedPhone: maskThirdPartyPhone(member.phone),
           since: member.createdAt.toISOString(),
-          canSee: familySharedScopes(),
+          canSee: familySharedScopes({ periodSharing: member.periodSharing }),
         })),
       clinicalRecordRetentionYears: CLINICAL_RECORD_RETENTION_YEARS,
     },
@@ -331,7 +342,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     subscription,
     carePaths,
     consultations,
-    consentsGiven: { callRecording: callConsents, other: consentRecords },
+    consentsGiven: { callRecording: callConsents, other: consentRecords, familySharing: familyShareConsents },
     notes: healthNotes,
     visitSummaries,
     chat: { threads: chatThreads, anuTurns },
@@ -347,6 +358,9 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
       verifiedAt: member.phoneVerifiedAt.toISOString(),
       joinedAt: member.createdAt.toISOString(),
       revokedAt: member.revokedAt?.toISOString() ?? null,
+      periodSharing: member.periodSharing,
+      periodSharingVersion: member.periodSharingVersion,
+      periodSharingChangedAt: member.periodSharingChangedAt?.toISOString() ?? null,
       // The gesture, never the words: notes sent from the family app are pushed and not stored.
       checkIns: member.supportActions.map((action) => ({
         kind: action.kind,
