@@ -255,7 +255,7 @@ import {
 } from './nudge/engine.js';
 import { runNudgeSelfTest } from './nudge/selfTest.js';
 import { buildSummary } from './report/build.js';
-import { buildSummaryCalendar, summaryAnchor } from './report/calendar.js';
+import { buildSummaryCalendar, journeyStart, summaryAnchor } from './report/calendar.js';
 import { randomQuickLogMessage } from './quickLogMessages.js';
 import { recordQuickSymptom } from './logging/writeThrough.js';
 import { dayKey } from './dayKey.js';
@@ -5495,7 +5495,7 @@ app.get('/report', async (req, res, next) => {
     // start only clamps how far back the user can travel and how much of a
     // period counts as coverage.
     const anchor = summaryAnchor(user);
-    const report = await buildSummary(user.id, anchor, period, offset);
+    const report = await buildSummary(user.id, anchor, period, offset, new Date(), journeyStart(user));
     res.json(weeklyReportResponseSchema.parse(report));
   } catch (e) {
     next(e);

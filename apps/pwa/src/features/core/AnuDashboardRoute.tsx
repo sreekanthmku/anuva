@@ -44,7 +44,7 @@ import { relativeTime } from '../../shared/lib/relativeTime';
 import { usePeriodFlowPrompt } from './hooks/usePeriodFlowPrompt';
 import {
   getCalibrationProgress,
-  getJourneyDay,
+  getMemberDay,
   getCalibrationAnchor,
   isWellnessCalibrating,
 } from './wellnessCalibration';
@@ -238,8 +238,7 @@ export default function AnuDashboardRoute() {
   const journeyAnchor = getCalibrationAnchor(user);
   const isCalibrating = isWellnessCalibrating(journeyAnchor);
   const calibration = journeyAnchor ? getCalibrationProgress(journeyAnchor) : null;
-  const memberDay = journeyAnchor ? getJourneyDay(journeyAnchor) : null;
-  const memberWeek = memberDay !== null ? Math.floor(memberDay / 7) + 1 : null;
+  const member = journeyAnchor ? getMemberDay(journeyAnchor) : null;
   const calibrationArc =
     calibration && circumference > 0
       ? (calibration.day / calibration.totalDays) * circumference
@@ -380,9 +379,7 @@ export default function AnuDashboardRoute() {
             className="rounded-full bg-surface-container px-3 py-1 text-[12.5px] font-medium text-on-surface-variant"
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
-            {memberDay !== null && memberWeek
-              ? t('home.dayWeek', { day: memberDay, week: memberWeek })
-              : t('home.dayWeekZero')}
+            {t('home.dayWeek', { day: member?.day ?? 1, week: member?.week ?? 1 })}
           </span>
           <span
             className="inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-3 py-1 text-[12.5px] font-semibold text-on-tertiary-container"

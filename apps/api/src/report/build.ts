@@ -1374,7 +1374,12 @@ export async function buildSummary(
   anchor: Date,
   period: SummaryPeriod,
   requestedOffset: number,
-  now = new Date()
+  now = new Date(),
+  /**
+   * The day calibration counts from (`journeyStart`). Defaults to `anchor`, which only limits how
+   * far back she can look; the two differ when she signed up before starting her trial.
+   */
+  journeyFrom: Date = anchor,
 ) {
   const w = resolvePeriodWindow(anchor, period, requestedOffset, now);
 
@@ -1587,7 +1592,7 @@ export async function buildSummary(
 
   const weekBreakdown = buildWeekBreakdown(wellnessDaily, w);
 
-  const daysOnApp = dayOffset(startOfLocalDay(anchor), startOfLocalDay(now)) + 1;
+  const daysOnApp = Math.max(1, dayOffset(startOfLocalDay(journeyFrom), startOfLocalDay(now)) + 1);
   const calibrating = daysOnApp < CALIBRATION_DAYS;
 
   // Daily always has enough to describe the day itself — it never claims a

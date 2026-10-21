@@ -16,7 +16,7 @@ import type {
 } from '@anuva/shared';
 import { buildSummary } from '../report/build.js';
 import { loadCycleState } from '../cycleData.js';
-import { summaryAnchor } from '../report/calendar.js';
+import { journeyStart, summaryAnchor } from '../report/calendar.js';
 import {
   CONSULTATION_LABEL,
   EDUCATION_BY_METRIC,
@@ -98,7 +98,7 @@ async function loadSummary(userId: string): Promise<SummaryResult> {
     throw new FamilyError(403, 'family_sharing_stopped', 'Sharing has been turned off.');
   }
 
-  const summary = await buildSummary(userId, summaryAnchor(user), 'weekly', 0);
+  const summary = await buildSummary(userId, summaryAnchor(user), 'weekly', 0, new Date(), journeyStart(user));
   summaryCache.set(cacheKey, { at: Date.now(), summary });
   return summary;
 }

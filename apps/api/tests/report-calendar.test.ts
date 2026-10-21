@@ -24,7 +24,7 @@ vi.mock('@anuva/database', () => ({
   },
 }));
 
-const { buildSummaryCalendar, summaryAnchor } = await import('../src/report/calendar.js');
+const { buildSummaryCalendar, journeyStart, summaryAnchor } = await import('../src/report/calendar.js');
 
 const USER = 'user-cal-1';
 const ANCHOR = new Date(2026, 7, 1, 9);
@@ -189,5 +189,18 @@ describe('summaryAnchor', () => {
   it('honours a subscription that predates the account record', () => {
     const started = new Date(2026, 6, 1, 12);
     expect(summaryAnchor({ createdAt: created, subscription: { startedAt: started } })).toBe(started);
+  });
+});
+
+describe('journeyStart', () => {
+  const created = new Date(2026, 7, 3, 13);
+
+  it('counts from the trial start, not an account opened the day before', () => {
+    const started = new Date(2026, 7, 4, 10);
+    expect(journeyStart({ createdAt: created, subscription: { startedAt: started } })).toBe(started);
+  });
+
+  it('falls back to signup before any trial', () => {
+    expect(journeyStart({ createdAt: created, subscription: null })).toBe(created);
   });
 });

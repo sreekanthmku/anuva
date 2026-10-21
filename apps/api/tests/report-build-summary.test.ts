@@ -303,6 +303,21 @@ describe('buildSummary — empty / sparse', () => {
     expect(dayFourteen.calibrating).toBe(false);
   });
 
+  it('counts calibration from the trial start while history still reaches back to signup', async () => {
+    // Signed up 20 days ago, started the trial yesterday: history goes back to signup, but the
+    // trial is only on day 2 of calibration, not past it.
+    installFixture([dayBundle(2024, 5, 20)]);
+    const signedUp = localDay(2024, 4, 31, 9);
+    const trialStarted = localDay(2024, 5, 19, 9);
+
+    const report = await buildSummary(USER_ID, signedUp, 'daily', 0, now, trialStarted);
+    expect(report.calibrating).toBe(true);
+    expect(report.canGoBack).toBe(true);
+
+    const withoutTrial = await buildSummary(USER_ID, signedUp, 'daily', 0, now);
+    expect(withoutTrial.calibrating).toBe(false);
+  });
+
   it('clamps oversized daily offset and still queries every log model', async () => {
     const report = await buildSummary(USER_ID, anchor, 'daily', 999, now);
 

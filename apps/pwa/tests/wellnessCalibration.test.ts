@@ -3,6 +3,7 @@ import {
   WELLNESS_CALIBRATION_DAYS,
   getCalibrationProgress,
   getJourneyDay,
+  getMemberDay,
   getCalibrationAnchor,
   isWellnessCalibrating,
 } from '../src/features/core/wellnessCalibration';
@@ -22,14 +23,14 @@ describe('WELLNESS_CALIBRATION_DAYS', () => {
 });
 
 describe('getCalibrationAnchor', () => {
-  it('takes account creation when it precedes the trial start', () => {
+  it('counts from the trial start, even when she signed up days earlier', () => {
+    // Signed up one day, started the trial the next: calibration day 1 is the trial day.
     expect(getCalibrationAnchor({ createdAt: CREATED, subscriptionStartedAt: STARTED })).toBe(
-      CREATED
+      STARTED
     );
   });
 
-  it('takes the trial start when it precedes account creation', () => {
-    // Possible when a subscription was migrated or backdated.
+  it('takes the trial start whichever date is earlier', () => {
     expect(getCalibrationAnchor({ createdAt: STARTED, subscriptionStartedAt: CREATED })).toBe(
       CREATED
     );
@@ -147,5 +148,24 @@ describe('getCalibrationProgress', () => {
       totalDays: 14,
       daysRemaining: 10,
     });
+  });
+});
+
+describe('getMemberDay', () => {
+  it('reads Day 1 · Week 1 on the day the trial starts, matching the ring at 1/14', () => {
+    const now = new Date(2024, 5, 20, 18, 0, 0);
+    const anchor = new Date(2024, 5, 20, 9, 0, 0).toISOString();
+    expect(getMemberDay(anchor, now)).toEqual({ day: 1, week: 1 });
+    expect(getCalibrationProgress(anchor, now).day).toBe(1);
+  });
+
+  it('turns over to week 2 on day 8', () => {
+    const now = new Date(2024, 5, 27, 9, 0, 0);
+    expect(getMemberDay(new Date(2024, 5, 20, 9, 0, 0).toISOString(), now)).toEqual({ day: 8, week: 2 });
+  });
+
+  it('never reads Day 0, even with an anchor slightly in the future', () => {
+    const now = new Date(2024, 5, 20, 9, 0, 0);
+    expect(getMemberDay(new Date(2024, 5, 21, 9, 0, 0).toISOString(), now)).toEqual({ day: 1, week: 1 });
   });
 });

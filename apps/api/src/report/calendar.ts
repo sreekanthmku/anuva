@@ -41,6 +41,16 @@ export function summaryAnchor(user: { createdAt: Date; subscription?: { startedA
   return started < user.createdAt ? started : user.createdAt;
 }
 
+/**
+ * The day her journey counts from — calibration, "Day N · Week N": the day her trial started, or
+ * the day she signed up if she has not started one. Not the same as `summaryAnchor`: an account
+ * opened the day before the trial does not make the trial's first day "day 2", but what she logged
+ * on that earlier day still shows in her history. Same rule as `getCalibrationAnchor` in the PWA.
+ */
+export function journeyStart(user: { createdAt: Date; subscription?: { startedAt: Date } | null }) {
+  return user.subscription?.startedAt ?? user.createdAt;
+}
+
 type DayRoll = { keys: Set<string>; scores: number[] };
 
 function rollFor(map: Map<string, DayRoll>, day: string): DayRoll {
