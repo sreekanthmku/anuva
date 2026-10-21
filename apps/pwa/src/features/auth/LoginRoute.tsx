@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { TERMS_CONSENT_VERSION } from '@anuva/shared';
 import i18n from '../../i18n';
 import { TrustStrip } from '../onboarding/components/TrustStrip';
 import { useAuth } from './auth-context';
 import { getPostAuthPath } from './postAuthPath';
 import { betaLogin, requestOtp, verifyOtp } from './session';
+import { TermsConsent } from './TermsConsent';
 
 type AuthMode = 'login' | 'signup';
 
@@ -37,6 +39,10 @@ export default function LoginRoute() {
   const [showBetaLogin, setShowBetaLogin] = useState(false);
   const [betaEmail, setBetaEmail] = useState('');
   const [betaName, setBetaName] = useState('');
+  /** Ticked by her, never pre-ticked. A sign-up is not sent until it is. */
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  /** Sent with every request that can create an account; the API refuses one without it. */
+  const termsVersion = acceptedTerms ? TERMS_CONSENT_VERSION : undefined;
 
   useEffect(() => {
     if (status === 'authenticated' && user) {
@@ -83,6 +89,7 @@ export default function LoginRoute() {
         purpose: mode,
         phone,
         name: mode === 'signup' ? name : undefined,
+        termsVersion: mode === 'signup' ? termsVersion : undefined,
       });
 
       setChallengeId(response.challengeId);
@@ -112,6 +119,7 @@ export default function LoginRoute() {
         phone,
         otp,
         name: mode === 'signup' ? name : undefined,
+        termsVersion: mode === 'signup' ? termsVersion : undefined,
       });
 
       setAuthenticatedSession(session);
@@ -132,6 +140,7 @@ export default function LoginRoute() {
       const session = await betaLogin({
         email: betaEmail,
         name: betaName.trim() || undefined,
+        termsVersion,
       });
 
       setAuthenticatedSession(session);
@@ -238,6 +247,8 @@ export default function LoginRoute() {
               placeholder={t('login.namePlaceholder')}
             />
 
+            <TermsConsent accepted={acceptedTerms} onChange={setAcceptedTerms} />
+
             {errorMessage && (
               <p
                 className="mb-3 text-[13px] text-error"
@@ -249,7 +260,7 @@ export default function LoginRoute() {
 
             <button
               type="submit"
-              disabled={isSubmitting || !betaEmail}
+              disabled={isSubmitting || !betaEmail || !acceptedTerms}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
               style={{
                 fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
@@ -375,6 +386,7 @@ export default function LoginRoute() {
                       purpose: mode,
                       phone,
                       name: mode === 'signup' ? name : undefined,
+                      termsVersion: mode === 'signup' ? termsVersion : undefined,
                     })
                       .then((response) => {
                         setChallengeId(response.challengeId);
@@ -444,6 +456,8 @@ export default function LoginRoute() {
                   {mode === 'login' ? t('login.loginHint') : t('login.signupHint')}
                 </p>
 
+                {mode === 'signup' && <TermsConsent accepted={acceptedTerms} onChange={setAcceptedTerms} />}
+
                 {errorMessage && (
                   <p
                     className="mb-3 text-[13px] text-error"
@@ -455,7 +469,7 @@ export default function LoginRoute() {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || (mode === 'signup' && !acceptedTerms)}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
                   style={{
                     fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',

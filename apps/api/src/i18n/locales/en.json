@@ -139,7 +139,8 @@
       "ASSESSMENT_INCOMPLETE": "Complete your detailed health assessment to unlock your report.",
       "MENSTRUAL_HISTORY_MISSING": "Your report needs your menstrual history. Complete that section of your assessment to continue.",
       "GENERATION_FAILED": "Your report could not be generated. Please try again."
-    }
+    },
+    "pleaseAcceptTheLatestTermsOfUse": "Please accept the latest Terms of Use and Privacy Policy to create an account."
   },
   "anu": {
     "redFlags": {

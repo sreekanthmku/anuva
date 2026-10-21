@@ -40,6 +40,7 @@ export {
   authSessionResponseSchema,
   authUserSchema,
   betaLoginBodySchema,
+  TERMS_CONSENT_VERSION,
   logoutResponseSchema,
   loginEndReasonSchema,
   loginSessionSummarySchema,

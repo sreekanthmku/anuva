@@ -237,6 +237,7 @@ import {
 import { consultationPublishGrant, consultationVideoEnabled } from './consultationCallMedia.js';
 import { createDoctorVisitSummaryRouter, createVisitSummaryRouter } from './visitSummary/router.js';
 import { getCycleData, serializePeriodFlowLog, serializePeriodLog } from './cycleData.js';
+import { TERMS_REQUIRED_MESSAGE, hasAcceptedCurrentTerms, termsConsentCreate } from './termsConsent.js';
 import { startMedicationReminderJob } from './medication/jobs.js';
 import { startSupportRetentionJob } from './supportRetention.js';
 import { eraseScope } from './privacy/erasure.js';
@@ -3607,6 +3608,16 @@ app.delete('/consultations/slots/:id', async (req, res, next) => {
   }
 });
 
+/**
+ * Every path that creates an account checks this first. A missing or stale version is refused, so
+ * no account exists without a recorded agreement to the documents as they currently stand.
+ */
+function assertTermsAccepted(termsVersion: string | undefined): asserts termsVersion is string {
+  if (!hasAcceptedCurrentTerms(termsVersion)) {
+    throw new HttpError(400, TERMS_REQUIRED_MESSAGE);
+  }
+}
+
 app.post('/auth/request-otp', async (req, res, next) => {
   try {
     setNoStoreHeaders(res);
@@ -3640,6 +3651,11 @@ app.post('/auth/request-otp', async (req, res, next) => {
 
     if (parsed.purpose === 'signup' && user) {
       throw new HttpError(409, 'An account already exists for this phone number.');
+    }
+
+    // Checked before an SMS goes out, not only when the account is created.
+    if (parsed.purpose === 'signup') {
+      assertTermsAccepted(parsed.termsVersion);
     }
 
     if (recentSendCount >= OTP_MAX_SENDS_PER_15_MINUTES) {
@@ -3734,6 +3750,10 @@ app.post('/auth/verify-otp', async (req, res, next) => {
       throw new HttpError(409, 'An account already exists for this phone number.');
     }
 
+    if (validated.purpose === 'signup') {
+      assertTermsAccepted(validated.termsVersion);
+    }
+
     try {
       await verifyOtpWithTwoFactor(challenge.providerSessionId, validated.otp);
     } catch (error) {
@@ -3750,11 +3770,15 @@ app.post('/auth/verify-otp', async (req, res, next) => {
     const isNewUser = !user;
 
     if (!user) {
+      // Only a sign-up reaches here without an account (a login 404s above), so the terms were
+      // checked; asserted again because this is the line that creates the account.
+      assertTermsAccepted(validated.termsVersion);
       user = await prisma.user.create({
         data: {
           phone,
           name: validated.name?.trim(),
           phoneVerifiedAt: now,
+          consentRecords: termsConsentCreate(validated.termsVersion),
         },
       });
     } else if (!user.phoneVerifiedAt) {
@@ -3825,11 +3849,13 @@ app.post('/auth/beta-login', async (req, res, next) => {
     const isNewUser = !user;
 
     if (!user) {
+      assertTermsAccepted(parsed.termsVersion);
       user = await prisma.user.create({
         data: {
           phone: `beta:${crypto.randomUUID()}`,
           email: parsed.email,
           name: parsed.name?.trim(),
+          consentRecords: termsConsentCreate(parsed.termsVersion),
         },
       });
     }

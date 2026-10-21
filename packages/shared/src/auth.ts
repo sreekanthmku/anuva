@@ -1,6 +1,16 @@
 import { z } from 'zod';
 
 export const authPurposeSchema = z.enum(['login', 'signup']);
+
+/**
+ * The Terms of Use and Privacy Policy a new account agrees to. Sent by the client with a sign-up,
+ * refused by the API when missing or stale, and stored as a ConsentRecord with the account. Bump it
+ * whenever either document changes materially.
+ */
+export const TERMS_CONSENT_VERSION = 'terms-privacy-v1';
+
+/** The version of the Terms and Privacy Policy she ticked. Required to create an account. */
+const termsVersion = z.string().trim().min(1).max(40).optional();
 export const subscriptionPlanSchema = z.enum(['monthly', 'annual']);
 export const subscriptionStatusSchema = z.enum(['trialing', 'active', 'past_due', 'canceled']);
 export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>;
@@ -11,6 +21,7 @@ export const requestOtpBodySchema = z
     purpose: authPurposeSchema,
     phone: z.string().trim().min(10).max(20),
     name: z.string().trim().min(2).max(80).optional(),
+    termsVersion,
   })
   .superRefine((value, ctx) => {
     if (value.purpose === 'signup' && !value.name) {
@@ -40,6 +51,7 @@ export const verifyOtpBodySchema = z
     phone: z.string().trim().min(10).max(20),
     otp: z.string().trim().length(6),
     name: z.string().trim().min(2).max(80).optional(),
+    termsVersion,
   })
   .superRefine((value, ctx) => {
     if (value.purpose === 'signup' && !value.name) {
@@ -56,6 +68,8 @@ export type VerifyOtpBody = z.infer<typeof verifyOtpBodySchema>;
 export const betaLoginBodySchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   name: z.string().trim().min(2).max(80).optional(),
+  /** Required only when this email has no account yet, since that call creates one. */
+  termsVersion,
 });
 
 export type BetaLoginBody = z.infer<typeof betaLoginBodySchema>;

@@ -67,7 +67,12 @@
     "signupHint": "We will verify this number with a one-time password.",
     "sendingOtp": "Sending OTP...",
     "signupCta": "Begin My Wellness Journey",
-    "sendOtp": "Send OTP"
+    "sendOtp": "Send OTP",
+    "terms": {
+      "label": "I agree to the <1>Terms of Use</1> and <2>Privacy Policy</2>",
+      "agree": "I agree",
+      "close": "Close"
+    }
   },
   "assessment": {
     "eyebrow": "Pre-assessment · 2 min",

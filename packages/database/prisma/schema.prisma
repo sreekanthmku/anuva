@@ -2098,6 +2098,8 @@ model HealthNoteShare {
 enum ConsentPurpose {
   /// Sending her voice notes and note photos to OpenAI to be turned into text.
   note_ai_processing
+  /// The Terms of Use and Privacy Policy, agreed to when she created her account.
+  terms_and_privacy
 }
 
 /// Consent she gave for a purpose, and which wording she saw. Append-only: withdrawing stamps
