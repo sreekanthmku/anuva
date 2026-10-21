@@ -6,6 +6,7 @@ import { DPDP_ACT_URL } from '../../shared/lib/dpdp';
 import { useAuth } from '../auth/auth-context';
 import { activateOneDaySubscription } from '../auth/session';
 import { assessmentPath } from './config/assessmentView';
+import { clearAssessmentProgress } from './data/assessmentProgress';
 
 type PlanId = 'monthly' | 'annual' | 'family';
 
@@ -50,6 +51,7 @@ export default function SubscriptionRoute() {
     try {
       await activateOneDaySubscription();
       await refreshUser();
+      clearAssessmentProgress();
       navigate('/home');
     } catch (error) {
       console.error(error);

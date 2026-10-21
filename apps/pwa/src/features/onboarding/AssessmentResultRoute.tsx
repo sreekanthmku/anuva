@@ -10,6 +10,7 @@ import { NextStepsCard } from './components/NextStepsCard';
 import { controlNextSteps, nextSteps, riskPills } from './data/assessmentResult';
 import type { AssessmentOutcome, AssessmentOutcomeStatus } from './data/assessmentOutcome';
 import type { RiskPill } from './data/assessmentResult';
+import { clearAssessmentProgress } from './data/assessmentProgress';
 import { persistOnboardingCompletionIfAuthenticated } from './persistOnboardingCompletion';
 
 type AssessmentResultRouteState = AssessmentOutcome | null;
@@ -55,6 +56,7 @@ export default function AssessmentResultRoute() {
     }
 
     if (user.hasActiveAccess) {
+      clearAssessmentProgress();
       navigate('/anu-greeting');
       return;
     }
@@ -63,6 +65,8 @@ export default function AssessmentResultRoute() {
     try {
       await startTrial();
       await refreshUser();
+      // Into the app: the questions are behind her, so the next sitting starts fresh.
+      clearAssessmentProgress();
       navigate('/anu-greeting');
     } catch (error) {
       console.error(error);

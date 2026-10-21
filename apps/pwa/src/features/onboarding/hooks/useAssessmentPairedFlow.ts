@@ -1,17 +1,31 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { assessmentQuestions } from '../data/assessmentQuestions';
 import { buildAssessmentPages } from '../data/assessmentPages';
 import { getAssessmentOutcome, scoreAssessmentQuestions } from '../data/assessmentOutcome';
+import {
+  readAssessmentProgress,
+  sessionStore,
+  writeAssessmentProgress,
+  type AssessmentAnswers,
+} from '../data/assessmentProgress';
 
-type AnswersMap = Record<number, number | undefined>;
+type AnswersMap = AssessmentAnswers;
 
 const assessmentPages = buildAssessmentPages(assessmentQuestions.length);
 
 export function useAssessmentPairedFlow() {
   const { t } = useTranslation();
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<AnswersMap>({});
+  // Restored, so coming back from the result page lands her where she left off.
+  const [restored] = useState(() =>
+    readAssessmentProgress(sessionStore(), 'paired', assessmentQuestions, assessmentPages.length),
+  );
+  const [step, setStep] = useState(restored.step);
+  const [answers, setAnswers] = useState<AnswersMap>(restored.answers);
+
+  useEffect(() => {
+    writeAssessmentProgress(sessionStore(), 'paired', assessmentQuestions, { step, answers });
+  }, [step, answers]);
 
   const page = assessmentPages[step];
   const questions = useMemo(() => {
