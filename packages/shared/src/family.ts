@@ -71,6 +71,13 @@ export const familyGateSchema = z.object({
  */
 export const FAMILY_PERIOD_SHARING_CONSENT_VERSION = 'family-period-v1';
 
+/**
+ * Consent to alert one family member when her chat with Anu shows a crisis or a medical emergency.
+ * The alert says only that she may need them now — never what she wrote or why. Bump it when that
+ * notice's wording changes materially; the version is stored with every choice she makes.
+ */
+export const FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION = 'family-emergency-v1';
+
 export const familyInviteSchema = z.object({
   id: z.string(),
   /** Full magic link, token in the fragment. Built server-side from FAMILY_PWA_BASE_URL. */
@@ -94,6 +101,8 @@ export const familyMemberSummarySchema = z.object({
   lastSeenAt: z.string(),
   /** She shares her period updates with this person. */
   periodSharing: z.boolean(),
+  /** This person is alerted if she seems to be in crisis or a medical emergency. */
+  emergencyAlerts: z.boolean(),
 });
 
 export const familyStatusResponseSchema = z.object({
@@ -180,6 +189,13 @@ export const setFamilyPeriodSharingBodySchema = z.object({
 
 export const setInvitePeriodSharingResponseSchema = z.object({ invite: familyInviteSchema });
 export const setMemberPeriodSharingResponseSchema = z.object({ member: familyMemberSummarySchema });
+
+/**
+ * Emergency alerts on or off for one connected person. Same shape as period sharing: turning it on
+ * needs the version of the notice that was on her screen; turning it off needs nothing.
+ */
+export const setFamilyEmergencyAlertsBodySchema = setFamilyPeriodSharingBodySchema;
+export const setMemberEmergencyAlertsResponseSchema = z.object({ member: familyMemberSummarySchema });
 
 export const revokeFamilyInviteResponseSchema = z.object({ revoked: z.literal(true) });
 
@@ -616,3 +632,5 @@ export type FamilyThanksResponse = z.infer<typeof familyThanksResponseSchema>;
 export type SetFamilyPeriodSharingBody = z.infer<typeof setFamilyPeriodSharingBodySchema>;
 export type SetInvitePeriodSharingResponse = z.infer<typeof setInvitePeriodSharingResponseSchema>;
 export type SetMemberPeriodSharingResponse = z.infer<typeof setMemberPeriodSharingResponseSchema>;
+export type SetFamilyEmergencyAlertsBody = z.infer<typeof setFamilyEmergencyAlertsBodySchema>;
+export type SetMemberEmergencyAlertsResponse = z.infer<typeof setMemberEmergencyAlertsResponseSchema>;

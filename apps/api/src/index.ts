@@ -4645,6 +4645,7 @@ app.get('/anu/chat', async (req, res, next) => {
         reply: true,
         suggestions: true,
         source: true,
+        familyAlerted: true,
         createdAt: true,
       },
     });
@@ -4657,6 +4658,7 @@ app.get('/anu/chat', async (req, res, next) => {
           reply: turn.reply,
           suggestions: turn.suggestions,
           source: turn.source,
+          familyAlerted: turn.familyAlerted,
           createdAt: turn.createdAt.toISOString(),
         })),
       }),

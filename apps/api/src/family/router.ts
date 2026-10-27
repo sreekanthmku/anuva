@@ -84,6 +84,8 @@ import {
   setFamilyPeriodSharingBodySchema,
   setInvitePeriodSharingResponseSchema,
   setMemberPeriodSharingResponseSchema,
+  setFamilyEmergencyAlertsBodySchema,
+  setMemberEmergencyAlertsResponseSchema,
   revokeFamilyInviteResponseSchema,
 } from '@anuva/shared';
 import { FAMILY_SESSION_COOKIE_NAME } from './config.js';
@@ -97,6 +99,7 @@ import {
   revokeInvite,
   setInvitePeriodSharing,
   setMemberPeriodSharing,
+  setMemberEmergencyAlerts,
   rotateInvite,
 } from './invites.js';
 import { buildFamilyActivity } from './activity.js';
@@ -258,6 +261,20 @@ export function createFamilyRouter({
       const member = await setMemberPeriodSharing(userId, req.params.id, body);
       req.log?.info?.({ memberId: member.id, enabled: body.enabled }, 'family: member period sharing set');
       res.json(setMemberPeriodSharingResponseSchema.parse({ member }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  /** Emergency alerts on or off for one connected person. */
+  router.post('/members/:id/emergency-alerts', async (req, res, next) => {
+    try {
+      noStore(res);
+      const userId = await resolveUserId(req);
+      const body = setFamilyEmergencyAlertsBodySchema.parse(req.body ?? {});
+      const member = await setMemberEmergencyAlerts(userId, req.params.id, body);
+      req.log?.info?.({ memberId: member.id, enabled: body.enabled }, 'family: member emergency alerts set');
+      res.json(setMemberEmergencyAlertsResponseSchema.parse({ member }));
     } catch (e) {
       next(e);
     }
@@ -477,7 +494,7 @@ export function createFamilyRouter({
       noStore(res);
       const identity = await requireFamilyMember(req);
       const her = identity.patientName?.trim().split(/\s+/)[0] || 'She';
-      res.json(familyPrivacyResponseSchema.parse(buildFamilyPrivacy(her, identity.periodSharing)));
+      res.json(familyPrivacyResponseSchema.parse(buildFamilyPrivacy(her, identity.periodSharing, identity.emergencyAlerts)));
     } catch (e) {
       next(e);
     }

@@ -86,6 +86,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     consentRecords,
     visitSummaries,
     familyShareConsents,
+    familySafetyAlerts,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -242,6 +243,9 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
         periodSharing: true,
         periodSharingVersion: true,
         periodSharingChangedAt: true,
+        emergencyAlerts: true,
+        emergencyAlertsVersion: true,
+        emergencyAlertsChangedAt: true,
         supportActions: {
           select: { kind: true, date: true, createdAt: true },
           take: MAX_ROWS_PER_COLLECTION,
@@ -297,10 +301,17 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
       orderBy: { createdAt: 'desc' },
       take: MAX_ROWS_PER_COLLECTION,
     }),
-    // Every time she turned period sharing on or off, for a link or a person.
+    // Every time she turned period sharing or emergency alerts on or off, for a link or a person.
     prisma.familyShareConsent.findMany({
       where: { userId },
       select: { memberId: true, inviteId: true, scope: true, granted: true, textVersion: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: MAX_ROWS_PER_COLLECTION,
+    }),
+    // Each time a chat turn alerted the people she chose.
+    prisma.familySafetyAlert.findMany({
+      where: { userId },
+      select: { kind: true, source: true, notified: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
       take: MAX_ROWS_PER_COLLECTION,
     }),
@@ -331,7 +342,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
           relationship: member.relationship,
           maskedPhone: maskThirdPartyPhone(member.phone),
           since: member.createdAt.toISOString(),
-          canSee: familySharedScopes({ periodSharing: member.periodSharing }),
+          canSee: familySharedScopes({ periodSharing: member.periodSharing, emergencyAlerts: member.emergencyAlerts }),
         })),
       clinicalRecordRetentionYears: CLINICAL_RECORD_RETENTION_YEARS,
     },
@@ -345,7 +356,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     consentsGiven: { callRecording: callConsents, other: consentRecords, familySharing: familyShareConsents },
     notes: healthNotes,
     visitSummaries,
-    chat: { threads: chatThreads, anuTurns },
+    chat: { threads: chatThreads, anuTurns, familyAlerts: familySafetyAlerts },
     anonymousQuestions: questions,
     supportRequests: tickets,
     familySharing: familyMembers.map((member) => ({
@@ -361,6 +372,9 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
       periodSharing: member.periodSharing,
       periodSharingVersion: member.periodSharingVersion,
       periodSharingChangedAt: member.periodSharingChangedAt?.toISOString() ?? null,
+      emergencyAlerts: member.emergencyAlerts,
+      emergencyAlertsVersion: member.emergencyAlertsVersion,
+      emergencyAlertsChangedAt: member.emergencyAlertsChangedAt?.toISOString() ?? null,
       // The gesture, never the words: notes sent from the family app are pushed and not stored.
       checkIns: member.supportActions.map((action) => ({
         kind: action.kind,

@@ -62,7 +62,14 @@ export async function switchFamilyAccount(
   const target = current
     ? await prisma.familyMember.findFirst({
         where: { id: targetMemberId, phone: current.phone, ...LIVE_MEMBERSHIP },
-        select: { id: true, name: true, relationship: true, periodSharing: true, user: { select: { name: true } } },
+        select: {
+          id: true,
+          name: true,
+          relationship: true,
+          periodSharing: true,
+          emergencyAlerts: true,
+          user: { select: { name: true } },
+        },
       })
     : null;
 
@@ -83,6 +90,7 @@ export async function switchFamilyAccount(
         relationship: target.relationship,
         patientName: target.user.name,
         periodSharing: target.periodSharing,
+        emergencyAlerts: target.emergencyAlerts,
       },
       await familyAccountsForPhone(current.phone, target.id),
     ),

@@ -581,13 +581,17 @@ export function buildFamilyLearn(
   };
 }
 
-export function buildFamilyPrivacy(patientFirstName: string, periodSharing = false): FamilyPrivacyResponse {
+export function buildFamilyPrivacy(
+  patientFirstName: string,
+  periodSharing = false,
+  emergencyAlerts = false,
+): FamilyPrivacyResponse {
   return {
     eyebrow: DIGEST.privacyEyebrow,
     title: DIGEST.privacyTitle,
     subline: fill(DIGEST.privacySubline, { name: patientFirstName }),
     sharedLabel: DIGEST.privacySharedLabel,
-    shared: familySharedScopes({ periodSharing }),
+    shared: familySharedScopes({ periodSharing, emergencyAlerts }),
     privateLabel: DIGEST.privacyPrivateLabel,
     privateItems: familyPrivateItems({ periodSharing }),
   };

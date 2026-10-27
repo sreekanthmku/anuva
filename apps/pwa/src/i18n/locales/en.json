@@ -411,7 +411,8 @@
     "reminder": {
       "button": "Set a reminder",
       "set": "Reminder set · See my reminders"
-    }
+    },
+    "familyAlerted": "We've let the people you chose for emergency alerts know you may need them."
   },
   "track": {
     "loading": "Loading…",
@@ -1012,7 +1013,7 @@
       "title": "Family sharing",
       "nameAndRelationship": "{{name}} · {{relationship}}",
       "phoneAndJoined": "{{phone}} · joined {{date}}",
-      "whatTheySee": "They see your sleep, mood, stress and energy in words only, and your period only if you turn it on for them. Never your records, notes, or conversations with Anu.",
+      "whatTheySee": "They see your sleep, mood, stress and energy in words only, and your period only if you turn it on for them. If you turn on emergency alerts for someone, they're told when you may need them, never why. Never your records, notes, or conversations with Anu.",
       "confirmDisconnect": "Disconnect {{name}}? They lose access straight away, and you can invite someone else afterwards.",
       "disconnecting": "Disconnecting…",
       "yesDisconnect": "Yes, disconnect",
@@ -1068,6 +1069,11 @@
       "label": "Also share my period updates",
       "labelFor": "Share my period updates with {{name}}",
       "notice": "They'll see whether you're on your period and roughly when the next one is due. Never flow, symptoms, fertility or a late period. You can turn this off any time.",
+      "failed": "Couldn't save that. Please try again."
+    },
+    "emergency": {
+      "labelFor": "Alert {{name}} in an emergency",
+      "notice": "If your chat with Anu shows you may be in crisis or a medical emergency, {{name}} gets a notification that you may need them right now. Never what you wrote or why. You can turn this off any time.",
       "failed": "Couldn't save that. Please try again."
     }
   },

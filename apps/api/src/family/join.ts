@@ -281,7 +281,7 @@ export async function verifyJoinOtp(
   // the link unclaimed for whoever she meant it for.
   const existing = await prisma.familyMember.findFirst({
     where: { userId: invite.userId, phone: input.phone, status: 'active' },
-    select: { id: true, name: true, relationship: true, periodSharing: true },
+    select: { id: true, name: true, relationship: true, periodSharing: true, emergencyAlerts: true },
   });
   if (existing) {
     await prisma.otpChallenge.update({
@@ -296,6 +296,7 @@ export async function verifyJoinOtp(
           relationship: existing.relationship,
           patientName: invite.user.name,
           periodSharing: existing.periodSharing,
+          emergencyAlerts: existing.emergencyAlerts,
         },
         await familyAccountsForPhone(input.phone, existing.id),
       ),
@@ -399,6 +400,8 @@ export function familyMeBody(
     patientName: string | null;
     /** What they see depends on it, so the scopes list says so. Absent reads as not shared. */
     periodSharing?: boolean;
+    /** Likewise whether she chose to alert them in an emergency. Absent reads as off. */
+    emergencyAlerts?: boolean;
   },
   accounts: FamilyAccount[],
 ): FamilyMeResponse {
@@ -409,7 +412,10 @@ export function familyMeBody(
       relationship: identity.relationship,
     },
     patientFirstName: firstNameOf(identity.patientName),
-    sharedScopes: familySharedScopes({ periodSharing: identity.periodSharing }),
+    sharedScopes: familySharedScopes({
+      periodSharing: identity.periodSharing,
+      emergencyAlerts: identity.emergencyAlerts,
+    }),
     accounts,
   };
 }

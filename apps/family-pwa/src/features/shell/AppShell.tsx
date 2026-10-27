@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFamilyAuth } from '../auth/family-auth-context';
 import { LanguageToggle } from '../../i18n/LanguageToggle';
+import { AlertListener } from '../notifications/AlertListener';
 import { ThanksListener } from '../notifications/ThanksListener';
 import { BottomNav } from './BottomNav';
 import { Wordmark } from './Wordmark';
@@ -54,6 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
       <BottomNav />
       <ThanksListener />
+      <AlertListener />
     </div>
   );
 }

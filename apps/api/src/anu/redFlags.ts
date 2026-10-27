@@ -22,6 +22,14 @@ export type RedFlagRule = {
   patterns: RegExp[];
 };
 
+/// She says she is pregnant — stated, not wondered about. "Could I be pregnant? I'm spotting" is a
+/// question for the model (a late period where pregnancy is possible is L2), not an emergency.
+const PREGNANT =
+  "(\\b(i'?m|i\\s+am|am|currently)\\s+(\\d+\\s+(weeks?|months?)\\s+)?pregnant\\b|\\bweeks?\\s+pregnant\\b|\\b(while|when)\\s+pregnant\\b|\\b(during|in)\\s+(my\\s+)?pregnancy\\b|\\bmy\\s+pregnancy\\b)";
+/// What makes a pregnancy urgent: fluid leaking, bleeding, severe pain, or the baby moving less.
+const PREGNANCY_DANGER =
+  "(\\bleak(s|ing|ed)?\\b|\\bgush(es|ing|ed)?\\b|\\bwatery\\s+discharge\\b|\\bfluid\\s+(is\\s+)?(leak|gush|coming|running)|\\bbleed(s|ing)?\\b|\\bspotting\\b|\\bsevere\\s+(abdominal|stomach|tummy|belly)\\s+pain\\b|\\bbaby\\s+(is\\s+not|isn'?t|not|has\\s+stopped|stopped)\\s+(moving|kicking)\\b|\\b(less|reduced|fewer|no)\\s+(movements?|kicks|kicking)\\b)";
+
 const HELPLINES = [
   { name: 'Tele-MANAS (24x7, free)', number: '14416' },
   { name: 'iCall', number: '9152987821' },
@@ -50,6 +58,24 @@ const AUTHORED_RULES: RedFlagRule[] = [
       /\bno\s+(point|reason)\s+(in\s+)?living\b/i,
       /\b(feel|feeling|am)\s+(unsafe|hopeless|worthless)\b/i,
       /\bbetter\s+off\s+(dead|without\s+me)\b/i,
+    ],
+  },
+  {
+    // Declared before Bleeding so "pregnant and bleeding" gets the pregnancy reply, not the
+    // perimenopause one. Needs clinical review, like every rule on this sheet.
+    area: 'Pregnancy',
+    urgency: 'Urgent',
+    recommendedSpecialist: 'Emergency care / Obstetrician',
+    response:
+      'In pregnancy, leaking fluid, bleeding, severe tummy pain or the baby moving less than usual all need to be checked straight away. Please go to the nearest hospital or call your obstetrician now, and do not wait to see if it settles.',
+    patterns: [
+      new RegExp(`${PREGNANT}[^.]{0,80}${PREGNANCY_DANGER}`, 'i'),
+      new RegExp(`${PREGNANCY_DANGER}[^.]{0,80}${PREGNANT}`, 'i'),
+      // Unambiguous on their own, with or without the word "pregnant".
+      /\bwaters?\s+(broke|has\s+broken|have\s+broken|breaking|just\s+broke)\b/i,
+      /\bamniotic\s+fluid\b/i,
+      /\b(less|reduced|fewer|no)\s+(fetal|foetal|baby'?s?)\s+(movements?|kicks|kicking|moving)\b/i,
+      /\bbaby\s+(is\s+not|isn'?t|not|has\s+stopped|stopped)\s+(moving|kicking)\b/i,
     ],
   },
   {

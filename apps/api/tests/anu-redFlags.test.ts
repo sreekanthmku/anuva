@@ -169,8 +169,10 @@ describe('matchRedFlag', () => {
 
     it('returns the first rule in RED_FLAG_RULES order', () => {
       expect(RED_FLAG_RULES[0].area).toBe('Mental health');
-      expect(RED_FLAG_RULES[1].area).toBe('Neurological');
-      expect(RED_FLAG_RULES[2].area).toBe('Heart');
+      // Before Bleeding, so "pregnant and bleeding" gets the pregnancy reply.
+      expect(RED_FLAG_RULES[1].area).toBe('Pregnancy');
+      expect(RED_FLAG_RULES[2].area).toBe('Neurological');
+      expect(RED_FLAG_RULES[3].area).toBe('Heart');
     });
   });
 

@@ -63,6 +63,8 @@ self.addEventListener('push', (event) => {
       icon: notification.icon || '/pwa-192.png',
       badge: notification.badge || '/pwa-192.png',
       data,
+      // Her emergency alert stays on screen until they act on it, where the platform allows.
+      requireInteraction: data.familyAlert === '1',
     }),
   );
 });

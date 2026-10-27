@@ -1,8 +1,10 @@
 import {
+  FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION,
   FAMILY_PERIOD_SHARING_CONSENT_VERSION,
   type FamilyInvite,
   type FamilyMemberSummary,
   type SetInvitePeriodSharingResponse,
+  type SetMemberEmergencyAlertsResponse,
   type SetMemberPeriodSharingResponse,
 } from '@anuva/shared';
 import type {
@@ -76,6 +78,18 @@ export async function setMemberPeriodSharing(memberId: string, enabled: boolean)
     await apiFetch<SetMemberPeriodSharingResponse>(`/api/family/members/${memberId}/period-sharing`, {
       method: 'POST',
       body: periodSharingBody(enabled),
+    })
+  ).member;
+}
+
+/** Emergency alerts on or off for one connected person. Turning it on sends the notice's version. */
+export async function setMemberEmergencyAlerts(memberId: string, enabled: boolean): Promise<FamilyMemberSummary> {
+  return (
+    await apiFetch<SetMemberEmergencyAlertsResponse>(`/api/family/members/${memberId}/emergency-alerts`, {
+      method: 'POST',
+      body: JSON.stringify(
+        enabled ? { enabled, consentTextVersion: FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION } : { enabled },
+      ),
     })
   ).member;
 }

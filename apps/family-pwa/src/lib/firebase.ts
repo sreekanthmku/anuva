@@ -376,13 +376,14 @@ async function showForegroundNotification(
 }
 
 /**
- * App-wide foreground display. Her thank-you is excluded: `ThanksListener` opens it as a card, and
- * showing a system notification on top would say the same thing twice while they are looking.
+ * App-wide foreground display. Her thank-you and her emergency alert are excluded: `ThanksListener`
+ * and `AlertListener` open them as cards, and showing a system notification on top would say the
+ * same thing twice while they are looking.
  */
 export function subscribeToForegroundNotifications(): () => void {
   return subscribeToForegroundMessages((payload) => {
     const data = (payload as { data?: Record<string, string> }).data ?? {};
-    if (data.familyThanks || data.familyMessage || data.familyGift) return;
+    if (data.familyThanks || data.familyAlert || data.familyMessage || data.familyGift) return;
     void getFcmServiceWorkerRegistration()
       .then((registration) => showForegroundNotification(registration, payload, 'Anuva Family'))
       .catch(() => {});

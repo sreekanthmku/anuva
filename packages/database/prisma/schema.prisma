@@ -90,6 +90,7 @@ model User {
   consentRecords       ConsentRecord[]
   visitSummaries       VisitSummary[]
   familyShareConsents  FamilyShareConsent[]
+  familySafetyAlerts   FamilySafetyAlert[]
 }
 
 // ─────────────────────────────────────────────
@@ -459,6 +460,14 @@ model FamilyMember {
   /// The wording of the period notice she agreed to. Null while sharing is off.
   periodSharingVersion   String?
   periodSharingChangedAt DateTime?
+
+  /// She chose to have this person alerted if she seems to be in crisis or a medical emergency in her
+  /// chat with Anu. The alert says only that she may need them now — never what she wrote or why.
+  /// Per member, off by default, and only ever turned on by her after they have joined.
+  emergencyAlerts          Boolean   @default(false)
+  /// The wording of the emergency-alert notice she agreed to. Null while alerts are off.
+  emergencyAlertsVersion   String?
+  emergencyAlertsChangedAt DateTime?
 
   createdAt DateTime @default(now())
 
@@ -1823,6 +1832,10 @@ model AnuChatTurn {
   /// beside the text she read so a turn can be audited later. Never shown to her.
   decision      Json?
 
+  /// This turn alerted the family members she chose for emergency alerts (or fell inside the
+  /// cooldown of one that did), so reopening the thread still tells her they know.
+  familyAlerted Boolean       @default(false)
+
   createdAt     DateTime      @default(now())
 
   @@index([userId, createdAt])
@@ -2169,6 +2182,8 @@ model VisitSummary {
 enum FamilyShareScope {
   /// Whether she is on her period and roughly when the next one is due.
   period
+  /// An alert that she may need them now, when her chat with Anu shows a crisis or an emergency.
+  emergency
 }
 
 /// Append-only: every time she turns an extra kind of sharing on or off, for an invite or a
@@ -2189,4 +2204,24 @@ model FamilyShareConsent {
 
   @@index([userId, createdAt])
   @@index([memberId])
+}
+
+/// One emergency alert to her family: a chat turn showed a crisis or a medical emergency, and the
+/// people she chose were notified. Also the cooldown — a second alarming message minutes later must
+/// not send a second alert. Holds the kind and the source, never what she wrote.
+model FamilySafetyAlert {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// `crisis` (self-harm, suicidal thoughts) or `medical` (an urgent physical emergency).
+  kind   String
+  /// `redFlag` — the deterministic gate; `classifier` — the v3 safety classifier.
+  source String
+  /// How many of her people had a device that accepted the push.
+  notified Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

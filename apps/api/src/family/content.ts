@@ -256,6 +256,9 @@ const SHARED_SCOPE_TEXT = copy('family.sharedScopes', {
   // because "her period" alone would promise more than the card shows.
   period:
     'Her period: whether she is on it, and roughly when the next one is due. Never flow, symptoms, fertility or a late period.',
+  // Only for a member she chose to alert. Says what the alert leaves out, for the same reason.
+  emergency:
+    'An alert if she may need you right away, sent when her chat with Anu shows she may be in crisis or a medical emergency. Never what she wrote or why.',
 });
 
 /**
@@ -263,13 +266,16 @@ const SHARED_SCOPE_TEXT = copy('family.sharedScopes', {
  * the data export. A function rather than a constant: the first line is built from the metric nouns,
  * which only have wording once there is a language to word them in.
  */
-export function familySharedScopes(options: { periodSharing?: boolean } = {}): string[] {
+export function familySharedScopes(
+  options: { periodSharing?: boolean; emergencyAlerts?: boolean } = {},
+): string[] {
   return [
     interpolateMetrics(SHARED_SCOPE_TEXT.metrics),
     SHARED_SCOPE_TEXT.nudge,
     SHARED_SCOPE_TEXT.tracking,
     SHARED_SCOPE_TEXT.consultation,
     ...(options.periodSharing ? [SHARED_SCOPE_TEXT.period] : []),
+    ...(options.emergencyAlerts ? [SHARED_SCOPE_TEXT.emergency] : []),
   ];
 }
 

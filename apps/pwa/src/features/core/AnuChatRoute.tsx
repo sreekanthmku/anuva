@@ -25,6 +25,9 @@ type ChatMessage = {
   /// Red-flag replies are clinician-authored safety text; they get their own
   /// treatment so they cannot be mistaken for ordinary coaching.
   isEscalation?: boolean;
+  /// The people she chose for emergency alerts were told she may need them. Stored with the turn,
+  /// so it is still there when she reopens the thread.
+  familyAlerted?: boolean;
   /// v3 only: an in-app screen the reply offers, rendered as a button under it.
   action?: AnuV3Action | null;
   /// v3 only: the recorded turn, the booking card and the trackers to log that
@@ -44,6 +47,7 @@ function v3Message(data: AnuChatV3Response, booked = false): ChatMessage {
     from: 'anu',
     text: data.reply,
     isEscalation: data.escalation !== null,
+    familyAlerted: data.escalation?.familyAlerted === true,
     action: data.action,
     turnId: data.turnId,
     booking: data.booking,
@@ -115,6 +119,7 @@ export default function AnuChatRoute() {
                 from: 'anu',
                 text: turn.reply,
                 isEscalation: turn.escalated,
+                familyAlerted: turn.familyAlerted,
                 action: turn.action,
                 turnId: turn.id,
                 booking: turn.booking,
@@ -129,7 +134,12 @@ export default function AnuChatRoute() {
         : apiFetch<AnuChatHistoryResponse>(CHAT_PATH.current).then((data) => ({
             messages: data.turns.flatMap((turn) => [
               { from: 'user' as const, text: turn.userMessage },
-              { from: 'anu' as const, text: turn.reply, isEscalation: turn.source === 'red_flag' },
+              {
+                from: 'anu' as const,
+                text: turn.reply,
+                isEscalation: turn.source === 'red_flag',
+                familyAlerted: turn.familyAlerted,
+              },
             ]),
             suggestions: data.turns.at(-1)?.suggestions ?? [],
           }));
@@ -194,7 +204,12 @@ export default function AnuChatRoute() {
           // v3 escalates classified L3/L4 turns too, not only gate matches.
           'turnId' in data
             ? v3Message(data)
-            : { from: 'anu', text: data.reply, isEscalation: data.source === 'red_flag' },
+            : {
+                from: 'anu',
+                text: data.reply,
+                isEscalation: data.source === 'red_flag',
+                familyAlerted: data.escalation?.familyAlerted === true,
+              },
         ]);
         setSuggestions(data.suggestions);
       } catch {
@@ -400,6 +415,14 @@ export default function AnuChatRoute() {
               >
                 {message.text}
               </div>
+              {message.familyAlerted && (
+                <p
+                  className="px-1 text-[12px] leading-[1.5] text-on-surface-variant"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                >
+                  {t('chat.familyAlerted')}
+                </p>
+              )}
               {message.booking && (
                 <BookingCard
                   offer={message.booking}

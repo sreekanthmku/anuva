@@ -14,6 +14,7 @@ import type { AnuChatResponse } from '@anuva/shared';
 import { logger } from '../logger.js';
 import type { AnuChatMode } from './config.js';
 import { matchRedFlag } from './redFlags.js';
+import { alertFamilyIfChosen } from '../family/safetyAlert.js';
 import { embedQuestion, generateReply } from './openai.js';
 import { lookup, store } from './cache.js';
 import { HISTORY_TURNS, PROMPT_VERSION, sanitizeName, type PriorTurn } from './prompt.js';
@@ -99,6 +100,8 @@ export type TurnRecord = {
   symptom?: string | null;
   source: 'red_flag' | 'cache' | 'model' | 'probe';
   redFlagArea?: string | null;
+  /// The people she chose for emergency alerts were told (see family/safetyAlert.ts).
+  familyAlerted?: boolean;
   cacheHitId?: string | null;
   similarity?: number | null;
   /// Which engine served the turn. Also the thread boundary — see loadHistory.
@@ -122,6 +125,7 @@ export async function recordTurn(turn: TurnRecord): Promise<void> {
         symptom: turn.symptom ?? null,
         source: turn.source,
         redFlagArea: turn.redFlagArea ?? null,
+        familyAlerted: turn.familyAlerted ?? false,
         cacheHitId: turn.cacheHitId ?? null,
         similarity: turn.similarity ?? null,
         promptVersion: PROMPT_VERSION,
@@ -243,6 +247,12 @@ export async function answer(
   const flagged = matchRedFlag(userMessage);
   if (flagged) {
     const { rule, helplines } = flagged;
+    // A crisis or an emergency alerts the people she chose. The softer "prompt review" rules do
+    // not: they need a doctor this week, not someone at her door now.
+    const familyAlerted =
+      rule.isCrisis || rule.urgency === 'Urgent'
+        ? await alertFamilyIfChosen({ userId, kind: rule.isCrisis ? 'crisis' : 'medical', source: 'redFlag' })
+        : false;
     // No chips on a safety turn. A crisis message must not be followed by
     // casual next-step buttons, and anything the model invented here would sit
     // beside clinician-authored text as though it were equally reviewed.
@@ -253,10 +263,11 @@ export async function answer(
       suggestions: [],
       source: 'red_flag',
       redFlagArea: rule.area,
+      familyAlerted,
       mode,
     });
     log.warn(
-      { userId, area: rule.area, urgency: rule.urgency, specialist: rule.recommendedSpecialist },
+      { userId, area: rule.area, urgency: rule.urgency, specialist: rule.recommendedSpecialist, familyAlerted },
       'Red flag matched — clinician safety reply served',
     );
     return {
@@ -268,6 +279,7 @@ export async function answer(
         urgency: rule.urgency,
         recommendedSpecialist: rule.recommendedSpecialist,
         helplines,
+        familyAlerted,
       },
     };
   }

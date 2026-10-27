@@ -23,6 +23,7 @@ copy('errors.family', {
   inviteStale: 'That link is no longer valid. Get a new one.',
   memberNotConnected: 'That family member is not connected.',
   periodConsentOutdated: 'The wording about sharing your period has changed. Please read it again.',
+  emergencyConsentOutdated: 'The wording about emergency alerts has changed. Please read it again.',
   nothingToConfirm: 'Nothing is waiting to be confirmed.',
   thanksRateLimited: 'That is plenty of thank-yous for now. Try again in a little while.',
   messagesRateLimited: 'You have sent a few messages already. Give it an hour before the next one.',

@@ -33,7 +33,7 @@ const RECIPIENT_TEXT = copy('privacy.recipient', {
 export async function buildPrivacyRecipients(userId: string): Promise<PrivacyRecipient[]> {
   const member = await prisma.familyMember.findFirst({
     where: { userId, status: 'active' },
-    select: { id: true, name: true, relationship: true, createdAt: true, periodSharing: true },
+    select: { id: true, name: true, relationship: true, createdAt: true, periodSharing: true, emergencyAlerts: true },
   });
 
   if (!member) {
@@ -48,7 +48,7 @@ export async function buildPrivacyRecipients(userId: string): Promise<PrivacyRec
         name: member.name,
         relationship: RELATIONSHIP_LABELS[member.relationship] ?? RELATIONSHIP_LABELS.other,
       }),
-      receives: familySharedScopes({ periodSharing: member.periodSharing }),
+      receives: familySharedScopes({ periodSharing: member.periodSharing, emergencyAlerts: member.emergencyAlerts }),
       since: member.createdAt.toISOString(),
       control: RECIPIENT_TEXT.control,
     },

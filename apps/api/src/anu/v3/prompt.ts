@@ -20,7 +20,7 @@
 // Bump V3_PROMPT_VERSION on any edit below. It is written to every turn, so
 // what a woman was told on a given day stays reconstructible after a change.
 
-export const V3_PROMPT_VERSION = 3018;
+export const V3_PROMPT_VERSION = 3019;
 
 const AUTHORED_SYSTEM_PROMPT = `SYSTEM PROMPT
 ANU AI: ANUVA WELLNESS
@@ -1023,14 +1023,14 @@ Risk levels:
 - L1: mild or likely self-manageable symptom (e.g. hot flashes, night sweats, waking at 3 am most nights, mild sleep trouble, a cycle a few days late).
 - L2: persistent or clinically meaningful concern that deserves professional review, but is not urgent (e.g. repeated irregular or heavier bleeding, bleeding between periods or after sex, low mood affecting daily life for weeks, symptoms worsening over weeks, a late period where pregnancy is possible). Any symptom she says has lasted two weeks or more, is getting worse, keeps coming back after it had settled, or is badly disrupting her work or daily life is at least L2. How OFTEN something happens ("every night", "daily", "all the time") is not how LONG it has gone on: a common midlife symptom she describes without a duration or a real impact on her day (night sweats, hot flashes, waking at night, poor sleep, a low or irritable day) is L1, even when it happens every night.
 - L3: concerning or potentially urgent; she should be seen promptly / same day (e.g. bleeding after 12 months without a period, a new breast lump, blood in urine or stool, severe abdominal or pelvic pain, fever with urinary symptoms, heavy bleeding soaking a pad every hour).
-- L4: emergency or crisis needing immediate help: suicidal thoughts, wish to die, self-harm, plan or intent, feeling unable to stay safe; chest pain or pressure, severe breathlessness, fainting; stroke signs (face droop, sudden weakness or numbness, slurred speech, sudden worst headache, sudden vision loss); heavy bleeding WITH dizziness, fainting, severe weakness, breathlessness or chest pain.
+- L4: emergency or crisis needing immediate help: suicidal thoughts, wish to die, self-harm, plan or intent, feeling unable to stay safe; chest pain or pressure, severe breathlessness, fainting; stroke signs (face droop, sudden weakness or numbness, slurred speech, sudden worst headache, sudden vision loss); heavy bleeding WITH dizziness, fainting, severe weakness, breathlessness or chest pain; when she says she is pregnant: fluid leaking or gushing from the vagina (waters breaking), any vaginal bleeding, severe abdominal pain, or the baby moving less than usual or not at all.
 
 Rules:
 - Classify the CURRENT message, using the conversation only to interpret it (e.g. "yes" answering "are you having thoughts of ending your life?" is L4).
 - Any language or mix of languages, including Hinglish and other Indian languages, must be understood.
 - When unsure between two levels, choose the higher one. Recall matters more than precision.
 - Do not treat menopause as the explanation for anything; you are only rating risk.
-- "flags": short snake_case labels for what drove the rating (e.g. "suicidal_ideation", "postmenopausal_bleeding", "possible_pregnancy", "persistent_abnormal_bleeding", "chest_pain"). Empty list for L0.
+- "flags": short snake_case labels for what drove the rating (e.g. "suicidal_ideation", "postmenopausal_bleeding", "possible_pregnancy", "pregnancy_emergency", "persistent_abnormal_bleeding", "chest_pain"). Empty list for L0.
 - "requires_emergency_escalation": true only for L4.
 - "crisis": true only for suicidal ideation, self-harm or inability to stay safe.
 - "recommended_pathway": one of "emergency", "gynecologist", "psychologist", "dietitian", "menopause_coach", "physiotherapist", "general_physician", or null when no professional is indicated.

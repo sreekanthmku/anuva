@@ -23,6 +23,7 @@ type TurnRow = {
   probeDepth: number | null;
   probeAnswers: Record<string, string> | null;
   probeHandbacks: number | null;
+  familyAlerted: boolean;
   createdAt: Date;
 };
 
@@ -56,6 +57,7 @@ const mocks = vi.hoisted(() => ({
   embedQuestion: vi.fn(async () => new Float32Array(512)),
   lookup: vi.fn(async () => ({ hit: null, bestScore: 0.1 })),
   store: vi.fn(async () => undefined),
+  alertFamilyIfChosen: vi.fn(async () => false),
 }));
 
 vi.mock('@anuva/database', () => ({
@@ -78,6 +80,7 @@ vi.mock('@anuva/database', () => ({
           probeDepth: data.probeDepth ?? null,
           probeAnswers: data.probeAnswers ?? null,
           probeHandbacks: data.probeHandbacks ?? null,
+          familyAlerted: data.familyAlerted ?? false,
           // Monotonic, so ordering is deterministic without sleeping.
           createdAt: new Date(Date.now() + rows.length),
         };
@@ -101,6 +104,9 @@ vi.mock('../src/anu/cache.js', () => ({
   loadCache: async () => 0,
   cacheStats: () => ({ entries: 0 }),
 }));
+
+// Who gets alerted is covered in family-emergency-alerts.test.ts; here only that the turn records it.
+vi.mock('../src/family/safetyAlert.js', () => ({ alertFamilyIfChosen: mocks.alertFamilyIfChosen }));
 
 const { answer } = await import('../src/anu/probe/engine.js');
 
@@ -400,6 +406,24 @@ describe('safety', () => {
     // around the same months?" after a crisis reply would be grotesque.
     const after = await answer(USER, 'Sleep is broken');
     expect(after.source).toBe('model');
+  });
+
+  it('records that her family was alerted, so the thread still says so when she reopens it', async () => {
+    mocks.alertFamilyIfChosen.mockResolvedValueOnce(true);
+
+    const res = await answer(USER, 'I want to kill myself');
+
+    expect(mocks.alertFamilyIfChosen).toHaveBeenCalledWith({ userId: USER, kind: 'crisis', source: 'redFlag' });
+    expect(res.escalation?.familyAlerted).toBe(true);
+    expect(lastTurn().familyAlerted).toBe(true);
+  });
+
+  it('alerts nobody on a red flag that needs a doctor soon, not someone now', async () => {
+    const res = await answer(USER, 'I found a lump in my breast');
+
+    expect(res.source).toBe('red_flag');
+    expect(mocks.alertFamilyIfChosen).not.toHaveBeenCalled();
+    expect(lastTurn().familyAlerted).toBe(false);
   });
 
   it('escalates a vague opener that also carries a red flag, without asking anything', async () => {

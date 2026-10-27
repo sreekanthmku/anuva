@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import type { FamilyShareChannel, FamilyStatusResponse } from '@anuva/shared';
+import type { FamilyMemberSummary, FamilyShareChannel, FamilyStatusResponse } from '@anuva/shared';
 import {
   fetchFamilyStatus,
   markFamilyInviteShared,
   removeFamilyMember,
   setInvitePeriodSharing,
+  setMemberEmergencyAlerts,
   setMemberPeriodSharing,
 } from './api';
+import { EmergencyAlertsSwitch } from './EmergencyAlertsSwitch';
 import { PeriodSharingSwitch } from './PeriodSharingSwitch';
 import { canNativeShare, copyToClipboard, openNativeShare, openWhatsAppShare } from './shareInvite';
 
@@ -78,6 +80,15 @@ export function FamilyConnectionSection() {
     [load, t],
   );
 
+  /// A per-person switch saved on the server; its answer replaces that person in the list.
+  const replaceMember = useCallback((updated: FamilyMemberSummary) => {
+    setStatus((current) =>
+      current
+        ? { ...current, members: current.members.map((entry) => (entry.id === updated.id ? updated : entry)) }
+        : current,
+    );
+  }, []);
+
   /// The share opens first, inside the tap — `window.open` and `navigator.share` are refused
   /// outside a user gesture — and is recorded afterwards, as the gate does.
   const share = useCallback(
@@ -134,17 +145,13 @@ export function FamilyConnectionSection() {
                 <PeriodSharingSwitch
                   name={member.name}
                   enabled={member.periodSharing}
-                  onChange={async (enabled) => {
-                    const updated = await setMemberPeriodSharing(member.id, enabled);
-                    setStatus((current) =>
-                      current
-                        ? {
-                            ...current,
-                            members: current.members.map((entry) => (entry.id === updated.id ? updated : entry)),
-                          }
-                        : current,
-                    );
-                  }}
+                  onChange={async (enabled) => replaceMember(await setMemberPeriodSharing(member.id, enabled))}
+                />
+
+                <EmergencyAlertsSwitch
+                  name={member.name}
+                  enabled={member.emergencyAlerts}
+                  onChange={async (enabled) => replaceMember(await setMemberEmergencyAlerts(member.id, enabled))}
                 />
 
                 {confirmingId === member.id ? (

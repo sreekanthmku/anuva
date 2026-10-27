@@ -30,6 +30,8 @@ export type FamilyIdentity = {
   patientName: string | null;
   /** She shares her period updates with this member. Read fresh on every request. */
   periodSharing: boolean;
+  /** She chose to alert this member in an emergency. Read fresh on every request. */
+  emergencyAlerts: boolean;
 };
 
 function sha256(value: string): string {
@@ -107,6 +109,7 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
           userId: true,
           preferredLanguage: true,
           periodSharing: true,
+          emergencyAlerts: true,
           user: { select: { name: true, erasedAt: true, familyFeatureOptOut: true } },
         },
       },
@@ -159,6 +162,7 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
     userId: member.userId,
     patientName: member.user.name,
     periodSharing: member.periodSharing,
+    emergencyAlerts: member.emergencyAlerts,
   };
 }
 

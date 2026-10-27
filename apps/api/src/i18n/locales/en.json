@@ -124,7 +124,8 @@
       "somethingWentWrong": "Something went wrong. Please try again.",
       "codeCooldown_one": "Please wait {{count}} second before asking for another code.",
       "codeCooldown_other": "Please wait {{count}} seconds before asking for another code.",
-      "periodConsentOutdated": "The wording about sharing your period has changed. Please read it again."
+      "periodConsentOutdated": "The wording about sharing your period has changed. Please read it again.",
+      "emergencyConsentOutdated": "The wording about emergency alerts has changed. Please read it again."
     },
     "dayInsidePeriod": "That day falls inside your period starting {{date}}. Change that period’s dates instead.",
     "datesOverlapPeriod": "Those dates overlap your period starting {{date}}.",
@@ -170,6 +171,9 @@
       },
       "infection-prompt-urgent-depending-severity": {
         "response": "These symptoms can indicate infection or other gynecological issues. Please seek medical evaluation."
+      },
+      "pregnancy-urgent": {
+        "response": "In pregnancy, leaking fluid, bleeding, severe tummy pain or the baby moving less than usual all need to be checked straight away. Please go to the nearest hospital or call your obstetrician now, and do not wait to see if it settles."
       }
     },
     "chips": {
@@ -642,7 +646,8 @@
       "nudge": "A daily suggestion, chosen from how her week is going — including whether she has been having heat episodes. It never shows a symptom, a count or a score.",
       "tracking": "How many days this week she has tracked",
       "consultation": "That a consultation is booked, and when. Never which specialist or why.",
-      "period": "Her period: whether she is on it, and roughly when the next one is due. Never flow, symptoms, fertility or a late period."
+      "period": "Her period: whether she is on it, and roughly when the next one is due. Never flow, symptoms, fertility or a late period.",
+      "emergency": "An alert if she may need you right away, sent when her chat with Anu shows she may be in crisis or a medical emergency. Never what she wrote or why."
     },
     "privateItems": {
       "0": "Medical records, notes and prescriptions",
@@ -888,6 +893,10 @@
       "dueSoonBody": "Some women feel tired, bloated or short-tempered just before a period. Patience and a lighter load this week go a long way.",
       "dueLaterHeadline": "Her next period is due around {{date}}",
       "dueLaterBody": "This is an estimate from what she logs. Nothing to do yet, just something to keep in mind."
+    },
+    "safetyAlert": {
+      "pushTitle": "{{name}} may need you right now",
+      "pushBody": "Please call her or go to her as soon as you can."
     }
   },
   "report": {

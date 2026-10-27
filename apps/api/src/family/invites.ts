@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { prisma } from '@anuva/database';
 import {
+  FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION,
   FAMILY_PERIOD_SHARING_CONSENT_VERSION,
   type FamilyGate,
   type FamilyInvite,
@@ -41,6 +42,7 @@ type MemberRow = {
   createdAt: Date;
   lastSeenAt: Date;
   periodSharing: boolean;
+  emergencyAlerts: boolean;
 };
 
 const INVITE_SELECT = { id: true, expiresAt: true, sharedAt: true, shareCount: true, sharePeriod: true } as const;
@@ -53,6 +55,7 @@ const MEMBER_SELECT = {
   createdAt: true,
   lastSeenAt: true,
   periodSharing: true,
+  emergencyAlerts: true,
 } as const;
 
 function addDays(date: Date, days: number): Date {
@@ -257,6 +260,7 @@ function serializeMember(member: MemberRow): FamilyMemberSummary {
     joinedAt: member.createdAt.toISOString(),
     lastSeenAt: member.lastSeenAt.toISOString(),
     periodSharing: member.periodSharing,
+    emergencyAlerts: member.emergencyAlerts,
   };
 }
 
@@ -488,6 +492,51 @@ export async function setMemberPeriodSharing(
     }),
     prisma.familyShareConsent.create({
       data: { userId, memberId: member.id, scope: 'period', granted: input.enabled, textVersion: version },
+    }),
+  ]);
+
+  return serializeMember(updated);
+}
+
+// ─────────────────────────────────────────────
+// Emergency alerts — her choice, per person
+// ─────────────────────────────────────────────
+
+/**
+ * Turns emergency alerts on or off for one connected person. Only for someone who has joined: she
+ * chooses who to alert knowing who they are, never for whoever happens to claim a link. Read when an
+ * alert is sent, so turning it off applies to the very next one.
+ */
+export async function setMemberEmergencyAlerts(
+  userId: string,
+  memberId: string,
+  input: { enabled: boolean; consentTextVersion?: string },
+): Promise<FamilyMemberSummary> {
+  if (input.enabled && input.consentTextVersion !== FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION) {
+    throw new FamilyError(
+      409,
+      'consent_outdated',
+      'The wording about emergency alerts has changed. Please read it again.',
+    );
+  }
+
+  const member = await prisma.familyMember.findFirst({
+    where: { id: memberId, userId, status: 'active' },
+    select: { id: true },
+  });
+  if (!member) {
+    throw new FamilyError(404, 'member_not_found', 'That family member is not connected.');
+  }
+
+  const version = input.enabled ? FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION : null;
+  const [updated] = await prisma.$transaction([
+    prisma.familyMember.update({
+      where: { id: member.id },
+      data: { emergencyAlerts: input.enabled, emergencyAlertsVersion: version, emergencyAlertsChangedAt: new Date() },
+      select: MEMBER_SELECT,
+    }),
+    prisma.familyShareConsent.create({
+      data: { userId, memberId: member.id, scope: 'emergency', granted: input.enabled, textVersion: version },
     }),
   ]);
 

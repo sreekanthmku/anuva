@@ -25,6 +25,10 @@ export const anuChatResponseSchema = z.object({
       urgency: z.string(),
       recommendedSpecialist: z.string(),
       helplines: z.array(z.object({ name: z.string(), number: z.string() })),
+      /// The family members she chose for emergency alerts are being told she may need them. Only
+      /// on a crisis or emergency turn, and only when at least one of them can be reached. Absent
+      /// reads as false.
+      familyAlerted: z.boolean().optional(),
     })
     .nullable(),
 });
@@ -37,6 +41,8 @@ export const anuChatHistoryTurnSchema = z.object({
   reply: z.string(),
   suggestions: z.array(z.string()),
   source: anuTurnSourceSchema,
+  /// This turn told the people she chose for emergency alerts that she may need them.
+  familyAlerted: z.boolean(),
   createdAt: z.string(),
 });
 
@@ -176,6 +182,8 @@ export const anuChatV3HistoryTurnSchema = z.object({
   suggestions: z.array(z.string()),
   source: anuV3TurnSourceSchema,
   escalated: z.boolean(),
+  /// This turn told the people she chose for emergency alerts that she may need them.
+  familyAlerted: z.boolean(),
   action: anuV3ActionSchema.nullable(),
   booking: anuV3BookingOfferSchema.nullable(),
   logOptions: z.array(anuV3LogOptionSchema),

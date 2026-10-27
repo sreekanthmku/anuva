@@ -66,7 +66,13 @@ export const ERASURE_TRACKER_MODELS = [
 ] as const;
 
 /** Conversations with Anu. `chatThread` cascades its messages. */
-export const ERASURE_CHAT_MODELS = ['chatThread', 'anuChatTurn'] as const;
+export const ERASURE_CHAT_MODELS = [
+  'chatThread',
+  'anuChatTurn',
+  // That a turn alerted her family. Derived from the conversation — it says a crisis happened — so
+  // it goes when the conversation goes.
+  'familySafetyAlert',
+] as const;
 
 /**
  * Only reachable at account scope, because deleting any of these leaves a signed-in account that

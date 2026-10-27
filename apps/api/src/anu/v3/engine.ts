@@ -46,6 +46,7 @@ import { chatJson, v3Env, type ChatMessage } from './llm.js';
 import { judgeMedicine, mentionsMedicine } from './medicineJudge.js';
 import { SYSTEM_PROMPT, V3_PROMPT_VERSION } from './prompt.js';
 import { loadTrackerCatalog, type TrackerCatalog } from './trackers.js';
+import { alertFamilyIfChosen } from '../../family/safetyAlert.js';
 
 export const V3_MODE = 'v3';
 
@@ -342,6 +343,7 @@ async function recordTurn(turn: {
   reply: string;
   suggestions: string[];
   decision: Record<string, unknown>;
+  familyAlerted?: boolean;
 }): Promise<string | null> {
   try {
     const row = await prisma.anuChatTurn.create({
@@ -354,6 +356,7 @@ async function recordTurn(turn: {
         promptVersion: V3_PROMPT_VERSION,
         mode: V3_MODE,
         decision: turn.decision as object,
+        familyAlerted: turn.familyAlerted ?? false,
       },
       select: { id: true },
     });
@@ -627,6 +630,12 @@ export async function answer(
   const action = actionType && href ? { type: actionType, href } : null;
 
   const escalated = riskRank(finalRisk) >= riskRank('L3');
+  // A crisis or an L4 emergency alerts the people she chose; an L3 needs a doctor soon, not someone
+  // at her door now. On the final level, so the reply model can raise it but never talk it down.
+  const familyAlerted =
+    crisis || finalRisk === 'L4'
+      ? await alertFamilyIfChosen({ userId, kind: crisis ? 'crisis' : 'medical', source: 'classifier' })
+      : false;
   const escalation = escalated
     ? {
         area: safety?.flags[0] ?? decision.intent,
@@ -634,6 +643,7 @@ export async function answer(
         recommendedSpecialist:
           decision.professional_pathway ?? safety?.recommended_pathway ?? 'Medical review',
         helplines: crisis && inIndia ? CRISIS_HELPLINES_IN : [],
+        familyAlerted,
       }
     : null;
 
@@ -658,6 +668,7 @@ export async function answer(
       checks: { first: firstViolations, remaining: remainingViolations },
       models: { reply: v3Env.replyModel(), classifier: v3Env.classifierModel() },
     },
+    familyAlerted,
   });
 
   log.info(
@@ -674,6 +685,7 @@ export async function answer(
       bookingCard: booking !== null,
       logButtons: logOptions.length,
       reminderButton: reminderOffer,
+      familyAlerted,
       threadTurns: thread.filter((m) => m.role === 'assistant').length,
       ms: Date.now() - startedAt,
     },
@@ -846,6 +858,7 @@ export async function history(userId: string) {
       reply: true,
       suggestions: true,
       decision: true,
+      familyAlerted: true,
       createdAt: true,
     },
   });
@@ -864,6 +877,7 @@ export async function history(userId: string) {
       suggestions: row.suggestions,
       source: 'model' as const,
       escalated: decision.escalated === true,
+      familyAlerted: row.familyAlerted,
       action,
       booking: storedBookingOffer(decision),
       logOptions: storedLogOptions(decision).map((entry) => entry.option),
