@@ -190,6 +190,25 @@ describe('buildDispatch', () => {
     expect(dispatch.suppressedReason).toBe('SR-01');
   });
 
+  it('a manual send past the daily cap still builds the morning bundle', async () => {
+    mocks.nudgeDailyStateFindUnique.mockResolvedValue({ nudgeCount: 7 });
+
+    const dispatch = await buildDispatch(USER, 'morning', MORNING, { ignoreDailyCap: true });
+
+    expect(dispatch.primaryNudgeId).toBe('L1-001');
+    expect(dispatch.cards.map((c) => c.nudgeId)).toEqual(['L1-001', 'L1-002', 'L1-003']);
+  });
+
+  it('a manual send past the daily cap still leaves out what she has logged', async () => {
+    mocks.nudgeDailyStateFindUnique.mockResolvedValue({ nudgeCount: 7 });
+    mocks.sleepLogFindFirst.mockResolvedValue({ id: 's1', quality: 4 });
+
+    const dispatch = await buildDispatch(USER, 'morning', MORNING, { ignoreDailyCap: true });
+
+    expect(dispatch.cards).toEqual([]);
+    expect(dispatch.suppressedReason).toBe('SR-05');
+  });
+
   it('suppresses morning slot when primary tracker already logged (SR-05)', async () => {
     mocks.sleepLogFindFirst.mockResolvedValue({ id: 's1', quality: 4 });
 

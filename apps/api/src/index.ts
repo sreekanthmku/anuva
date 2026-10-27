@@ -209,7 +209,7 @@ import {
   writeConsultationDocument,
 } from './consultationDocuments.js';
 import { sendPushToAllTokens } from './fcm.js';
-import { sendToAudience } from './push/dispatch.js';
+import { hasReachableDevice, sendToAudience } from './push/dispatch.js';
 import {
   notifyDoctorConsultationBooked,
   notifyDoctorConsultationCancelled,
@@ -230,7 +230,7 @@ import {
   resolveEditablePeriodId,
   todayDateOnly,
 } from './cycleCalc.js';
-import { startNudgeScheduler, dispatchSlot } from './nudge/scheduler.js';
+import { startNudgeScheduler, dispatchSlot, dispatchSlotToUser } from './nudge/scheduler.js';
 import { createMedicationRouter } from './medication/router.js';
 import {
   createConsultationNotesRouter,
@@ -4763,6 +4763,37 @@ app.post('/nudge/dispatch', async (req, res, next) => {
       next(new HttpError(503, e.message));
       return;
     }
+    next(e);
+  }
+});
+
+// Send one user a slot's nudge now, even if she has already had today's three (guarded by the
+// broadcast secret). `user` is her id, email or phone. Trackers she has logged today are still left
+// out, so if she has logged them all there is nothing to send. See scripts/send-nudge.sh.
+app.post('/nudge/dispatch/user', async (req, res, next) => {
+  try {
+    requireBroadcastSecret(req);
+    const slot = nudgeSlotSchema.parse(req.query.slot ?? 'morning');
+    const who = typeof req.query.user === 'string' ? req.query.user.trim() : '';
+    if (!who) throw new HttpError(400, 'Pass ?user= with her id, email or phone.');
+
+    const match = who.includes('@')
+      ? { email: { equals: who, mode: 'insensitive' as const } }
+      : /^[+\d\s-]+$/.test(who)
+        ? { phone: normalizePhone(who) }
+        : { id: who };
+    const user = await prisma.user.findFirst({
+      where: match,
+      select: { id: true, preferredLanguage: true, erasedAt: true },
+    });
+    if (!user || user.erasedAt) throw new HttpError(404, 'No such user.');
+
+    const reachable = await prisma.user.count({ where: { id: user.id, ...hasReachableDevice() } });
+    if (!reachable) throw new HttpError(409, 'She has no device registered for notifications.');
+
+    const result = await dispatchSlotToUser(user, slot, new Date(), { ignoreDailyCap: true });
+    res.json({ ok: true, slot, userId: user.id, ...result });
+  } catch (e) {
     next(e);
   }
 });

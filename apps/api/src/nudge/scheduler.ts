@@ -28,6 +28,45 @@ export type DispatchSlotResult = {
   suppressedDetails: SuppressedDetail[];
 };
 
+export type UserDispatchResult =
+  | { sent: true; nudgeIds: string[]; delivered: number; failed: number }
+  | { sent: false; nudgeId: string; reason: string };
+
+/**
+ * Build, push and record one slot for one user. `ignoreDailyCap` is for a manual send to one
+ * person — the slot run always respects the cap. A tracker she has already logged today is still
+ * left out, so a forced send never asks her something she has answered.
+ */
+export async function dispatchSlotToUser(
+  user: { id: string; preferredLanguage: string | null },
+  slot: NudgeSlot,
+  now = new Date(),
+  options: { ignoreDailyCap?: boolean } = {},
+): Promise<UserDispatchResult> {
+  // Built in her language — the push, and the cards she opens from it, speak the language she
+  // last chose in the app. No stored choice means English.
+  const dispatch = await withLanguage(user.preferredLanguage, () =>
+    buildDispatch(user.id, slot, now, { ignoreDailyCap: options.ignoreDailyCap }),
+  );
+  if (!dispatch.cards.length || !dispatch.primaryNudgeId) {
+    const reason = dispatch.suppressedReason ?? 'UNKNOWN';
+    const nudgeId = dispatch.suppressedNudgeId ?? dispatch.primaryNudgeId ?? 'UNKNOWN';
+    if (nudgeId !== 'UNKNOWN') {
+      await recordSuppression(user.id, nudgeId, slot, reason, now);
+    }
+    log.debug({ slot, userId: user.id, nudgeId, reason }, 'Nudge suppressed');
+    return { sent: false, nudgeId, reason };
+  }
+  const push = await sendToAudience(
+    { kind: 'user', userId: user.id },
+    { title: dispatch.bundleTitle, body: dispatch.cards[0]!.question },
+    { url: `/home?nudge=${slot}`, slot },
+  );
+  const nudgeIds = dispatch.cards.map((card) => card.nudgeId);
+  await recordSend(user.id, dispatch.primaryNudgeId, slot, now, dispatch.setDistress, nudgeIds);
+  return { sent: true, nudgeIds, delivered: push.successCount, failed: push.failureCount };
+}
+
 // Run one slot for all eligible users. Exported for manual/test triggering.
 export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<DispatchSlotResult> {
   const users = await prisma.user.findMany({
@@ -42,35 +81,14 @@ export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<D
 
   for (const u of users) {
     try {
-      // Built in her language — the push, and the cards she opens from it, speak the language she
-      // last chose in the app. No stored choice means English.
-      const dispatch = await withLanguage(u.preferredLanguage, () => buildDispatch(u.id, slot, now));
-      if (!dispatch.cards.length || !dispatch.primaryNudgeId) {
-        const reason = dispatch.suppressedReason ?? 'UNKNOWN';
-        const nudgeId = dispatch.suppressedNudgeId ?? dispatch.primaryNudgeId ?? 'UNKNOWN';
-        suppressed += 1;
-        suppressedReasons[reason] = (suppressedReasons[reason] ?? 0) + 1;
-        suppressedDetails.push({ userId: u.id, nudgeId, reason });
-        if (nudgeId !== 'UNKNOWN') {
-          await recordSuppression(u.id, nudgeId, slot, reason, now);
-        }
-        log.debug({ slot, userId: u.id, nudgeId, reason }, 'Nudge suppressed');
+      const result = await dispatchSlotToUser(u, slot, now);
+      if (result.sent) {
+        sent += 1;
         continue;
       }
-      await sendToAudience(
-        { kind: 'user', userId: u.id },
-        { title: dispatch.bundleTitle, body: dispatch.cards[0]!.question },
-        { url: `/home?nudge=${slot}`, slot },
-      );
-      await recordSend(
-        u.id,
-        dispatch.primaryNudgeId,
-        slot,
-        now,
-        dispatch.setDistress,
-        dispatch.cards.map((card) => card.nudgeId),
-      );
-      sent += 1;
+      suppressed += 1;
+      suppressedReasons[result.reason] = (suppressedReasons[result.reason] ?? 0) + 1;
+      suppressedDetails.push({ userId: u.id, nudgeId: result.nudgeId, reason: result.reason });
     } catch (e) {
       log.error({ err: e, slot, userId: u.id }, 'Nudge dispatch failed');
     }

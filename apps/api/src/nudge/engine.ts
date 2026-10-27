@@ -98,6 +98,8 @@ export interface Dispatch {
 
 export interface BuildDispatchOptions {
   purpose?: 'send' | 'render';
+  /** Send even if she has had today's three nudges — a manual send to one person, never the slot run. */
+  ignoreDailyCap?: boolean;
 }
 
 async function ensureDailyState(userId: string, dayStart: Date) {
@@ -135,7 +137,8 @@ export async function buildDispatch(
 
   // Routine bundle — gated by the slot's primary mandatory nudge.
   const primary = mustNudge(SLOT_PRIMARY[slot]);
-  const gate = isRender ? { allowed: true } : await runGovernor(userId, primary, slot, now);
+  const ignoreDailyCap = isRender || options.ignoreDailyCap;
+  const gate = isRender ? { allowed: true } : await runGovernor(userId, primary, slot, now, { ignoreDailyCap });
   if (!gate.allowed) {
     return {
       slot,
@@ -168,7 +171,7 @@ export async function buildDispatch(
   for (const id of ids) {
     const def = getNudge(id);
     if (!def) continue;
-    const g = await runGovernor(userId, def, slot, now, { ignoreDailyCap: isRender });
+    const g = await runGovernor(userId, def, slot, now, { ignoreDailyCap });
     if (g.allowed) cards.push(toCard(def, ctx));
   }
 
