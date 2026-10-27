@@ -27,6 +27,10 @@ export const PATIENT_PUSH = copy('push.patient', {
       body: '{{doctor}} has shared a suggestion with you. Have a look when you have a moment.',
     },
   },
+  note: {
+    title: 'A note from your consultation 💜',
+    body: '{{doctor}} has written you a note. Tap to read it whenever you’re ready.',
+  },
 });
 
 export const PATIENT_TEXT = copy('patient.text', {

@@ -4,6 +4,8 @@ import type {
   ConsultationDocument,
   ConsultationDocumentKind,
   ConsultationDocumentsResponse,
+  ConsultationNote,
+  CreateConsultationNoteResponse,
   DeleteConsultationDocumentResponse,
   DoctorConsultationBookingsResponse,
   DoctorDetailedAssessmentResponse,
@@ -148,6 +150,29 @@ export async function deleteConsultationDocument(
 ): Promise<DeleteConsultationDocumentResponse> {
   return apiFetch<DeleteConsultationDocumentResponse>(
     `/api/doctor/consultations/${consultationId}/documents/${documentId}`,
+    { method: 'DELETE' },
+  );
+}
+
+/** A typed note to the patient. She is notified, as for a document. */
+export async function createConsultationNote(
+  consultationId: string,
+  body: string,
+): Promise<ConsultationNote> {
+  return (
+    await apiFetch<CreateConsultationNoteResponse>(
+      `/api/doctor/consultations/${consultationId}/doctor-notes`,
+      { method: 'POST', body: JSON.stringify({ body }) },
+    )
+  ).note;
+}
+
+export async function deleteConsultationNote(
+  consultationId: string,
+  noteId: string,
+): Promise<DeleteConsultationDocumentResponse> {
+  return apiFetch<DeleteConsultationDocumentResponse>(
+    `/api/doctor/consultations/${consultationId}/doctor-notes/${noteId}`,
     { method: 'DELETE' },
   );
 }

@@ -109,9 +109,11 @@ async function ensureDailyState(userId: string, dayStart: Date) {
   });
 }
 
-// Mark nudge engagement when mood/sleep are logged via the manual /mood,/sleep path.
-export async function markTrackerEngagement(userId: string, now: Date): Promise<void> {
-  const date = dayKey(now);
+// Mark nudge engagement when mood/sleep are logged via the manual /mood,/sleep path. Credited to the
+// day the entry is for — `day` is yesterday when she fills yesterday in, and the missed-day reminder
+// reads exactly this — while `lastEngagedAt` stays the moment she actually did it.
+export async function markTrackerEngagement(userId: string, now: Date, day: Date = now): Promise<void> {
+  const date = dayKey(day);
   await prisma.nudgeDailyState.upsert({
     where: { userId_date: { userId, date } },
     create: { userId, date, lastEngagedAt: now, morningAnchorResponded: true },
@@ -292,7 +294,9 @@ export async function storeResponse(
 
   await persistAnswer(userId, def, answer, loggedAt);
 
-  const dayStart = startOfDay(now);
+  // The day the answer is for: yesterday's row when she fills yesterday in from /track.
+  const dayStart = startOfDay(loggedAt);
+  const forToday = dayStart.getTime() === startOfDay(now).getTime();
   const setDistress = false;
 
   const engagementPatch: Record<string, unknown> = { lastEngagedAt: now };
@@ -300,11 +304,14 @@ export async function storeResponse(
   if (def.slot === 'afternoon' && def.layer === 1) engagementPatch.afternoonResponded = true;
   if (setDistress) engagementPatch.distressFlag = true;
 
-  // Mark the prompt engaged on its most recent send log.
-  const lastSend = await prisma.nudgeSendLog.findFirst({
-    where: { userId, nudgeId, engagedAt: null },
-    orderBy: { sentAt: 'desc' },
-  });
+  // Mark the prompt engaged on its most recent send log — only for today's answer: filling yesterday
+  // in did not answer the push that went out today.
+  const lastSend = forToday
+    ? await prisma.nudgeSendLog.findFirst({
+        where: { userId, nudgeId, engagedAt: null },
+        orderBy: { sentAt: 'desc' },
+      })
+    : null;
 
   await prisma.$transaction([
     prisma.nudgeDailyState.upsert({
@@ -347,13 +354,17 @@ const SCORE_FALLBACK = copy('nudges.scoreFallback', {
   mood: 'Mood {{score}}/5',
 });
 
-// Read today's stored answer for a tracker, or null if not yet logged.
+// Read a day's stored answer for a tracker, or null if not yet logged. Bounded at the next midnight,
+// so yesterday's sheet does not pick up what she logged this morning.
 async function readAnswer(userId: string, def: NudgeDef, dayStart: Date): Promise<string | null> {
   const s = def.storage;
+  const nextDay = new Date(dayStart);
+  nextDay.setDate(nextDay.getDate() + 1);
+  const onDay = { gte: dayStart, lt: nextDay };
   switch (s.model) {
     case 'sleepLog': {
       const r = await prisma.sleepLog.findFirst({
-        where: { userId, loggedAt: { gte: dayStart }, quality: { not: null } },
+        where: { userId, loggedAt: onDay, quality: { not: null } },
         orderBy: { loggedAt: 'desc' },
       });
       return r?.quality != null
@@ -365,13 +376,13 @@ async function readAnswer(userId: string, def: NudgeDef, dayStart: Date): Promis
       // numeric emoji scale captured via the manual /mood path (slot null).
       if (s.slot === 'evening') {
         const r = await prisma.moodLog.findFirst({
-          where: { userId, loggedAt: { gte: dayStart }, slot: 'evening' },
+          where: { userId, loggedAt: onDay, slot: 'evening' },
           orderBy: { loggedAt: 'desc' },
         });
         return r?.moodShift != null ? localizedAnswer(def, r.moodShift) : null;
       }
       const r = await prisma.moodLog.findFirst({
-        where: { userId, loggedAt: { gte: dayStart }, feeling: { not: null } },
+        where: { userId, loggedAt: onDay, feeling: { not: null } },
         orderBy: { loggedAt: 'desc' },
       });
       return r?.feeling != null

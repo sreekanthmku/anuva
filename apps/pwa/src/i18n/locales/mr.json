@@ -417,8 +417,12 @@
   "track": {
     "loading": "लोड होत आहे…",
     "loggedToday": "आज {{total}} पैकी {{answered}} नोंदवले",
+    "loggedYesterday": "काल {{total}} पैकी {{answered}} लॉग झाले",
     "title": "{{name}}, तुमचा <1>आजचा</1> दिवस कसा गेला?",
+    "titleYesterday": "{{name}}, तुमचा <1>काल</1> कसा गेला?",
     "today": "आज",
+    "yesterday": "काल",
+    "dayPicker": "कोणत्या दिवसाचा लॉग",
     "weekdays": {
       "mon": "सोम",
       "tue": "मंगळ",
@@ -439,6 +443,7 @@
     "change": "बदला",
     "log": "नोंदवा",
     "jointsNone": "आज सांध्यांमध्ये अस्वस्थता नाही. छान.",
+    "jointsNoneYesterday": "काल सांध्यांमध्ये काही त्रास नाही. चांगले आहे.",
     "jointsLogged": "नोंदवलं. हे तुमच्या सायकलसोबत कसं बदलतं ते मी पाहीन.",
     "saveFailed": "जतन करता आलं नाही. आम्ही नंतर पुन्हा प्रयत्न करू."
   },
@@ -1752,7 +1757,9 @@
     "playRecording": "रेकॉर्डिंग प्ले करा",
     "loading": "लोड होत आहे…",
     "recordingFailed": "रेकॉर्डिंग लोड करता आलं नाही.",
-    "documents": "प्रिस्क्रिप्शन आणि योजना",
+    "documents": "तुमच्या डॉक्टरांकडून",
+    "noteFrom": "{{doctor}} यांची नोट",
+    "noteFromFallback": "तुमच्या डॉक्टरांची नोट",
     "documentKinds": {
       "prescription": "प्रिस्क्रिप्शन",
       "diet_plan": "आहार योजना",

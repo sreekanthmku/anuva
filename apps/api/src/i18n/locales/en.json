@@ -141,7 +141,8 @@
       "MENSTRUAL_HISTORY_MISSING": "Your report needs your menstrual history. Complete that section of your assessment to continue.",
       "GENERATION_FAILED": "Your report could not be generated. Please try again."
     },
-    "pleaseAcceptTheLatestTermsOfUse": "Please accept the latest Terms of Use and Privacy Policy to create an account."
+    "pleaseAcceptTheLatestTermsOfUse": "Please accept the latest Terms of Use and Privacy Policy to create an account.",
+    "trackingDayOutOfRange": "You can add entries for today or yesterday only."
   },
   "anu": {
     "redFlags": {
@@ -1657,6 +1658,10 @@
           "title": "A suggestion from your consultation",
           "body": "{{doctor}} has shared a suggestion with you. Have a look when you have a moment."
         }
+      },
+      "note": {
+        "title": "A note from your consultation 💜",
+        "body": "{{doctor}} has written you a note. Tap to read it whenever you’re ready."
       }
     },
     "qaAnswered": {
@@ -1677,6 +1682,15 @@
         "none": "Your reminder"
       },
       "followUpBody": "Just checking in — tap to mark it taken, snooze it or skip it."
+    },
+    "consultation": {
+      "title_one": "Your consultation starts in {{count}} minute",
+      "title_other": "Your consultation starts in {{count}} minutes",
+      "body": "Tap to see your booking. You can join from there when it is time."
+    },
+    "missedTracking": {
+      "title": "You missed yesterday’s check-in",
+      "body": "Want to add how yesterday went? You can fill it in until midnight tonight."
     }
   },
   "patient": {

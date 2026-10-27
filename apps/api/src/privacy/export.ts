@@ -135,6 +135,11 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
             createdAt: true,
           },
         },
+        // What the doctor wrote to her is hers; withdrawn notes are not shown to her, so not here.
+        doctorNotes: {
+          where: { deletedAt: null },
+          select: { id: true, body: true, createdAt: true, author: { select: { name: true } } },
+        },
         call: {
           select: {
             status: true,

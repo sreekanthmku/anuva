@@ -417,8 +417,12 @@
   "track": {
     "loading": "લોડ થઈ રહ્યું છે…",
     "loggedToday": "આજે {{total}}માંથી {{answered}} લોગ થયા",
+    "loggedYesterday": "ગઈકાલે {{total}}માંથી {{answered}} લૉગ થયા",
     "title": "{{name}}, તમારો <1>આજનો</1> દિવસ કેવો રહ્યો?",
+    "titleYesterday": "{{name}}, તમારી <1>ગઈકાલ</1> કેવી રહી?",
     "today": "આજે",
+    "yesterday": "ગઈકાલ",
+    "dayPicker": "કયા દિવસનું લૉગ",
     "weekdays": {
       "mon": "સોમ",
       "tue": "મંગળ",
@@ -439,6 +443,7 @@
     "change": "બદલો",
     "log": "લોગ કરો",
     "jointsNone": "આજે સાંધામાં કોઈ અસ્વસ્થતા નથી. જાણવા મળ્યું, સારું.",
+    "jointsNoneYesterday": "ગઈકાલે સાંધામાં કોઈ તકલીફ નહીં. સારું થયું.",
     "jointsLogged": "લોગ થયું. તમારા સાયકલ સાથે આ કેવી રીતે બદલાય છે તે હું જોઈશ.",
     "saveFailed": "સાચવી શકાયું નહીં. અમે પછીથી ફરી પ્રયત્ન કરીશું."
   },
@@ -1752,7 +1757,9 @@
     "playRecording": "રેકોર્ડિંગ ચલાવો",
     "loading": "લોડ થઈ રહ્યું છે…",
     "recordingFailed": "રેકોર્ડિંગ લોડ કરી શકાયું નહીં.",
-    "documents": "પ્રિસ્ક્રિપ્શન અને પ્લાન્સ",
+    "documents": "તમારા ડૉક્ટર તરફથી",
+    "noteFrom": "{{doctor}}ની નોંધ",
+    "noteFromFallback": "તમારા ડૉક્ટરની નોંધ",
     "documentKinds": {
       "prescription": "પ્રિસ્ક્રિપ્શન",
       "diet_plan": "ડાયેટ પ્લાન",

@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ConsultationDocument, ConsultationDocumentKind } from '@anuva/shared';
 import {
+  CONSULTATION_NOTE_MAX_CHARS,
+  type ConsultationDocument,
+  type ConsultationDocumentKind,
+  type ConsultationNote,
+} from '@anuva/shared';
+import {
+  createConsultationNote,
   deleteConsultationDocument,
+  deleteConsultationNote,
   fetchConsultationDocumentFile,
   fetchConsultationDocuments,
   uploadConsultationDocument,
@@ -9,8 +16,9 @@ import {
 import { shareOrDownloadFile } from '../../lib/shareFile';
 import { compressImageForUpload } from './compressImage';
 
+// No "Prescription" to choose: prescriptions are not shared through the app. The label stays below,
+// so one shared before this still reads as what it is.
 const KIND_OPTIONS: { value: ConsultationDocumentKind; label: string }[] = [
-  { value: 'prescription', label: 'Prescription' },
   { value: 'diet_plan', label: 'Diet plan' },
   { value: 'care_plan', label: 'Care plan' },
   { value: 'suggestion', label: 'Suggestion' },
@@ -40,9 +48,9 @@ type Props = {
 };
 
 /**
- * The doctor's side of post-consultation documents: shoot or pick a file, label it, upload, and
- * withdraw one that went out by mistake. Pages are uploaded one at a time so a failure on page 3
- * does not throw away pages 1 and 2.
+ * The doctor's side of what goes to the patient after a consultation: a typed note, or a file —
+ * shoot or pick it, label it, upload — and withdrawing either if it went out by mistake. Pages are
+ * uploaded one at a time so a failure on page 3 does not throw away pages 1 and 2.
  */
 export function ConsultationDocumentsSheet({
   consultationId,
@@ -51,8 +59,11 @@ export function ConsultationDocumentsSheet({
   onChanged,
 }: Props) {
   const [documents, setDocuments] = useState<ConsultationDocument[]>([]);
+  const [notes, setNotes] = useState<ConsultationNote[]>([]);
+  const [noteText, setNoteText] = useState('');
+  const [sendingNote, setSendingNote] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [kind, setKind] = useState<ConsultationDocumentKind>('prescription');
+  const [kind, setKind] = useState<ConsultationDocumentKind>('diet_plan');
   const [title, setTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -71,6 +82,7 @@ export function ConsultationDocumentsSheet({
     try {
       const response = await fetchConsultationDocuments(consultationId);
       setDocuments(response.documents);
+      setNotes(response.notes);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load documents.');
     } finally {
@@ -213,6 +225,43 @@ export function ConsultationDocumentsSheet({
     [consultationId, load, onChanged],
   );
 
+  const sendNote = useCallback(async () => {
+    const body = noteText.trim();
+    if (!body) return;
+    setSendingNote(true);
+    setError(null);
+    setStatus(null);
+    try {
+      await createConsultationNote(consultationId, body);
+      setNoteText('');
+      setStatus('Note shared. The patient has been notified.');
+      await load();
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not share this note.');
+    } finally {
+      setSendingNote(false);
+    }
+  }, [consultationId, load, noteText, onChanged]);
+
+  const withdrawNote = useCallback(
+    async (note: ConsultationNote) => {
+      setBusyId(note.id);
+      setError(null);
+      try {
+        await deleteConsultationNote(consultationId, note.id);
+        await load();
+        onChanged();
+        setStatus('Note withdrawn. The patient can no longer see it.');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not withdraw this note.');
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [consultationId, load, onChanged],
+  );
+
   const uploading = progress !== null;
 
   return (
@@ -223,7 +272,7 @@ export function ConsultationDocumentsSheet({
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-display text-[22px] leading-tight">Prescription &amp; plans</h2>
+            <h2 className="font-display text-[22px] leading-tight">Notes &amp; plans</h2>
             <p className="mt-1 truncate text-[12px] text-on-surface-variant">{patientLabel}</p>
           </div>
           <button
@@ -235,8 +284,35 @@ export function ConsultationDocumentsSheet({
           </button>
         </div>
 
-        <div className="mt-4">
-          <div className="text-[11px] uppercase tracking-[0.12em] text-outline">Type</div>
+        <label className="mt-4 block">
+          <span className="text-[11px] uppercase tracking-[0.12em] text-outline">
+            Note for the patient
+          </span>
+          <textarea
+            value={noteText}
+            maxLength={CONSULTATION_NOTE_MAX_CHARS}
+            rows={4}
+            onChange={(event) => setNoteText(event.target.value)}
+            placeholder="Advice, next steps, anything she should remember from today."
+            className="mt-2 w-full resize-y rounded-[16px] border border-border-default bg-surface-raised px-3 py-2.5 text-[13px] leading-[1.5] outline-none focus:border-primary"
+          />
+        </label>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <span className="text-[11px] text-on-surface-variant">
+            {noteText.length}/{CONSULTATION_NOTE_MAX_CHARS}
+          </span>
+          <button
+            type="button"
+            disabled={!noteText.trim() || sendingNote}
+            onClick={() => void sendNote()}
+            className="min-h-11 rounded-full bg-secondary px-5 text-[13px] font-semibold text-on-secondary disabled:opacity-45"
+          >
+            {sendingNote ? 'Sharing…' : 'Share note'}
+          </button>
+        </div>
+
+        <div className="mt-5 border-t border-border-default pt-4">
+          <div className="text-[11px] uppercase tracking-[0.12em] text-outline">File type</div>
           <div className="mt-2 flex gap-2">
             {KIND_OPTIONS.map((option) => (
               <button
@@ -348,10 +424,35 @@ export function ConsultationDocumentsSheet({
 
           {loading ? (
             <p className="mt-2 text-[12px] text-on-surface-variant">Loading…</p>
-          ) : documents.length === 0 ? (
+          ) : documents.length === 0 && notes.length === 0 ? (
             <p className="mt-2 text-[12px] text-on-surface-variant">Nothing shared yet.</p>
           ) : (
             <ul className="mt-2 flex flex-col gap-2">
+              {notes.map((note) => (
+                <li
+                  key={note.id}
+                  className="rounded-[16px] border border-border-default bg-surface-raised px-3 py-2.5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[11px] text-on-surface-variant">
+                      Note ·{' '}
+                      {new Date(note.createdAt).toLocaleDateString(undefined, {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={busyId === note.id}
+                      onClick={() => void withdrawNote(note)}
+                      className="shrink-0 text-[12px] font-semibold text-error disabled:opacity-45"
+                    >
+                      Withdraw
+                    </button>
+                  </div>
+                  <p className="mt-1 whitespace-pre-line text-[13px] leading-[1.5]">{note.body}</p>
+                </li>
+              ))}
               {documents.map((doc) => (
                 <li
                   key={doc.id}

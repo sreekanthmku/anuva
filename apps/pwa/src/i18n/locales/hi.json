@@ -417,8 +417,12 @@
   "track": {
     "loading": "लोड हो रहा है…",
     "loggedToday": "आज {{total}} में से {{answered}} लॉग हुए",
+    "loggedYesterday": "कल {{total}} में से {{answered}} लॉग हुए",
     "title": "{{name}}, आपका <1>आज</1> कैसा रहा?",
+    "titleYesterday": "{{name}}, आपका <1>कल</1> कैसा रहा?",
     "today": "आज",
+    "yesterday": "कल",
+    "dayPicker": "किस दिन का लॉग",
     "weekdays": {
       "mon": "सोम",
       "tue": "मंगल",
@@ -439,6 +443,7 @@
     "change": "बदलें",
     "log": "लॉग करें",
     "jointsNone": "आज जोड़ों में कोई तकलीफ़ नहीं। अच्छी बात है।",
+    "jointsNoneYesterday": "कल जोड़ों में कोई तकलीफ़ नहीं। अच्छी बात है।",
     "jointsLogged": "लॉग हो गया। मैं देखूँगी यह आपके चक्र के साथ कैसे बदलता है।",
     "saveFailed": "सेव नहीं हो सका। हम बाद में फिर कोशिश करेंगे।"
   },
@@ -1752,7 +1757,9 @@
     "playRecording": "रिकॉर्डिंग चलाएँ",
     "loading": "लोड हो रहा है…",
     "recordingFailed": "रिकॉर्डिंग लोड नहीं हो सकी।",
-    "documents": "प्रिस्क्रिप्शन और प्लान",
+    "documents": "आपके डॉक्टर की ओर से",
+    "noteFrom": "{{doctor}} का नोट",
+    "noteFromFallback": "आपके डॉक्टर का नोट",
     "documentKinds": {
       "prescription": "प्रिस्क्रिप्शन",
       "diet_plan": "डाइट प्लान",

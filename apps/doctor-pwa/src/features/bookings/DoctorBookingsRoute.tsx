@@ -139,15 +139,15 @@ function BookingCard({
           {callLabel(booking)}
         </button>
 
-        {/* Sharing stays available after the call — a prescription is usually written up later. */}
+        {/* Sharing stays available after the call — notes and plans are usually written up later. */}
         <button
           type="button"
           disabled={booking.status === 'cancelled'}
           onClick={() => onOpenDocuments(booking)}
           aria-label={
             booking.documentCount > 0
-              ? `Prescriptions and plans (${booking.documentCount})`
-              : 'Upload prescription or plan'
+              ? `Notes and plans (${booking.documentCount})`
+              : 'Write a note or share a plan'
           }
           className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border-default bg-surface-raised text-primary disabled:opacity-40"
         >

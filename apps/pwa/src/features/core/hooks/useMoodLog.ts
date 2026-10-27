@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { MoodEmotion, MoodLogEntry, MoodStateResponse } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
 import i18n from '../../../i18n';
+import { loggedAtFor, type TrackingDay } from './trackingDay';
 
 type MoodLogState = {
   data: MoodStateResponse | null;
@@ -27,10 +28,10 @@ export function useMoodLog() {
   }, [load]);
 
   const logMood = useCallback(
-    async (feeling: number, emotions: MoodEmotion[]) => {
+    async (feeling: number, emotions: MoodEmotion[], day: TrackingDay = 'today') => {
       const entry = await apiFetch<MoodLogEntry>('/api/mood', {
         method: 'POST',
-        body: JSON.stringify({ feeling, emotions }),
+        body: JSON.stringify({ feeling, emotions, ...loggedAtFor(day) }),
       });
       await load();
       return entry;

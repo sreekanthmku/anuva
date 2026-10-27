@@ -8,6 +8,7 @@ import type {
   SleepHoursBucket,
 } from '@anuva/shared';
 import { Trans, useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
@@ -18,6 +19,7 @@ import { useNudgeDay } from './hooks/useNudgeDay';
 import { useMoodLog } from './hooks/useMoodLog';
 import { useSleepLog } from './hooks/useSleepLog';
 import { useJointLog } from './hooks/useJointLog';
+import { isSameLocalDay, localYmd, yesterdayAt, type TrackingDay } from './hooks/trackingDay';
 
 // Mood (L1-003) + sleep (L1-001) keep the emoji scale + extras via these sheets.
 const EMOJI_TRACKERS = new Set(['L1-001', 'L1-003']);
@@ -36,6 +38,7 @@ type WeekDayCell = {
   key: (typeof WEEKDAY_KEYS)[number];
   dateNum: number;
   isToday: boolean;
+  isYesterday: boolean;
 };
 
 function getCurrentWeekDays(reference = new Date()): WeekDayCell[] {
@@ -49,10 +52,13 @@ function getCurrentWeekDays(reference = new Date()): WeekDayCell[] {
   return WEEKDAY_KEYS.map((key, i) => {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
     return {
       key,
       dateNum: date.getDate(),
       isToday: date.getTime() === today.getTime(),
+      isYesterday: date.getTime() === yesterday.getTime(),
     };
   });
 }
@@ -97,7 +103,13 @@ function OptionChip({
 export default function SymptomTrackRoute() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { data, loading, error, respond, reload } = useNudgeDay();
+  // Today, or yesterday — the one day back she may still fill in. The "you missed yesterday" push
+  // opens this screen with `?day=yesterday`.
+  const [searchParams] = useSearchParams();
+  const [day, setDay] = useState<TrackingDay>(
+    searchParams.get('day') === 'yesterday' ? 'yesterday' : 'today'
+  );
+  const { data, loading, error, respond, reload } = useNudgeDay(day);
   const moodLog = useMoodLog();
   const sleepLog = useSleepLog();
   const jointLog = useJointLog();
@@ -116,14 +128,37 @@ export default function SymptomTrackRoute() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
 
-  const todayMood = moodLog.data?.today ?? null;
-  const todaySleep = sleepLog.data?.today ?? null;
-  const todayJoints = jointLog.data?.today ?? null;
+  // The selected day's entries. Yesterday's come from the recent lists, which reach back 14 days.
+  const yesterday = useMemo(() => yesterdayAt(), []);
+  const todayMood =
+    day === 'today'
+      ? (moodLog.data?.today ?? null)
+      : (moodLog.data?.recent.find(
+          (entry) => entry.feeling != null && isSameLocalDay(entry.loggedAt, yesterday)
+        ) ?? null);
+  const todaySleep =
+    day === 'today'
+      ? (sleepLog.data?.today ?? null)
+      : (sleepLog.data?.recent.find(
+          (entry) => entry.quality != null && isSameLocalDay(entry.loggedAt, yesterday)
+        ) ?? null);
+  const todayJoints =
+    day === 'today'
+      ? (jointLog.data?.today ?? null)
+      : (jointLog.data?.recent.find((entry) => entry.date === localYmd(yesterday)) ?? null);
+
+  const switchDay = (next: TrackingDay) => {
+    if (next === day) return;
+    setDay(next);
+    // Answers and open editors belong to the day they were given on.
+    setLocalAnswers({});
+    setEditing(new Set());
+  };
 
   const handleLogMood = async (feeling: number, emotions: MoodEmotion[]) => {
     setMoodSaving(true);
     try {
-      await moodLog.logMood(feeling, emotions);
+      await moodLog.logMood(feeling, emotions, day);
       await reload();
     } finally {
       setMoodSaving(false);
@@ -137,7 +172,7 @@ export default function SymptomTrackRoute() {
   ) => {
     setSleepSaving(true);
     try {
-      await sleepLog.logSleep(quality, hours, disruptions);
+      await sleepLog.logSleep(quality, hours, disruptions, day);
       await reload();
     } finally {
       setSleepSaving(false);
@@ -147,8 +182,14 @@ export default function SymptomTrackRoute() {
   const handleLogJoints = async (body: LogJointBody) => {
     setJointsSaving(true);
     try {
-      const entry = await jointLog.logJoints(body);
-      showToast(entry.severity === 'none' ? t('track.jointsNone') : t('track.jointsLogged'));
+      const entry = await jointLog.logJoints(
+        day === 'yesterday' ? { ...body, date: localYmd(yesterday) } : body
+      );
+      showToast(
+        entry.severity === 'none'
+          ? t(day === 'yesterday' ? 'track.jointsNoneYesterday' : 'track.jointsNone')
+          : t('track.jointsLogged')
+      );
     } catch {
       showToast(t('track.saveFailed'));
     } finally {
@@ -340,13 +381,16 @@ export default function SymptomTrackRoute() {
           <Eyebrow>
             {loading
               ? t('track.loading')
-              : t('track.loggedToday', { answered: answeredCount, total })}
+              : t(day === 'yesterday' ? 'track.loggedYesterday' : 'track.loggedToday', {
+                  answered: answeredCount,
+                  total,
+                })}
           </Eyebrow>
           <h1 className="font-display mb-[16px] text-[30px] leading-[1.05] text-on-surface">
             {/* Trans, not three fragments: where her name and the emphasised word fall in the
                 sentence is different in every language. */}
             <Trans
-              i18nKey="track.title"
+              i18nKey={day === 'yesterday' ? 'track.titleYesterday' : 'track.title'}
               values={{ name: firstName }}
               components={{
                 1: <em className="not-italic text-primary" style={{ fontWeight: 300 }} />,
@@ -362,36 +406,60 @@ export default function SymptomTrackRoute() {
             />
           </div>
 
+          {/* Today or yesterday. Nothing further back: the strip below shows the week, but only
+              these two days can still be filled in. */}
+          <div
+            className="mb-[14px] inline-flex rounded-full border border-border-default bg-surface-bright p-1"
+            role="tablist"
+            aria-label={t('track.dayPicker')}
+          >
+            {(['yesterday', 'today'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="tab"
+                aria-selected={day === option}
+                onClick={() => switchDay(option)}
+                className={`min-h-11 rounded-full px-4 text-[13px] font-semibold ${
+                  day === option ? 'bg-primary text-on-primary' : 'text-on-surface'
+                }`}
+                style={{ fontFamily: FONT_BODY }}
+              >
+                {option === 'today' ? t('track.today') : t('track.yesterday')}
+              </button>
+            ))}
+          </div>
+
           <div className="flex justify-between gap-1">
-            {weekDays.map((day) => {
-              const isToday = day.isToday;
+            {weekDays.map((cell) => {
+              const selected = day === 'today' ? cell.isToday : cell.isYesterday;
               return (
-                <div key={day.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                <div key={cell.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
                   <span
-                    className={`text-[9px] uppercase tracking-[0.08em] ${isToday ? 'text-primary' : 'text-outline'}`}
+                    className={`text-[9px] uppercase tracking-[0.08em] ${selected ? 'text-primary' : 'text-outline'}`}
                     style={{ fontFamily: FONT_MONO }}
                   >
-                    {t(`track.weekdays.${day.key}`)}
+                    {t(`track.weekdays.${cell.key}`)}
                   </span>
                   <span
-                    className={`text-[11px] leading-none ${isToday ? 'font-medium text-on-surface' : 'text-on-surface-variant'}`}
+                    className={`text-[11px] leading-none ${selected ? 'font-medium text-on-surface' : 'text-on-surface-variant'}`}
                     style={{ fontFamily: FONT_MONO }}
                   >
-                    {day.dateNum}
+                    {cell.dateNum}
                   </span>
                   <div
                     className="flex items-center justify-center font-semibold"
                     style={{
-                      width: isToday ? '100%' : 10,
-                      height: isToday ? 28 : 10,
-                      borderRadius: isToday ? 14 : '50%',
-                      background: isToday ? '#5E3566' : '#FFFFFF',
-                      color: isToday ? '#FBF6F0' : '#3E2542',
+                      width: selected ? '100%' : 10,
+                      height: selected ? 28 : 10,
+                      borderRadius: selected ? 14 : '50%',
+                      background: selected ? '#5E3566' : '#FFFFFF',
+                      color: selected ? '#FBF6F0' : '#3E2542',
                       fontFamily: FONT_BODY,
-                      fontSize: isToday ? 10 : 11,
+                      fontSize: selected ? 10 : 11,
                     }}
                   >
-                    {isToday ? t('track.today') : null}
+                    {selected ? (day === 'today' ? t('track.today') : t('track.yesterday')) : null}
                   </div>
                 </div>
               );
@@ -486,6 +554,7 @@ export default function SymptomTrackRoute() {
       )}
 
       <MoodLogSheet
+        key={`mood-${day}`}
         open={moodOpen}
         initialFeeling={todayMood?.feeling ?? null}
         initialEmotions={todayMood?.emotions ?? []}
@@ -495,6 +564,7 @@ export default function SymptomTrackRoute() {
       />
 
       <SleepLogSheet
+        key={`sleep-${day}`}
         open={sleepOpen}
         initialQuality={todaySleep?.quality ?? null}
         initialHours={todaySleep?.hours ?? null}
@@ -505,6 +575,7 @@ export default function SymptomTrackRoute() {
       />
 
       <JointsLogSheet
+        key={`joints-${day}`}
         open={jointsOpen}
         initial={todayJoints}
         saving={jointsSaving}

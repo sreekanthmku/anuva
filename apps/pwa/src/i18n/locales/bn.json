@@ -417,8 +417,12 @@
   "track": {
     "loading": "লোড হচ্ছে…",
     "loggedToday": "আজ {{total}}টির মধ্যে {{answered}}টি লগ করা হয়েছে",
+    "loggedYesterday": "গতকাল {{total}}-এর মধ্যে {{answered}}টি লগ হয়েছে",
     "title": "আজ আপনার দিন <1>কেমন</1> গেল, {{name}}?",
+    "titleYesterday": "{{name}}, আপনার <1>গতকাল</1> কেমন গেল?",
     "today": "আজ",
+    "yesterday": "গতকাল",
+    "dayPicker": "কোন দিনের লগ",
     "weekdays": {
       "mon": "সোম",
       "tue": "মঙ্গল",
@@ -439,6 +443,7 @@
     "change": "পরিবর্তন করুন",
     "log": "লগ করুন",
     "jointsNone": "আজ জয়েন্টে কোনো অস্বস্তি নেই। জেনে ভালো লাগল।",
+    "jointsNoneYesterday": "গতকাল জয়েন্টে কোনো অস্বস্তি নেই। জেনে ভালো লাগল।",
     "jointsLogged": "লগ হয়েছে। আপনার চক্রের সাথে এটা কীভাবে বদলায় আমি লক্ষ্য রাখব।",
     "saveFailed": "সেভ করা গেল না। আমরা পরে আবার চেষ্টা করব।"
   },
@@ -1752,7 +1757,9 @@
     "playRecording": "রেকর্ডিং চালান",
     "loading": "লোড হচ্ছে…",
     "recordingFailed": "রেকর্ডিং লোড করা গেল না।",
-    "documents": "প্রেসক্রিপশন ও প্ল্যান",
+    "documents": "আপনার ডাক্তারের কাছ থেকে",
+    "noteFrom": "{{doctor}}-এর নোট",
+    "noteFromFallback": "আপনার ডাক্তারের নোট",
     "documentKinds": {
       "prescription": "প্রেসক্রিপশন",
       "diet_plan": "ডায়েট প্ল্যান",

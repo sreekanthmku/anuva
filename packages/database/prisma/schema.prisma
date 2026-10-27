@@ -942,6 +942,7 @@ model Specialist {
   slots          ConsultationSlot[]
   expertAnswers  ExpertAnswer[]
   uploadedDocs   ConsultationDocument[]
+  consultationNotes ConsultationNote[]
   fcmTokens      SpecialistFcmToken[]
   webPushSubscriptions SpecialistWebPushSubscription[]
   notifications  DoctorNotification[]
@@ -1067,10 +1068,15 @@ model Consultation {
   /// Until then this row is the reason her tombstone user still exists; after it, the retention job
   /// deletes the consultation outright. Null means "no erasure asked for, no clock running".
   purgeAfter   DateTime?
+  /// The start time her pre-consultation reminder was handled for — sent, or skipped because she
+  /// booked inside the reminder window. A time, not a flag: a reschedule moves `scheduledAt`, so
+  /// the reminder is due again for the new slot with no reset anywhere (see consultationReminders.ts).
+  reminderSentFor DateTime?
   createdAt    DateTime           @default(now())
   slot         ConsultationSlot?
   call         ConsultationCall?
   documents    ConsultationDocument[]
+  doctorNotes  ConsultationNote[]
   noteShares   HealthNoteShare[]
   visitSummaries VisitSummary[]
   feedback     ConsultationFeedback?
@@ -1078,6 +1084,7 @@ model Consultation {
   @@index([userId])
   @@index([specialistId])
   @@index([purgeAfter])
+  @@index([status, scheduledAt])
 }
 
 /// One rating per consultation, given by the patient. Only collected once the consultation is
@@ -1116,6 +1123,23 @@ model ConsultationDocument {
   deletedAt      DateTime?
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
+
+  @@index([consultationId, deletedAt])
+}
+
+/// A typed note from the doctor to her for one consultation — advice, next steps, anything that does
+/// not need a file. She sees it beside the documents. Soft delete, for the same medico-legal reason:
+/// a note she was briefly shown is part of the record.
+model ConsultationNote {
+  id             String       @id @default(cuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  body           String
+  authorId       String
+  author         Specialist   @relation(fields: [authorId], references: [id])
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([consultationId, deletedAt])
 }
@@ -1738,11 +1762,15 @@ model NudgeDailyState {
   afternoonResponded     Boolean  @default(false)
   distressFlag           Boolean  @default(false)
   lastEngagedAt          DateTime?
+  /// The "you missed yesterday" push was sent about this day (see missedTracking.ts). Set on the
+  /// missed day's own row, which is also what stops a second one.
+  missedReminderSentAt   DateTime?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
   @@unique([userId, date])
   @@index([userId, date])
+  @@index([date, lastEngagedAt])
 }
 
 model NudgeSendLog {

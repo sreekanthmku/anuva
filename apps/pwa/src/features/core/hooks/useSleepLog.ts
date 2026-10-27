@@ -7,6 +7,7 @@ import type {
 } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
 import i18n from '../../../i18n';
+import { loggedAtFor, type TrackingDay } from './trackingDay';
 
 type SleepLogState = {
   data: SleepStateResponse | null;
@@ -32,10 +33,15 @@ export function useSleepLog() {
   }, [load]);
 
   const logSleep = useCallback(
-    async (quality: number, hours: SleepHoursBucket | null, disruptions: SleepDisruption[]) => {
+    async (
+      quality: number,
+      hours: SleepHoursBucket | null,
+      disruptions: SleepDisruption[],
+      day: TrackingDay = 'today'
+    ) => {
       const entry = await apiFetch<SleepLogEntry>('/api/sleep', {
         method: 'POST',
-        body: JSON.stringify({ quality, hours, disruptions }),
+        body: JSON.stringify({ quality, hours, disruptions, ...loggedAtFor(day) }),
       });
       await load();
       return entry;

@@ -370,8 +370,24 @@ export const consultationDocumentSchema = z.object({
 
 export type ConsultationDocument = z.infer<typeof consultationDocumentSchema>;
 
+/** Longest note a doctor can write. A page of advice, not a case file. */
+export const CONSULTATION_NOTE_MAX_CHARS = 2000;
+
+/** A typed note from the doctor, shared with her beside the documents. */
+export const consultationNoteSchema = z.object({
+  id: z.string(),
+  consultationId: z.string(),
+  body: z.string(),
+  authorName: z.string().nullable(),
+  createdAt: z.string().datetime(),
+});
+
+export type ConsultationNote = z.infer<typeof consultationNoteSchema>;
+
+/** Files and typed notes for one consultation — one read, because both sides show them together. */
 export const consultationDocumentsResponseSchema = z.object({
   documents: z.array(consultationDocumentSchema),
+  notes: z.array(consultationNoteSchema).default([]),
 });
 
 export type ConsultationDocumentsResponse = z.infer<typeof consultationDocumentsResponseSchema>;
@@ -396,6 +412,19 @@ export type UploadConsultationDocumentResponse = z.infer<
 export const deleteConsultationDocumentResponseSchema = z.object({
   ok: z.literal(true),
 });
+
+export const createConsultationNoteBodySchema = z.object({
+  body: z.string().trim().min(1, 'Write the note first.').max(CONSULTATION_NOTE_MAX_CHARS),
+});
+
+export type CreateConsultationNoteBody = z.infer<typeof createConsultationNoteBodySchema>;
+
+export const createConsultationNoteResponseSchema = z.object({
+  ok: z.literal(true),
+  note: consultationNoteSchema,
+});
+
+export type CreateConsultationNoteResponse = z.infer<typeof createConsultationNoteResponseSchema>;
 
 export type DeleteConsultationDocumentResponse = z.infer<
   typeof deleteConsultationDocumentResponseSchema

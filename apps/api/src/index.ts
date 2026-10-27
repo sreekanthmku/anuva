@@ -65,6 +65,9 @@ import {
   consultationDocumentSchema,
   consultationDocumentsResponseSchema,
   deleteConsultationDocumentResponseSchema,
+  consultationNoteSchema,
+  createConsultationNoteBodySchema,
+  createConsultationNoteResponseSchema,
   uploadConsultationDocumentBodySchema,
   uploadConsultationDocumentResponseSchema,
   doctorConsultationBookingsResponseSchema,
@@ -278,6 +281,9 @@ import { createAdminRouter } from './admin/index.js';
 import { createReport14Router } from './report14/index.js';
 import { createFamilyRouter } from './family/index.js';
 import { startFamilyJobs } from './family/jobs.js';
+import { initialReminderSentFor, startConsultationReminderJob } from './consultationReminders.js';
+import { isTrackingDate, trackingTime, TRACKING_DAY_TEXT } from './trackingDay.js';
+import { startMissedTrackingJob } from './missedTracking.js';
 import { AdminError } from './admin/errors.js';
 import {
   endLoginSessions,
@@ -1121,6 +1127,7 @@ type DoctorConsultationRow = {
     endsAt: Date;
   } | null;
   documents: { id: string }[];
+  doctorNotes: { id: string }[];
   call: {
     status: 'waiting' | 'active' | 'ended' | 'failed';
     recordings: ConsultationRecordingRecord[];
@@ -1915,6 +1922,7 @@ type MyConsultationRow = {
   specialist: { key: string; name: string; role: string | null; imageUrl: string | null };
   slot: { endsAt: Date } | null;
   documents: { id: string }[];
+  doctorNotes: { id: string }[];
   call:
     | {
         status: 'waiting' | 'active' | 'ended' | 'failed';
@@ -1965,7 +1973,8 @@ function serializeMyConsultation(row: MyConsultationRow, now: Date) {
     recordingAvailable: mixed?.status === 'ready',
     recordingStatus: (mixed?.status as never) ?? null,
     recordingDurationSeconds: mixed?.durationSeconds ?? null,
-    documentCount: row.documents.length,
+    // Files and typed notes together: either is something from the doctor to open.
+    documentCount: row.documents.length + row.doctorNotes.length,
   });
 }
 
@@ -2020,6 +2029,7 @@ const MY_CONSULTATION_INCLUDE = {
   specialist: { select: { key: true, name: true, role: true, imageUrl: true } },
   slot: { select: { endsAt: true } },
   documents: { where: { deletedAt: null }, select: { id: true } },
+  doctorNotes: { where: { deletedAt: null }, select: { id: true } },
   call: {
     select: {
       status: true,
@@ -2188,6 +2198,7 @@ app.post('/consultations/:id/reschedule', async (req, res, next) => {
           specialistId: slot.specialistId,
           scheduledAt: slot.startsAt,
           status: 'confirmed',
+          reminderSentFor: initialReminderSentFor(slot.startsAt, now),
         },
         include: MY_CONSULTATION_INCLUDE,
       });
@@ -2299,6 +2310,34 @@ type ConsultationDocumentRow = {
   uploadedBy: { name: string } | null;
 };
 
+const CONSULTATION_NOTE_MAX_PER_CONSULTATION = 20;
+
+const CONSULTATION_NOTE_SELECT = {
+  id: true,
+  consultationId: true,
+  body: true,
+  createdAt: true,
+  author: { select: { name: true } },
+} as const;
+
+type ConsultationNoteRow = {
+  id: string;
+  consultationId: string;
+  body: string;
+  createdAt: Date;
+  author: { name: string } | null;
+};
+
+function serializeConsultationNote(row: ConsultationNoteRow) {
+  return consultationNoteSchema.parse({
+    id: row.id,
+    consultationId: row.consultationId,
+    body: row.body,
+    authorName: row.author?.name ?? null,
+    createdAt: row.createdAt.toISOString(),
+  });
+}
+
 function serializeConsultationDocument(row: ConsultationDocumentRow) {
   // storagePath is deliberately dropped — clients address the file by document id only.
   return consultationDocumentSchema.parse({
@@ -2368,15 +2407,15 @@ async function notifyPatientDocumentShared(args: {
   consultationId: string;
   patientId: string;
   doctorName: string;
-  kind: 'prescription' | 'diet_plan' | 'care_plan' | 'suggestion';
+  kind: 'prescription' | 'diet_plan' | 'care_plan' | 'suggestion' | 'note';
 }) {
   // Warm, plain-language copy: this lands on a phone right after a consultation, so it says what
   // arrived and who sent it without sounding like a system alert.
   // In her language — this is sent from the doctor's request, not hers. See PATIENT_PUSH.
-  const copy = withLanguage(await languageForUser(args.patientId), () => ({
-    title: PATIENT_PUSH.documents[args.kind].title,
-    body: fill(PATIENT_PUSH.documents[args.kind].body, { doctor: args.doctorName }),
-  }));
+  const copy = withLanguage(await languageForUser(args.patientId), () => {
+    const text = args.kind === 'note' ? PATIENT_PUSH.note : PATIENT_PUSH.documents[args.kind];
+    return { title: text.title, body: fill(text.body, { doctor: args.doctorName }) };
+  });
 
   try {
     const result = await sendToAudience(
@@ -2421,15 +2460,23 @@ app.get('/consultations/:id/documents', async (req, res, next) => {
 
     // Newest first — the prescription from the consultation that just ended is the one being
     // looked for, not the one from three visits ago.
-    const documents = (await prisma.consultationDocument.findMany({
-      where: { consultationId: consultation.id, deletedAt: null },
-      select: CONSULTATION_DOCUMENT_SELECT,
-      orderBy: { createdAt: 'desc' },
-    })) as ConsultationDocumentRow[];
+    const [documents, notes] = (await Promise.all([
+      prisma.consultationDocument.findMany({
+        where: { consultationId: consultation.id, deletedAt: null },
+        select: CONSULTATION_DOCUMENT_SELECT,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.consultationNote.findMany({
+        where: { consultationId: consultation.id, deletedAt: null },
+        select: CONSULTATION_NOTE_SELECT,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])) as [ConsultationDocumentRow[], ConsultationNoteRow[]];
 
     res.json(
       consultationDocumentsResponseSchema.parse({
         documents: documents.map(serializeConsultationDocument),
+        notes: notes.map(serializeConsultationNote),
       }),
     );
   } catch (e) {
@@ -2476,15 +2523,23 @@ app.get('/doctor/consultations/:id/documents', async (req, res, next) => {
       throw new HttpError(404, 'Consultation not found.');
     }
 
-    const documents = (await prisma.consultationDocument.findMany({
-      where: { consultationId: consultation.id, deletedAt: null },
-      select: CONSULTATION_DOCUMENT_SELECT,
-      orderBy: { createdAt: 'asc' },
-    })) as ConsultationDocumentRow[];
+    const [documents, notes] = (await Promise.all([
+      prisma.consultationDocument.findMany({
+        where: { consultationId: consultation.id, deletedAt: null },
+        select: CONSULTATION_DOCUMENT_SELECT,
+        orderBy: { createdAt: 'asc' },
+      }),
+      prisma.consultationNote.findMany({
+        where: { consultationId: consultation.id, deletedAt: null },
+        select: CONSULTATION_NOTE_SELECT,
+        orderBy: { createdAt: 'asc' },
+      }),
+    ])) as [ConsultationDocumentRow[], ConsultationNoteRow[]];
 
     res.json(
       consultationDocumentsResponseSchema.parse({
         documents: documents.map(serializeConsultationDocument),
+        notes: notes.map(serializeConsultationNote),
       }),
     );
   } catch (e) {
@@ -2657,6 +2712,99 @@ app.delete('/doctor/consultations/:id/documents/:docId', async (req, res, next) 
   }
 });
 
+/**
+ * A typed note to the patient for one consultation. She is notified, as for a document. Not under
+ * `/notes`: that path is the notes *she* shares with the doctor (healthNotes/router.ts).
+ */
+app.post('/doctor/consultations/:id/doctor-notes', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+    const body = createConsultationNoteBodySchema.parse(req.body ?? {});
+
+    const consultation = await prisma.consultation.findFirst({
+      where: { id: req.params.id, ...doctorConsultationScope(identity) },
+      select: {
+        id: true,
+        userId: true,
+        specialistId: true,
+        status: true,
+        specialist: { select: { name: true } },
+      },
+    });
+
+    if (!consultation) {
+      throw new HttpError(404, 'Consultation not found.');
+    }
+
+    if (consultation.status === 'cancelled') {
+      throw new HttpError(400, 'This consultation was cancelled.');
+    }
+
+    const existing = await prisma.consultationNote.count({
+      where: { consultationId: consultation.id, deletedAt: null },
+    });
+
+    if (existing >= CONSULTATION_NOTE_MAX_PER_CONSULTATION) {
+      throw new HttpError(
+        409,
+        `This consultation already has ${CONSULTATION_NOTE_MAX_PER_CONSULTATION} notes. Remove one first.`,
+      );
+    }
+
+    // As for uploads: the admin key is not a specialist, so its notes are the consultation's doctor's.
+    const note = (await prisma.consultationNote.create({
+      data: {
+        consultationId: consultation.id,
+        body: body.body,
+        authorId: identity.specialistId ?? consultation.specialistId,
+      },
+      select: CONSULTATION_NOTE_SELECT,
+    })) as ConsultationNoteRow;
+
+    req.log.info({ consultationId: consultation.id, noteId: note.id }, 'Consultation note shared');
+
+    void notifyPatientDocumentShared({
+      consultationId: consultation.id,
+      patientId: consultation.userId,
+      doctorName: consultation.specialist.name,
+      kind: 'note',
+    });
+
+    res.status(201).json(
+      createConsultationNoteResponseSchema.parse({ ok: true, note: serializeConsultationNote(note) }),
+    );
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** Withdraws a note. Soft delete, like a document: hidden from both sides, kept for the record. */
+app.delete('/doctor/consultations/:id/doctor-notes/:noteId', async (req, res, next) => {
+  try {
+    const identity = requireDoctorIdentity(req);
+
+    const removed = await prisma.consultationNote.updateMany({
+      where: {
+        id: req.params.noteId,
+        consultationId: req.params.id,
+        deletedAt: null,
+        consultation: doctorConsultationScope(identity),
+      },
+      data: { deletedAt: new Date() },
+    });
+
+    if (removed.count === 0) {
+      throw new HttpError(404, 'Note not found.');
+    }
+
+    req.log.info({ consultationId: req.params.id, noteId: req.params.noteId }, 'Consultation note withdrawn');
+
+    res.json(deleteConsultationDocumentResponseSchema.parse({ ok: true }));
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.get('/consultations/specialists', async (_req, res, next) => {
   try {
     await readyBookingCatalog();
@@ -2787,6 +2935,7 @@ app.post('/consultations/book', async (req, res, next) => {
           scheduledAt: slot.startsAt,
           status: 'confirmed',
           isFree: true,
+          reminderSentFor: initialReminderSentFor(slot.startsAt),
         },
       });
 
@@ -3169,6 +3318,10 @@ app.get('/doctor/consultations', async (req, res, next) => {
           where: { deletedAt: null },
           select: { id: true },
         },
+        doctorNotes: {
+          where: { deletedAt: null },
+          select: { id: true },
+        },
         call: {
           select: {
             status: true,
@@ -3194,7 +3347,7 @@ app.get('/doctor/consultations', async (req, res, next) => {
           createdAt: booking.createdAt.toISOString(),
           callStatus: booking.call?.status ?? null,
           recordingStatus: aggregateRecording(booking.call?.recordings)?.status ?? null,
-          documentCount: booking.documents.length,
+          documentCount: booking.documents.length + booking.doctorNotes.length,
         })),
       }),
     );
@@ -4538,7 +4691,8 @@ app.post('/nudge/respond', async (req, res, next) => {
     const user = await requireCurrentUser(req);
     const { nudgeId, answer, loggedAt } = submitNudgeResponseBodySchema.parse(req.body);
     const now = new Date();
-    const when = loggedAt ? new Date(loggedAt) : now;
+    const when = trackingTime(loggedAt, now);
+    if (!when) throw new HttpError(400, TRACKING_DAY_TEXT.trackingDayOutOfRange);
     const result = await storeResponse(user.id, nudgeId, answer, when, now);
     res.status(201).json(
       nudgeRespondResponseSchema.parse({
@@ -4564,7 +4718,10 @@ app.get('/nudge/selftest', (_req, res) => {
 app.get('/nudge/day', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
-    const sheet = await getDaySheet(user.id, new Date());
+    // `?day=yesterday` is the one day back she may still fill in (see trackingDay.ts).
+    const day = new Date();
+    if (req.query.day === 'yesterday') day.setDate(day.getDate() - 1);
+    const sheet = await getDaySheet(user.id, day);
     res.json(nudgeDayResponseSchema.parse(sheet));
   } catch (e) {
     next(e);
@@ -5269,15 +5426,13 @@ app.post('/mood', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     const { feeling, emotions, loggedAt } = logMoodBodySchema.parse(req.body);
+    const now = new Date();
+    const when = trackingTime(loggedAt, now);
+    if (!when) throw new HttpError(400, TRACKING_DAY_TEXT.trackingDayOutOfRange);
     const created = await prisma.moodLog.create({
-      data: {
-        userId: user.id,
-        feeling,
-        emotions,
-        ...(loggedAt ? { loggedAt: new Date(loggedAt) } : {}),
-      },
+      data: { userId: user.id, feeling, emotions, loggedAt: when },
     });
-    await markTrackerEngagement(user.id, new Date());
+    await markTrackerEngagement(user.id, now, when);
     res.status(201).json(serializeMoodLog(created));
   } catch (e) {
     next(e);
@@ -5338,16 +5493,13 @@ app.post('/sleep', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     const { quality, hours, disruptions, loggedAt } = logSleepBodySchema.parse(req.body);
+    const now = new Date();
+    const when = trackingTime(loggedAt, now);
+    if (!when) throw new HttpError(400, TRACKING_DAY_TEXT.trackingDayOutOfRange);
     const created = await prisma.sleepLog.create({
-      data: {
-        userId: user.id,
-        quality,
-        hours,
-        disruptions,
-        ...(loggedAt ? { loggedAt: new Date(loggedAt) } : {}),
-      },
+      data: { userId: user.id, quality, hours, disruptions, loggedAt: when },
     });
-    await markTrackerEngagement(user.id, new Date());
+    await markTrackerEngagement(user.id, now, when);
     res.status(201).json(serializeSleepLog(created));
   } catch (e) {
     next(e);
@@ -5421,6 +5573,9 @@ app.post('/joints', async (req, res, next) => {
     if (dateStr > todayStr) {
       throw new HttpError(400, 'Joint discomfort cannot be logged for a future day.');
     }
+    if (!isTrackingDate(dateStr, now)) {
+      throw new HttpError(400, TRACKING_DAY_TEXT.trackingDayOutOfRange);
+    }
 
     // "No discomfort" ends the tracker, so the follow-ups are legitimately empty
     // — and must be *stored* empty, or a corrected answer would keep yesterday's
@@ -5448,8 +5603,8 @@ app.post('/joints', async (req, res, next) => {
       update: { ...data, loggedAt: now },
     });
 
-    // Same engagement credit the other manual trackers take.
-    await markTrackerEngagement(user.id, now);
+    // Same engagement credit the other manual trackers take, on the day it is for.
+    await markTrackerEngagement(user.id, now, new Date(`${dateStr}T12:00:00`));
     req.log.info(
       { date: dateStr, severity: data.severity, score: data.score },
       'Joint discomfort logged',
@@ -5467,13 +5622,16 @@ app.post('/joints', async (req, res, next) => {
 
 const QUICK_SYMPTOMS: QuickSymptom[] = ['hot_flash', 'anxiety', 'chills', 'irritability'];
 
-async function getTodayQuickLogCounts(userId: string) {
-  const startOfDay = new Date();
+/** Taps per symptom on the day of `day` (today by default). */
+async function getTodayQuickLogCounts(userId: string, day: Date = new Date()) {
+  const startOfDay = new Date(day);
   startOfDay.setHours(0, 0, 0, 0);
+  const nextDay = new Date(startOfDay);
+  nextDay.setDate(nextDay.getDate() + 1);
 
   const grouped = await prisma.quickSymptomLog.groupBy({
     by: ['symptom'],
-    where: { userId, loggedAt: { gte: startOfDay } },
+    where: { userId, loggedAt: { gte: startOfDay, lt: nextDay } },
     _count: { symptom: true },
   });
 
@@ -5534,10 +5692,15 @@ app.post('/quick-log', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
     const { symptom, loggedAt } = logQuickSymptomBodySchema.parse(req.body);
+    const now = new Date();
+    const when = trackingTime(loggedAt, now);
+    if (!when) throw new HttpError(400, TRACKING_DAY_TEXT.trackingDayOutOfRange);
     // Routed through the write-through module so the tap reaches the daily logs
     // the summary reads, not just the event table.
-    await recordQuickSymptom(user.id, symptom, loggedAt ? new Date(loggedAt) : undefined);
-    const counts = await getTodayQuickLogCounts(user.id);
+    await recordQuickSymptom(user.id, symptom, when);
+    // A tap counts as tracking that day, like the other trackers — the missed-day reminder reads it.
+    await markTrackerEngagement(user.id, now, when);
+    const counts = await getTodayQuickLogCounts(user.id, when);
     res.status(201).json(
       logQuickSymptomResponseSchema.parse({
         symptom,
@@ -6806,6 +6969,8 @@ async function startServer() {
 
   startNudgeScheduler();
   startMedicationReminderJob();
+  startConsultationReminderJob();
+  startMissedTrackingJob();
   startSupportRetentionJob();
   startPrivacyRetentionJobs();
   startFamilyJobs();

@@ -5,6 +5,7 @@ import i18n from '../../i18n';
 import { Link, useNavigate } from 'react-router-dom';
 import type {
   ConsultationDocument,
+  ConsultationNote,
   ConsultationDocumentKind,
   ConsultationSpecialist,
   MyConsultation,
@@ -150,13 +151,14 @@ function documentUploadedAt(iso: string): string {
 }
 
 /**
- * The prescriptions and diet plans the doctor shared for one consultation. Files come from an
- * authenticated route, so each is fetched as a blob on tap — images open in a viewer, PDFs in a
- * new tab. Only rendered when the booking already reports a document, so no wasted request.
+ * What the doctor shared for one consultation: typed notes, shown in full, then files. Files come
+ * from an authenticated route, so each is fetched as a blob on tap — images open in a viewer, PDFs
+ * in a new tab. Only rendered when the booking already reports something, so no wasted request.
  */
 function ConsultationDocuments({ consultationId }: { consultationId: string }) {
   const { t } = useTranslation();
   const [documents, setDocuments] = useState<ConsultationDocument[]>([]);
+  const [notes, setNotes] = useState<ConsultationNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -183,7 +185,10 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
         const newestFirst = [...response.documents].sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
-        if (!cancelled) setDocuments(newestFirst);
+        if (!cancelled) {
+          setDocuments(newestFirst);
+          setNotes(response.notes ?? []);
+        }
       })
       .catch((err) => {
         if (!cancelled)
@@ -275,7 +280,7 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
     );
   }
 
-  if (documents.length === 0 && !error) {
+  if (documents.length === 0 && notes.length === 0 && !error) {
     return null;
   }
 
@@ -284,6 +289,29 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
       <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-tertiary">
         {t('bookings.documents')}
       </div>
+
+      {notes.length > 0 ? (
+        <ul className="mt-2 flex flex-col gap-2">
+          {notes.map((note) => (
+            <li
+              key={note.id}
+              className="rounded-[14px] border border-border-default bg-surface-raised px-3 py-2.5"
+            >
+              <div className="text-[11px] leading-[1.35] text-on-surface-variant">
+                {[
+                  note.authorName
+                    ? t('bookings.noteFrom', { doctor: note.authorName })
+                    : t('bookings.noteFromFallback'),
+                  documentUploadedAt(note.createdAt),
+                ].join(' · ')}
+              </div>
+              <p className="mt-1 whitespace-pre-line text-[13.5px] leading-[1.55] text-on-surface">
+                {note.body}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <ul className="mt-2 flex flex-col gap-2">
         {documents.map((doc) => (
@@ -444,93 +472,100 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
     }));
   }, [dates, pickedDate]);
 
+  // Above the bottom nav (z-50, rendered after this sheet), with the confirm button pinned in a
+  // footer: it sat at the end of the scrolling list, where the nav covered it and a long list of
+  // times pushed it out of reach.
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-[61] flex items-end bg-black/40" onClick={onClose}>
       <div
-        className="max-h-[88vh] w-full overflow-y-auto rounded-t-[24px] bg-surface px-4 pb-8 pt-5"
+        className="flex max-h-[88dvh] w-full flex-col rounded-t-[24px] bg-surface"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-[22px]">{t('bookings.rescheduleTitle')}</h2>
-          <button type="button" onClick={onClose} className="text-[13px] font-semibold text-primary">
-            {t('bookings.close')}
-          </button>
-        </div>
-        <p className="mt-1 text-[13px] text-on-surface-variant">{t('bookings.rescheduleBody')}</p>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-[22px]">{t('bookings.rescheduleTitle')}</h2>
+            <button type="button" onClick={onClose} className="text-[13px] font-semibold text-primary">
+              {t('bookings.close')}
+            </button>
+          </div>
+          <p className="mt-1 text-[13px] text-on-surface-variant">{t('bookings.rescheduleBody')}</p>
 
-        <div className="mt-4">
-          <SpecialistPicker
-            specialists={specialists}
-            value={specialistKey}
-            onChange={setSpecialistKey}
-          />
-        </div>
-
-        {loading ? (
-          <p className="mt-4 px-3 text-[13px] text-on-surface-variant">
-            {t('bookings.loadingTimes')}
-          </p>
-        ) : (
-          <div className="mt-4 px-3">
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {dates.map((group) => {
-                const card = bookingDateCard(group.date);
-                const active = group.date === pickedDate;
-                return (
-                  <button
-                    key={group.date}
-                    type="button"
-                    onClick={() => {
-                      setPickedDate(group.date);
-                      setPickedSlot(null);
-                    }}
-                    className={`min-w-[62px] rounded-[16px] border px-3 py-2 text-center ${
-                      active
-                        ? 'border-secondary bg-secondary text-on-secondary'
-                        : 'border-border-default bg-surface-raised'
-                    }`}
-                  >
-                    <div className="text-[11px] font-semibold">{card.weekdayLabel}</div>
-                    <div className="text-[18px] font-bold leading-tight">{card.dayNum}</div>
-                    <div className="text-[11px]">{card.monthLabel}</div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <TimeSlotSection
-              slots={slotsForDate}
-              pickedTimeId={pickedSlot}
-              onSelectTime={setPickedSlot}
-              emptyMessage={
-                dates.length === 0 ? t('bookings.noOpenSlots') : t('bookings.noTimesLeft')
-              }
+          <div className="mt-4">
+            <SpecialistPicker
+              specialists={specialists}
+              value={specialistKey}
+              onChange={setSpecialistKey}
             />
           </div>
-        )}
 
-        {error ? <p className="mt-3 px-3 text-[13px] text-error">{error}</p> : null}
+          {loading ? (
+            <p className="mt-4 px-3 text-[13px] text-on-surface-variant">
+              {t('bookings.loadingTimes')}
+            </p>
+          ) : (
+            <div className="mt-4 px-3">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {dates.map((group) => {
+                  const card = bookingDateCard(group.date);
+                  const active = group.date === pickedDate;
+                  return (
+                    <button
+                      key={group.date}
+                      type="button"
+                      onClick={() => {
+                        setPickedDate(group.date);
+                        setPickedSlot(null);
+                      }}
+                      className={`min-w-[62px] rounded-[16px] border px-3 py-2 text-center ${
+                        active
+                          ? 'border-secondary bg-secondary text-on-secondary'
+                          : 'border-border-default bg-surface-raised'
+                      }`}
+                    >
+                      <div className="text-[11px] font-semibold">{card.weekdayLabel}</div>
+                      <div className="text-[18px] font-bold leading-tight">{card.dayNum}</div>
+                      <div className="text-[11px]">{card.monthLabel}</div>
+                    </button>
+                  );
+                })}
+              </div>
 
-        <button
-          type="button"
-          disabled={!pickedSlot || saving}
-          onClick={async () => {
-            if (!pickedSlot) return;
-            setSaving(true);
-            setError(null);
-            try {
-              await rescheduleConsultation(booking.consultationId, pickedSlot);
-              onDone();
-            } catch (err) {
-              setError(err instanceof Error ? err.message : i18n.t('bookings.rescheduleFailed'));
-            } finally {
-              setSaving(false);
-            }
-          }}
-          className="mt-5 w-full rounded-full bg-secondary px-4 py-3 text-[14px] font-semibold text-on-secondary disabled:opacity-45"
-        >
-          {saving ? t('common.saving') : t('bookings.confirmNewTime')}
-        </button>
+              <TimeSlotSection
+                slots={slotsForDate}
+                pickedTimeId={pickedSlot}
+                onSelectTime={setPickedSlot}
+                emptyMessage={
+                  dates.length === 0 ? t('bookings.noOpenSlots') : t('bookings.noTimesLeft')
+                }
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="shrink-0 border-t border-border-default px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-3">
+          {error ? <p className="mb-2 px-3 text-[13px] text-error">{error}</p> : null}
+
+          <button
+            type="button"
+            disabled={!pickedSlot || saving}
+            onClick={async () => {
+              if (!pickedSlot) return;
+              setSaving(true);
+              setError(null);
+              try {
+                await rescheduleConsultation(booking.consultationId, pickedSlot);
+                onDone();
+              } catch (err) {
+                setError(err instanceof Error ? err.message : i18n.t('bookings.rescheduleFailed'));
+              } finally {
+                setSaving(false);
+              }
+            }}
+            className="min-h-11 w-full rounded-full bg-secondary px-4 py-3 text-[14px] font-semibold text-on-secondary disabled:opacity-45"
+          >
+            {saving ? t('common.saving') : t('bookings.confirmNewTime')}
+          </button>
+        </div>
       </div>
     </div>
   );

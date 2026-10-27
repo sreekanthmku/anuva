@@ -417,8 +417,12 @@
   "track": {
     "loading": "లోడ్ అవుతోంది…",
     "loggedToday": "ఈ రోజు {{total}}లో {{answered}} లాగ్ అయ్యాయి",
+    "loggedYesterday": "నిన్న {{total}}లో {{answered}} లాగ్ అయ్యాయి",
     "title": "{{name}}, మీ <1>ఈ రోజు</1> ఎలా గడిచింది?",
+    "titleYesterday": "{{name}}, మీ <1>నిన్న</1> ఎలా గడిచింది?",
     "today": "ఈ రోజు",
+    "yesterday": "నిన్న",
+    "dayPicker": "ఏ రోజు లాగ్",
     "weekdays": {
       "mon": "సోమ",
       "tue": "మంగళ",
@@ -439,6 +443,7 @@
     "change": "మార్చు",
     "log": "లాగ్",
     "jointsNone": "ఈ రోజు కీళ్ల నొప్పి లేదు. బాగుంది.",
+    "jointsNoneYesterday": "నిన్న కీళ్లలో ఎలాంటి ఇబ్బంది లేదు. మంచిది.",
     "jointsLogged": "లాగ్ అయింది. ఇది మీ సైకిల్‌తో ఎలా మారుతుందో నేను గమనిస్తాను.",
     "saveFailed": "సేవ్ చేయలేకపోయాం. మేము తర్వాత మళ్ళీ ప్రయత్నిస్తాం."
   },
@@ -1752,7 +1757,9 @@
     "playRecording": "రికార్డింగ్ ప్లే చేయండి",
     "loading": "లోడ్ అవుతోంది…",
     "recordingFailed": "రికార్డింగ్ లోడ్ చేయలేకపోయాం.",
-    "documents": "ప్రిస్క్రిప్షన్ & ప్లాన్లు",
+    "documents": "మీ డాక్టర్ నుండి",
+    "noteFrom": "{{doctor}} గారి నోట్",
+    "noteFromFallback": "మీ డాక్టర్ నోట్",
     "documentKinds": {
       "prescription": "ప్రిస్క్రిప్షన్",
       "diet_plan": "డైట్ ప్లాన్",

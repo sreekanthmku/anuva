@@ -417,8 +417,12 @@
   "track": {
     "loading": "Loading…",
     "loggedToday": "{{answered}} of {{total}} logged today",
+    "loggedYesterday": "{{answered}} of {{total}} logged yesterday",
     "title": "How was your <1>today</1>, {{name}}?",
+    "titleYesterday": "How was <1>yesterday</1>, {{name}}?",
     "today": "Today",
+    "yesterday": "Yesterday",
+    "dayPicker": "Day to log",
     "weekdays": {
       "mon": "Mon",
       "tue": "Tue",
@@ -439,6 +443,7 @@
     "change": "Change",
     "log": "Log",
     "jointsNone": "No joint discomfort today. Good to know.",
+    "jointsNoneYesterday": "No joint discomfort yesterday. Good to know.",
     "jointsLogged": "Logged. I'll watch how this moves with your cycle.",
     "saveFailed": "Couldn't save. We'll retry later."
   },
@@ -1832,7 +1837,9 @@
     "playRecording": "Play recording",
     "loading": "Loading…",
     "recordingFailed": "Could not load the recording.",
-    "documents": "Prescription & plans",
+    "documents": "From your doctor",
+    "noteFrom": "Note from {{doctor}}",
+    "noteFromFallback": "Note from your doctor",
     "documentKinds": {
       "prescription": "Prescription",
       "diet_plan": "Diet plan",

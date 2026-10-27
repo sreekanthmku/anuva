@@ -417,8 +417,12 @@
   "track": {
     "loading": "ଲୋଡ୍ ହେଉଛି…",
     "loggedToday": "ଆଜି {{total}} ମଧ୍ୟରୁ {{answered}}ଟି ଲଗ୍ ହେଲା",
+    "loggedYesterday": "ଗତକାଲି {{total}}ରୁ {{answered}} ଲଗ୍ ହେଲା",
     "title": "<1>ଆଜି</1> ଆପଣଙ୍କର କେମିତି ଗଲା, {{name}}?",
+    "titleYesterday": "{{name}}, ଆପଣଙ୍କ <1>ଗତକାଲି</1> କେମିତି ଗଲା?",
     "today": "ଆଜି",
+    "yesterday": "ଗତକାଲି",
+    "dayPicker": "କେଉଁ ଦିନର ଲଗ୍",
     "weekdays": {
       "mon": "ସୋମ",
       "tue": "ମଙ୍ଗଳ",
@@ -439,6 +443,7 @@
     "change": "ବଦଳାନ୍ତୁ",
     "log": "ଲଗ୍",
     "jointsNone": "ଆଜି ଗଣ୍ଠିରେ କୌଣସି ଅସ୍ୱସ୍ତି ନାହିଁ। ଜାଣିଲି।",
+    "jointsNoneYesterday": "ଗତକାଲି ଗଣ୍ଠିରେ କୌଣସି ଅସୁବିଧା ନାହିଁ। ଭଲ କଥା।",
     "jointsLogged": "ଲଗ୍ ହେଲା। ଆପଣଙ୍କ ଚକ୍ର ସହ ଏହା କେମିତି ବଦଳେ ମୁଁ ଦେଖିବି।",
     "saveFailed": "ସେଭ୍ କରିହେଲା ନାହିଁ। ଆମେ ପରେ ପୁଣି ଚେଷ୍ଟା କରିବୁ।"
   },
@@ -1752,7 +1757,9 @@
     "playRecording": "ରେକର୍ଡିଂ ଚଲାନ୍ତୁ",
     "loading": "ଲୋଡ୍ ହେଉଛି…",
     "recordingFailed": "ରେକର୍ଡିଂ ଲୋଡ୍ କରିହେଲା ନାହିଁ।",
-    "documents": "ପ୍ରେସକ୍ରିପସନ୍ ଓ ଯୋଜନା",
+    "documents": "ଆପଣଙ୍କ ଡାକ୍ତରଙ୍କ ଠାରୁ",
+    "noteFrom": "{{doctor}}ଙ୍କ ନୋଟ୍",
+    "noteFromFallback": "ଆପଣଙ୍କ ଡାକ୍ତରଙ୍କ ନୋଟ୍",
     "documentKinds": {
       "prescription": "ପ୍ରେସକ୍ରିପସନ୍",
       "diet_plan": "ଖାଦ୍ୟ ଯୋଜନା",
