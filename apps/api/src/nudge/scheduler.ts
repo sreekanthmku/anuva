@@ -67,6 +67,27 @@ export async function dispatchSlotToUser(
   return { sent: true, nudgeIds, delivered: push.successCount, failed: push.failureCount };
 }
 
+/**
+ * Who a manual send is for: her id, email (any case) or phone — a bare 10-digit number is taken as
+ * Indian. Used by POST /nudge/dispatch/user and `sendToUser.ts`.
+ */
+export async function findNudgeUser(who: string) {
+  const value = who.trim();
+  const digits = value.replace(/\D/g, '');
+  const match = value.includes('@')
+    ? { email: { equals: value, mode: 'insensitive' as const } }
+    : /^[+\d\s-]+$/.test(value)
+      ? { phone: digits.length === 10 ? `+91${digits}` : `+${digits}` }
+      : { id: value };
+  const user = await prisma.user.findFirst({
+    where: match,
+    select: { id: true, preferredLanguage: true, erasedAt: true },
+  });
+  if (!user || user.erasedAt) return { found: false as const };
+  const reachable = await prisma.user.count({ where: { id: user.id, ...hasReachableDevice() } });
+  return { found: true as const, user, reachable: reachable > 0 };
+}
+
 // Run one slot for all eligible users. Exported for manual/test triggering.
 export async function dispatchSlot(slot: NudgeSlot, now = new Date()): Promise<DispatchSlotResult> {
   const users = await prisma.user.findMany({
