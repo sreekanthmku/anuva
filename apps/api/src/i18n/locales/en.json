@@ -1528,6 +1528,11 @@
     "scoreFallback": {
       "sleep": "Sleep {{score}}/5",
       "mood": "Mood {{score}}/5"
+    },
+    "laterInDay": {
+      "L1-001": "How did you sleep last night?",
+      "L1-002": "How was your energy this morning?",
+      "L1-003": "How were you feeling emotionally this morning?"
     }
   },
   "homeCard": {

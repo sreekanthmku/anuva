@@ -20,7 +20,12 @@ import {
 } from './registry.js';
 import { copy, fill } from '../i18n/index.js';
 import { runGovernor } from './governor.js';
-import { firstNameOf, nudgeQuestion, type QuestionContext } from './questionVariants.js';
+import {
+  LATER_IN_DAY_QUESTIONS,
+  firstNameOf,
+  nudgeQuestion,
+  type QuestionContext,
+} from './questionVariants.js';
 import { selectL2Nudge } from './selectL2Nudge.js';
 import { OVERWHELMED } from './signals.js';
 import { dayKey } from '../dayKey.js';
@@ -424,6 +429,7 @@ export async function getDaySheet(userId: string, now: Date): Promise<DaySheet> 
   const dayStart = startOfDay(now);
   // Same phrasing the day's push and cards used, so the sheet does not re-ask in other words.
   const ctx = await questionContext(userId, dayStart);
+  const slotNow = currentSlot(now);
 
   const trackers: DayTrackerView[] = [];
   for (const id of DAY_TRACKER_ORDER) {
@@ -432,11 +438,13 @@ export async function getDaySheet(userId: string, now: Date): Promise<DaySheet> 
     if (!def) continue;
 
     const answer = await readAnswer(userId, def, dayStart);
+    // Past its slot, a morning tracker asks about the morning gone by rather than greeting her.
+    const laterInDay = def.slot === 'morning' && slotNow !== 'morning' ? LATER_IN_DAY_QUESTIONS[id] : undefined;
     trackers.push({
       nudgeId: id,
       tier: meta.tier,
       label: trackerLabel(id),
-      question: nudgeQuestion(id, localizedQuestion(def), ctx),
+      question: laterInDay ?? nudgeQuestion(id, localizedQuestion(def), ctx),
       options: localizedOptions(def),
       required: def.required,
       answered: answer !== null,

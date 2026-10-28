@@ -104,6 +104,7 @@ import {
   recordSuppression,
   storeResponse,
 } from '../src/nudge/engine.js';
+import { NUDGE_QUESTION_VARIANTS, renderNudgeQuestion } from '../src/nudge/questionVariants.js';
 import { OVERWHELMED } from '../src/nudge/signals.js';
 
 const USER = 'user-eng-1';
@@ -505,5 +506,17 @@ describe('getDaySheet', () => {
     expect(byId['L1-001']?.answer).toBe('Sleep 9/5');
     expect(byId['L1-003']?.answer).toBe('Mood 99/5');
     expect(byId['L1-008']).toMatchObject({ answered: true, answer: 'Mild mood changes' });
+  });
+
+  it('asks the morning trackers about the morning once it is over, without a morning greeting', async () => {
+    const evening = Object.fromEntries((await getDaySheet(USER, EVENING)).trackers.map((t) => [t.nudgeId, t.question]));
+    expect(evening['L1-001']).toBe('How did you sleep last night?');
+    expect(evening['L1-002']).toBe('How was your energy this morning?');
+    expect(evening['L1-003']).toBe('How were you feeling emotionally this morning?');
+    expect(Object.values(evening).some((q) => /morning,|good morning|^morning/i.test(q!))).toBe(false);
+
+    // In the morning the sheet still uses the morning push's wording.
+    const morning = Object.fromEntries((await getDaySheet(USER, MORNING)).trackers.map((t) => [t.nudgeId, t.question]));
+    expect(NUDGE_QUESTION_VARIANTS['L1-002']!.map((v) => renderNudgeQuestion(v, 'Neha'))).toContain(morning['L1-002']);
   });
 });

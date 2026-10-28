@@ -170,6 +170,18 @@ export const NUDGE_QUESTION_VARIANTS: Record<string, string[]> = copy('nudges.va
   ],
 });
 
+/**
+ * The morning trackers, asked once the morning is over — the Track sheet, or the log button ANU
+ * offers in chat, at 9pm. Their variants greet her ("Good morning …") and ask about right now,
+ * which by then is wrong; these ask about the morning that has passed instead. Not used for the
+ * morning push or card, which only go out in the morning.
+ */
+export const LATER_IN_DAY_QUESTIONS: Record<string, string> = copy('nudges.laterInDay', {
+  'L1-001': 'How did you sleep last night?',
+  'L1-002': 'How was your energy this morning?',
+  'L1-003': 'How were you feeling emotionally this morning?',
+});
+
 /** Titles are not what someone is called — "Dr. Meera" should greet as "Meera". */
 const HONORIFICS = new Set(['dr', 'mr', 'mrs', 'ms', 'miss', 'smt', 'shri', 'sri', 'prof']);
 
