@@ -44,6 +44,11 @@ export function removeFamilyMember(memberId: string): Promise<{ removed: true }>
   return apiFetch<{ removed: true }>(`/api/family/members/${memberId}`, { method: 'DELETE' });
 }
 
+/** She has seen that someone chose to stop receiving her updates. */
+export function dismissFamilyDeparture(memberId: string): Promise<{ dismissed: true }> {
+  return apiFetch<{ dismissed: true }>(`/api/family/members/${memberId}/departure-seen`, { method: 'POST' });
+}
+
 /**
  * The one thing that travels from her back toward her family: a smiley on their phone saying the
  * gesture landed. Nothing is stored on either side, so there is nothing to reload afterwards.

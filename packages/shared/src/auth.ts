@@ -119,6 +119,7 @@ export const loginEndReasonSchema = z.enum([
   'admin_revoked',
   'password_changed',
   'member_revoked',
+  'member_left',
   'ended',
 ]);
 

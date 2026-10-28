@@ -1080,6 +1080,12 @@
       "labelFor": "Alert {{name}} in an emergency",
       "notice": "If your chat with Anu shows you may be in crisis or a medical emergency, {{name}} gets a notification that you may need them right now. Never what you wrote or why. You can turn this off any time.",
       "failed": "Couldn't save that. Please try again."
+    },
+    "departure": {
+      "title": "{{name}} stopped receiving your updates",
+      "body": "They chose to stop on {{date}}. You can invite them again with a new link any time.",
+      "emergency": "{{name}} was the person alerted if you need help urgently, so nobody is alerted now. Turn on alerts for someone below, or invite someone new.",
+      "dismiss": "OK"
     }
   },
   "install": {

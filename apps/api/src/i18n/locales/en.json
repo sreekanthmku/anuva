@@ -898,6 +898,10 @@
     "safetyAlert": {
       "pushTitle": "{{name}} may need you right now",
       "pushBody": "Please call her or go to her as soon as you can."
+    },
+    "leave": {
+      "emergencyPushTitle": "{{name}} will no longer be alerted in an emergency",
+      "emergencyPushBody": "They have stopped receiving your updates. You can choose someone else to alert."
     }
   },
   "report": {

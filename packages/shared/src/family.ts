@@ -105,6 +105,21 @@ export const familyMemberSummarySchema = z.object({
   emergencyAlerts: z.boolean(),
 });
 
+/**
+ * Someone who chose to stop receiving her updates, shown to her once until she dismisses it.
+ * `wasEmergencyContact` is the part that matters most: if they were the one alerted in a crisis,
+ * nobody is now, and she needs to know to choose someone else.
+ */
+export const familyMemberDepartureSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  relationship: familyRelationshipSchema,
+  leftAt: z.string(),
+  wasEmergencyContact: z.boolean(),
+});
+
+export const dismissFamilyDepartureResponseSchema = z.object({ dismissed: z.literal(true) });
+
 export const familyStatusResponseSchema = z.object({
   gate: familyGateSchema,
   invite: familyInviteSchema.nullable(),
@@ -116,6 +131,8 @@ export const familyStatusResponseSchema = z.object({
   member: familyMemberSummarySchema.nullable(),
   /** Everyone currently connected, newest first. There is no cap: she may invite as many as she likes. */
   members: z.array(familyMemberSummarySchema),
+  /** People who chose to stop receiving her updates and whose leaving she has not dismissed yet. */
+  departures: z.array(familyMemberDepartureSchema),
   /**
    * `User.familyFeatureOptOut`. Not settable from the gate — it is an ops and support relief valve
    * for a woman with nobody to invite, and the gate honours it so that relief actually works.
@@ -302,6 +319,12 @@ export const familySignInVerifyBodySchema = z.object({
 export const familySignInVerifyResponseSchema = familyMeResponseSchema;
 
 export const familyLogoutResponseSchema = z.object({ ok: z.literal(true) });
+
+/**
+ * A family member stopping her updates. `me` is the next woman this phone is connected to, already
+ * signed into, when there is one; null when there is nobody left and the session has ended.
+ */
+export const familyLeaveResponseSchema = z.object({ me: familyMeResponseSchema.nullable() });
 
 // ─────────────────────────────────────────────
 // Family side — content
@@ -592,6 +615,9 @@ export type MarkFamilyInviteSharedBody = z.infer<typeof markFamilyInviteSharedBo
 export type MarkFamilyInviteSharedResponse = z.infer<typeof markFamilyInviteSharedResponseSchema>;
 export type RevokeFamilyInviteResponse = z.infer<typeof revokeFamilyInviteResponseSchema>;
 export type RemoveFamilyMemberResponse = z.infer<typeof removeFamilyMemberResponseSchema>;
+export type FamilyMemberDeparture = z.infer<typeof familyMemberDepartureSchema>;
+export type DismissFamilyDepartureResponse = z.infer<typeof dismissFamilyDepartureResponseSchema>;
+export type FamilyLeaveResponse = z.infer<typeof familyLeaveResponseSchema>;
 export type FamilyJoinPreviewResponse = z.infer<typeof familyJoinPreviewResponseSchema>;
 export type FamilyJoinRequestOtpBody = z.infer<typeof familyJoinRequestOtpBodySchema>;
 export type FamilyJoinRequestOtpResponse = z.infer<typeof familyJoinRequestOtpResponseSchema>;

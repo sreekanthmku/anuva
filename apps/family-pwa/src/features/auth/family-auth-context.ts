@@ -11,6 +11,8 @@ export type FamilyAuthContextValue = {
   /** Open another woman this phone is connected to (`me.accounts`). */
   switchAccount: (memberId: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** The server has already ended the session (they left): forget it here, without a request. */
+  forget: () => void;
 };
 
 export const FamilyAuthContext = createContext<FamilyAuthContextValue | null>(null);

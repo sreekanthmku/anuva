@@ -245,6 +245,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
         phoneVerifiedAt: true,
         createdAt: true,
         revokedAt: true,
+        endedBy: true,
         periodSharing: true,
         periodSharingVersion: true,
         periodSharingChangedAt: true,
@@ -374,6 +375,8 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
       verifiedAt: member.phoneVerifiedAt.toISOString(),
       joinedAt: member.createdAt.toISOString(),
       revokedAt: member.revokedAt?.toISOString() ?? null,
+      // Whether she removed them or they chose to stop receiving her updates.
+      endedBy: member.endedBy,
       periodSharing: member.periodSharing,
       periodSharingVersion: member.periodSharingVersion,
       periodSharingChangedAt: member.periodSharingChangedAt?.toISOString() ?? null,

@@ -5,6 +5,7 @@ import {
   FAMILY_PERIOD_SHARING_CONSENT_VERSION,
   type FamilyGate,
   type FamilyInvite,
+  type FamilyMemberDeparture,
   type FamilyMemberSummary,
   type FamilyStatusResponse,
 } from '@anuva/shared';
@@ -164,6 +165,31 @@ function activeMembers(userId: string) {
 }
 
 /**
+ * Everyone who chose to leave her, newest first, with whether she has dismissed the notice yet.
+ * Read for the gate as well as the notice: someone who joined and later left still got her past her
+ * first share, and being made to share again because someone else walked away would be unkind.
+ */
+function departedMembers(userId: string) {
+  return prisma.familyMember.findMany({
+    where: { userId, status: 'revoked', endedBy: 'member' },
+    select: { id: true, name: true, relationship: true, revokedAt: true, emergencyAlerts: true, departureSeenAt: true },
+    orderBy: { revokedAt: 'desc' },
+  });
+}
+
+type DepartedRow = Awaited<ReturnType<typeof departedMembers>>[number];
+
+function serializeDeparture(member: DepartedRow): FamilyMemberDeparture {
+  return {
+    id: member.id,
+    name: member.name,
+    relationship: member.relationship,
+    leftAt: (member.revokedAt ?? new Date(0)).toISOString(),
+    wasEmergencyContact: member.emergencyAlerts,
+  };
+}
+
+/**
  * The pending invite, minting one if there is none and retiring one that has expired. She must
  * always have a link to show, so this is called on the read path and not only on an explicit
  * "create link" action.
@@ -242,13 +268,13 @@ function isUniqueViolation(error: unknown): boolean {
 export async function getFamilyStatus(userId: string): Promise<FamilyStatusResponse> {
   const now = new Date();
   const user = await loadUser(userId);
-  const members = await activeMembers(userId);
+  const [members, departed] = await Promise.all([activeMembers(userId), departedMembers(userId)]);
 
   // There is always a link to invite one more person with — except for a woman who opted out, for
   // whom minting one would be pointless work and a pointless secret.
   const invite = user.familyFeatureOptOut ? null : await ensurePendingInvite(userId, now);
 
-  return buildStatus(user, members, invite, now);
+  return buildStatus(user, members, departed, invite, now);
 }
 
 function serializeMember(member: MemberRow): FamilyMemberSummary {
@@ -267,6 +293,7 @@ function serializeMember(member: MemberRow): FamilyMemberSummary {
 function buildStatus(
   user: { name: string | null; onboardingCompleted: boolean; familyFeatureOptOut: boolean },
   members: MemberRow[],
+  departed: DepartedRow[],
   invite: InviteRow | null,
   now: Date,
 ): FamilyStatusResponse {
@@ -281,7 +308,7 @@ function buildStatus(
       {
         optedOut: user.familyFeatureOptOut,
         onboardingCompleted: user.onboardingCompleted,
-        hasMember: members.length > 0,
+        hasMember: members.length > 0 || departed.length > 0,
         sharedAt: invite?.sharedAt ?? null,
       },
       now,
@@ -289,6 +316,7 @@ function buildStatus(
     invite: invite ? withShareMessage(serializeInvite(invite), firstName) : null,
     member: serialized[0] ?? null,
     members: serialized,
+    departures: departed.filter((member) => !member.departureSeenAt).map(serializeDeparture),
     optedOut: user.familyFeatureOptOut,
   };
 }
@@ -358,14 +386,14 @@ export async function markInviteShared(
     select: INVITE_SELECT,
   });
 
-  const members = await activeMembers(userId);
+  const [members, departed] = await Promise.all([activeMembers(userId), departedMembers(userId)]);
 
   return {
     gate: computeGate(
       {
         optedOut: user.familyFeatureOptOut,
         onboardingCompleted: user.onboardingCompleted,
-        hasMember: members.length > 0,
+        hasMember: members.length > 0 || departed.length > 0,
         sharedAt: updated.sharedAt,
       },
       now,
@@ -386,28 +414,53 @@ export async function revokeInvite(userId: string, inviteId: string): Promise<vo
 }
 
 /**
- * Revoking a member drops their sessions immediately, so access
- * ends on their next request rather than whenever their cookie happens to expire. The accepted
- * invite row is left as it is — it is the record of who joined and when.
+ * Ending a membership, whichever side ends it, drops their sessions immediately, so access ends on
+ * their next request rather than whenever their cookie happens to expire. The accepted invite row is
+ * left as it is — it is the record of who joined and when.
+ *
+ * Only an active membership is ended, and the status check is part of the write, so two taps (or her
+ * removing them as they leave) cannot both count. Returns whether this call ended it.
  */
+export async function endMembership(memberId: string, endedBy: 'patient' | 'member'): Promise<boolean> {
+  const [, , ended] = await prisma.$transaction([
+    endLoginSessions({ familyMemberId: memberId }, endedBy === 'patient' ? 'member_revoked' : 'member_left'),
+    prisma.familySession.deleteMany({ where: { familyMemberId: memberId } }),
+    prisma.familyMember.updateMany({
+      where: { id: memberId, status: 'active' },
+      data: {
+        status: 'revoked',
+        revokedAt: new Date(),
+        endedBy,
+        // Nothing outstanding should follow them out: no reminder, no half-finished gesture.
+        supportRemindAt: null,
+        pendingActionKind: null,
+        pendingActionAt: null,
+      },
+    }),
+  ]);
+  return ended.count > 0;
+}
+
 export async function removeMember(userId: string, memberId: string): Promise<void> {
   const member = await prisma.familyMember.findFirst({
     where: { id: memberId, userId, status: 'active' },
     select: { id: true },
   });
 
-  if (!member) {
+  if (!member || !(await endMembership(member.id, 'patient'))) {
     throw new FamilyError(404, 'member_not_found', 'That family member is not connected.');
   }
+}
 
-  await prisma.$transaction([
-    endLoginSessions({ familyMemberId: member.id }, 'member_revoked'),
-    prisma.familySession.deleteMany({ where: { familyMemberId: member.id } }),
-    prisma.familyMember.update({
-      where: { id: member.id },
-      data: { status: 'revoked', revokedAt: new Date() },
-    }),
-  ]);
+/** She has seen that they left. Only her own departures, and only ones that were their choice. */
+export async function dismissDeparture(userId: string, memberId: string): Promise<void> {
+  const { count } = await prisma.familyMember.updateMany({
+    where: { id: memberId, userId, endedBy: 'member', departureSeenAt: null },
+    data: { departureSeenAt: new Date() },
+  });
+  if (count === 0) {
+    throw new FamilyError(404, 'member_not_found', 'That family member is not connected.');
+  }
 }
 
 // ─────────────────────────────────────────────

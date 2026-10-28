@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import type { FamilyMemberSummary, FamilyShareChannel, FamilyStatusResponse } from '@anuva/shared';
 import {
+  dismissFamilyDeparture,
   fetchFamilyStatus,
   markFamilyInviteShared,
   removeFamilyMember,
@@ -21,6 +22,10 @@ import { canNativeShare, copyToClipboard, openNativeShare, openWhatsAppShare } f
  * Revoking is destructive from the family member's side — their sessions are dropped and the app
  * goes dark for them — so it takes two taps. Deliberately not a `window.confirm`: a native dialog
  * blocks the page and reads as a browser warning rather than a decision about a person.
+ *
+ * Someone can also choose to stop receiving her updates themselves. She is told here, once, until
+ * she dismisses it — and plainly if they were the person alerted in an emergency, because then
+ * nobody is.
  *
  * Each invite link works for one person. The server always keeps one pending link ready (see
  * `getFamilyStatus`), so once someone joins, the next link is already here.
@@ -58,6 +63,14 @@ export function FamilyConnectionSection() {
     void load();
   }, [load]);
 
+  // The "they will no longer be alerted" push opens /profile#family: bring this section into view.
+  const loaded = status !== null;
+  useEffect(() => {
+    if (loaded && window.location.hash === '#family') {
+      document.getElementById('family')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [loaded]);
+
   useEffect(() => {
     if (!copied) return;
     const timer = window.setTimeout(() => setCopied(false), 2200);
@@ -79,6 +92,14 @@ export function FamilyConnectionSection() {
     },
     [load, t],
   );
+
+  /// Dismissed here at once; a failed save only means she sees the notice again next time.
+  const dismissDeparture = useCallback((memberId: string) => {
+    setStatus((current) =>
+      current ? { ...current, departures: current.departures.filter((entry) => entry.id !== memberId) } : current,
+    );
+    void dismissFamilyDeparture(memberId).catch(() => undefined);
+  }, []);
 
   /// A per-person switch saved on the server; its answer replaces that person in the list.
   const replaceMember = useCallback((updated: FamilyMemberSummary) => {
@@ -111,16 +132,46 @@ export function FamilyConnectionSection() {
     return null;
   }
 
-  const { members, invite } = status;
+  const { members, invite, departures } = status;
 
   return (
-    <article className="mt-4 overflow-hidden rounded-[20px] border border-border-default bg-surface-container-low px-[18px] py-4">
+    <article
+      id="family"
+      className="mt-4 scroll-mt-4 overflow-hidden rounded-[20px] border border-border-default bg-surface-container-low px-[18px] py-4"
+    >
       <h2
         className="text-[15px] leading-snug text-on-surface"
         style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
       >
         {t('family.sharing.title')}
       </h2>
+
+      {departures.map((departure) => (
+        <div
+          key={departure.id}
+          role="status"
+          className={`mt-2.5 rounded-[14px] border px-3.5 py-3 ${
+            departure.wasEmergencyContact ? 'border-error/30 bg-error-container/40' : 'border-border-default bg-surface'
+          }`}
+        >
+          <p className="text-[13px] font-semibold leading-[1.5] text-on-surface" style={mulish}>
+            {t('family.departure.title', { name: departure.name })}
+          </p>
+          <p className="mt-0.5 text-[12.5px] leading-[1.5] text-on-surface-variant" style={mulish}>
+            {departure.wasEmergencyContact
+              ? t('family.departure.emergency', { name: departure.name })
+              : t('family.departure.body', { date: formatDate(departure.leftAt) })}
+          </p>
+          <button
+            type="button"
+            onClick={() => dismissDeparture(departure.id)}
+            className="mt-2 min-h-11 rounded-full border border-border-default px-4 text-[12.5px] font-medium text-on-surface-variant"
+            style={mulish}
+          >
+            {t('family.departure.dismiss')}
+          </button>
+        </div>
+      ))}
 
       {members.length > 0 ? (
         <>

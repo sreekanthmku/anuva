@@ -43,6 +43,7 @@ import { Router } from 'express';
 import type { CookieOptions, NextFunction, Request, Response } from 'express';
 import {
   createFamilyInviteResponseSchema,
+  dismissFamilyDepartureResponseSchema,
   familyActivityResponseSchema,
   familyArticleParamsSchema,
   familyArticleResponseSchema,
@@ -53,6 +54,7 @@ import {
   familyJoinVerifyBodySchema,
   familyJoinVerifyResponseSchema,
   familyLearnResponseSchema,
+  familyLeaveResponseSchema,
   familyLogoutResponseSchema,
   familyMeResponseSchema,
   familySwitchAccountBodySchema,
@@ -93,6 +95,7 @@ import { familyAccountsForMember, switchFamilyAccount } from './accounts.js';
 import { destroyFamilySession, requireFamilyMember } from './auth.js';
 import { FamilyError } from './errors.js';
 import {
+  dismissDeparture,
   getFamilyStatus,
   markInviteShared,
   removeMember,
@@ -106,6 +109,7 @@ import { buildFamilyActivity } from './activity.js';
 import { buildFamilyLearn, buildFamilyPrivacy, buildFamilyToday } from './digest.js';
 import { familyArticle } from './articles.js';
 import { familyMeBody, previewInvite, requestJoinOtp, verifyJoinOtp, type OtpDeps } from './join.js';
+import { leaveFamily } from './leave.js';
 import { sendFamilyMessage } from './messages.js';
 import { sendFamilyThanks } from './thanks.js';
 import { requestSignInOtp, verifySignInOtp } from './signin.js';
@@ -287,6 +291,18 @@ export function createFamilyRouter({
       await removeMember(userId, req.params.id);
       req.log?.info?.({ memberId: req.params.id }, 'family: member removed');
       res.json(removeFamilyMemberResponseSchema.parse({ removed: true }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  /** She has seen that someone chose to stop receiving her updates. */
+  router.post('/members/:id/departure-seen', async (req, res, next) => {
+    try {
+      noStore(res);
+      const userId = await resolveUserId(req);
+      await dismissDeparture(userId, req.params.id);
+      res.json(dismissFamilyDepartureResponseSchema.parse({ dismissed: true }));
     } catch (e) {
       next(e);
     }
@@ -637,6 +653,38 @@ export function createFamilyRouter({
         deviceId: body.deviceId,
       });
       res.json(unregisterWebPushResponseSchema.parse({ ok: true }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  /**
+   * A family member stops receiving her updates. Their own membership only, read from the session
+   * and never from the request, so nobody can end someone else's. Someone connected to another woman
+   * on the same phone is moved straight into that membership; anyone else is signed out.
+   */
+  router.post('/leave', async (req, res, next) => {
+    try {
+      noStore(res);
+      const identity = await requireFamilyMember(req);
+      await leaveFamily(identity.memberId);
+      req.log?.info?.('family: member left');
+
+      // The membership just ended is no longer live, so it is not among these.
+      const [next] = await familyAccountsForMember(identity.memberId);
+      if (next) {
+        const { body, sessionToken, sessionExpiresAt } = await switchFamilyAccount(
+          identity.memberId,
+          next.memberId,
+          loginContext(req),
+        );
+        res.cookie(FAMILY_SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions(sessionExpiresAt));
+        res.json(familyLeaveResponseSchema.parse({ me: body }));
+        return;
+      }
+
+      res.clearCookie(FAMILY_SESSION_COOKIE_NAME, sessionCookieOptions());
+      res.json(familyLeaveResponseSchema.parse({ me: null }));
     } catch (e) {
       next(e);
     }

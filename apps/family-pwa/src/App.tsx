@@ -15,6 +15,7 @@ import { InstallGuard } from './features/install/InstallGuard';
 import JoinRoute from './features/auth/JoinRoute';
 import SignInRoute from './features/auth/SignInRoute';
 import ChooseAccountRoute from './features/auth/ChooseAccountRoute';
+import LeftRoute from './features/leave/LeftRoute';
 import { useFamilyAuth } from './features/auth/family-auth-context';
 import { Wordmark } from './features/shell/Wordmark';
 import { LanguageKeyed } from './i18n/LanguageKeyed';
@@ -180,6 +181,8 @@ export default function App() {
               {/* Public: a returning member whose session lapsed. The phone they verified at join is
               the credential — the invite link was single-use and is long gone. */}
               <Route path="/signin" element={<SignInRoute />} />
+              {/* Public: after they chose to stop receiving her updates, their session already gone. */}
+              <Route path="/left" element={<LeftRoute />} />
               {/* Someone connected to more than one woman picks whose app to open. */}
               <Route
                 path="/choose"

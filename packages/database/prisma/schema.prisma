@@ -238,6 +238,8 @@ enum LoginEndReason {
   password_changed
   /// A family member disconnected by the woman they supported.
   member_revoked
+  /// A family member who chose to stop receiving her updates.
+  member_left
   /// The live session disappeared by a path that did not say why (an admin row delete, say).
   ended
 }
@@ -368,6 +370,13 @@ enum FamilyMemberStatus {
   revoked
 }
 
+enum FamilyMembershipEndedBy {
+  /// She removed them.
+  patient
+  /// They chose to stop receiving her updates.
+  member
+}
+
 enum FamilyRelationship {
   partner
   child
@@ -437,6 +446,12 @@ model FamilyMember {
 
   status    FamilyMemberStatus @default(active)
   revokedAt DateTime?
+  /// Who ended the membership: she removed them, or they chose to stop receiving her updates.
+  /// Null while active, and for memberships ended before this was recorded (all by her).
+  endedBy   FamilyMembershipEndedBy?
+  /// When she dismissed the notice that they left. Null until then; only ever set when
+  /// `endedBy` is `member`.
+  departureSeenAt DateTime?
 
   lastSeenAt DateTime @default(now())
 

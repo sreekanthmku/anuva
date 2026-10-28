@@ -4,6 +4,7 @@ import type {
   FamilyJoinRequestOtpResponse,
   FamilyJoinVerifyBody,
   FamilyJoinVerifyResponse,
+  FamilyLeaveResponse,
   FamilyMeResponse,
   FamilySignInRequestOtpBody,
   FamilySignInRequestOtpResponse,
@@ -68,6 +69,14 @@ export function switchFamilyAccount(memberId: string): Promise<FamilyMeResponse>
 
 export function fetchFamilyMe(): Promise<FamilyMeResponse> {
   return apiFetch<FamilyMeResponse>('/api/family/me', { cache: 'no-store' });
+}
+
+/**
+ * Stop receiving her updates. `me` is the next woman this phone is connected to, already signed
+ * into, or null when there is nobody else and the session has ended.
+ */
+export function leaveFamily(): Promise<FamilyLeaveResponse> {
+  return apiFetch<FamilyLeaveResponse>('/api/family/leave', { method: 'POST' });
 }
 
 export function logoutFamily(): Promise<void> {

@@ -657,6 +657,9 @@ export {
   markFamilyInviteSharedBodySchema,
   markFamilyInviteSharedResponseSchema,
   removeFamilyMemberResponseSchema,
+  dismissFamilyDepartureResponseSchema,
+  familyLeaveResponseSchema,
+  familyMemberDepartureSchema,
   revokeFamilyInviteResponseSchema,
   FAMILY_PERIOD_SHARING_CONSENT_VERSION,
   setFamilyPeriodSharingBodySchema,
@@ -721,6 +724,9 @@ export {
   type MarkFamilyInviteSharedBody,
   type MarkFamilyInviteSharedResponse,
   type RemoveFamilyMemberResponse,
+  type DismissFamilyDepartureResponse,
+  type FamilyLeaveResponse,
+  type FamilyMemberDeparture,
   type RevokeFamilyInviteResponse,
 } from './family.js';
 

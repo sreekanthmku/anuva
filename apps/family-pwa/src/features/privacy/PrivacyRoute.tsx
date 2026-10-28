@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { fetchPrivacy } from '../../shared/lib/familyApi';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
+import { LeaveCard } from '../leave/LeaveCard';
 import { Card, ErrorCard, Eyebrow, PageIntro, SkeletonCard } from '../shell/ui';
 
 export function PrivacyRoute() {
@@ -55,6 +56,8 @@ export function PrivacyRoute() {
           ))}
         </ul>
       </Card>
+
+      <LeaveCard />
     </div>
   );
 }

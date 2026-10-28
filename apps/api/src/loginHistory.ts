@@ -22,6 +22,7 @@ export type LoginEndReason =
   | 'admin_revoked'
   | 'password_changed'
   | 'member_revoked'
+  | 'member_left'
   | 'ended';
 
 export type LoginMethod = 'otp' | 'email_beta' | 'password';

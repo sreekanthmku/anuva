@@ -229,5 +229,17 @@
     "remove": "Remove",
     "addBack": "Add back",
     "send": "Send report"
+  },
+  "leave": {
+    "cta": "Stop receiving updates",
+    "confirmTitle": "Stop receiving {{name}}’s updates?",
+    "confirmBody": "You will no longer see how {{name}} is doing or get any notifications about her, including alerts. She will see that you chose to stop. To reconnect, she would need to send you a new invite.",
+    "keep": "Keep me connected",
+    "confirm": "Yes, stop updates",
+    "leaving": "Stopping…",
+    "failed": "Could not stop updates right now. Please try again.",
+    "doneTitle": "You have stopped receiving updates",
+    "doneBody": "You will not get any more updates about {{name}}. If you want to reconnect, ask her for a new invite link.",
+    "doneBodyNoName": "You will not get any more updates. If you want to reconnect, ask her for a new invite link."
   }
 }

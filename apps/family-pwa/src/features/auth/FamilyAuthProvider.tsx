@@ -56,6 +56,11 @@ export function FamilyAuthProvider({ children }: { children: ReactNode }) {
         setStatus('anonymous');
         setFamilyScope(null);
       },
+      forget: () => {
+        setMe(null);
+        setStatus('anonymous');
+        setFamilyScope(null);
+      },
     }),
     [status, me, refresh],
   );
