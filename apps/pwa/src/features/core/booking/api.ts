@@ -15,6 +15,7 @@ import type {
 import { consultationDocumentFileName } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
 import i18n from '../../../i18n';
+import { announceSlotsChanged } from './slotsChanged';
 
 export async function fetchConsultationSpecialists(): Promise<ConsultationSpecialistsResponse> {
   return apiFetch<ConsultationSpecialistsResponse>('/api/consultations/specialists');
@@ -37,10 +38,12 @@ export async function fetchConsultationSlots(params: {
 export async function bookConsultation(
   body: CreateConsultationBookingBody
 ): Promise<ConsultationBookingResponse> {
-  return apiFetch<ConsultationBookingResponse>('/api/consultations/book', {
+  const response = await apiFetch<ConsultationBookingResponse>('/api/consultations/book', {
     method: 'POST',
     body: JSON.stringify(body),
   });
+  announceSlotsChanged();
+  return response;
 }
 
 export async function fetchMyConsultations(): Promise<MyConsultationsResponse> {
@@ -50,9 +53,11 @@ export async function fetchMyConsultations(): Promise<MyConsultationsResponse> {
 export async function cancelConsultation(
   consultationId: string
 ): Promise<CancelConsultationResponse> {
-  return apiFetch<CancelConsultationResponse>(`/api/consultations/${consultationId}/cancel`, {
+  const response = await apiFetch<CancelConsultationResponse>(`/api/consultations/${consultationId}/cancel`, {
     method: 'POST',
   });
+  announceSlotsChanged();
+  return response;
 }
 
 /** Moving to a slot owned by another specialist is also how the doctor is changed. */
@@ -60,13 +65,15 @@ export async function rescheduleConsultation(
   consultationId: string,
   slotId: string
 ): Promise<RescheduleConsultationResponse> {
-  return apiFetch<RescheduleConsultationResponse>(
+  const response = await apiFetch<RescheduleConsultationResponse>(
     `/api/consultations/${consultationId}/reschedule`,
     {
       method: 'POST',
       body: JSON.stringify({ slotId }),
     }
   );
+  announceSlotsChanged();
+  return response;
 }
 
 /**

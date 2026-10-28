@@ -4,6 +4,7 @@ import { ApiError } from '../../../../shared/lib/api';
 // The instance rather than the hook: these messages are set inside catch blocks.
 import i18n from '../../../../i18n';
 import { bookConsultation, fetchConsultationSlots, fetchConsultationSpecialists } from '../api';
+import { useSlotsRefresh } from '../slotsChanged';
 import {
   DATES_PER_PAGE,
   addDays,
@@ -86,7 +87,7 @@ export function useConsultationBooking() {
    * itself. Anything the refresh no longer returns is dropped from the selection.
    */
   const loadSlots = useCallback(
-    async ({ keepSelection }: { keepSelection: boolean }) => {
+    async ({ keepSelection, quiet = false }: { keepSelection: boolean; quiet?: boolean }) => {
       if (!selectedSpecialist?.bookable) {
         setSlotDates([]);
         setPickedDateId(null);
@@ -98,7 +99,9 @@ export function useConsultationBooking() {
       slotsRequestRef.current = requestId;
       const from = localYmd(dateAtLocalNoonFromTodayOffset(datePageStartOffset));
 
-      setLoadingSlots(true);
+      // A background refresh neither flashes the loading state nor reports a passing failure: the
+      // times already on screen stay until a newer list arrives.
+      if (!quiet) setLoadingSlots(true);
       if (!keepSelection) {
         setError(null);
         setSlotDates([]);
@@ -128,7 +131,7 @@ export function useConsultationBooking() {
           );
         }
       } catch (err: unknown) {
-        if (requestId !== slotsRequestRef.current) return;
+        if (requestId !== slotsRequestRef.current || quiet) return;
         setError(
           err instanceof Error ? err.message : i18n.t('booking.loadSlotsFailed')
         );
@@ -144,6 +147,9 @@ export function useConsultationBooking() {
   useEffect(() => {
     void loadSlots({ keepSelection: false });
   }, [loadSlots]);
+
+  // Times booked since the grid loaded — here, in chat, or by someone else — drop out of it.
+  useSlotsRefresh(() => void loadSlots({ keepSelection: true, quiet: true }), phase !== 'confirmed');
 
   const dateSlots = useMemo(() => slotDates.map((item) => bookingDateCard(item.date)), [slotDates]);
 

@@ -31,6 +31,7 @@ import {
   formatBookingTimeLabel,
   localYmd,
 } from './booking/dateTime';
+import { useSlotsRefresh } from './booking/slotsChanged';
 import { SpecialistPicker } from './booking/components/SpecialistPicker';
 import { TimeSlotSection } from './booking/components/TimeSlotSection';
 import { BottomNav } from './components/BottomNav';
@@ -435,11 +436,19 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const loadedKeyRef = useRef<string | null>(null);
+
+  useSlotsRefresh(() => setRefreshTick((tick) => tick + 1));
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setPickedSlot(null);
+    // A refresh of the same doctor's times keeps her choice while it is still free, quietly.
+    const refreshing = loadedKeyRef.current === specialistKey;
+    if (!refreshing) {
+      setLoading(true);
+      setPickedSlot(null);
+    }
 
     fetchConsultationSlots({
       specialistKey,
@@ -448,21 +457,31 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
     })
       .then((response) => {
         if (cancelled) return;
+        loadedKeyRef.current = specialistKey;
         setDates(response.dates);
-        setPickedDate(response.dates[0]?.date ?? null);
+        setPickedDate((date) =>
+          refreshing && date && response.dates.some((group) => group.date === date)
+            ? date
+            : (response.dates[0]?.date ?? null),
+        );
+        setPickedSlot((slotId) =>
+          slotId && response.dates.some((group) => group.slots.some((slot) => slot.id === slotId))
+            ? slotId
+            : null,
+        );
       })
       .catch((err) => {
-        if (!cancelled)
+        if (!cancelled && !refreshing)
           setError(err instanceof Error ? err.message : i18n.t('bookings.slotsFailed'));
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !refreshing) setLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [specialistKey]);
+  }, [specialistKey, refreshTick]);
 
   const slotsForDate = useMemo(() => {
     const group = dates.find((d) => d.date === pickedDate);

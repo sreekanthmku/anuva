@@ -2835,6 +2835,8 @@ app.get('/consultations/specialists', async (_req, res, next) => {
 
 app.get('/consultations/slots', async (req, res, next) => {
   try {
+    // Which times are free changes the moment anyone books: never serve a stored copy.
+    setNoStoreHeaders(res);
     await readyBookingCatalog();
 
     const parsed = consultationSlotsQuerySchema.parse(req.query);
@@ -3609,7 +3611,22 @@ app.post('/consultations/:id/call/join', async (req, res, next) => {
   }
 });
 
-app.post('/consultations/slots', async (req, res, next) => {
+/**
+ * Creating and deleting slots changes what every patient can book, so it takes a doctor-portal
+ * session: a doctor for their own slots, the admin login for anyone's. These routes sit outside the
+ * /doctor prefix, so the guard is applied to each of them directly.
+ */
+function withDoctorAccess(req: Request, res: Response, next: NextFunction) {
+  void requireDoctorAccess(req, res, next);
+}
+
+function assertOwnSlots(identity: DoctorIdentity, specialistId: string) {
+  if (identity.scope === 'doctor' && identity.specialistId !== specialistId) {
+    throw new HttpError(403, 'You can only change your own slots.');
+  }
+}
+
+app.post('/consultations/slots', withDoctorAccess, async (req, res, next) => {
   try {
     await readyBookingCatalog();
 
@@ -3622,6 +3639,7 @@ app.post('/consultations/slots', async (req, res, next) => {
     if (!specialist || !specialist.active) {
       throw new HttpError(404, 'Specialist not found.');
     }
+    assertOwnSlots(requireDoctorIdentity(req), specialist.id);
 
     if (!isBookableDoctorKey(specialist.key)) {
       throw new HttpError(400, 'Slots can only be created for doctor specialists.');
@@ -3724,7 +3742,7 @@ app.post('/consultations/slots', async (req, res, next) => {
   }
 });
 
-app.delete('/consultations/slots/:id', async (req, res, next) => {
+app.delete('/consultations/slots/:id', withDoctorAccess, async (req, res, next) => {
   try {
     await readyBookingCatalog();
 
@@ -3733,6 +3751,7 @@ app.delete('/consultations/slots/:id', async (req, res, next) => {
       where: { id: parsed.id },
       select: {
         id: true,
+        specialistId: true,
         isBooked: true,
         consultationId: true,
         startsAt: true,
@@ -3742,6 +3761,7 @@ app.delete('/consultations/slots/:id', async (req, res, next) => {
     if (!slot) {
       throw new HttpError(404, 'Slot not found.');
     }
+    assertOwnSlots(requireDoctorIdentity(req), slot.specialistId);
 
     if (slot.isBooked || slot.consultationId) {
       throw new HttpError(400, 'Booked slots cannot be deleted.');
@@ -4868,6 +4888,7 @@ app.post('/anu/v3/chat', async (req, res, next) => {
 // time that has gone since.
 app.get('/anu/v3/booking-options', async (req, res, next) => {
   try {
+    setNoStoreHeaders(res);
     await requireCurrentUser(req);
     const { doctors } = await loadAnuV3BookingCatalog();
     res.json(anuV3BookingOptionsResponseSchema.parse({ doctors }));

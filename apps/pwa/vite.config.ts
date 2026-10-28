@@ -151,7 +151,13 @@ export default defineConfig(({ mode }) => {
           maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
           runtimeCaching: [
             {
-              urlPattern: ({ url }) => url.pathname.startsWith('/api') && !url.pathname.startsWith('/api/auth/'),
+              // Free consultation times are never served from here: an offline copy would offer
+              // times that have since been booked.
+              urlPattern: ({ url }) =>
+                url.pathname.startsWith('/api') &&
+                !url.pathname.startsWith('/api/auth/') &&
+                url.pathname !== '/api/consultations/slots' &&
+                url.pathname !== '/api/anu/v3/booking-options',
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'api-cache',

@@ -10,6 +10,7 @@ import type {
 import { ApiError } from '../../../shared/lib/api';
 import { bookConsultation } from '../booking/api';
 import { formatBookingDateLong, formatBookingTimeLabel } from '../booking/dateTime';
+import { useSlotsRefresh } from '../booking/slotsChanged';
 import { confirmBookingWithAnu, fetchBookingOptions } from './api';
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -73,6 +74,24 @@ export function BookingCard({
   useEffect(() => {
     if (!booked) void load();
   }, [booked, load]);
+
+  // Earlier cards stay in the thread. Once a time is booked from any of them (or anywhere else),
+  // the rest reload so none of them still offers it. A failed refresh keeps what is on screen.
+  useSlotsRefresh(
+    () => {
+      fetchBookingOptions()
+        .then((response) => setDoctors(response.doctors))
+        .catch(() => undefined);
+    },
+    !booked && status === 'idle',
+  );
+
+  // The time she had picked is no longer free.
+  useEffect(() => {
+    if (selected && doctors && !doctors.some((entry) => entry.slots.some((slot) => slot.slotId === selected.slotId))) {
+      setSelected(null);
+    }
+  }, [doctors, selected]);
 
   // Doctors with a time still free, the professional ANU recommended first.
   const available = useMemo(
