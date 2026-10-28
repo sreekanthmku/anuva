@@ -4,6 +4,7 @@ import { LanguageToggle } from '../../i18n/LanguageToggle';
 import { useAuth } from '../auth/auth-context';
 import { AnswerOption } from './components/AnswerOption';
 import { QuestionTitle } from './components/QuestionTitle';
+import { StepBackButton } from './components/StepBackButton';
 import { StepDots } from './components/StepDots';
 import { TrustStrip } from './components/TrustStrip';
 import { useAssessmentPairedFlow } from './hooks/useAssessmentPairedFlow';
@@ -24,6 +25,8 @@ export default function AssessmentPairedRoute() {
     outcome,
     selectOption,
     goNext,
+    canGoBack,
+    goBack,
     getSelectedIndex,
   } = useAssessmentPairedFlow();
 
@@ -108,7 +111,10 @@ export default function AssessmentPairedRoute() {
         className={`relative z-10 flex flex-1 flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-3 pb-[22px] pt-[26px] ${showMascot ? 'mt-6' : 'mt-0'}`}
       >
         <div className="mb-[22px] flex items-center justify-between">
-          <StepDots total={totalSteps} current={step} />
+          <div className="flex items-center gap-1">
+            <StepBackButton visible={canGoBack} onBack={goBack} />
+            <StepDots total={totalSteps} current={step} />
+          </div>
           <span
             className="text-[11px] text-outline"
             style={{ fontFamily: '"Mulish", sans-serif', fontWeight: 400 }}

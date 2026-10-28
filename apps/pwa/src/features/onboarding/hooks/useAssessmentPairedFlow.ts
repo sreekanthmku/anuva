@@ -9,6 +9,7 @@ import {
   writeAssessmentProgress,
   type AssessmentAnswers,
 } from '../data/assessmentProgress';
+import { useAssessmentStepHistory } from './useAssessmentStepHistory';
 
 type AnswersMap = AssessmentAnswers;
 
@@ -20,8 +21,12 @@ export function useAssessmentPairedFlow() {
   const [restored] = useState(() =>
     readAssessmentProgress(sessionStore(), 'paired', assessmentQuestions, assessmentPages.length),
   );
-  const [step, setStep] = useState(restored.step);
   const [answers, setAnswers] = useState<AnswersMap>(restored.answers);
+  const { step, goToNextStep, goToPreviousStep, canGoBack } = useAssessmentStepHistory(
+    restored.step,
+    assessmentPages.length,
+    (pageIndex) => assessmentPages[pageIndex]!.questionIndices.every((index) => answers[index] !== undefined),
+  );
 
   useEffect(() => {
     writeAssessmentProgress(sessionStore(), 'paired', assessmentQuestions, { step, answers });
@@ -58,7 +63,7 @@ export function useAssessmentPairedFlow() {
 
   const goNext = () => {
     if (!canContinue) return;
-    if (!isLastStep) setStep((prev) => prev + 1);
+    if (!isLastStep) goToNextStep();
   };
 
   return {
@@ -73,5 +78,7 @@ export function useAssessmentPairedFlow() {
     selectOption,
     goNext,
     getSelectedIndex: (questionIndex: number) => answers[questionIndex],
+    canGoBack,
+    goBack: goToPreviousStep,
   };
 }

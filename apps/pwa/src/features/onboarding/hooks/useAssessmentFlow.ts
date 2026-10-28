@@ -8,6 +8,7 @@ import {
   writeAssessmentProgress,
   type AssessmentAnswers,
 } from '../data/assessmentProgress';
+import { useAssessmentStepHistory } from './useAssessmentStepHistory';
 
 type AnswersMap = AssessmentAnswers;
 
@@ -17,8 +18,12 @@ export function useAssessmentFlow() {
   const [restored] = useState(() =>
     readAssessmentProgress(sessionStore(), 'single', assessmentQuestions, assessmentQuestions.length),
   );
-  const [step, setStep] = useState(restored.step);
   const [answers, setAnswers] = useState<AnswersMap>(restored.answers);
+  const { step, goToNextStep, goToPreviousStep, canGoBack } = useAssessmentStepHistory(
+    restored.step,
+    assessmentQuestions.length,
+    (index) => answers[index] !== undefined,
+  );
 
   useEffect(() => {
     writeAssessmentProgress(sessionStore(), 'single', assessmentQuestions, { step, answers });
@@ -49,7 +54,7 @@ export function useAssessmentFlow() {
 
   const goNext = () => {
     if (!canContinue) return;
-    if (!isLastStep) setStep((prev) => prev + 1);
+    if (!isLastStep) goToNextStep();
   };
 
   return {
@@ -64,5 +69,7 @@ export function useAssessmentFlow() {
     outcome,
     selectOption,
     goNext,
+    canGoBack,
+    goBack: goToPreviousStep,
   };
 }

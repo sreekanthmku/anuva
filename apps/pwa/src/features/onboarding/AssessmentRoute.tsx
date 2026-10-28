@@ -4,6 +4,7 @@ import { LanguageToggle } from '../../i18n/LanguageToggle';
 import { useAuth } from '../auth/auth-context';
 import { AnswerOption } from './components/AnswerOption';
 import { QuestionTitle } from './components/QuestionTitle';
+import { StepBackButton } from './components/StepBackButton';
 import { StepDots } from './components/StepDots';
 import { TrustStrip } from './components/TrustStrip';
 import { useAssessmentFlow } from './hooks/useAssessmentFlow';
@@ -25,6 +26,8 @@ export default function AssessmentRoute() {
     outcome,
     selectOption,
     goNext,
+    canGoBack,
+    goBack,
   } = useAssessmentFlow();
 
   if (!question) {
@@ -100,7 +103,10 @@ export default function AssessmentRoute() {
 
       <section className="relative z-10 mt-6 flex flex-1 flex-col rounded-t-[32px] border border-b-0 border-border-default bg-surface px-3 pb-[22px] pt-[26px]">
         <div className="mb-[22px] flex items-center justify-between">
-          <StepDots total={totalSteps} current={step} />
+          <div className="flex items-center gap-1">
+            <StepBackButton visible={canGoBack} onBack={goBack} />
+            <StepDots total={totalSteps} current={step} />
+          </div>
           <span
             className="text-[11px] text-outline"
             style={{ fontFamily: '"Mulish", sans-serif', fontWeight: 400 }}
