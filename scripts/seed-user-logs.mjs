@@ -2,26 +2,57 @@
 /**
  * Populate a user's tracker history with plausible random logs.
  *
- * Every day in the window is fully logged — every tracker, every day, no gaps. The randomness is
- * in *what* was answered, never in whether a day was answered at all, so the summary, calendar and
- * report readers see a complete window.
- *
- * Wipes every per-user log table listed in ERASURE_TRACKER_MODELS (packages/shared/src/privacy.ts)
- * except the period tracker, then writes a fresh two months of history in its place. Intended for
- * demos and for exercising the summary/report readers against a full window of data.
+ * Every day in the window is fully logged — every tracker the app can log, every day, no gaps. The
+ * randomness is in *what* was answered, never in whether a day was answered at all, so the summary,
+ * calendar and report readers see a complete window.
  *
  * The period tracker is deliberately untouched: `periodLog` and `periodDailyStatus` are neither
  * cleared nor written, so a cycle set up by hand survives a reseed.
  *
  *   node scripts/seed-user-logs.mjs <userId> [--days=60] [--seed=1234]
+ *   node scripts/seed-user-logs.mjs <userId> --days=14 --trend=improving|worsening [--print-rows]
+ *
+ * `--trend` replaces the random drift with a steady climb (improving) or slide (worsening) across
+ * the window, with less day-to-day noise so the direction reads clearly in the report. It also
+ * clears only the days in the window, so her history before it is kept. `--print-rows` prints every
+ * row written, read back from the database. seed-improving-logs.mjs and seed-worsening-logs.mjs are
+ * the 14-day shortcuts.
  *
  * DATABASE_URL comes from the environment, falling back to the repo-root .env.
  *
+ * ── What this writes, and why only this ──────────────────────────────────────
+ *
+ * The rule is that every row here has to be a row the running system could have produced: something
+ * she logged from the PWA, or something a cron job derived from what she logged. Seeding anything
+ * else means testing the readers against states production can never reach.
+ *
+ * So the write set is the 14 tables reachable from the four logging endpoints the PWA actually
+ * calls — POST /mood, POST /sleep, POST /quick-log, POST /nudge/respond, POST /joints — plus
+ * GET /nudge/today and the three nudge cron slots. It follows the same code paths those take, including their quirks:
+ *
+ *   - `source` on the categorical tables is always the schema default `'nudge'`. `persistAnswer`
+ *     never sets it, so `'manual'` is a value no code path in this repo can write.
+ *   - `hotFlashDailyLog.count` and `source` are *replayed* through the tap write-through in
+ *     apps/api/src/logging/writeThrough.ts rather than invented, so a day's count, category and
+ *     source agree with its `quickSymptomLog` taps the way production forces them to.
+ *   - `nudgeDailyState.distressFlag` is always false. `storeResponse` hardcodes `setDistress = false`
+ *     and `selectL2Nudge` never returns true, so nothing in the repo can raise it.
+ *   - `nudgeSendLog` follows the real slot bundles and the real cron times, and the only suppression
+ *     reason written is SR-05 on a slot's primary nudge — the one case `recordSuppression` fires.
+ *   - Manual `/sleep` rows leave `nightSweatFlag` false even when `disruptions` names night sweats,
+ *     because the endpoint does not set it.
+ *
+ * Twelve further tracker tables are *cleared* but never written, because nothing in the product can
+ * write them: `movementLog`, `meTimeLog`, `bloatingLog`, `painLog`, `familySupportLog` and
+ * `weeklyMoodReviewLog` (nudges L2-004 through L2-010, absent from the registry); `symptomLog` and
+ * `symptomLogEntry` (legacy, reachable only through the admin CRUD registry); `wellnessSnapshot`,
+ * `weeklyReport` and `weeklyMetric` (derived tables with no writer — /report computes summaries live
+ * from the logs); and `l3TriggerLog` (L3 escalation is unimplemented). They are cleared so a reseed
+ * leaves a coherent state; if any of them gains a writer, add it to the generator too.
+ *
  * Categorical answers use the exact option strings from apps/api/src/nudge/registry.ts, because
- * apps/api/src/report/scoring.ts keys its score maps off those literals — an invented string
- * scores null and the day reads as unlogged. The six trackers with no registry entry yet
- * (movement, me-time, family support, weekly mood review, bloating, pain) carry invented options,
- * marked below; align them if those nudges land in the registry.
+ * apps/api/src/report/scoring.ts keys its score maps off those literals — an invented string scores
+ * null and the day reads as unlogged.
  */
 
 import { createRequire } from 'node:module';
@@ -74,6 +105,13 @@ if (!userId || flags.has('help')) {
   process.exit(userId ? 0 : 1);
 }
 
+const TREND = flags.get('trend') ?? null;
+if (TREND !== null && TREND !== 'improving' && TREND !== 'worsening') {
+  console.error(`--trend must be improving or worsening, got ${TREND}`);
+  process.exit(1);
+}
+const PRINT_ROWS = flags.has('print-rows');
+
 const DAYS = Number(flags.get('days') ?? 60);
 if (!Number.isInteger(DAYS) || DAYS < 1 || DAYS > 730) {
   console.error(`--days must be an integer 1..730, got ${flags.get('days')}`);
@@ -106,7 +144,8 @@ const randInt = (lo, hi) => lo + Math.floor(rand() * (hi - lo + 1));
  */
 function pickByLevel(options, level, spread = 1.2) {
   const center = (1 - level) * (options.length - 1);
-  const idx = Math.round(center + (rand() * 2 - 1) * spread);
+  // A trend needs the direction to show through the noise, so it gets less of it.
+  const idx = Math.round(center + (rand() * 2 - 1) * spread * (TREND ? 0.45 : 1));
   return options[Math.max(0, Math.min(options.length - 1, idx))];
 }
 
@@ -123,92 +162,115 @@ const at = (d, hour, minute = 0) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour, minute, randInt(0, 59), 0);
 
 // ── option catalogues ────────────────────────────────────────
-// Best → worst. Order matters: pickByLevel walks it.
+// Best → worst; pickByLevel walks the order. Copied from apps/api/src/nudge/registry.ts and must
+// stay byte-identical to the score maps in apps/api/src/report/scoring.ts.
+//
+// Each option also carries a short label, used only by the day-by-day table printed at the end —
+// the real strings are sentences and a 60-row grid of them is unreadable.
+const SHORT = new Map();
+function labelled(options, shorts) {
+  options.forEach((o, i) => SHORT.set(o, shorts[i]));
+  return options;
+}
+const short = (v) => (v == null ? '·' : (SHORT.get(v) ?? String(v)));
 
-// From apps/api/src/nudge/registry.ts — these must stay byte-identical to the score maps.
-const SLEEP = [
+const SLEEP = labelled([
   'I slept well',
   'I woke up 1–2 times',
   'I had disturbed sleep',
   'I woke up sweaty or uncomfortable',
   'I barely slept',
-];
-const ENERGY = [
+], ['well', 'woke1-2', 'disturb', 'sweaty', 'barely']);
+const ENERGY = labelled([
   'Fresh and active',
   'Slightly low',
   'Mentally tired, even after sleeping',
   'Heavy body feeling',
   'Very tired',
-];
-const MOOD_MORNING = ['Calm', "I don't know", 'Irritated', 'Anxious', 'Sad', 'Emotionally numb'];
-const MOOD_SHIFT = [
+], ['fresh', 'low', 'mental', 'heavy', 'vtired']);
+const MOOD_MORNING = labelled(
+  ['Calm', "I don't know", 'Irritated', 'Anxious', 'Sad', 'Emotionally numb'],
+  ['calm', 'dunno', 'irrit', 'anxious', 'sad', 'numb'],
+);
+const MOOD_SHIFT = labelled([
   'No, mood was stable',
   'Mild mood changes',
   'I felt irritated suddenly',
   'I cried or felt emotional',
   'I felt anxious suddenly',
   'I had multiple mood shifts',
-];
-const STRESS = ['Low stress', 'Manageable', 'Stressful', 'Very stressful', 'I feel overwhelmed'];
-const HOT_FLASH = ['None', '1–2', '3–5', 'More than 5', 'Not sure'];
-/** Count ranges the buckets literally name, so a count never contradicts its own answer. */
-const HOT_FLASH_COUNT_RANGE = { None: [0, 0], '1–2': [1, 2], '3–5': [3, 5], 'More than 5': [6, 9] };
-const ADHERENCE = [
+], ['stable', 'mild', 'irrit', 'cried', 'anxious', 'multi']);
+const STRESS = labelled(
+  ['Low stress', 'Manageable', 'Stressful', 'Very stressful', 'I feel overwhelmed'],
+  ['low', 'manage', 'stress', 'vstress', 'overwh'],
+);
+const HOT_FLASH = labelled(
+  ['None', '1–2', '3–5', 'More than 5', 'Not sure'],
+  ['none', '1-2', '3-5', '5+', 'notsure'],
+);
+const ADHERENCE = labelled([
   'Yes, fully',
   'Partly',
   'I forgot',
   "I couldn't manage today",
   'I did not feel like doing it',
-];
-const HYDRATION = [
+], ['full', 'partly', 'forgot', 'couldnt', 'didnt']);
+const HYDRATION = labelled([
   'More than 6 glasses',
   '5–6 glasses',
   '2–4 glasses',
   'Less than 2 glasses',
   'I forgot to track',
-];
-const CRAVINGS = [
+], ['6+', '5-6', '2-4', '<2', 'forgot']);
+const CRAVINGS = labelled([
   'No cravings',
   'Sweet cravings',
   'Tea/coffee cravings',
   'Salty cravings',
   'Fried/snack cravings',
   'I felt hungry even after eating',
-];
-const FOCUS = [
+], ['none', 'sweet', 'tea', 'salty', 'fried', 'hungry']);
+const FOCUS = labelled([
   'Clear and focused',
   'Slightly distracted',
   'Forgetful',
   'Brain fog',
   'Unable to concentrate',
-];
-const FOOD_RHYTHM = ['Balanced', 'Ate late', 'Had cravings', 'Skipped meals', 'Overate', 'Not sure'];
+], ['clear', 'distract', 'forget', 'fog', 'cant']);
+const FOOD_RHYTHM = labelled(
+  ['Balanced', 'Ate late', 'Had cravings', 'Skipped meals', 'Overate', 'Not sure'],
+  ['balanced', 'late', 'craving', 'skipped', 'overate', 'notsure'],
+);
 
-// No registry entry yet — invented options, kept in the same voice as the ones above.
-const MOVEMENT = ['Workout', 'Yoga or stretching', '30 min walk', 'Light walk', 'No movement'];
-const ME_TIME = [
-  'An hour or more',
-  'About 30 minutes',
-  'A few minutes',
-  'Almost none',
-  'None at all',
-];
-const FAMILY_SUPPORT = [
-  'Very supported',
-  'Somewhat supported',
-  'Neutral',
-  'Not supported',
-  'I felt alone',
-];
-const WEEKLY_MOOD_REVIEW = ['Sleep', 'Energy', 'Mood swings', 'Hot flashes', 'Stress', 'Body changes'];
-const BLOATING = [
-  'No bloating',
-  'Mild bloating',
-  'Bloated after meals',
-  'Bloated most of the day',
-  'Very uncomfortable',
-];
-const PAIN = ['No pain', 'Headache', 'Back pain', 'Joint pain', 'Body ache', 'Cramps'];
+// Joints & stiffness, from packages/shared/src/joints.ts. The one tracker with no nudge: only the
+// Track page's sheet writes it (POST /joints), and the report reads it.
+const JOINT_SEVERITY = labelled(['none', 'mild', 'moderate', 'severe'], ['none', 'mild', 'mod', 'severe']);
+const JOINT_IMPACT = ['not_at_all', 'a_little', 'moderately', 'a_lot'];
+const JOINT_AREAS = ['neck', 'shoulders', 'hands_wrists_fingers', 'lower_back', 'hips', 'knees', 'ankles_feet'];
+const JOINT_SYMPTOMS = ['aching', 'pain', 'stiffness', 'swelling', 'tenderness', 'reduced_movement'];
+const JOINT_TIMES = ['on_waking', 'morning', 'afternoon', 'evening', 'night', 'throughout_day'];
+const JOINT_TRIGGERS = ['poor_sleep', 'stress', 'long_sitting', 'exercise', 'cold_weather', 'not_sure'];
+
+/** `jointDiscomfortScore` in packages/shared/src/joints.ts: severity 70%, impact 30%, 0-100. */
+function jointScore(severity, impact) {
+  const sev = { none: 0, mild: 1, moderate: 2, severe: 3 }[severity];
+  const imp = impact ? { not_at_all: 0, a_little: 1, moderately: 2, a_lot: 3 }[impact] : 0;
+  return Math.round((sev / 3) * 100 * 0.7 + (imp / 3) * 100 * 0.3);
+}
+
+/** A few distinct picks from a list. */
+function some(list, lo, hi) {
+  const out = [];
+  const n = randInt(lo, hi);
+  while (out.length < n) {
+    const v = pick(list);
+    if (!out.includes(v)) out.push(v);
+  }
+  return out;
+}
+
+/** Signal string the stress writer checks to set `overwhelmed` (apps/api/src/nudge/signals.ts). */
+const OVERWHELMED = 'I feel overwhelmed';
 
 // Manual-sheet enums, from packages/shared/src/{sleep,mood,quickLog}.ts.
 const SLEEP_HOURS = ['gt8', '7to8', '6to7', '5to6', 'lt5'];
@@ -234,57 +296,60 @@ const MOOD_EMOTIONS = [
 ];
 const QUICK_SYMPTOMS = ['hot_flash', 'anxiety', 'chills', 'irritability'];
 
-const L3_TRIGGERS = [
-  'L3-001',
-  'L3-002',
-  'L3-003',
-  'L3-004',
-  'L3-005',
-  'L3-006',
-  'L3-007',
-  'L3-008',
-  'L3-009',
-];
+/** Bucket edges from `hotFlashCategoryForCount` in apps/api/src/report/scoring.ts. */
+function hotFlashCategoryForCount(count) {
+  if (count <= 0) return 'None';
+  if (count <= 2) return '1–2';
+  if (count <= 5) return '3–5';
+  return 'More than 5';
+}
 
-/** Which nudge writes which model, and how reliably she answers it. */
-const NUDGE_SENDS = [
-  { nudgeId: 'L1-001', layer: 1, slot: 'morning', hour: 8 },
-  { nudgeId: 'L1-002', layer: 1, slot: 'morning', hour: 8 },
-  { nudgeId: 'L1-003', layer: 1, slot: 'morning', hour: 8 },
-  { nudgeId: 'L1-004', layer: 1, slot: 'afternoon', hour: 15 },
-  { nudgeId: 'L2-002', layer: 2, slot: 'afternoon', hour: 16 },
-  { nudgeId: 'L2-003', layer: 2, slot: 'afternoon', hour: 16 },
-  { nudgeId: 'L2-009', layer: 2, slot: 'afternoon', hour: 16 },
-  { nudgeId: 'L1-005', layer: 1, slot: 'evening', hour: 21 },
-  { nudgeId: 'L1-007', layer: 1, slot: 'evening', hour: 21 },
-  { nudgeId: 'L1-008', layer: 1, slot: 'evening', hour: 21 },
-  { nudgeId: 'L2-001', layer: 2, slot: 'evening', hour: 21 },
-];
-const SUPPRESSION_REASONS = ['SR-01', 'SR-03', 'SR-05', 'SR-07'];
+// ── the nudge cron, as it actually runs ──────────────────────
+// Slot bundles and gating primaries from apps/api/src/nudge/engine.ts; cron times from
+// apps/api/src/nudge/scheduler.ts (07:30 / 12:30 / 20:30, Asia/Kolkata).
+const SLOT_PRIMARY = { morning: 'L1-001', afternoon: 'L1-004', evening: 'L1-005' };
+const SLOT_HOUR = { morning: 7, afternoon: 12, evening: 20 };
+const SLOT_MINUTE = 30;
+/** Fixed morning and evening bundles; the afternoon's second card rotates. */
+const SLOT_CARDS = {
+  morning: ['L1-001', 'L1-002', 'L1-003'],
+  afternoon: ['L1-004'],
+  evening: ['L1-005', 'L2-001', 'L1-007', 'L1-008'],
+};
+/** `ROTATION` in apps/api/src/nudge/selectL2Nudge.ts, least-recently-asked first. */
+const L2_ROTATION = ['L2-003', 'L2-002', 'L2-009'];
+const NUDGE_LAYER = {
+  'L1-001': 1,
+  'L1-002': 1,
+  'L1-003': 1,
+  'L1-004': 1,
+  'L1-005': 1,
+  'L1-007': 1,
+  'L1-008': 1,
+  'L2-001': 2,
+  'L2-002': 2,
+  'L2-003': 2,
+  'L2-009': 2,
+};
+const NUDGE_SLOT = {
+  'L1-001': 'morning',
+  'L1-002': 'morning',
+  'L1-003': 'morning',
+  'L1-004': 'afternoon',
+  'L2-002': 'afternoon',
+  'L2-003': 'afternoon',
+  'L2-009': 'afternoon',
+  'L1-005': 'evening',
+  'L1-007': 'evening',
+  'L1-008': 'evening',
+  'L2-001': 'evening',
+};
 
-const SNAPSHOT_SUMMARIES = [
-  'Steady day — sleep and energy held together.',
-  'Heat episodes were the story today.',
-  'Mood dipped in the evening; the rest held.',
-  'Low-stress day. Worth noticing what made it one.',
-  'Broken sleep is showing up in the afternoon energy.',
-  'A tired day. Nothing to fix, just to note.',
-];
-const SYMPTOM_NOTES = [
-  null,
-  null,
-  null,
-  'Worse after coffee.',
-  'Woke at 3am and could not get back to sleep.',
-  'Better on the days I walk.',
-  'Long day at work.',
-  'Felt it most in the evening.',
-];
-
-// ── models cleared and rewritten ─────────────────────────────
+// ── models cleared ───────────────────────────────────────────
 // ERASURE_TRACKER_MODELS from packages/shared/src/privacy.ts, minus periodLog and
-// periodDailyStatus (the period tracker, left alone by request). weeklyMetric and symptomLogEntry
-// are cascade children but are cleared explicitly so the wipe does not depend on FK actions.
+// periodDailyStatus. Cleared whether or not the generator writes them, so a reseed leaves no
+// half-old history behind. weeklyMetric and symptomLogEntry are cascade children but are cleared
+// explicitly so the wipe does not depend on FK actions.
 const CLEAR_MODELS = [
   'moodLog',
   'sleepLog',
@@ -307,7 +372,177 @@ const CLEAR_MODELS = [
   'nudgeDailyState',
   'nudgeSendLog',
   'l3TriggerLog',
+  'jointLog',
 ];
+
+/**
+ * The tracker tables nothing in the product writes (see the header). Never populated; in a full
+ * reseed they are cleared, and the run ends by naming them.
+ */
+const UNUSED_MODELS = [
+  'movementLog',
+  'meTimeLog',
+  'bloatingLog',
+  'painLog',
+  'familySupportLog',
+  'weeklyMoodReviewLog',
+  'symptomLog',
+  'symptomLogEntry',
+  'wellnessSnapshot',
+  'weeklyReport',
+  'weeklyMetric',
+  'l3TriggerLog',
+];
+
+/** The column that places each written row on a day, for clearing and reading back one window. */
+const WINDOW_FIELD = {
+  sleepLog: { field: 'loggedAt', kind: 'time' },
+  moodLog: { field: 'loggedAt', kind: 'time' },
+  quickSymptomLog: { field: 'loggedAt', kind: 'time' },
+  nudgeSendLog: { field: 'sentAt', kind: 'time' },
+  energyLog: { field: 'date', kind: 'day' },
+  stressLog: { field: 'date', kind: 'day' },
+  hotFlashDailyLog: { field: 'date', kind: 'day' },
+  planAdherenceLog: { field: 'date', kind: 'day' },
+  hydrationLog: { field: 'date', kind: 'day' },
+  cravingsLog: { field: 'date', kind: 'day' },
+  brainFogLog: { field: 'date', kind: 'day' },
+  foodRhythmLog: { field: 'date', kind: 'day' },
+  jointLog: { field: 'date', kind: 'day' },
+  nudgeDailyState: { field: 'date', kind: 'day' },
+};
+
+// ── day-by-day tables ────────────────────────────────────────
+// Two blocks rather than one wide grid: what she answered, then how each day got logged. One wide
+// table of 20 columns wraps on any normal terminal and stops being readable.
+
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** `YYYY-MM-DD` for a local calendar day. */
+function isoDay(d) {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * What she answered, one column per tracker.
+ *
+ * `of` is the full option string; the on-screen table renders it through `short()` to fit, and the
+ * CSV at the end emits it verbatim, since that is the version worth pasting into a spreadsheet.
+ */
+const ANSWER_COLUMNS = [
+  { head: 'date', width: 10, of: (d) => isoDay(d.date), raw: true },
+  { head: 'day', width: 3, of: (d) => DOW[d.date.getDay()], raw: true },
+  { head: 'sleep', width: 8, of: (d) => d.answers.sleep },
+  { head: 'energy', width: 7, of: (d) => d.answers.energy },
+  { head: 'mood', width: 7, of: (d) => d.answers.mood },
+  { head: 'moodshift', width: 9, of: (d) => d.answers.shift },
+  { head: 'stress', width: 7, of: (d) => d.answers.stress },
+  { head: 'hotflash', width: 8, of: (d) => d.heat.category },
+  { head: 'focus', width: 8, of: (d) => d.answers.focus },
+  { head: 'water', width: 6, of: (d) => d.answers.hydration },
+  { head: 'craving', width: 8, of: (d) => d.answers.cravings },
+  { head: 'food', width: 8, of: (d) => d.answers.food },
+  { head: 'careplan', width: 8, of: (d) => d.answers.adherence },
+  { head: 'joints', width: 6, of: (d) => d.answers.joints },
+];
+
+/** How the day got logged: which surface wrote what, and what the cron did. */
+const SURFACE_COLUMNS = [
+  { head: 'date', width: 10, of: (d) => isoDay(d.date) },
+  { head: 'day', width: 3, of: (d) => DOW[d.date.getDay()] },
+  { head: 'hotflash', width: 8, of: (d) => short(d.heat.category) },
+  { head: 'episodes', width: 8, of: (d) => (d.heat.count == null ? 'not set' : String(d.heat.count)) },
+  {
+    head: 'counted from',
+    width: 12,
+    of: (d) => ({ nudge: 'her answer', quick_log: 'taps', mixed: 'answer+taps' })[d.heat.source],
+  },
+  { head: 'taps', width: 4, of: (d) => String(d.taps) },
+  { head: 'hot taps', width: 8, of: (d) => String(d.hotTaps) },
+  { head: 'cards', width: 5, of: (d) => String(d.cardsSent) },
+];
+
+function printTable(title, columns, ledger, legend) {
+  const cell = (v, w) => String(v).slice(0, w).padEnd(w);
+  const display = (c, day) => (c.raw ? c.of(day) : short(c.of(day)));
+  console.log(`\n${title}\n`);
+  console.log(`  ${columns.map((c) => cell(c.head, c.width)).join(' ')}`);
+  console.log(`  ${columns.map((c) => '─'.repeat(c.width)).join(' ')}`);
+  for (const day of ledger) {
+    console.log(`  ${columns.map((c) => cell(display(c, day), c.width)).join(' ')}`);
+  }
+  console.log(`\n${legend.map((l) => `  ${l}`).join('\n')}`);
+}
+
+/** RFC 4180 field. Several options contain commas ("No, mood was stable"), so this is not optional. */
+function csvField(value) {
+  const v = value == null ? '' : String(value);
+  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+function printAnswersCsv(ledger) {
+  console.log('\nWHAT SHE ANSWERED, AS CSV — full answer strings, ready to paste\n');
+  console.log(ANSWER_COLUMNS.map((c) => csvField(c.head)).join(','));
+  for (const day of ledger) {
+    console.log(ANSWER_COLUMNS.map((c) => csvField(c.of(day))).join(','));
+  }
+}
+
+function printLedger(ledger) {
+  printTable('WHAT SHE ANSWERED — one row per day, one column per tracker', ANSWER_COLUMNS, ledger, [
+    'Answers are shortened to fit. "woke1-2" is "I woke up 1–2 times", "vstress" is',
+    '"Very stressful", and so on — the full strings are whole sentences.',
+    'Every tracker is answered every day, so there are no blanks: the randomness is in',
+    'which answer she gave, never in whether she logged.',
+  ]);
+
+  printTable('HOW EACH DAY GOT LOGGED — which surface wrote what', SURFACE_COLUMNS, ledger, [
+    'hotflash / episodes / counted from',
+    '    A hot-flash day is described by two different things: the answer she picked in the',
+    '    evening ("3-5"), and the number of times she tapped the hot-flash tile during the day.',
+    '    "episodes" is the number stored; "counted from" says where it came from.',
+    '      her answer   — she answered, and never tapped the tile. No number is stored.',
+    '      taps         — she tapped before answering, so the taps created the row and set the',
+    '                     number. Her later answer replaced only the words, which is why the',
+    '                     answer and the number can disagree (e.g. "3-5" with 1 episode).',
+    '      answer+taps  — she answered first, then tapped. Her words stand, the taps set',
+    '                     the number.',
+    '',
+    'taps / hot taps',
+    '    Taps on the dashboard tiles that day (hot flash, anxiety, chills, irritability), and',
+    '    how many of those were the hot-flash tile specifically.',
+    '',
+    'cards',
+    '    How many question cards the nudge cron pushed that day. It runs three times — 07:30,',
+    '    12:30, 20:30 — for a full nine cards. Fewer means a slot had nothing left to ask,',
+    '    because she had already logged that slot\'s main tracker herself before the cron ran.',
+  ]);
+
+  printAnswersCsv(ledger);
+}
+
+/** Every row in the window, read back from the database, one line each, grouped by table. */
+async function printRows(prisma, models, inWindow) {
+  const fmt = (v) => {
+    if (v instanceof Date) return v.toISOString();
+    if (Array.isArray(v)) return `[${v.join(',')}]`;
+    return v;
+  };
+  console.log('\nEVERY ROW WRITTEN, as stored');
+  for (const model of models.sort()) {
+    const { field } = WINDOW_FIELD[model];
+    const found = await prisma[model].findMany({ where: inWindow(model), orderBy: { [field]: 'asc' } });
+    console.log(`\n── ${model} (${found.length})`);
+    for (const row of found) {
+      const { id, userId: _user, createdAt: _c, updatedAt: _u, ...rest } = row;
+      const cells = Object.entries(rest)
+        .filter(([, v]) => v !== null && !(Array.isArray(v) && v.length === 0))
+        .map(([k, v]) => `${k}=${fmt(v)}`);
+      console.log(`  ${cells.join('  ')}`);
+    }
+  }
+}
 
 async function main() {
   loadEnv();
@@ -334,9 +569,24 @@ async function main() {
     console.log(`db     ${host}`);
     console.log(`window ${DAYS} days, seed ${seed}`);
 
+    if (TREND) console.log(`trend  ${TREND}, clearing only the days in the window`);
+
+    const today = new Date();
+    const firstDay = addDays(today, -(DAYS - 1));
+    /** Rows on or after the window's first day, by each table's own day column. */
+    const inWindow = (model) => {
+      const { field, kind } = WINDOW_FIELD[model];
+      const from = kind === 'day' ? dayKey(firstDay) : new Date(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate());
+      return { userId, [field]: { gte: from } };
+    };
+
     // ── 1. clear ─────────────────────────────────────────────
-    // symptomLog/weeklyReport children first, then the parents, then the flat tables.
     const cleared = {};
+    if (TREND) {
+      for (const model of Object.keys(WINDOW_FIELD)) {
+        cleared[model] = (await prisma[model].deleteMany({ where: inWindow(model) })).count;
+      }
+    } else {
     cleared.symptomLogEntry = (
       await prisma.symptomLogEntry.deleteMany({ where: { log: { userId } } })
     ).count;
@@ -348,26 +598,32 @@ async function main() {
     for (const model of CLEAR_MODELS) {
       cleared[model] = (await prisma[model].deleteMany({ where: { userId } })).count;
     }
+    }
     const clearedTotal = Object.values(cleared).reduce((a, b) => a + b, 0);
     console.log(`cleared ${clearedTotal} rows across ${Object.keys(cleared).length} tables`);
 
     // ── 2. build the window ──────────────────────────────────
-    const today = new Date();
     const days = [];
     for (let i = DAYS - 1; i >= 0; i--) days.push(addDays(today, -i));
 
     // One latent wellness level, drifting slowly, shared by every metric of a day. Metrics that
     // should track together then do, without any of them being a copy of another.
     let level = 0.55;
-    const dayLevels = days.map(() => {
+    const [from, to] = TREND === 'worsening' ? [0.88, 0.18] : [0.18, 0.88];
+    const dayLevels = days.map((_, i) => {
+      if (TREND) {
+        // A straight line from `from` to `to`, nudged a little so no two runs look ruled.
+        const t = days.length === 1 ? 1 : i / (days.length - 1);
+        return Math.max(0.05, Math.min(0.95, from + (to - from) * t + (rand() - 0.5) * 0.06));
+      }
       level = Math.max(0.15, Math.min(0.92, level + (rand() - 0.5) * 0.14));
       return level;
     });
 
     const rows = {
       sleepLog: [],
-      energyLog: [],
       moodLog: [],
+      energyLog: [],
       stressLog: [],
       hotFlashDailyLog: [],
       planAdherenceLog: [],
@@ -375,49 +631,119 @@ async function main() {
       cravingsLog: [],
       brainFogLog: [],
       foodRhythmLog: [],
-      movementLog: [],
-      meTimeLog: [],
-      bloatingLog: [],
-      painLog: [],
-      familySupportLog: [],
-      weeklyMoodReviewLog: [],
       quickSymptomLog: [],
-      wellnessSnapshot: [],
+      jointLog: [],
       nudgeDailyState: [],
       nudgeSendLog: [],
-      l3TriggerLog: [],
     };
-    const symptomDays = [];
-
-    /** A daily categorical tracker: unique on (userId, date), so exactly one row per day. */
-    const daily = (model, options, lvl, date, hour, spread) => {
-      const category = pickByLevel(options, lvl, spread);
-      const loggedAt = at(date, hour);
-      rows[model].push({
-        userId,
-        date: dayKey(date),
-        category,
-        source: chance(0.75) ? 'nudge' : 'manual',
-        loggedAt,
-        createdAt: loggedAt,
-      });
-      return category;
-    };
+    /** One entry per day, for the table printed at the end. */
+    const ledger = [];
 
     for (let i = 0; i < days.length; i++) {
       const date = days[i];
       const lvl = dayLevels[i];
+      const date_ = dayKey(date);
 
-      // sleepLog — one row per answer, not unique per day. The categorical answer lands every day;
-      // the manual sheet, which stores a 1-5 rating instead of an option string, lands on top of it
-      // some days. That second row is an extra, never a substitute — no day is left unlogged.
+      // When she answered each tracker. Every tracker is answered every day — via its nudge card
+      // where the cron sent one, otherwise from the /track day sheet, which offers all eleven
+      // regardless of what was pushed. Answer times sit shortly after the slot the tracker belongs
+      // to, or mid-slot for the ones the cron skipped that day.
+      const answeredAt = {};
+      const answerTime = (nudgeId) => {
+        const slot = NUDGE_SLOT[nudgeId];
+        const base = { morning: 8, afternoon: 13, evening: 21 }[slot];
+        return at(date, base, randInt(0, 55));
+      };
+      for (const id of Object.keys(NUDGE_SLOT)) answeredAt[id] = answerTime(id);
+
+      // ── the three cron slots ───────────────────────────────
+      // The daily cap is 3 and it is only checked against slots already dispatched, so all three
+      // slots fire. A slot is suppressed outright only when its primary tracker was already
+      // self-logged before the cron ran — SR-05 — which is the one case `recordSuppression` writes.
+      let nudgeCount = 0;
+      let cardsSent = 0;
+      const suppressedSlots = [];
+      const sentIds = new Set();
+      for (const slot of ['morning', 'afternoon', 'evening']) {
+        const sentAt = at(date, SLOT_HOUR[slot], SLOT_MINUTE);
+        const primary = SLOT_PRIMARY[slot];
+        // She beat the cron to the primary tracker: whole bundle gated, one suppression row.
+        if (chance(0.1)) {
+          rows.nudgeSendLog.push({
+            userId,
+            nudgeId: primary,
+            layer: NUDGE_LAYER[primary],
+            slot,
+            sentAt,
+            engagedAt: null,
+            suppressedReason: 'SR-05',
+          });
+          suppressedSlots.push(slot);
+          // The answer landed before the cron, so pull it earlier than the send.
+          answeredAt[primary] = new Date(sentAt.getTime() - randInt(20, 90) * 60_000);
+          continue;
+        }
+        const cards = [...SLOT_CARDS[slot]];
+        if (slot === 'afternoon') cards.push(L2_ROTATION[i % L2_ROTATION.length]);
+        for (const id of cards) {
+          sentIds.add(id);
+          const answer = answeredAt[id];
+          rows.nudgeSendLog.push({
+            userId,
+            nudgeId: id,
+            layer: NUDGE_LAYER[id],
+            slot,
+            sentAt,
+            // `storeResponse` stamps the most recent un-engaged send for that nudge, so a card
+            // answered before it was pushed leaves the row un-engaged.
+            engagedAt: answer > sentAt ? answer : null,
+            suppressedReason: null,
+          });
+          cardsSent += 1;
+        }
+        nudgeCount += 1;
+      }
+
+      // ── categorical tracker answers ────────────────────────
+      // `persistAnswer` never passes `source`, so every one of these takes the schema default
+      // 'nudge'. It passes `loggedAt` only for sleep and mood; the upsert-shaped tables take
+      // `@default(now())`, which is the moment she answered either way.
+      const upsert = (model, options, nudgeId, spread, extra = {}) => {
+        const category = pickByLevel(options, lvl, spread);
+        const loggedAt = answeredAt[nudgeId];
+        rows[model].push({
+          userId,
+          date: date_,
+          category,
+          source: 'nudge',
+          loggedAt,
+          createdAt: loggedAt,
+          ...extra(category),
+        });
+        return category;
+      };
+      const noExtra = () => ({});
+
+      const answers = {};
+      answers.energy = upsert('energyLog', ENERGY, 'L1-002', 1.2, noExtra);
+      answers.stress = upsert('stressLog', STRESS, 'L1-004', 1.2, (c) => ({
+        overwhelmed: c === OVERWHELMED,
+      }));
+      answers.adherence = upsert('planAdherenceLog', ADHERENCE, 'L1-007', 1.2, noExtra);
+      answers.hydration = upsert('hydrationLog', HYDRATION, 'L2-001', 1.2, noExtra);
+      answers.cravings = upsert('cravingsLog', CRAVINGS, 'L2-002', 1.5, noExtra);
+      answers.focus = upsert('brainFogLog', FOCUS, 'L2-003', 1.2, noExtra);
+      answers.food = upsert('foodRhythmLog', FOOD_RHYTHM, 'L2-009', 1.5, noExtra);
+
+      // sleepLog — the L1-001 answer, which is the only path that sets `nightSweatFlag`.
       {
-        const sleepCategory = pickByLevel(SLEEP, lvl);
-        const loggedAt = at(date, 8);
+        const category = pickByLevel(SLEEP, lvl);
+        answers.sleep = category;
+        const loggedAt = answeredAt['L1-001'];
         rows.sleepLog.push({
           userId,
-          category: sleepCategory,
-          nightSweatFlag: sleepCategory === 'I woke up sweaty or uncomfortable',
+          category,
+          nightSweatFlag: category === 'I woke up sweaty or uncomfortable',
           disruptions: [],
           hours: null,
           quality: null,
@@ -425,8 +751,39 @@ async function main() {
           createdAt: loggedAt,
         });
       }
+
+      // moodLog — L1-003 in the morning writes `category`, L1-008 in the evening `moodShift`.
+      answers.mood = pickByLevel(MOOD_MORNING, lvl);
+      answers.shift = pickByLevel(MOOD_SHIFT, lvl);
+      rows.moodLog.push({
+        userId,
+        slot: 'morning',
+        category: answers.mood,
+        moodShift: null,
+        emotions: [],
+        feeling: null,
+        loggedAt: answeredAt['L1-003'],
+        createdAt: answeredAt['L1-003'],
+      });
+      rows.moodLog.push({
+        userId,
+        slot: 'evening',
+        category: null,
+        moodShift: answers.shift,
+        emotions: [],
+        feeling: null,
+        loggedAt: answeredAt['L1-008'],
+        createdAt: answeredAt['L1-008'],
+      });
+
+      // ── manual sheets ──────────────────────────────────────
+      // POST /sleep and POST /mood: extra rows on top of the nudge answer, never instead of it.
+      // Neither endpoint sets `slot`, `category` or `moodShift`, and /sleep leaves
+      // `nightSweatFlag` at its default even when `disruptions` names night sweats.
+      let manualEngagedAt = null;
+      const manual = [];
       if (chance(0.25)) {
-        const loggedAt = at(date, 9);
+        const loggedAt = at(date, 9, randInt(0, 55));
         const disruptions = [];
         const disruptionCount = randInt(0, lvl > 0.6 ? 1 : 3);
         while (disruptions.length < disruptionCount) {
@@ -439,43 +796,15 @@ async function main() {
           quality: Math.max(1, Math.min(5, Math.round(1 + lvl * 4 + (rand() - 0.5)))),
           hours: pickByLevel(SLEEP_HOURS, lvl),
           disruptions,
-          nightSweatFlag: disruptions.includes('night_sweats'),
+          nightSweatFlag: false,
           loggedAt,
           createdAt: loggedAt,
         });
-      }
-
-      // moodLog — morning emotional state (category) and evening mood shift (moodShift), both
-      // every day, plus an occasional manual sheet on top.
-      {
-        const loggedAt = at(date, 8);
-        rows.moodLog.push({
-          userId,
-          slot: 'morning',
-          category: pickByLevel(MOOD_MORNING, lvl),
-          emotions: [],
-          moodShift: null,
-          feeling: null,
-          loggedAt,
-          createdAt: loggedAt,
-        });
-      }
-      {
-        const loggedAt = at(date, 21);
-        rows.moodLog.push({
-          userId,
-          slot: 'evening',
-          moodShift: pickByLevel(MOOD_SHIFT, lvl),
-          category: null,
-          emotions: [],
-          feeling: null,
-          loggedAt,
-          createdAt: loggedAt,
-        });
+        manualEngagedAt = loggedAt;
+        manual.push('sleep');
       }
       if (chance(0.2)) {
-        // Manual sheet: 1-5 feeling plus free-picked emotions.
-        const loggedAt = at(date, randInt(11, 19));
+        const loggedAt = at(date, randInt(11, 19), randInt(0, 55));
         const emotions = [];
         const emotionCount = randInt(1, 3);
         while (emotions.length < emotionCount) {
@@ -492,116 +821,131 @@ async function main() {
           loggedAt,
           createdAt: loggedAt,
         });
+        if (!manualEngagedAt || loggedAt > manualEngagedAt) manualEngagedAt = loggedAt;
+        manual.push('mood');
       }
 
-      // Upsert-shaped daily trackers — every tracker, every day in the window.
-      const energy = daily('energyLog', ENERGY, lvl, date, 8);
-      const stress = daily('stressLog', STRESS, lvl, date, 15);
-      const hotFlash = daily('hotFlashDailyLog', HOT_FLASH, lvl, date, 21, 1.0);
-      daily('planAdherenceLog', ADHERENCE, lvl, date, 21);
-      daily('hydrationLog', HYDRATION, lvl, date, 21);
-      daily('cravingsLog', CRAVINGS, lvl, date, 16, 1.5);
-      daily('brainFogLog', FOCUS, lvl, date, 16);
-      daily('foodRhythmLog', FOOD_RHYTHM, lvl, date, 16, 1.5);
-      daily('movementLog', MOVEMENT, lvl, date, 19);
-      daily('meTimeLog', ME_TIME, lvl, date, 20);
-      daily('bloatingLog', BLOATING, lvl, date, 20);
-      daily('painLog', PAIN, lvl, date, 20, 1.5);
-
-      // stressLog carries the distress flag the governor reads.
-      const stressRow = rows.stressLog[rows.stressLog.length - 1];
-      stressRow.overwhelmed = stressRow.category === 'I feel overwhelmed';
-
-      // hotFlashDailyLog carries a numeric estimate when the bucket allows one.
-      const heatRow = rows.hotFlashDailyLog[rows.hotFlashDailyLog.length - 1];
-      // 'Not sure' has no range — the reader treats a null count as no numeric estimate.
-      const heatRange = HOT_FLASH_COUNT_RANGE[heatRow.category];
-      heatRow.count = heatRange ? randInt(heatRange[0], heatRange[1]) : null;
-
-      // Weekly trackers land on their own day, so these are not gaps: family support every Sunday,
-      // mood review every Friday.
-      const dow = date.getDay();
-      if (dow === 0) daily('familySupportLog', FAMILY_SUPPORT, lvl, date, 19);
-      if (dow === 5) daily('weeklyMoodReviewLog', WEEKLY_MOOD_REVIEW, lvl, date, 20, 2.5);
-
-      // quickSymptomLog — dashboard taps. More of them on worse days.
-      const taps = lvl > 0.7 ? randInt(1, 2) : randInt(1, 5);
-      for (let t = 0; t < taps; t++) {
-        rows.quickSymptomLog.push({
+      // ── joints & stiffness ─────────────────────────────────
+      // POST /joints: "No discomfort" ends the sheet, so its follow-ups are stored empty.
+      {
+        const severity = pickByLevel(JOINT_SEVERITY, lvl, 0.8);
+        const none = severity === 'none';
+        const impact = none ? null : pickByLevel(JOINT_IMPACT, lvl, 0.8);
+        const loggedAt = at(date, randInt(19, 22), randInt(0, 55));
+        rows.jointLog.push({
           userId,
-          symptom: pick(QUICK_SYMPTOMS),
-          loggedAt: at(date, randInt(7, 23)),
+          date: date_,
+          severity,
+          areas: none ? [] : some(JOINT_AREAS, 1, 2),
+          symptoms: none ? [] : some(JOINT_SYMPTOMS, 1, 2),
+          impact,
+          timeOfDay: none ? null : pick(JOINT_TIMES),
+          triggers: none ? [] : some(JOINT_TRIGGERS, 0, 2),
+          score: jointScore(severity, impact),
+          source: 'tracker',
+          loggedAt,
+          createdAt: loggedAt,
         });
+        answers.joints = severity;
+        if (!manualEngagedAt || loggedAt > manualEngagedAt) manualEngagedAt = loggedAt;
+        manual.push('joints');
       }
 
-      // symptomLog — the older symptom sheet: one row per day, 1-7 overall intensity.
-      symptomDays.push({
-        date: dayKey(date),
-        intensity: Math.max(1, Math.min(7, Math.round(7 - lvl * 5 + (rand() - 0.5) * 2))),
-        note: pick(SYMPTOM_NOTES),
-        createdAt: at(date, 21),
-        entryCount: randInt(1, 4),
-      });
+      // ── quick-log taps, and the hot-flash write-through ────
+      // POST /quick-log appends a tap, then recomputes the day's hotFlashDailyLog row from every
+      // hot-flash tap so far. Replaying that here — rather than inventing a count — is what keeps
+      // `count`, `category` and `source` in the combinations production can actually produce.
+      const taps = [];
+      const tapCount = lvl > 0.7 ? randInt(1, 2) : randInt(1, 5);
+      for (let t = 0; t < tapCount; t++) {
+        taps.push({ symptom: pick(QUICK_SYMPTOMS), loggedAt: at(date, randInt(7, 23), randInt(0, 55)) });
+      }
+      for (const tap of taps) rows.quickSymptomLog.push({ userId, ...tap });
 
-      // wellnessSnapshot — the derived daily balance score.
-      rows.wellnessSnapshot.push({
-        userId,
-        date: dayKey(date),
-        balanceScore: Math.max(10, Math.min(99, Math.round(lvl * 100 + (rand() - 0.5) * 12))),
-        summary: chance(0.6) ? pick(SNAPSHOT_SUMMARIES) : null,
-      });
+      const heatAnswer = pickByLevel(HOT_FLASH, lvl, 1.0);
+      const heatAnsweredAt = answeredAt['L1-005'];
+      const events = [
+        ...taps
+          .filter((t) => t.symptom === 'hot_flash')
+          .map((t) => ({ kind: 'tap', at: t.loggedAt })),
+        { kind: 'answer', at: heatAnsweredAt },
+      ].sort((a, b) => a.at - b.at);
 
-      // nudgeSendLog + nudgeDailyState — what the governor sent and how she engaged.
-      let nudgeCount = 0;
-      let morningAnchorResponded = false;
-      let afternoonResponded = false;
-      let lastEngagedAt = null;
-      for (const send of NUDGE_SENDS) {
-        const sentAt = at(date, send.hour);
-        // Suppression is a within-day attribute of one card, not a missing day: the tracker row
-        // for that metric is still written above either way.
-        const suppressed = chance(0.12);
-        const engagedThis = !suppressed && chance(0.85);
-        const engagedAt = engagedThis ? new Date(sentAt.getTime() + randInt(2, 90) * 60_000) : null;
-        rows.nudgeSendLog.push({
-          userId,
-          nudgeId: send.nudgeId,
-          layer: send.layer,
-          slot: send.slot,
-          sentAt,
-          engagedAt,
-          suppressedReason: suppressed ? pick(SUPPRESSION_REASONS) : null,
-        });
-        if (suppressed) continue;
-        nudgeCount++;
-        if (engagedAt) {
-          if (send.layer === 1 && send.slot === 'morning') morningAnchorResponded = true;
-          if (send.layer === 1 && send.slot === 'afternoon') afternoonResponded = true;
-          if (!lastEngagedAt || engagedAt > lastEngagedAt) lastEngagedAt = engagedAt;
+      let heatRow = null;
+      let tapsSoFar = 0;
+      for (const ev of events) {
+        if (ev.kind === 'tap') {
+          tapsSoFar += 1;
+          const tapCategory = hotFlashCategoryForCount(tapsSoFar);
+          if (!heatRow) {
+            heatRow = {
+              userId,
+              date: date_,
+              category: tapCategory,
+              count: tapsSoFar,
+              source: 'quick_log',
+              loggedAt: ev.at,
+              createdAt: ev.at,
+            };
+            continue;
+          }
+          // writeThrough.ts: an answered row keeps her words and only takes the count.
+          const answered = heatRow.source !== 'quick_log';
+          if (!answered) {
+            heatRow.category = tapCategory;
+            heatRow.loggedAt = ev.at;
+          }
+          heatRow.count = Math.max(heatRow.count ?? 0, tapsSoFar);
+          heatRow.source = answered ? 'mixed' : 'quick_log';
+        } else if (!heatRow) {
+          // No taps yet, so `persistAnswer` creates the row: default source, no count.
+          heatRow = {
+            userId,
+            date: date_,
+            category: heatAnswer,
+            count: null,
+            source: 'nudge',
+            loggedAt: ev.at,
+            createdAt: ev.at,
+          };
+        } else {
+          // The upsert's update clause sets `category` only — source, count and loggedAt stand.
+          heatRow.category = heatAnswer;
         }
       }
-      const distressFlag =
-        stress === 'I feel overwhelmed' || (energy === 'Very tired' && hotFlash === 'More than 5');
+      rows.hotFlashDailyLog.push(heatRow);
+
+      // ── nudgeDailyState ────────────────────────────────────
+      // `nudgeCount` is bumped once per dispatched slot, not per card, so it caps at 3.
+      // `morningAnchorResponded` is set by any layer-1 morning answer and also by the manual
+      // /mood and /sleep path via `markTrackerEngagement`. `distressFlag` is always false:
+      // `storeResponse` hardcodes it and `selectL2Nudge` never asks for it.
+      const answerTimes = Object.values(answeredAt);
+      let lastEngagedAt = answerTimes.reduce((a, b) => (b > a ? b : a), answerTimes[0]);
+      if (manualEngagedAt && manualEngagedAt > lastEngagedAt) lastEngagedAt = manualEngagedAt;
       rows.nudgeDailyState.push({
         userId,
-        date: dayKey(date),
+        date: date_,
         nudgeCount,
-        morningAnchorResponded,
-        afternoonResponded,
-        distressFlag,
+        morningAnchorResponded: true,
+        afternoonResponded: true,
+        distressFlag: false,
         lastEngagedAt,
-        createdAt: at(date, 7),
-        updatedAt: lastEngagedAt ?? at(date, 7),
+        createdAt: at(date, SLOT_HOUR.morning, SLOT_MINUTE),
+        updatedAt: lastEngagedAt,
       });
 
-      // l3TriggerLog — escalation events, rare and skewed to bad days.
-      if (chance(lvl < 0.35 ? 0.25 : 0.05)) {
-        rows.l3TriggerLog.push({
-          userId,
-          triggerId: pick(L3_TRIGGERS),
-          firedAt: at(date, randInt(9, 22)),
-        });
-      }
+      ledger.push({
+        date,
+        answers,
+        heat: heatRow,
+        taps: taps.length,
+        hotTaps: taps.filter((t) => t.symptom === 'hot_flash').length,
+        cardsSent,
+        suppressedSlots,
+        nudgeCount,
+        manual,
+      });
     }
 
     // ── 3. write ─────────────────────────────────────────────
@@ -612,114 +956,32 @@ async function main() {
       written[model] = count;
     }
 
-    // symptomLog + entries — entries link to whatever Symptom rows the catalogue already has.
-    const symptoms = await prisma.symptom.findMany({ select: { id: true }, where: { active: true } });
-    if (symptoms.length === 0) {
-      console.warn('warn   no rows in Symptom — symptomLog written without entries');
-    }
-    let entryCount = 0;
-    for (const day of symptomDays) {
-      const log = await prisma.symptomLog.create({
-        data: {
-          userId,
-          date: day.date,
-          intensity: day.intensity,
-          note: day.note,
-          createdAt: day.createdAt,
-        },
-      });
-      if (symptoms.length === 0) continue;
-      const chosen = new Set();
-      const want = Math.min(day.entryCount, symptoms.length);
-      while (chosen.size < want) chosen.add(pick(symptoms).id);
-      const res = await prisma.symptomLogEntry.createMany({
-        data: [...chosen].map((symptomId) => ({ logId: log.id, symptomId })),
-        skipDuplicates: true,
-      });
-      entryCount += res.count;
-    }
-    written.symptomLog = symptomDays.length;
-    if (entryCount) written.symptomLogEntry = entryCount;
+    printLedger(ledger);
 
-    // weeklyReport + weeklyMetric — one report per completed week in the window, with the metric
-    // shapes the report reader expects: benchmark rows carry a cohort median, stat rows a
-    // sparkline series.
-    const firstMonday = (() => {
-      const d = new Date(days[0]);
-      while (d.getDay() !== 1) d.setDate(d.getDate() + 1);
-      return d;
-    })();
-    let reportCount = 0;
-    let metricCount = 0;
-    for (let ws = new Date(firstMonday); addDays(ws, 6) <= today; ws = addDays(ws, 7)) {
-      const weekEnd = addDays(ws, 6);
-      const weekLevels = dayLevels.filter((_, i) => days[i] >= ws && days[i] <= weekEnd);
-      const avg = weekLevels.length
-        ? weekLevels.reduce((a, b) => a + b, 0) / weekLevels.length
-        : 0.5;
-      const trend = () => Array.from({ length: 7 }, () => Math.round(avg * 100 + (rand() - 0.5) * 20));
-      const report = await prisma.weeklyReport.create({
-        data: {
-          userId,
-          weekStart: dayKey(ws),
-          weekEnd: dayKey(weekEnd),
-          cohort: 'women 42-50 early perimenopause',
-          createdAt: at(weekEnd, 22),
-          metrics: {
-            create: [
-              {
-                kind: 'benchmark',
-                label: 'Sleep quality',
-                value: Math.round(avg * 100),
-                unit: '%',
-                delta: `${chance(0.5) ? '+' : '-'}${randInt(1, 9)}%`,
-                cohortMedup: Math.round(55 + rand() * 20),
-                trend: [],
-              },
-              {
-                kind: 'benchmark',
-                label: 'Stress load',
-                value: Math.round((1 - avg) * 100),
-                unit: '%',
-                delta: `${chance(0.5) ? '+' : '-'}${randInt(1, 9)}%`,
-                cohortMedup: Math.round(40 + rand() * 20),
-                trend: [],
-              },
-              {
-                kind: 'stat',
-                label: 'Hot flashes',
-                value: Math.round((1 - avg) * 20),
-                unit: 'episodes',
-                delta: `${chance(0.5) ? '+' : '-'}${randInt(1, 5)}`,
-                cohortMedup: null,
-                trend: trend(),
-              },
-              {
-                kind: 'stat',
-                label: 'Days logged',
-                value: randInt(4, 7),
-                unit: 'days',
-                delta: null,
-                cohortMedup: null,
-                trend: trend(),
-              },
-            ],
-          },
-        },
-        select: { id: true, _count: { select: { metrics: true } } },
-      });
-      reportCount++;
-      metricCount += report._count.metrics;
+    if (PRINT_ROWS) await printRows(prisma, Object.keys(written), inWindow);
+
+    if (TREND) {
+      const half = Math.floor(dayLevels.length / 2);
+      const mean = (xs) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
+      console.log(
+        `\ntrend ${TREND}: wellness level ${mean(dayLevels.slice(0, half)).toFixed(2)} in the first half → ` +
+          `${mean(dayLevels.slice(half)).toFixed(2)} in the second (0 worst, 1 best)`,
+      );
     }
-    written.weeklyReport = reportCount;
-    written.weeklyMetric = metricCount;
 
     const total = Object.values(written).reduce((a, b) => a + b, 0);
-    console.log(`\nwrote ${total} rows:`);
+    console.log(`\nwrote ${total} rows to the tracking tables the app uses:`);
     for (const [model, count] of Object.entries(written).sort()) {
       console.log(`  ${model.padEnd(22)} ${count}`);
     }
-    console.log('\nperiodLog / periodDailyStatus left untouched.');
+    console.log(`\nunused tracking tables — nothing in the product writes them, so not populated:`);
+    console.log(`  ${UNUSED_MODELS.join(', ')}`);
+    console.log(
+      TREND
+        ? '(left as they are; a full reseed without --trend clears them)'
+        : '(cleared for this user)',
+    );
+    console.log('periodLog / periodDailyStatus left untouched.');
   } finally {
     await prisma.$disconnect();
   }

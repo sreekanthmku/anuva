@@ -49,6 +49,11 @@ COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
 COPY --from=build /app/packages/shared/node_modules ./packages/shared/node_modules
 
+# One-off database scripts, run from the container's terminal: node /app/scripts/<name>.mjs
+# They find the Prisma client through packages/database above and use the container's DATABASE_URL.
+COPY scripts/purge-users.mjs scripts/purge-all-users.mjs scripts/seed-user-logs.mjs \
+  scripts/seed-improving-logs.mjs scripts/seed-worsening-logs.mjs ./scripts/
+
 WORKDIR /app/apps/api
 
 EXPOSE 3001
