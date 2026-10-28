@@ -96,6 +96,12 @@ export const ERASURE_ACCOUNT_MODELS = [
   'familyInvite',
   'familyMember',
   'fcmToken',
+  // Her browser push keys. The production push transport, and without this the tombstone kept them:
+  // erasure never deletes the user row, so the schema's cascade never fires.
+  'webPushSubscription',
+  // Which home cards she saw and tapped: a record of her behaviour in the app, with no reason to
+  // outlive the account.
+  'anuHomeCardLog',
   'session',
   // Sign-in history: device, OS and IP per login. Deleted rather than anonymised — once the account
   // is a tombstone, nobody can sign in as it, so there is no security question left to answer.

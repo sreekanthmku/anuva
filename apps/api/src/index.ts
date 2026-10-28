@@ -4210,6 +4210,15 @@ app.post('/auth/logout', async (req, res, next) => {
             data: { status: 'INACTIVE' },
           });
         }
+        // On web push `fcmToken` carries the subscription endpoint, which matches no FcmToken row:
+        // without this a signed-out phone went on receiving her notifications.
+        const pushMatch = [
+          ...(fcmToken ? [{ endpoint: fcmToken }] : []),
+          ...(deviceId ? [{ deviceId }] : []),
+        ];
+        if (pushMatch.length > 0) {
+          await prisma.webPushSubscription.deleteMany({ where: { userId, OR: pushMatch } });
+        }
       }
     }
 
