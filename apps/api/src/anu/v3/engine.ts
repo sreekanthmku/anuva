@@ -69,6 +69,7 @@ const ASKS_TO_BOOK =
 const CRISIS_HELPLINES_IN = [
   { name: 'Emergency', number: '112' },
   { name: 'Tele-MANAS (24x7, free)', number: '14416' },
+  { name: 'iCall (Mon–Sat, 10am–8pm)', number: '9152987821' },
 ];
 
 const decisionSchema = z.object({

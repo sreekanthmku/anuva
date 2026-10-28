@@ -101,7 +101,8 @@ describe('v3 findViolations', () => {
         ...base,
         riskLevel: 'L4',
         crisis: true,
-        message: 'Please call 112 or go to the nearest emergency department. Tele-MANAS 14416 is free, 24x7.',
+        message:
+          'Please call 112 or go to the nearest emergency department. Tele-MANAS 14416 is free, 24x7, and iCall is on 91529 87821.',
       }),
     ).toEqual([]);
   });
@@ -116,12 +117,22 @@ describe('v3 findViolations', () => {
     expect(out.some((v) => v.includes('14416'))).toBe(true);
   });
 
+  it('requires iCall alongside 112 and Tele-MANAS in an Indian crisis reply', () => {
+    const out = findViolations({
+      ...base,
+      riskLevel: 'L4',
+      crisis: true,
+      message: 'Your safety matters most right now. Please call 112, or Tele-MANAS 14416 (free, 24x7).',
+    });
+    expect(out.some((v) => v.includes('9152987821'))).toBe(true);
+  });
+
   it('flags "if you are in India" when the country is known', () => {
     const out = findViolations({
       ...base,
       riskLevel: 'L4',
       crisis: true,
-      message: 'If you are in India, call 112 or Tele-MANAS 14416.',
+      message: 'If you are in India, call 112, Tele-MANAS 14416 or iCall 9152987821.',
     });
     expect(out).toHaveLength(1);
     expect(out[0]).toMatch(/India/);

@@ -103,6 +103,8 @@ const EXTERNAL_REFERRAL =
 const IF_IN_INDIA = /\bif you(['’]re| are) in India\b/i;
 
 const HELPLINE_NUMBER = /\b(112|14416)\b/;
+/// Matched with spaces and hyphens stripped: "91529 87821" and "9152-987-821" both count.
+const ICALL_NUMBER = /9152987821/;
 
 /// ANU never suggests a medicine (section 37 rule 5). Whether a reply suggests
 /// one is decided by the medicine judge when it ran; these patterns are the
@@ -254,9 +256,9 @@ export function findViolations(input: CheckInput): string[] {
   }
 
   if (input.crisis && input.inIndia) {
-    if (!HELPLINE_NUMBER.test(message)) {
+    if (!HELPLINE_NUMBER.test(message) || !ICALL_NUMBER.test(message.replace(/[\s-]/g, ''))) {
       violations.push(
-        'This is a crisis reply but it does not tell her how to reach help. It MUST tell her to call 112 or go to the nearest emergency department if she is in immediate danger, and MUST offer Tele-MANAS 14416 (free, 24x7).',
+        'This is a crisis reply but it does not tell her how to reach help. It MUST tell her to call 112 or go to the nearest emergency department if she is in immediate danger, and MUST offer Tele-MANAS 14416 (free, 24x7) and iCall 9152987821 (Mon–Sat, 10am–8pm).',
       );
     }
     if (IF_IN_INDIA.test(message)) {
