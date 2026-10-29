@@ -1,0 +1,23 @@
+/* EXPERIMENT: white background on the landing index page only.
+   Loaded after landing.css by index.html. To revert, delete the
+   <link rel="stylesheet" href="/landing-white.css"> line in index.html
+   (and this file). page.css and landing.css are untouched.
+
+   What changes:
+   - --surface (page canvas, hero/pricing gradient fade)  #F7F0E8 -> #FFFFFF
+   - --surface-container (.section-alt, .anu-band bands)  #F3E9DD -> #FFFFFF
+   - sticky site header (was translucent cream)           -> translucent white
+   - mobile sticky CTA bar (was translucent cream)        -> translucent white
+   Cards (--surface-low #FBF6F0), lavender/blush tints and the plum
+   trust strip / footer keep their original colours. */
+
+:root{
+  --surface:#FFFFFF;
+  --surface-container:#FFFFFF;
+}
+
+.site-header{background:rgba(255,255,255,.9)}
+
+@media (max-width:900px){
+  .sticky-cta{background:rgba(255,255,255,.94)}
+}

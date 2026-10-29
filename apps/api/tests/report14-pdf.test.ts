@@ -337,3 +337,25 @@ describe('renderReportPdf', () => {
     }
   });
 });
+
+describe('renderReportPdf with a password', () => {
+  it('encrypts the file so nothing of her report is readable without it', async () => {
+    const doc = buildDocument(classificationFor(2, 'B', []), 'Locked Priya');
+    const out = await renderReportPdf(doc, { password: '081991' });
+    const raw = out.bytes.toString('latin1');
+    expect(out.bytes.subarray(0, 8).toString()).toBe('%PDF-1.7');
+    expect(raw).toMatch(/\/Encrypt \d+ 0 R/);
+    expect(raw).toContain('/AESV2');
+    expect(extractText(out.bytes)).not.toContain('Locked Priya');
+    expect(metadataContains(out.bytes, 'Report 2B')).toBe(false);
+  });
+
+  it('never serves a copy locked for one password, or an open copy, for another', async () => {
+    const doc = buildDocument(classificationFor(1, 'D', []), 'Two Keys');
+    const open = await renderReportPdf(doc);
+    const a = await renderReportPdf(doc, { password: '081991' });
+    const b = await renderReportPdf(doc, { password: '091991' });
+    expect(new Set([open.cacheKey, a.cacheKey, b.cacheKey]).size).toBe(3);
+    expect((await renderReportPdf(doc, { password: '081991' })).bytes.equals(a.bytes)).toBe(true);
+  });
+});

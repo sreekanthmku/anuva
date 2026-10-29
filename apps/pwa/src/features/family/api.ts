@@ -1,8 +1,11 @@
 import {
+  FAMILY_CORE_SHARING_CONSENT_VERSION,
   FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION,
   FAMILY_PERIOD_SHARING_CONSENT_VERSION,
   type FamilyInvite,
   type FamilyMemberSummary,
+  type SetInviteCoreSharingResponse,
+  type SetInviteEmergencyAlertsResponse,
   type SetInvitePeriodSharingResponse,
   type SetMemberEmergencyAlertsResponse,
   type SetMemberPeriodSharingResponse,
@@ -73,6 +76,30 @@ export async function setInvitePeriodSharing(inviteId: string, enabled: boolean)
     await apiFetch<SetInvitePeriodSharingResponse>(`/api/family/invites/${inviteId}/period-sharing`, {
       method: 'POST',
       body: periodSharingBody(enabled),
+    })
+  ).invite;
+}
+
+/** Her agreement to the minimum sharing on her pending link. Required before it can be sent. */
+export async function setInviteCoreSharing(inviteId: string, agreed: boolean): Promise<FamilyInvite> {
+  return (
+    await apiFetch<SetInviteCoreSharingResponse>(`/api/family/invites/${inviteId}/core-sharing`, {
+      method: 'POST',
+      body: JSON.stringify(
+        agreed ? { enabled: true, consentTextVersion: FAMILY_CORE_SHARING_CONSENT_VERSION } : { enabled: false },
+      ),
+    })
+  ).invite;
+}
+
+/** Whether whoever claims her pending link is also alerted in an emergency. */
+export async function setInviteEmergencyAlerts(inviteId: string, enabled: boolean): Promise<FamilyInvite> {
+  return (
+    await apiFetch<SetInviteEmergencyAlertsResponse>(`/api/family/invites/${inviteId}/emergency-alerts`, {
+      method: 'POST',
+      body: JSON.stringify(
+        enabled ? { enabled, consentTextVersion: FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION } : { enabled },
+      ),
     })
   ).invite;
 }

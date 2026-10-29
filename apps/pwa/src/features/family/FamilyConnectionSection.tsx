@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import type { FamilyMemberSummary, FamilyShareChannel, FamilyStatusResponse } from '@anuva/shared';
+import type { FamilyInvite, FamilyMemberSummary, FamilyShareChannel, FamilyStatusResponse } from '@anuva/shared';
 import {
   dismissFamilyDeparture,
   fetchFamilyStatus,
   markFamilyInviteShared,
   removeFamilyMember,
+  setInviteCoreSharing,
+  setInviteEmergencyAlerts,
   setInvitePeriodSharing,
   setMemberEmergencyAlerts,
   setMemberPeriodSharing,
 } from './api';
+import { CoreSharingConsent, CoreSharingSummary } from './CoreSharingConsent';
 import { EmergencyAlertsSwitch } from './EmergencyAlertsSwitch';
 import { PeriodSharingSwitch } from './PeriodSharingSwitch';
 import { canNativeShare, copyToClipboard, openNativeShare, openWhatsAppShare } from './shareInvite';
@@ -108,6 +111,10 @@ export function FamilyConnectionSection() {
         ? { ...current, members: current.members.map((entry) => (entry.id === updated.id ? updated : entry)) }
         : current,
     );
+  }, []);
+
+  const replaceInvite = useCallback((updated: FamilyInvite) => {
+    setStatus((current) => (current ? { ...current, invite: updated } : current));
   }, []);
 
   /// The share opens first, inside the tap — `window.open` and `navigator.share` are refused
@@ -244,9 +251,7 @@ export function FamilyConnectionSection() {
               </li>
             ))}
           </ul>
-          <p className="mt-1 text-[12px] leading-[1.5] text-on-surface-variant" style={mulish}>
-            {t('family.sharing.whatTheySee')}
-          </p>
+          <CoreSharingSummary items={status.sharedByDefault} />
         </>
       ) : (
         <p className="mt-2 text-[13px] leading-[1.55] text-on-surface-variant" style={mulish}>
@@ -262,18 +267,25 @@ export function FamilyConnectionSection() {
           <p className="mt-1 text-[12px] leading-[1.5] text-on-surface-variant" style={mulish}>
             {t('family.sharing.inviteHint')}
           </p>
+          <CoreSharingConsent
+            items={status.sharedByDefault}
+            agreed={invite.coreSharing}
+            onChange={async (agreed) => replaceInvite(await setInviteCoreSharing(invite.id, agreed))}
+          />
           <PeriodSharingSwitch
             enabled={invite.sharePeriod}
-            onChange={async (enabled) => {
-              const updated = await setInvitePeriodSharing(invite.id, enabled);
-              setStatus((current) => (current ? { ...current, invite: updated } : current));
-            }}
+            onChange={async (enabled) => replaceInvite(await setInvitePeriodSharing(invite.id, enabled))}
+          />
+          <EmergencyAlertsSwitch
+            enabled={invite.shareEmergency}
+            onChange={async (enabled) => replaceInvite(await setInviteEmergencyAlerts(invite.id, enabled))}
           />
           <div className="mt-3 flex flex-col gap-2">
             <button
               type="button"
+              disabled={!invite.coreSharing}
               onClick={() => void share('whatsapp', () => openWhatsAppShare(invite.shareMessage))}
-              className="min-h-11 w-full rounded-full bg-secondary px-3 text-[13px] font-semibold text-on-secondary"
+              className="min-h-11 w-full rounded-full bg-secondary px-3 text-[13px] font-semibold text-on-secondary disabled:opacity-60"
               style={mulish}
             >
               {t('family.gate.sendWhatsApp')}
@@ -281,8 +293,9 @@ export function FamilyConnectionSection() {
             {canNativeShare() ? (
               <button
                 type="button"
+                disabled={!invite.coreSharing}
                 onClick={() => void share('native', () => openNativeShare(invite.shareMessage))}
-                className="min-h-11 w-full rounded-full border border-border-default px-3 text-[13px] font-semibold text-primary"
+                className="min-h-11 w-full rounded-full border border-border-default px-3 text-[13px] font-semibold text-primary disabled:opacity-60"
                 style={mulish}
               >
                 {t('family.gate.shareAnotherWay')}
@@ -290,6 +303,7 @@ export function FamilyConnectionSection() {
             ) : null}
             <button
               type="button"
+              disabled={!invite.coreSharing}
               onClick={() =>
                 void share('copy', async () => {
                   const ok = await copyToClipboard(invite.shareUrl);
@@ -297,7 +311,7 @@ export function FamilyConnectionSection() {
                   if (!ok) throw new Error(t('family.gate.copyFailed'));
                 })
               }
-              className="min-h-11 w-full rounded-full px-3 text-[12.5px] font-medium text-on-surface-variant"
+              className="min-h-11 w-full rounded-full px-3 text-[12.5px] font-medium text-on-surface-variant disabled:opacity-60"
               style={mulish}
             >
               {copied ? t('family.gate.linkCopied') : t('family.gate.copyLink')}

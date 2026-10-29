@@ -49,6 +49,7 @@ async function findActiveMembership(phone: string) {
     where: {
       phone,
       status: 'active',
+      coreSharingVersion: { not: null },
       user: { erasedAt: null, familyFeatureOptOut: false },
     },
     orderBy: { lastSeenAt: 'desc' },

@@ -4,7 +4,9 @@ import { LanguageToggle } from '../../i18n/LanguageToggle';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { useAuth } from '../auth/auth-context';
 import { FamilyConnectionSection } from '../family/FamilyConnectionSection';
+import { DATE_OF_BIRTH_KEY, ageFromDateOfBirth } from './ageFromDateOfBirth';
 import { BottomNav } from './components/BottomNav';
+import { useDetailedAssessment } from './hooks/useDetailedAssessment';
 
 /** Order and destination only. Label and hint are `profile.menu.<key>`. */
 const menuRows: { key: string; to?: string }[] = [
@@ -29,6 +31,10 @@ export default function ProfileRoute() {
         year: 'numeric',
       })
     : null;
+  // Her date of birth lives only in the detailed assessment; the age is worked out from it here,
+  // against today, and never stored. No line until she has given it.
+  const { data: detailedAssessment } = useDetailedAssessment();
+  const age = ageFromDateOfBirth(detailedAssessment?.answers[DATE_OF_BIRTH_KEY]);
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
@@ -72,6 +78,14 @@ export default function ProfileRoute() {
             >
               {user?.phone || t('profile.phoneUnavailable')}
             </p>
+            {age != null && (
+              <p
+                className="mt-0.5 text-[13px] text-on-surface-variant"
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+              >
+                {t('profile.age', { age })}
+              </p>
+            )}
             <p
               className="mt-1 text-[11px] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}

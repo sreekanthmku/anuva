@@ -20,6 +20,8 @@ import type { LoginContext } from '../loginHistory.js';
 
 const LIVE_MEMBERSHIP = {
   status: 'active',
+  // Without her consent to the minimum sharing there is nothing of hers to show them.
+  coreSharingVersion: { not: null },
   user: { erasedAt: null, familyFeatureOptOut: false },
 } as const;
 

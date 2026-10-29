@@ -17,6 +17,7 @@ import { classifyUser } from './classify/index.js';
 import { buildDocument } from './content/index.js';
 import { renderReportHtml } from './render/html.js';
 import { renderReportPdf } from './render/pdf.js';
+import { DATE_OF_BIRTH_KEY, pdfPasswordFromDateOfBirth } from './pdfPassword.js';
 import { Report14Error } from './types.js';
 
 /** What she reads when the report can't be built, by Report14Error code. */
@@ -25,6 +26,8 @@ const REPORT14_ERRORS: Record<string, string> = copy('errors.report14', {
   MENSTRUAL_HISTORY_MISSING:
     'Your report needs your menstrual history. Complete that section of your assessment to continue.',
   GENERATION_FAILED: 'Your report could not be generated. Please try again.',
+  DATE_OF_BIRTH_MISSING:
+    'Your report PDF is locked with your date of birth. Add it to your assessment to download it.',
 });
 
 export interface Report14Deps {
@@ -130,18 +133,30 @@ export function createReport14Router(deps: Report14Deps): Router {
    * disk cache when we already have it, rendered and stored when we do not —
    * the cache key is a hash of the drawn text, so a copy edit or a new date
    * misses automatically and there is nothing to invalidate by hand.
+   *
+   * Always password-protected with her month and year of birth (`pdfPassword.ts`): the file
+   * leaves the app — saved, shared, forwarded — and a health report should not open for whoever
+   * ends up holding it. No date of birth, no PDF; it is never served open.
    */
   const handlePdf: RequestHandler = async (req, res, next) => {
     try {
       noStore(res);
       const userId = await deps.resolveUserId(req);
       const result = await classifyUser(userId);
+      const password = pdfPasswordFromDateOfBirth(result.source.answers.get(DATE_OF_BIRTH_KEY));
+      if (!password) {
+        throw new Report14Error(
+          409,
+          'DATE_OF_BIRTH_MISSING',
+          'Your report PDF is locked with your date of birth. Add it to your assessment to download it.',
+        );
+      }
       // English only: the PDF's built-in Times/Helvetica fonts have no Indic glyphs, so a
       // translated document would print as boxes. The JSON and HTML views are localised.
       const doc = withLanguage('en', () =>
         buildDocument(result.classification, result.source.userName),
       );
-      const pdf = await renderReportPdf(doc);
+      const pdf = await renderReportPdf(doc, { password });
 
       req.log?.info?.(
         {

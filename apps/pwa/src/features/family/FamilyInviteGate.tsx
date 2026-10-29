@@ -9,7 +9,9 @@ import {
   openWhatsAppShare,
 } from './shareInvite';
 import type { FamilyGateState } from './useFamilyGate';
-import { setInvitePeriodSharing } from './api';
+import { setInviteCoreSharing, setInviteEmergencyAlerts, setInvitePeriodSharing } from './api';
+import { CoreSharingConsent } from './CoreSharingConsent';
+import { EmergencyAlertsSwitch } from './EmergencyAlertsSwitch';
 import { PeriodSharingSwitch } from './PeriodSharingSwitch';
 
 /**
@@ -72,6 +74,8 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
   }
 
   const invite: FamilyInvite = status.invite;
+  // Nothing goes out until she has agreed to the minimum; the server refuses it too.
+  const sendDisabled = isSharing || !invite.coreSharing;
   const mulish = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' };
 
   return (
@@ -119,9 +123,18 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
         </div>
 
         {/* Asked before the link goes out: whoever joins with it gets what she chose here. */}
+        <CoreSharingConsent
+          items={status.sharedByDefault}
+          agreed={invite.coreSharing}
+          onChange={async (agreed) => updateInvite(await setInviteCoreSharing(invite.id, agreed))}
+        />
         <PeriodSharingSwitch
           enabled={invite.sharePeriod}
           onChange={async (enabled) => updateInvite(await setInvitePeriodSharing(invite.id, enabled))}
+        />
+        <EmergencyAlertsSwitch
+          enabled={invite.shareEmergency}
+          onChange={async (enabled) => updateInvite(await setInviteEmergencyAlerts(invite.id, enabled))}
         />
 
         {error ? (
@@ -134,7 +147,7 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
           <button
             ref={primaryRef}
             type="button"
-            disabled={isSharing}
+            disabled={sendDisabled}
             onClick={() =>
               void share('whatsapp', () => openWhatsAppShare(invite.shareMessage))
             }
@@ -147,7 +160,7 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
           {canNativeShare() ? (
             <button
               type="button"
-              disabled={isSharing}
+              disabled={sendDisabled}
               onClick={() => void share('native', () => openNativeShare(invite.shareMessage))}
               className="inline-flex min-h-[46px] w-full items-center justify-center rounded-full border border-border-default px-5 text-[13.5px] font-semibold text-primary disabled:opacity-60"
               style={mulish}
@@ -158,7 +171,7 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
 
           <button
             type="button"
-            disabled={isSharing}
+            disabled={sendDisabled}
             onClick={() =>
               void share('copy', async () => {
                 const ok = await copyToClipboard(invite.shareUrl);

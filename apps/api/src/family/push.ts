@@ -116,7 +116,10 @@ export async function sendToFamilyMember(
   familyMemberId: string,
   notification: FamilyNotification | (() => FamilyNotification),
   data: Record<string, string> | ((content: FamilyNotification) => Record<string, string>),
+  options: { requires?: FamilyPushScope } = {},
 ): Promise<number> {
+  if (!(await mayNotify(familyMemberId, options.requires))) return 0;
+
   const language = await languageForFamilyMember(familyMemberId);
 
   // Built in the *recipient's* language, not the request's. The request that triggers a push is
@@ -133,6 +136,32 @@ export async function sendToFamilyMember(
 }
 
 type FamilyNotification = { title: string; body: string };
+
+/** An optional kind of sharing a push depends on, on top of the minimum every push needs. */
+type FamilyPushScope = 'period' | 'emergency';
+
+/**
+ * Every push to a family member is about her, so every one is checked against what she agreed to —
+ * here, at the one door they all go through, rather than trusted to each job's own query. Read
+ * fresh per send: a choice she changed a second ago applies to this push.
+ */
+async function mayNotify(familyMemberId: string, requires: FamilyPushScope | undefined): Promise<boolean> {
+  const member = await prisma.familyMember.findUnique({
+    where: { id: familyMemberId },
+    select: {
+      status: true,
+      coreSharingVersion: true,
+      periodSharing: true,
+      emergencyAlerts: true,
+      user: { select: { erasedAt: true, familyFeatureOptOut: true } },
+    },
+  });
+  if (!member || member.status !== 'active' || !member.coreSharingVersion) return false;
+  if (member.user.erasedAt || member.user.familyFeatureOptOut) return false;
+  if (requires === 'period') return member.periodSharing;
+  if (requires === 'emergency') return member.emergencyAlerts;
+  return true;
+}
 
 /**
  * Names the membership a notification is about in its link (`#as=`). A person connected to two

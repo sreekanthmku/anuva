@@ -1,0 +1,20 @@
+/* EXPERIMENT: every background one shade lighter, site-wide.
+   Linked last (after page.css / landing.css / lp.css / symptom.css) from
+   every page that uses page.css, on a line marked "EXPERIMENT: bg-lighter".
+   To revert, delete those lines and this file. No original CSS is edited.
+
+   Each surface moves up one step on the existing cream ladder:
+   - --surface           (page canvas)            #F7F0E8 -> #FBF6F0
+   - --surface-low       (cards, panels)          #FBF6F0 -> #FDFAF6
+   - --surface-container (alt bands, tiles)       #F3E9DD -> #F7F0E8
+   - sticky header + mobile CTA bar (translucent) rgba(247,240,232) -> rgba(251,246,240)
+   Lavender/blush tints, plum bands and the footer are unchanged. */
+
+:root{
+  --surface:#FBF6F0;
+  --surface-low:#FDFAF6;
+  --surface-container:#F7F0E8;
+}
+
+.site-header{background:rgba(251,246,240,.9)}
+.sticky-cta{background:rgba(251,246,240,.94)}

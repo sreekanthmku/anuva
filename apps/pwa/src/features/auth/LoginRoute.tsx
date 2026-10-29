@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { TERMS_CONSENT_VERSION } from '@anuva/shared';
+import { TERMS_CONSENT_VERSION, toIndianMobile } from '@anuva/shared';
 import i18n from '../../i18n';
 import { TrustStrip } from '../onboarding/components/TrustStrip';
 import { useAuth } from './auth-context';
@@ -29,6 +29,7 @@ export default function LoginRoute() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [otp, setOtp] = useState('');
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [maskedPhone, setMaskedPhone] = useState('');
@@ -81,8 +82,17 @@ export default function LoginRoute() {
 
   async function handleRequestOtp(event: FormEvent) {
     event.preventDefault();
-    setIsSubmitting(true);
     setErrorMessage(null);
+
+    // Same rule the API applies, checked here so a mistyped number is caught at the field
+    // instead of after a round trip.
+    if (!toIndianMobile(phone)) {
+      setPhoneError(t('login.phoneInvalid'));
+      return;
+    }
+
+    setPhoneError(null);
+    setIsSubmitting(true);
 
     try {
       const response = await requestOtp({
@@ -443,11 +453,26 @@ export default function LoginRoute() {
                   autoComplete="tel"
                   inputMode="tel"
                   value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  className="mb-2 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2"
+                  onChange={(event) => {
+                    setPhone(event.target.value);
+                    setPhoneError(null);
+                  }}
+                  aria-invalid={phoneError !== null}
+                  aria-describedby={phoneError ? 'phone-error' : undefined}
+                  className={`mb-2 w-full rounded-[20px] border bg-surface-container-low ${phoneError ? 'border-error' : 'border-border-default'} px-4 py-3.5 text-[15px] text-on-surface outline-none ring-primary/40 placeholder:text-outline focus:ring-2`}
                   style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   placeholder={t('login.phonePlaceholder')}
                 />
+                {phoneError && (
+                  <p
+                    id="phone-error"
+                    role="alert"
+                    className="mb-2 text-[13px] text-error"
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  >
+                    {phoneError}
+                  </p>
+                )}
 
                 <p
                   className="mb-4 text-[12px] text-on-surface-variant"

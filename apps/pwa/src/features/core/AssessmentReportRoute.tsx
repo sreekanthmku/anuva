@@ -167,7 +167,14 @@ export default function AssessmentReportRoute() {
       const response = await fetch(apiUrl('/api/report14/pdf'), {
         credentials: 'include',
       });
-      if (!response.ok) throw new Error(i18n.t('assessmentReport.prepareFailed'));
+      if (!response.ok) {
+        // The server's own reason when it gives one — "add your date of birth" is something she
+        // can act on; "could not prepare" is not.
+        const body = (await response.json().catch(() => null)) as { error?: unknown } | null;
+        throw new Error(
+          typeof body?.error === 'string' ? body.error : i18n.t('assessmentReport.prepareFailed'),
+        );
+      }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       blobUrls.current.push(url);
@@ -275,6 +282,12 @@ export default function AssessmentReportRoute() {
               style={{ fontFamily: MULISH }}
             >
               {t('assessmentReport.pdfNote')}
+            </p>
+            <p
+              className="mt-1 text-center text-[11.5px] text-on-surface-variant"
+              style={{ fontFamily: MULISH }}
+            >
+              {t('assessmentReport.pdfPassword')}
             </p>
 
             {error && (

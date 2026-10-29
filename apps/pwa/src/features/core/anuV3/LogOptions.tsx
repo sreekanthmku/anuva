@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
   AnuV3LogOption,
+  JointStateResponse,
   LogJointBody,
   MoodEmotion,
   NudgeDayResponse,
   NudgeDayTracker,
+  QuickLogStateResponse,
+  QuickSymptom,
   SleepDisruption,
   SleepHoursBucket,
 } from '@anuva/shared';
@@ -41,6 +44,41 @@ export function LogOptions({ options }: { options: AnuV3LogOption[] }) {
   const [error, setError] = useState<string | null>(null);
   const [inline, setInline] = useState<NudgeDayTracker | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // `done` alone is lost when she leaves the chat and comes back, so a tracker
+  // she already logged today would offer "Log" again. Ask the server what today
+  // already holds, fetching only what this reply's options need.
+  useEffect(() => {
+    let cancelled = false;
+    const needs = (kind: AnuV3LogOption['kind']) => options.some((option) => option.kind === kind);
+    const fetches: Promise<string[]>[] = [];
+    if (needs('tracker')) {
+      fetches.push(
+        apiFetch<NudgeDayResponse>('/api/nudge/day').then((day) =>
+          day.trackers.filter((entry) => entry.answered).map((entry) => entry.nudgeId),
+        ),
+      );
+    }
+    if (needs('quick')) {
+      fetches.push(
+        apiFetch<QuickLogStateResponse>('/api/quick-log').then(({ counts }) =>
+          (Object.keys(counts) as QuickSymptom[]).filter((s) => counts[s] > 0).map((s) => `quick:${s}`),
+        ),
+      );
+    }
+    if (needs('joints')) {
+      fetches.push(apiFetch<JointStateResponse>('/api/joints').then(({ today }) => (today ? ['joints'] : [])));
+    }
+    // Best-effort: if a lookup fails the button just offers "Log", as before.
+    void Promise.allSettled(fetches).then((results) => {
+      if (cancelled) return;
+      const logged = results.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
+      if (logged.length) setDone((prev) => new Set([...prev, ...logged]));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [options]);
 
   const markDone = (key: string) => {
     setDone((prev) => new Set(prev).add(key));

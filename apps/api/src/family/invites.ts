@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { prisma } from '@anuva/database';
 import {
+  FAMILY_CORE_SHARING_CONSENT_VERSION,
   FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION,
   FAMILY_PERIOD_SHARING_CONSENT_VERSION,
   type FamilyGate,
@@ -15,6 +16,7 @@ import {
   FAMILY_REPROMPT_MINUTES,
 } from './config.js';
 import { FamilyError } from './errors.js';
+import { familySharedScopes } from './content.js';
 import { endLoginSessions } from '../loginHistory.js';
 import { buildShareMessage, buildShareUrl, inviteTokenHash, mintInviteToken } from './tokens.js';
 
@@ -33,6 +35,8 @@ type InviteRow = {
   sharedAt: Date | null;
   shareCount: number;
   sharePeriod: boolean;
+  coreSharingVersion: string | null;
+  shareEmergency: boolean;
 };
 
 type MemberRow = {
@@ -46,7 +50,15 @@ type MemberRow = {
   emergencyAlerts: boolean;
 };
 
-const INVITE_SELECT = { id: true, expiresAt: true, sharedAt: true, shareCount: true, sharePeriod: true } as const;
+const INVITE_SELECT = {
+  id: true,
+  expiresAt: true,
+  sharedAt: true,
+  shareCount: true,
+  sharePeriod: true,
+  coreSharingVersion: true,
+  shareEmergency: true,
+} as const;
 
 const MEMBER_SELECT = {
   id: true,
@@ -88,6 +100,8 @@ function serializeInvite(row: InviteRow): FamilyInvite {
     sharedAt: row.sharedAt?.toISOString() ?? null,
     shareCount: row.shareCount,
     sharePeriod: row.sharePeriod,
+    coreSharing: row.coreSharingVersion !== null,
+    shareEmergency: row.shareEmergency,
   };
 }
 
@@ -318,6 +332,8 @@ function buildStatus(
     members: serialized,
     departures: departed.filter((member) => !member.departureSeenAt).map(serializeDeparture),
     optedOut: user.familyFeatureOptOut,
+    // The minimum only: the optional extras are switches of their own, each with its own notice.
+    sharedByDefault: familySharedScopes(),
   };
 }
 
@@ -369,7 +385,7 @@ export async function markInviteShared(
 
   const invite = await prisma.familyInvite.findFirst({
     where: { id: inviteId, userId },
-    select: { id: true, status: true, expiresAt: true },
+    select: { id: true, status: true, expiresAt: true, coreSharingVersion: true },
   });
 
   if (!invite) {
@@ -378,6 +394,11 @@ export async function markInviteShared(
 
   if (invite.status !== 'pending' || invite.expiresAt <= now) {
     throw new FamilyError(410, 'invite_stale', 'That link is no longer valid. Get a new one.');
+  }
+
+  // The gate cannot be passed by sending a link she has not agreed to share through.
+  if (!invite.coreSharingVersion) {
+    throw new FamilyError(409, 'core_consent_required', 'Agree to what they will see before you send the link.');
   }
 
   const updated = await prisma.familyInvite.update({
@@ -488,6 +509,62 @@ export async function setInvitePeriodSharing(
   input: { enabled: boolean; consentTextVersion?: string },
 ): Promise<FamilyInvite> {
   assertPeriodConsent(input.enabled, input.consentTextVersion);
+  const version = input.enabled ? FAMILY_PERIOD_SHARING_CONSENT_VERSION : null;
+  return updateInviteChoice(userId, inviteId, 'period', input.enabled, version, {
+    sharePeriod: input.enabled,
+    periodSharingVersion: version,
+  });
+}
+
+/**
+ * Her agreement to the minimum sharing on her pending link. Required before the link can be sent or
+ * claimed. She may untick it again before anyone joins, which makes the link unusable until she
+ * ticks it again; once someone has joined it lives on them and ends only when she disconnects them.
+ */
+export async function setInviteCoreSharing(
+  userId: string,
+  inviteId: string,
+  input: { enabled: boolean; consentTextVersion?: string },
+): Promise<FamilyInvite> {
+  if (input.enabled && input.consentTextVersion !== FAMILY_CORE_SHARING_CONSENT_VERSION) {
+    throw new FamilyError(409, 'consent_outdated', 'What family members see has changed. Please read it again.');
+  }
+  const version = input.enabled ? FAMILY_CORE_SHARING_CONSENT_VERSION : null;
+  return updateInviteChoice(userId, inviteId, 'core', input.enabled, version, { coreSharingVersion: version });
+}
+
+/** Whether whoever claims her pending link is also alerted in an emergency. Copied onto them at claim. */
+export async function setInviteEmergencyAlerts(
+  userId: string,
+  inviteId: string,
+  input: { enabled: boolean; consentTextVersion?: string },
+): Promise<FamilyInvite> {
+  assertEmergencyConsent(input.enabled, input.consentTextVersion);
+  const version = input.enabled ? FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION : null;
+  return updateInviteChoice(userId, inviteId, 'emergency', input.enabled, version, {
+    shareEmergency: input.enabled,
+    emergencyAlertsVersion: version,
+  });
+}
+
+/**
+ * One choice on her pending link, written with its consent record in one transaction. Only a
+ * pending link: once someone has joined, the choice lives on them.
+ */
+async function updateInviteChoice(
+  userId: string,
+  inviteId: string,
+  scope: 'core' | 'period' | 'emergency',
+  granted: boolean,
+  textVersion: string | null,
+  data: {
+    coreSharingVersion?: string | null;
+    sharePeriod?: boolean;
+    periodSharingVersion?: string | null;
+    shareEmergency?: boolean;
+    emergencyAlertsVersion?: string | null;
+  },
+): Promise<FamilyInvite> {
   const now = new Date();
   const user = await loadUser(userId);
 
@@ -502,15 +579,10 @@ export async function setInvitePeriodSharing(
     throw new FamilyError(410, 'invite_stale', 'That link is no longer valid. Get a new one.');
   }
 
-  const version = input.enabled ? FAMILY_PERIOD_SHARING_CONSENT_VERSION : null;
   const [updated] = await prisma.$transaction([
-    prisma.familyInvite.update({
-      where: { id: invite.id },
-      data: { sharePeriod: input.enabled, periodSharingVersion: version },
-      select: INVITE_SELECT,
-    }),
+    prisma.familyInvite.update({ where: { id: invite.id }, data, select: INVITE_SELECT }),
     prisma.familyShareConsent.create({
-      data: { userId, inviteId: invite.id, scope: 'period', granted: input.enabled, textVersion: version },
+      data: { userId, inviteId: invite.id, scope, granted, textVersion },
     }),
   ]);
 
@@ -552,26 +624,29 @@ export async function setMemberPeriodSharing(
 }
 
 // ─────────────────────────────────────────────
-// Emergency alerts — her choice, per person
+// Emergency alerts — her choice, per link and per person
 // ─────────────────────────────────────────────
 
-/**
- * Turns emergency alerts on or off for one connected person. Only for someone who has joined: she
- * chooses who to alert knowing who they are, never for whoever happens to claim a link. Read when an
- * alert is sent, so turning it off applies to the very next one.
- */
-export async function setMemberEmergencyAlerts(
-  userId: string,
-  memberId: string,
-  input: { enabled: boolean; consentTextVersion?: string },
-): Promise<FamilyMemberSummary> {
-  if (input.enabled && input.consentTextVersion !== FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION) {
+function assertEmergencyConsent(enabled: boolean, consentTextVersion: string | undefined): void {
+  if (enabled && consentTextVersion !== FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION) {
     throw new FamilyError(
       409,
       'consent_outdated',
       'The wording about emergency alerts has changed. Please read it again.',
     );
   }
+}
+
+/**
+ * Turns emergency alerts on or off for one connected person. Read when an alert is sent, so turning
+ * it off applies to the very next one.
+ */
+export async function setMemberEmergencyAlerts(
+  userId: string,
+  memberId: string,
+  input: { enabled: boolean; consentTextVersion?: string },
+): Promise<FamilyMemberSummary> {
+  assertEmergencyConsent(input.enabled, input.consentTextVersion);
 
   const member = await prisma.familyMember.findFirst({
     where: { id: memberId, userId, status: 'active' },

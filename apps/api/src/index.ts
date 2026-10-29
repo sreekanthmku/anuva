@@ -103,6 +103,7 @@ import {
   unregisterFcmResponseSchema,
   requestOtpResponseSchema,
   verifyOtpBodySchema,
+  toIndianMobile,
   cycleSetupBodySchema,
   cycleSettingsBodySchema,
   logPeriodFlowBodySchema,
@@ -560,6 +561,19 @@ function normalizePhone(phone: string): string {
   throw new HttpError(400, 'Enter a valid Indian phone number.');
 }
 
+/**
+ * Patient sign-up and login take an Indian mobile only — 10 digits, the same rule the sign-in form
+ * checks before it sends. Family numbers keep `normalizePhone`, which also accepts international
+ * ones: a relative abroad is a real case, a patient abroad is not one this service is built for.
+ */
+function normalizeSignInPhone(phone: string): string {
+  const e164 = toIndianMobile(phone);
+  if (!e164) {
+    throw new HttpError(400, 'Enter a valid 10-digit mobile number.');
+  }
+  return e164;
+}
+
 function maskPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   if (digits.length <= 4) {
@@ -799,8 +813,19 @@ type TwoFactorResponse = {
   Details?: string;
 };
 
+/**
+ * 2Factor answers a rejected code ("OTP Mismatch", "OTP Expired") with a non-2xx status *and* a
+ * JSON body saying why, so the status alone cannot tell "wrong code" from "provider down". Only a
+ * reply we cannot read at all is treated as unreachable; callers decide what `Status: Error` means.
+ */
 async function callTwoFactor(url: string, init?: RequestInit): Promise<TwoFactorResponse> {
-  const response = await fetch(url, init);
+  let response: Awaited<ReturnType<typeof fetch>>;
+  try {
+    response = await fetch(url, init);
+  } catch {
+    throw new HttpError(502, 'Unable to reach the OTP provider right now.');
+  }
+
   let payload: TwoFactorResponse | null = null;
 
   try {
@@ -809,7 +834,7 @@ async function callTwoFactor(url: string, init?: RequestInit): Promise<TwoFactor
     payload = null;
   }
 
-  if (!response.ok || !payload) {
+  if (!payload?.Status) {
     throw new HttpError(502, 'Unable to reach the OTP provider right now.');
   }
 
@@ -824,7 +849,8 @@ async function sendOtpWithTwoFactor(phone: string): Promise<string> {
   const payload = await callTwoFactor(url, { method: 'GET' });
 
   if (payload.Status?.toLowerCase() !== 'success' || !payload.Details) {
-    throw new HttpError(502, payload.Details || 'Unable to send OTP right now.');
+    logger.warn({ details: payload.Details }, '2Factor refused to send an OTP');
+    throw new HttpError(502, 'Unable to send OTP right now.');
   }
 
   return payload.Details;
@@ -835,9 +861,20 @@ async function verifyOtpWithTwoFactor(providerSessionId: string, otp: string): P
   const url = `${TWOFACTOR_BASE_URL}/${apiKey}/SMS/VERIFY/${providerSessionId}/${otp}`;
   const payload = await callTwoFactor(url);
 
-  if (payload.Status?.toLowerCase() !== 'success') {
-    throw new HttpError(400, payload.Details || 'Incorrect OTP.');
+  if (payload.Status?.toLowerCase() === 'success') {
+    return;
   }
+
+  // Never pass `Details` through: it is the provider's English ("OTP Mismatch"), not ours to show.
+  const details = payload.Details?.toLowerCase() ?? '';
+  if (details.includes('expired')) {
+    throw new HttpError(400, 'This OTP has expired. Please request a new one.');
+  }
+  if (details.includes('mismatch') || details.includes('invalid otp')) {
+    throw new HttpError(400, 'Incorrect OTP. Please check the code and try again.');
+  }
+  logger.warn({ details: payload.Details }, '2Factor rejected an OTP verify for an unknown reason');
+  throw new HttpError(502, 'Unable to verify the OTP right now. Please try again.');
 }
 
 async function requireCurrentUser(req: Request) {
@@ -3795,7 +3832,7 @@ app.post('/auth/request-otp', async (req, res, next) => {
   try {
     setNoStoreHeaders(res);
     const parsed = requestOtpBodySchema.parse(req.body);
-    const phone = normalizePhone(parsed.phone);
+    const phone = normalizeSignInPhone(parsed.phone);
     const now = new Date();
     const cooldownStart = addSeconds(now, -OTP_RESEND_COOLDOWN_SECONDS);
     const fifteenMinutesAgo = addSeconds(now, -(15 * 60));
@@ -3883,7 +3920,7 @@ app.post('/auth/verify-otp', async (req, res, next) => {
   try {
     setNoStoreHeaders(res);
     const validated = verifyOtpBodySchema.parse(req.body);
-    const phone = normalizePhone(validated.phone);
+    const phone = normalizeSignInPhone(validated.phone);
 
     const challenge = await prisma.otpChallenge.findUnique({
       where: { id: validated.challengeId },

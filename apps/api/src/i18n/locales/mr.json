@@ -85,6 +85,7 @@
   "errors": {
     "enterAValidPhoneNumber": "बरोबर फोन नंबर टाका.",
     "enterAValidIndianPhoneNumber": "बरोबर भारतीय फोन नंबर टाका.",
+    "enterAValid10DigitMobile": "कृपया योग्य 10 अंकी मोबाइल नंबर टाका.",
     "invalidDate": "तारीख बरोबर नाही.",
     "userNotFound": "वापरकर्ता सापडला नाही.",
     "thisAccountHasBeenDeleted": "हे खातं हटवलं आहे.",
@@ -138,6 +139,9 @@
     "otpChallengeNotFound": "OTP विनंती सापडली नाही.",
     "thisOtpHasAlreadyBeenUsed": "हा OTP आधीच वापरला गेला आहे. कृपया नवीन मागवा.",
     "thisOtpHasExpiredPleaseRequest": "या OTP ची मुदत संपली आहे. कृपया नवीन मागवा.",
+    "incorrectOtpPleaseCheckThe": "चुकीचा OTP. कृपया कोड तपासून पुन्हा प्रयत्न करा.",
+    "unableToVerifyTheOtpRight": "आत्ता OTP तपासता येत नाही. कृपया पुन्हा प्रयत्न करा.",
+    "unableToSendOtpRightNow": "आत्ता OTP पाठवता येत नाही.",
     "tooManyIncorrectOtpAttemptsPlease": "खूप वेळा चुकीचा OTP टाकला गेला. कृपया नवीन OTP मागवा.",
     "completeOnboardingBeforeStartingYourTrial": "ट्रायल सुरू करण्याआधी ऑनबोर्डिंग पूर्ण करा.",
     "yourFreeTrialHasAlreadyEnded": "तुमची मोफत ट्रायल संपली आहे. पुढे जाण्यासाठी कृपया एक प्लॅन निवडा.",
@@ -208,7 +212,10 @@
       "codeCooldown_one": "दुसरा कोड मागवण्याआधी कृपया {{count}} सेकंद थांबा.",
       "codeCooldown_other": "दुसरा कोड मागवण्याआधी कृपया {{count}} सेकंद थांबा.",
       "periodConsentOutdated": "पाळीची माहिती शेअर करण्याबद्दलचा मजकूर बदलला आहे. कृपया तो पुन्हा एकदा वाचा.",
-      "emergencyConsentOutdated": "इमर्जन्सी अलर्टबद्दलचा मजकूर बदलला आहे. कृपया पुन्हा वाचा."
+      "emergencyConsentOutdated": "इमर्जन्सी अलर्टबद्दलचा मजकूर बदलला आहे. कृपया पुन्हा वाचा.",
+      "coreConsentRequired": "लिंक पाठवण्याआधी ते काय पाहतील याला संमती द्या.",
+      "coreConsentOutdated": "कुटुंबातील सदस्य काय पाहतात यात बदल झाला आहे. कृपया पुन्हा वाचा.",
+      "linkNotReady": "ही लिंक अजून तयार नाही. त्यांना पुन्हा पाठवायला सांगा."
     },
     "dayInsidePeriod": "तो दिवस {{date}} पासून सुरू झालेल्या तुमच्या पाळीत येतो. त्याऐवजी त्या पाळीच्या तारखा बदला.",
     "datesOverlapPeriod": "त्या तारखा {{date}} पासून सुरू झालेल्या तुमच्या पाळीवर येतात.",
@@ -222,7 +229,8 @@
     "report14": {
       "ASSESSMENT_INCOMPLETE": "तुमचा अहवाल उघडण्यासाठी तुमचं सविस्तर आरोग्य मूल्यांकन पूर्ण करा.",
       "MENSTRUAL_HISTORY_MISSING": "तुमच्या अहवालासाठी तुमचा मासिक पाळीचा इतिहास हवा आहे. पुढे जाण्यासाठी मूल्यांकनातला तो भाग पूर्ण करा.",
-      "GENERATION_FAILED": "तुमचा अहवाल तयार करता आला नाही. कृपया पुन्हा प्रयत्न करा."
+      "GENERATION_FAILED": "तुमचा अहवाल तयार करता आला नाही. कृपया पुन्हा प्रयत्न करा.",
+      "DATE_OF_BIRTH_MISSING": "तुमचा रिपोर्ट PDF तुमच्या जन्मतारखेने लॉक होतो. तो डाउनलोड करण्यासाठी तुमच्या असेसमेंटमध्ये जन्मतारीख जोडा."
     },
     "pleaseAcceptTheLatestTermsOfUse": "खातं तयार करण्यासाठी कृपया नवीन वापराच्या अटी आणि गोपनीयता धोरण स्वीकारा.",
     "trackingDayOutOfRange": "तुम्ही फक्त आजच्या किंवा कालच्या नोंदी जोडू शकता."

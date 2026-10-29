@@ -78,6 +78,14 @@ export const FAMILY_PERIOD_SHARING_CONSENT_VERSION = 'family-period-v1';
  */
 export const FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION = 'family-emergency-v1';
 
+/**
+ * Consent to the minimum every family member sees — the list in `sharedByDefault` on her status.
+ * Required: a link cannot be sent or claimed without it, and a member without it sees nothing and is
+ * sent nothing. It cannot be withdrawn on its own; she stops it by disconnecting the person. Bump it
+ * when that list changes materially; the version is stored with every invite and member.
+ */
+export const FAMILY_CORE_SHARING_CONSENT_VERSION = 'family-core-v1';
+
 export const familyInviteSchema = z.object({
   id: z.string(),
   /** Full magic link, token in the fragment. Built server-side from FAMILY_PWA_BASE_URL. */
@@ -89,6 +97,10 @@ export const familyInviteSchema = z.object({
   shareCount: z.number().int().nonnegative(),
   /** Whoever claims this link will also see her period updates. Off unless she turned it on. */
   sharePeriod: z.boolean(),
+  /** She agreed to the minimum sharing for this link. Until she does, it cannot be sent or claimed. */
+  coreSharing: z.boolean(),
+  /** Whoever claims this link will also be alerted in an emergency. Off unless she turned it on. */
+  shareEmergency: z.boolean(),
 });
 
 /** What she is shown about the person who claimed her link. Phone is masked, never full. */
@@ -138,6 +150,12 @@ export const familyStatusResponseSchema = z.object({
    * for a woman with nobody to invite, and the gate honours it so that relief actually works.
    */
   optedOut: z.boolean(),
+  /**
+   * What every family member sees, in her language: the minimum she must agree to before a link
+   * goes out. Served rather than written into the client, so the list she agrees to is the same one
+   * the family app's privacy tab shows and the digest is held to.
+   */
+  sharedByDefault: z.array(z.string()),
 });
 
 export const createFamilyInviteResponseSchema = z.object({
@@ -213,6 +231,11 @@ export const setMemberPeriodSharingResponseSchema = z.object({ member: familyMem
  */
 export const setFamilyEmergencyAlertsBodySchema = setFamilyPeriodSharingBodySchema;
 export const setMemberEmergencyAlertsResponseSchema = z.object({ member: familyMemberSummarySchema });
+export const setInviteEmergencyAlertsResponseSchema = z.object({ invite: familyInviteSchema });
+
+/** Her agreement to the minimum sharing on her pending link. Same shape as the optional switches. */
+export const setFamilyCoreSharingBodySchema = setFamilyPeriodSharingBodySchema;
+export const setInviteCoreSharingResponseSchema = z.object({ invite: familyInviteSchema });
 
 export const revokeFamilyInviteResponseSchema = z.object({ revoked: z.literal(true) });
 
@@ -660,3 +683,6 @@ export type SetInvitePeriodSharingResponse = z.infer<typeof setInvitePeriodShari
 export type SetMemberPeriodSharingResponse = z.infer<typeof setMemberPeriodSharingResponseSchema>;
 export type SetFamilyEmergencyAlertsBody = z.infer<typeof setFamilyEmergencyAlertsBodySchema>;
 export type SetMemberEmergencyAlertsResponse = z.infer<typeof setMemberEmergencyAlertsResponseSchema>;
+export type SetInviteEmergencyAlertsResponse = z.infer<typeof setInviteEmergencyAlertsResponseSchema>;
+export type SetFamilyCoreSharingBody = z.infer<typeof setFamilyCoreSharingBodySchema>;
+export type SetInviteCoreSharingResponse = z.infer<typeof setInviteCoreSharingResponseSchema>;

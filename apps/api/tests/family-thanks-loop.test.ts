@@ -35,9 +35,19 @@ vi.mock('@anuva/database', () => ({
     fcmToken: { findMany: mocks.fcmTokenFindMany },
     familySupportAction: { upsert: mocks.supportActionUpsert },
     user: { findUnique: mocks.userFindUnique },
-    // `findUnique` is the push router asking which phone a member is on, to share devices across that
-    // phone's memberships (covered in push-dispatch.test.ts). No phone here keeps it to this member.
-    familyMember: { findMany: mocks.familyMemberFindMany, findUnique: async () => null },
+    // `findUnique` is the consent check every family push goes through (a connected member she agreed
+    // to share with), and the push router asking which phone a member is on, to share devices across
+    // that phone's memberships (covered in push-dispatch.test.ts). No phone here keeps it to this member.
+    familyMember: {
+      findMany: mocks.familyMemberFindMany,
+      findUnique: async () => ({
+        status: 'active',
+        coreSharingVersion: 'family-core-v1',
+        periodSharing: false,
+        emergencyAlerts: false,
+        user: { erasedAt: null, familyFeatureOptOut: false },
+      }),
+    },
     familyFcmToken: { findMany: mocks.familyFcmTokenFindMany },
     // Sending a note attributes it to whichever nudge prompted it. That is measurement, not
     // delivery — it is covered in family-nudges.test.ts — but it runs on this path, so the

@@ -8,6 +8,7 @@ import {
   requestOtpResponseSchema,
   subscriptionPlanSchema,
   subscriptionStatusSchema,
+  toIndianMobile,
   verifyOtpBodySchema,
 } from '../src/auth.js';
 
@@ -80,11 +81,32 @@ describe('requestOtpBodySchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects short phone', () => {
+  it('leaves the digit check to toIndianMobile, so the API can say what is wrong', () => {
     expect(
       requestOtpBodySchema.safeParse({ purpose: 'login', phone: '12345' }).success,
-    ).toBe(false);
+    ).toBe(true);
   });
+});
+
+describe('toIndianMobile', () => {
+  it.each([
+    ['9876543210', '+919876543210'],
+    ['98765 43210', '+919876543210'],
+    ['98765-43210', '+919876543210'],
+    ['+91 98765 43210', '+919876543210'],
+    ['919876543210', '+919876543210'],
+    ['09876543210', '+919876543210'],
+    ['9198765432', '+919198765432'],
+  ])('accepts %s', (input, expected) => {
+    expect(toIndianMobile(input)).toBe(expected);
+  });
+
+  it.each(['', '12345', '987654321', '98765432101', '+44 7911 123456', '98765abcde', '+92 9876543210'])(
+    'rejects %s',
+    (input) => {
+      expect(toIndianMobile(input)).toBeNull();
+    },
+  );
 });
 
 describe('requestOtpResponseSchema', () => {

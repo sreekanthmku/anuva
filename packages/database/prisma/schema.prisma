@@ -424,6 +424,16 @@ model FamilyInvite {
   sharePeriod          Boolean @default(false)
   periodSharingVersion String?
 
+  /// The wording of the minimum-sharing notice she agreed to for this link — what every family
+  /// member sees. Required: null means she has not agreed yet, and the link can be neither sent nor
+  /// claimed. Copied onto the member at claim.
+  coreSharingVersion String?
+
+  /// Whether whoever claims this link is also alerted in an emergency. Off unless she turns it on
+  /// before they join; copied onto the member at claim, like `sharePeriod`.
+  shareEmergency         Boolean @default(false)
+  emergencyAlertsVersion String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -483,6 +493,12 @@ model FamilyMember {
   /// The wording of the emergency-alert notice she agreed to. Null while alerts are off.
   emergencyAlertsVersion   String?
   emergencyAlertsChangedAt DateTime?
+
+  /// The minimum-sharing notice she agreed to for this person, carried over from the link they
+  /// joined with. Checked on every family request and every push: a member without it sees nothing
+  /// and is sent nothing. Never cleared on its own — she ends it by disconnecting them.
+  coreSharingVersion String?
+  coreSharingAt      DateTime?
 
   createdAt DateTime @default(now())
 
@@ -2223,6 +2239,9 @@ model VisitSummary {
 // ─────────────────────────────────────────────
 
 enum FamilyShareScope {
+  /// The minimum every family member sees: trends in words, the daily suggestion, days tracked,
+  /// and that a consultation is booked. Required to share at all.
+  core
   /// Whether she is on her period and roughly when the next one is due.
   period
   /// An alert that she may need them now, when her chat with Anu shows a crisis or an emergency.

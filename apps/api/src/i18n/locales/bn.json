@@ -85,6 +85,7 @@
   "errors": {
     "enterAValidPhoneNumber": "একটি সঠিক ফোন নম্বর লিখুন।",
     "enterAValidIndianPhoneNumber": "একটি সঠিক ভারতীয় ফোন নম্বর লিখুন।",
+    "enterAValid10DigitMobile": "সঠিক ১০ সংখ্যার মোবাইল নম্বর দিন।",
     "invalidDate": "তারিখটি ঠিক নয়।",
     "userNotFound": "ব্যবহারকারী পাওয়া যায়নি।",
     "thisAccountHasBeenDeleted": "এই অ্যাকাউন্টটি মুছে ফেলা হয়েছে।",
@@ -138,6 +139,9 @@
     "otpChallengeNotFound": "OTP-র অনুরোধটি পাওয়া যায়নি।",
     "thisOtpHasAlreadyBeenUsed": "এই OTP ইতিমধ্যেই ব্যবহার হয়ে গেছে। নতুন একটি চেয়ে নিন।",
     "thisOtpHasExpiredPleaseRequest": "এই OTP-র মেয়াদ শেষ হয়ে গেছে। নতুন একটি চেয়ে নিন।",
+    "incorrectOtpPleaseCheckThe": "ভুল OTP। কোডটি দেখে আবার চেষ্টা করুন।",
+    "unableToVerifyTheOtpRight": "এখন OTP যাচাই করা যাচ্ছে না। আবার চেষ্টা করুন।",
+    "unableToSendOtpRightNow": "এখন OTP পাঠানো যাচ্ছে না।",
     "tooManyIncorrectOtpAttemptsPlease": "অনেকবার ভুল OTP দেওয়া হয়েছে। নতুন একটি OTP চেয়ে নিন।",
     "completeOnboardingBeforeStartingYourTrial": "ট্রায়াল শুরু করার আগে অনবোর্ডিং শেষ করুন।",
     "yourFreeTrialHasAlreadyEnded": "আপনার ফ্রি ট্রায়াল শেষ হয়ে গেছে। এগিয়ে যেতে একটি প্ল্যান বেছে নিন।",
@@ -208,7 +212,10 @@
       "codeCooldown_one": "আরেকটি কোড চাওয়ার আগে {{count}} সেকেন্ড অপেক্ষা করুন।",
       "codeCooldown_other": "আরেকটি কোড চাওয়ার আগে {{count}} সেকেন্ড অপেক্ষা করুন।",
       "periodConsentOutdated": "পিরিয়ড শেয়ার করা নিয়ে লেখাটা বদলেছে। দয়া করে আরেকবার পড়ে নিন।",
-      "emergencyConsentOutdated": "জরুরি অ্যালার্ট সম্পর্কিত লেখাটি বদলেছে। অনুগ্রহ করে আবার পড়ুন।"
+      "emergencyConsentOutdated": "জরুরি অ্যালার্ট সম্পর্কিত লেখাটি বদলেছে। অনুগ্রহ করে আবার পড়ুন।",
+      "coreConsentRequired": "লিঙ্ক পাঠানোর আগে তাঁরা কী দেখবেন, তাতে সম্মতি দিন।",
+      "coreConsentOutdated": "পরিবারের সদস্যরা কী দেখেন, তা বদলেছে। আবার পড়ে নিন।",
+      "linkNotReady": "এই লিঙ্কটি এখনও প্রস্তুত নয়। তাঁকে আবার পাঠাতে বলুন।"
     },
     "dayInsidePeriod": "সেই দিনটি {{date}} থেকে শুরু হওয়া আপনার পিরিয়ডের ভেতরে পড়ে। বরং সেই পিরিয়ডের তারিখগুলো বদলান।",
     "datesOverlapPeriod": "সেই তারিখগুলো {{date}} থেকে শুরু হওয়া আপনার পিরিয়ডের সাথে মিলে যাচ্ছে।",
@@ -222,7 +229,8 @@
     "report14": {
       "ASSESSMENT_INCOMPLETE": "আপনার রিপোর্ট খুলতে বিস্তারিত স্বাস্থ্য অ্যাসেসমেন্টটি সম্পূর্ণ করুন।",
       "MENSTRUAL_HISTORY_MISSING": "আপনার রিপোর্টের জন্য আপনার মাসিকের ইতিহাস দরকার। এগিয়ে যেতে অ্যাসেসমেন্টের সেই অংশটি সম্পূর্ণ করুন।",
-      "GENERATION_FAILED": "আপনার রিপোর্ট তৈরি করা গেল না। আবার চেষ্টা করুন।"
+      "GENERATION_FAILED": "আপনার রিপোর্ট তৈরি করা গেল না। আবার চেষ্টা করুন।",
+      "DATE_OF_BIRTH_MISSING": "আপনার রিপোর্ট PDF আপনার জন্মতারিখ দিয়ে লক করা থাকে। ডাউনলোড করতে আপনার অ্যাসেসমেন্টে জন্মতারিখ যোগ করুন।"
     },
     "pleaseAcceptTheLatestTermsOfUse": "অ্যাকাউন্ট তৈরি করতে সর্বশেষ ব্যবহারের শর্তাবলি ও প্রাইভেসি পলিসি মেনে নিন।",
     "trackingDayOutOfRange": "আপনি শুধু আজ বা গতকালের এন্ট্রি যোগ করতে পারেন।"

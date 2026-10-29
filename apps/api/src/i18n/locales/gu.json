@@ -85,6 +85,7 @@
   "errors": {
     "enterAValidPhoneNumber": "માન્ય ફોન નંબર દાખલ કરો.",
     "enterAValidIndianPhoneNumber": "માન્ય ભારતીય ફોન નંબર દાખલ કરો.",
+    "enterAValid10DigitMobile": "કૃપા કરીને સાચો 10 અંકનો મોબાઇલ નંબર દાખલ કરો.",
     "invalidDate": "અમાન્ય તારીખ.",
     "userNotFound": "યુઝર મળ્યા નહીં.",
     "thisAccountHasBeenDeleted": "આ ખાતું ડિલીટ થઈ ગયું છે.",
@@ -138,6 +139,9 @@
     "otpChallengeNotFound": "OTP ચેલેન્જ મળ્યો નહીં.",
     "thisOtpHasAlreadyBeenUsed": "આ OTP પહેલેથી વપરાઈ ગયો છે. કૃપા કરી નવો મંગાવો.",
     "thisOtpHasExpiredPleaseRequest": "આ OTP સમાપ્ત થઈ ગયો છે. કૃપા કરી નવો મંગાવો.",
+    "incorrectOtpPleaseCheckThe": "ખોટો OTP. કૃપા કરીને કોડ તપાસીને ફરી પ્રયાસ કરો.",
+    "unableToVerifyTheOtpRight": "અત્યારે OTP ચકાસી શકાતો નથી. કૃપા કરીને ફરી પ્રયાસ કરો.",
+    "unableToSendOtpRightNow": "અત્યારે OTP મોકલી શકાતો નથી.",
     "tooManyIncorrectOtpAttemptsPlease": "ખોટા OTPના ઘણા પ્રયત્નો થયા. કૃપા કરી નવો OTP મંગાવો.",
     "completeOnboardingBeforeStartingYourTrial": "તમારી ટ્રાયલ શરૂ કરતા પહેલાં ઓનબોર્ડિંગ પૂરું કરો.",
     "yourFreeTrialHasAlreadyEnded": "તમારી ફ્રી ટ્રાયલ પૂરી થઈ ગઈ છે. ચાલુ રાખવા કૃપા કરી એક પ્લાન પસંદ કરો.",
@@ -208,7 +212,10 @@
       "codeCooldown_one": "બીજો કોડ માંગતા પહેલાં કૃપા કરી {{count}} સેકન્ડ રાહ જુઓ.",
       "codeCooldown_other": "બીજો કોડ માંગતા પહેલાં કૃપા કરી {{count}} સેકન્ડ રાહ જુઓ.",
       "periodConsentOutdated": "તમારો પિરિયડ શેર કરવા વિશેનું લખાણ બદલાયું છે. કૃપા કરી તેને ફરી એક વાર વાંચો.",
-      "emergencyConsentOutdated": "ઇમર્જન્સી અલર્ટ વિશેનું લખાણ બદલાયું છે. કૃપા કરીને ફરી વાંચો."
+      "emergencyConsentOutdated": "ઇમર્જન્સી અલર્ટ વિશેનું લખાણ બદલાયું છે. કૃપા કરીને ફરી વાંચો.",
+      "coreConsentRequired": "લિંક મોકલતાં પહેલાં તેઓ શું જોશે તેના માટે સંમતિ આપો.",
+      "coreConsentOutdated": "પરિવારના સભ્યો શું જુએ છે તે બદલાયું છે. કૃપા કરીને ફરી વાંચો.",
+      "linkNotReady": "આ લિંક હજી તૈયાર નથી. તેમને ફરી મોકલવા કહો."
     },
     "dayInsidePeriod": "તે દિવસ {{date}}થી શરૂ થતા તમારા પિરિયડની અંદર આવે છે. એના બદલે તે પિરિયડની તારીખો બદલો.",
     "datesOverlapPeriod": "તે તારીખો {{date}}થી શરૂ થતા તમારા પિરિયડ સાથે ઓવરલેપ થાય છે.",
@@ -222,7 +229,8 @@
     "report14": {
       "ASSESSMENT_INCOMPLETE": "તમારો રિપોર્ટ અનલોક કરવા તમારું વિગતવાર આરોગ્ય એસેસમેન્ટ પૂરું કરો.",
       "MENSTRUAL_HISTORY_MISSING": "તમારા રિપોર્ટ માટે તમારો માસિકનો ઇતિહાસ જરૂરી છે. ચાલુ રાખવા તમારા એસેસમેન્ટનો તે વિભાગ પૂરો કરો.",
-      "GENERATION_FAILED": "તમારો રિપોર્ટ બનાવી શકાયો નહીં. કૃપા કરી ફરી પ્રયત્ન કરો."
+      "GENERATION_FAILED": "તમારો રિપોર્ટ બનાવી શકાયો નહીં. કૃપા કરી ફરી પ્રયત્ન કરો.",
+      "DATE_OF_BIRTH_MISSING": "તમારો રિપોર્ટ PDF તમારી જન્મ તારીખથી લૉક થાય છે. તેને ડાઉનલોડ કરવા તમારા અસેસમેન્ટમાં જન્મ તારીખ ઉમેરો."
     },
     "pleaseAcceptTheLatestTermsOfUse": "ખાતું બનાવવા માટે કૃપા કરી નવી ઉપયોગની શરતો અને ગોપનીયતા નીતિ સ્વીકારો.",
     "trackingDayOutOfRange": "તમે ફક્ત આજની કે ગઈકાલની એન્ટ્રી ઉમેરી શકો છો."

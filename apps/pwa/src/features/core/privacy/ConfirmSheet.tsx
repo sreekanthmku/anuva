@@ -98,7 +98,7 @@ export function ConfirmSheet({
   const canConfirm = !busy && (!needsCode || (Boolean(challengeId) && otp.trim().length === 6));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[60] flex items-end" role="dialog" aria-modal="true">
       <button
         type="button"
         aria-label={t('common.close')}

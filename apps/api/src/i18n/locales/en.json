@@ -2,6 +2,7 @@
   "errors": {
     "enterAValidPhoneNumber": "Enter a valid phone number.",
     "enterAValidIndianPhoneNumber": "Enter a valid Indian phone number.",
+    "enterAValid10DigitMobile": "Enter a valid 10-digit mobile number.",
     "invalidDate": "Invalid date.",
     "userNotFound": "User not found.",
     "thisAccountHasBeenDeleted": "This account has been deleted.",
@@ -55,6 +56,9 @@
     "otpChallengeNotFound": "OTP challenge not found.",
     "thisOtpHasAlreadyBeenUsed": "This OTP has already been used. Please request a new one.",
     "thisOtpHasExpiredPleaseRequest": "This OTP has expired. Please request a new one.",
+    "incorrectOtpPleaseCheckThe": "Incorrect OTP. Please check the code and try again.",
+    "unableToVerifyTheOtpRight": "Unable to verify the OTP right now. Please try again.",
+    "unableToSendOtpRightNow": "Unable to send OTP right now.",
     "tooManyIncorrectOtpAttemptsPlease": "Too many incorrect OTP attempts. Please request a new OTP.",
     "completeOnboardingBeforeStartingYourTrial": "Complete onboarding before starting your trial.",
     "yourFreeTrialHasAlreadyEnded": "Your free trial has already ended. Please choose a plan to continue.",
@@ -125,7 +129,10 @@
       "codeCooldown_one": "Please wait {{count}} second before asking for another code.",
       "codeCooldown_other": "Please wait {{count}} seconds before asking for another code.",
       "periodConsentOutdated": "The wording about sharing your period has changed. Please read it again.",
-      "emergencyConsentOutdated": "The wording about emergency alerts has changed. Please read it again."
+      "emergencyConsentOutdated": "The wording about emergency alerts has changed. Please read it again.",
+      "coreConsentRequired": "Agree to what they will see before you send the link.",
+      "coreConsentOutdated": "What family members see has changed. Please read it again.",
+      "linkNotReady": "This link is not ready yet. Ask her to send it again."
     },
     "dayInsidePeriod": "That day falls inside your period starting {{date}}. Change that period’s dates instead.",
     "datesOverlapPeriod": "Those dates overlap your period starting {{date}}.",
@@ -139,7 +146,8 @@
     "report14": {
       "ASSESSMENT_INCOMPLETE": "Complete your detailed health assessment to unlock your report.",
       "MENSTRUAL_HISTORY_MISSING": "Your report needs your menstrual history. Complete that section of your assessment to continue.",
-      "GENERATION_FAILED": "Your report could not be generated. Please try again."
+      "GENERATION_FAILED": "Your report could not be generated. Please try again.",
+      "DATE_OF_BIRTH_MISSING": "Your report PDF is locked with your date of birth. Add it to your assessment to download it."
     },
     "pleaseAcceptTheLatestTermsOfUse": "Please accept the latest Terms of Use and Privacy Policy to create an account.",
     "trackingDayOutOfRange": "You can add entries for today or yesterday only."

@@ -581,12 +581,19 @@ function TrackerListCard({
           {report.trackingNote}
         </p>
       )}
-      <p
-        className="mt-2 rounded-starchart-lg bg-surface px-3 py-1.5 text-center text-[10.5px] leading-[1.35] text-on-surface-variant"
-        style={{ fontFamily: MULISH }}
-      >
-        {t('report.scoredNote', { note: report.referenceNote })}
-      </p>
+      {isDaily && (
+        <p className="mt-2 text-center text-[10.5px] leading-[1.35] text-outline" style={{ fontFamily: MULISH }}>
+          {t('report.dailyScoringNote')}
+        </p>
+      )}
+      {report.referenceNote && (
+        <p
+          className="mt-2 rounded-starchart-lg bg-surface px-3 py-1.5 text-center text-[10.5px] leading-[1.35] text-on-surface-variant"
+          style={{ fontFamily: MULISH }}
+        >
+          {report.referenceNote}
+        </p>
+      )}
     </article>
   );
 }

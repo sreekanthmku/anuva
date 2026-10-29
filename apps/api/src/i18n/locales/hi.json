@@ -85,6 +85,7 @@
   "errors": {
     "enterAValidPhoneNumber": "सही फ़ोन नंबर डालें।",
     "enterAValidIndianPhoneNumber": "सही भारतीय फ़ोन नंबर डालें।",
+    "enterAValid10DigitMobile": "कृपया सही 10 अंकों का मोबाइल नंबर डालें।",
     "invalidDate": "तारीख सही नहीं है।",
     "userNotFound": "उपयोगकर्ता नहीं मिला।",
     "thisAccountHasBeenDeleted": "यह अकाउंट डिलीट कर दिया गया है।",
@@ -138,6 +139,9 @@
     "otpChallengeNotFound": "OTP अनुरोध नहीं मिला।",
     "thisOtpHasAlreadyBeenUsed": "यह OTP पहले ही इस्तेमाल हो चुका है। कृपया नया OTP माँगें।",
     "thisOtpHasExpiredPleaseRequest": "यह OTP खत्म हो चुका है। कृपया नया OTP माँगें।",
+    "incorrectOtpPleaseCheckThe": "गलत OTP। कृपया कोड जाँचकर फिर से कोशिश करें।",
+    "unableToVerifyTheOtpRight": "अभी OTP की जाँच नहीं हो पा रही है। कृपया फिर से कोशिश करें।",
+    "unableToSendOtpRightNow": "अभी OTP नहीं भेजा जा सका।",
     "tooManyIncorrectOtpAttemptsPlease": "बहुत बार गलत OTP डाला गया। कृपया नया OTP माँगें।",
     "completeOnboardingBeforeStartingYourTrial": "अपना ट्रायल शुरू करने से पहले ऑनबोर्डिंग पूरी करें।",
     "yourFreeTrialHasAlreadyEnded": "आपका मुफ़्त ट्रायल खत्म हो चुका है। जारी रखने के लिए कोई प्लान चुनें।",
@@ -208,7 +212,10 @@
       "codeCooldown_one": "दूसरा कोड माँगने से पहले कृपया {{count}} सेकंड रुकें।",
       "codeCooldown_other": "दूसरा कोड माँगने से पहले कृपया {{count}} सेकंड रुकें।",
       "periodConsentOutdated": "पीरियड शेयर करने के बारे में लिखी बात बदल गई है। कृपया इसे एक बार फिर पढ़ लें।",
-      "emergencyConsentOutdated": "इमरजेंसी अलर्ट से जुड़ी जानकारी बदल गई है। कृपया इसे फिर से पढ़ें।"
+      "emergencyConsentOutdated": "इमरजेंसी अलर्ट से जुड़ी जानकारी बदल गई है। कृपया इसे फिर से पढ़ें।",
+      "coreConsentRequired": "लिंक भेजने से पहले, वे क्या देखेंगे इस पर सहमति दें।",
+      "coreConsentOutdated": "परिवार के सदस्य क्या देखते हैं, इसमें बदलाव हुआ है। कृपया इसे फिर से पढ़ें।",
+      "linkNotReady": "यह लिंक अभी तैयार नहीं है। उनसे इसे फिर से भेजने को कहें।"
     },
     "dayInsidePeriod": "वह दिन {{date}} से शुरू होने वाले आपके पीरियड के भीतर आता है। उसकी जगह उस पीरियड की तारीखें बदलें।",
     "datesOverlapPeriod": "वे तारीखें {{date}} से शुरू होने वाले आपके पीरियड से टकरा रही हैं।",
@@ -222,7 +229,8 @@
     "report14": {
       "ASSESSMENT_INCOMPLETE": "अपनी रिपोर्ट खोलने के लिए अपना विस्तृत स्वास्थ्य मूल्यांकन पूरा करें।",
       "MENSTRUAL_HISTORY_MISSING": "आपकी रिपोर्ट के लिए आपका मासिक धर्म का इतिहास चाहिए। आगे बढ़ने के लिए अपने मूल्यांकन का वह हिस्सा पूरा करें।",
-      "GENERATION_FAILED": "आपकी रिपोर्ट नहीं बन सकी। कृपया फिर कोशिश करें।"
+      "GENERATION_FAILED": "आपकी रिपोर्ट नहीं बन सकी। कृपया फिर कोशिश करें।",
+      "DATE_OF_BIRTH_MISSING": "आपकी रिपोर्ट PDF आपकी जन्मतिथि से लॉक होती है। इसे डाउनलोड करने के लिए अपने असेसमेंट में जन्मतिथि जोड़ें।"
     },
     "pleaseAcceptTheLatestTermsOfUse": "अकाउंट बनाने के लिए कृपया नई उपयोग की शर्तें और प्राइवेसी पॉलिसी स्वीकार करें।",
     "trackingDayOutOfRange": "आप आज या कल की एंट्री ही जोड़ सकती हैं।"

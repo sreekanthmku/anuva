@@ -81,6 +81,8 @@ export async function createFamilySession(
 /**
  * Resolves the signed-in family member.
  *
+ * Her consent to the minimum sharing is checked here too, alongside the four below.
+ *
  * Four things can end their access and all four are checked on every request, because a family
  * member's cookie lives for months and any of these can change under it: the session expiring, the
  * member being revoked, the patient being erased, and the patient opting out of family features. The
@@ -110,6 +112,7 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
           preferredLanguage: true,
           periodSharing: true,
           emergencyAlerts: true,
+          coreSharingVersion: true,
           user: { select: { name: true, erasedAt: true, familyFeatureOptOut: true } },
         },
       },
@@ -126,7 +129,10 @@ export async function requireFamilyMember(req: Request): Promise<FamilyIdentity>
     throw new FamilyError(403, 'family_access_revoked', 'You no longer have access to this.');
   }
 
-  if (member.user.erasedAt || member.user.familyFeatureOptOut) {
+  // No consent to the minimum sharing means nothing of hers may be shown, so it reads the same as
+  // her turning sharing off. Every family route goes through here, which is what makes "only what
+  // she agreed to" hold for all of them at once rather than route by route.
+  if (member.user.erasedAt || member.user.familyFeatureOptOut || !member.coreSharingVersion) {
     throw new FamilyError(403, 'family_sharing_stopped', 'Sharing has been turned off.');
   }
 

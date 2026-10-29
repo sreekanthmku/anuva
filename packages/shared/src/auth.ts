@@ -16,10 +16,21 @@ export const subscriptionStatusSchema = z.enum(['trialing', 'active', 'past_due'
 export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>;
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
+/**
+ * A patient's sign-in number: an Indian mobile, exactly 10 digits. Spaces, dashes and a leading
+ * +91 / 91 / 0 are tolerated because numbers get pasted in all of those shapes; anything else is
+ * refused. Returns the `+91XXXXXXXXXX` form the API stores, or null. Shared so the sign-in form
+ * and the API cannot disagree about what a valid number is.
+ */
+export function toIndianMobile(input: string): string | null {
+  const match = /^(?:\+?91|0)?(\d{10})$/.exec(input.replace(/[\s\-().]/g, ''));
+  return match ? `+91${match[1]}` : null;
+}
+
 export const requestOtpBodySchema = z
   .object({
     purpose: authPurposeSchema,
-    phone: z.string().trim().min(10).max(20),
+    phone: z.string().trim().max(20),
     name: z.string().trim().min(2).max(80).optional(),
     termsVersion,
   })
@@ -48,7 +59,7 @@ export const verifyOtpBodySchema = z
   .object({
     challengeId: z.string().min(1),
     purpose: authPurposeSchema,
-    phone: z.string().trim().min(10).max(20),
+    phone: z.string().trim().max(20),
     otp: z.string().trim().length(6),
     name: z.string().trim().min(2).max(80).optional(),
     termsVersion,

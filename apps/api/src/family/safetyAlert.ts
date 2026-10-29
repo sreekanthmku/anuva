@@ -127,7 +127,7 @@ async function send(alertId: string, userId: string, name: string, members: { id
     return { url: `/#${fragment.toString()}`, familyAlert: '1', familyAlertFrom: name };
   };
 
-  const results = await Promise.allSettled(members.map((member) => sendToFamilyMember(member.id, notification, data)));
+  const results = await Promise.allSettled(members.map((member) => sendToFamilyMember(member.id, notification, data, { requires: 'emergency' })));
   const notified = results.filter((result) => result.status === 'fulfilled' && result.value > 0).length;
   const failed = results.filter((result) => result.status === 'rejected').length;
 

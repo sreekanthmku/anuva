@@ -85,6 +85,9 @@ import {
   removeFamilyMemberResponseSchema,
   setFamilyPeriodSharingBodySchema,
   setInvitePeriodSharingResponseSchema,
+  setFamilyCoreSharingBodySchema,
+  setInviteCoreSharingResponseSchema,
+  setInviteEmergencyAlertsResponseSchema,
   setMemberPeriodSharingResponseSchema,
   setFamilyEmergencyAlertsBodySchema,
   setMemberEmergencyAlertsResponseSchema,
@@ -101,6 +104,8 @@ import {
   removeMember,
   revokeInvite,
   setInvitePeriodSharing,
+  setInviteCoreSharing,
+  setInviteEmergencyAlerts,
   setMemberPeriodSharing,
   setMemberEmergencyAlerts,
   rotateInvite,
@@ -251,6 +256,34 @@ export function createFamilyRouter({
       const invite = await setInvitePeriodSharing(userId, req.params.id, body);
       req.log?.info?.({ inviteId: invite.id, enabled: body.enabled }, 'family: invite period sharing set');
       res.json(setInvitePeriodSharingResponseSchema.parse({ invite }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  /** Her agreement to the minimum sharing on her pending link — required before it can be sent. */
+  router.post('/invites/:id/core-sharing', async (req, res, next) => {
+    try {
+      noStore(res);
+      const userId = await resolveUserId(req);
+      const body = setFamilyCoreSharingBodySchema.parse(req.body ?? {});
+      const invite = await setInviteCoreSharing(userId, req.params.id, body);
+      req.log?.info?.({ inviteId: invite.id, enabled: body.enabled }, 'family: invite core sharing set');
+      res.json(setInviteCoreSharingResponseSchema.parse({ invite }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  /** Whether whoever claims her pending link is also alerted in an emergency. */
+  router.post('/invites/:id/emergency-alerts', async (req, res, next) => {
+    try {
+      noStore(res);
+      const userId = await resolveUserId(req);
+      const body = setFamilyEmergencyAlertsBodySchema.parse(req.body ?? {});
+      const invite = await setInviteEmergencyAlerts(userId, req.params.id, body);
+      req.log?.info?.({ inviteId: invite.id, enabled: body.enabled }, 'family: invite emergency alerts set');
+      res.json(setInviteEmergencyAlertsResponseSchema.parse({ invite }));
     } catch (e) {
       next(e);
     }

@@ -63,6 +63,7 @@
     "namePlaceholder": "Enter your name",
     "phoneLabel": "Phone number",
     "phonePlaceholder": "+91 98765 43210",
+    "phoneInvalid": "Enter a valid 10-digit mobile number.",
     "loginHint": "Use the phone number linked to your account.",
     "signupHint": "We will verify this number with a one-time password.",
     "sendingOtp": "Sending OTP...",
@@ -763,6 +764,7 @@
     "phoneUnavailable": "Phone not available",
     "memberSince": "Member since {{date}}",
     "member": "Member",
+    "age": "Age {{age}}",
     "signOut": "Sign out",
     "menu": {
       "assessmentReport": {
@@ -1018,7 +1020,6 @@
       "title": "Family sharing",
       "nameAndRelationship": "{{name}} · {{relationship}}",
       "phoneAndJoined": "{{phone}} · joined {{date}}",
-      "whatTheySee": "They see your sleep, mood, stress and energy in words only, and your period only if you turn it on for them. If you turn on emergency alerts for someone, they're told when you may need them, never why. Never your records, notes, or conversations with Anu.",
       "confirmDisconnect": "Disconnect {{name}}? They lose access straight away, and you can invite someone else afterwards.",
       "disconnecting": "Disconnecting…",
       "yesDisconnect": "Yes, disconnect",
@@ -1070,6 +1071,14 @@
       "getsSmiley": "{{name}} gets a smiley on their phone."
     },
     "fromFallback": "Your family",
+    "core": {
+      "title": "What they'll see",
+      "agree": "I agree to share this with whoever joins with this link",
+      "required": "Required before you can send the link. Period updates and emergency alerts below are optional, and you can change them later.",
+      "alwaysTitle": "Everyone you connect sees",
+      "minimumNote": "This is the minimum for family sharing. To stop it for someone, disconnect them. Period updates and emergency alerts are your choice for each person.",
+      "failed": "Couldn't save that. Please try again."
+    },
     "period": {
       "label": "Also share my period updates",
       "labelFor": "Share my period updates with {{name}}",
@@ -1077,6 +1086,8 @@
       "failed": "Couldn't save that. Please try again."
     },
     "emergency": {
+      "label": "Also alert them in an emergency",
+      "noticeInvite": "If your chat with Anu shows you may be in crisis or a medical emergency, whoever joins gets a notification that you may need them right now. Never what you wrote or why. You can turn this off any time.",
       "labelFor": "Alert {{name}} in an emergency",
       "notice": "If your chat with Anu shows you may be in crisis or a medical emergency, {{name}} gets a notification that you may need them right now. Never what you wrote or why. You can turn this off any time.",
       "failed": "Couldn't save that. Please try again."
@@ -1280,7 +1291,6 @@
     },
     "dayBalance": "Day balance",
     "untrackedDays": "Untracked days",
-    "scoredNote": "Scored 0–100, higher is always better. {{note}}",
     "byTheNumbers": "By the numbers",
     "whatStoodOut": "What stood out",
     "stoodOut": {
@@ -1295,6 +1305,7 @@
       "neutral": "Similar"
     },
     "points": "{{value}} pts",
+    "dailyScoringNote": "Each tracker is compared with your own average from the 7 days before this day.",
     "notLogged": "Not logged",
     "seriesToChart": "Series to chart",
     "overallTrend": "Overall trend",
@@ -1892,6 +1903,7 @@
     "preparingPdf": "Preparing your PDF…",
     "downloadPdf": "Download as PDF",
     "pdfNote": "A print-ready PDF you can save or share with your doctor.",
+    "pdfPassword": "The PDF is password-protected. The password is your birth month and year: born 17 Aug 1991 → 081991.",
     "menstrualStatus": "Your menstrual status",
     "dominantDomain": "Dominant symptom domain",
     "medicalFlags": "Medical flags to raise with your doctor",

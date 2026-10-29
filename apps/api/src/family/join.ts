@@ -61,6 +61,7 @@ const INVITE_WITH_USER = {
   status: true,
   expiresAt: true,
   userId: true,
+  coreSharingVersion: true,
   user: {
     select: { id: true, name: true, phone: true, erasedAt: true, familyFeatureOptOut: true },
   },
@@ -71,6 +72,7 @@ type LoadedInvite = {
   status: 'pending' | 'accepted' | 'revoked' | 'expired';
   expiresAt: Date;
   userId: string;
+  coreSharingVersion: string | null;
   user: {
     id: string;
     name: string | null;
@@ -119,6 +121,11 @@ function assertClaimable(invite: LoadedInvite, now: Date): void {
   }
   if (invite.status !== 'pending' || invite.expiresAt <= now) {
     throw new FamilyError(410, 'invite_expired', 'This link has expired. Ask her for a new one.');
+  }
+  // She has not agreed to what they would see — the link was copied off her screen before she
+  // ticked, or she unticked it since. Nobody joins on a link she has not consented to share through.
+  if (!invite.coreSharingVersion) {
+    throw new FamilyError(409, 'invite_not_ready', 'This link is not ready yet. Ask her to send it again.');
   }
 }
 
@@ -307,16 +314,32 @@ export async function verifyJoinOtp(
 
   // One transaction, because a member without an accepted invite would let the link be claimed
   // twice, and an accepted invite without a member would lock her out of inviting anyone.
-  let member: { id: string; name: string; relationship: FamilyRelationship; periodSharing: boolean };
+  let member: {
+    id: string;
+    name: string;
+    relationship: FamilyRelationship;
+    periodSharing: boolean;
+    emergencyAlerts: boolean;
+  };
   try {
     member = await prisma.$transaction(async (tx) => {
       // Read again inside the claim, not from the invite loaded before the OTP: she may have just
-      // switched period sharing off on this link, and her latest choice is the one that counts.
+      // changed a choice on this link, and her latest choice is the one that counts.
       const choice = await tx.familyInvite.findUnique({
         where: { id: invite.id },
-        select: { sharePeriod: true, periodSharingVersion: true },
+        select: {
+          coreSharingVersion: true,
+          sharePeriod: true,
+          periodSharingVersion: true,
+          shareEmergency: true,
+          emergencyAlertsVersion: true,
+        },
       });
-      const sharePeriod = choice?.sharePeriod ?? false;
+      if (!choice?.coreSharingVersion) {
+        throw new FamilyError(409, 'invite_not_ready', 'This link is not ready yet. Ask her to send it again.');
+      }
+      const sharePeriod = choice.sharePeriod;
+      const shareEmergency = choice.shareEmergency;
 
       const created = await tx.familyMember.create({
         data: {
@@ -326,26 +349,38 @@ export async function verifyJoinOtp(
           phone: input.phone,
           phoneVerifiedAt: now,
           // What she chose on the link before they joined. Her consent was recorded then, against
-          // the invite; this row records that it now applies to this person.
+          // the invite; the rows below record that it now applies to this person.
+          coreSharingVersion: choice.coreSharingVersion,
+          coreSharingAt: now,
           ...(sharePeriod
-            ? { periodSharing: true, periodSharingVersion: choice!.periodSharingVersion, periodSharingChangedAt: now }
+            ? { periodSharing: true, periodSharingVersion: choice.periodSharingVersion, periodSharingChangedAt: now }
+            : {}),
+          ...(shareEmergency
+            ? {
+                emergencyAlerts: true,
+                emergencyAlertsVersion: choice.emergencyAlertsVersion,
+                emergencyAlertsChangedAt: now,
+              }
             : {}),
         },
-        select: { id: true, name: true, relationship: true, periodSharing: true },
+        select: { id: true, name: true, relationship: true, periodSharing: true, emergencyAlerts: true },
       });
 
-      if (sharePeriod) {
-        await tx.familyShareConsent.create({
-          data: {
-            userId: invite.userId,
-            memberId: created.id,
-            inviteId: invite.id,
-            scope: 'period',
-            granted: true,
-            textVersion: choice!.periodSharingVersion,
-          },
-        });
-      }
+      const carried: { scope: 'core' | 'period' | 'emergency'; textVersion: string | null }[] = [
+        { scope: 'core', textVersion: choice.coreSharingVersion },
+        ...(sharePeriod ? [{ scope: 'period' as const, textVersion: choice.periodSharingVersion }] : []),
+        ...(shareEmergency ? [{ scope: 'emergency' as const, textVersion: choice.emergencyAlertsVersion }] : []),
+      ];
+      await tx.familyShareConsent.createMany({
+        data: carried.map(({ scope, textVersion }) => ({
+          userId: invite.userId,
+          memberId: created.id,
+          inviteId: invite.id,
+          scope,
+          granted: true,
+          textVersion,
+        })),
+      });
 
       // Guarded on `status: 'pending'` so two verifies racing to the same link cannot both accept
       // it: the loser updates zero rows and is rolled back below.
@@ -385,6 +420,7 @@ export async function verifyJoinOtp(
         relationship: member.relationship,
         patientName: invite.user.name,
         periodSharing: member.periodSharing,
+        emergencyAlerts: member.emergencyAlerts,
       },
       await familyAccountsForPhone(input.phone, member.id),
     ),

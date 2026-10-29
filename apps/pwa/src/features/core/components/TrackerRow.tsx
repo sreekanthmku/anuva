@@ -45,6 +45,14 @@ function filledSegments(pct: number): number {
 }
 
 /**
+ * Stress and hot flashes are scored higher-is-better (a high score means *less*
+ * of the symptom), but a bar that shrinks as the symptom grows reads backwards.
+ * Their bar measures the symptom itself; the band word and its colour still say
+ * whether that is good or bad.
+ */
+const SYMPTOM_BARS: ReadonlySet<ReportRingKey> = new Set(['stress', 'hotFlashes']);
+
+/**
  * One tracker, as a row: what it is, how it reads, and which way it moved.
  *
  * A row rather than a dial because six dials answer "what is my score" and a
@@ -65,7 +73,9 @@ export function TrackerRow({
   const hasData = ring.pct != null;
   const bandColor = gaugeBandColor(ring.pct);
   const metric = RING_COLORS[ring.key];
-  const filled = hasData ? filledSegments(ring.pct!) : 0;
+  const filled = hasData
+    ? filledSegments(SYMPTOM_BARS.has(ring.key) ? 100 - ring.pct! : ring.pct!)
+    : 0;
   const label = ringAriaLabel(ring);
   const word = deltaWord(ring.deltaTone);
   // Points only where a point delta means something: one day against a

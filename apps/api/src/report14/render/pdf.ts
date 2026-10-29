@@ -284,9 +284,12 @@ function recommendations(ctx: Ctx, blocks: RecommendationBlock[]): void {
  * ReportDocument object means the cache key covers the copy itself: change a
  * bullet and the key changes.
  */
-function cacheKeyFor(doc: ReportDocument): string {
+function cacheKeyFor(doc: ReportDocument, password: string | undefined): string {
   const material = JSON.stringify([
     'v1',
+    // The bytes on disk are encrypted with it, so a copy locked with one password must never be
+    // served for another — and a protected copy never for an open one, or the reverse.
+    password ?? null,
     doc.templateVersion,
     doc.reportId,
     doc.title,
@@ -305,9 +308,36 @@ function cacheKeyFor(doc: ReportDocument): string {
   return createHash('sha256').update(material).digest('hex').slice(0, 32);
 }
 
-function buildPdf(doc: ReportDocument): Promise<Buffer> {
+/**
+ * When set, the PDF will not open without `password`. AES-128 (PDF 1.6+), which every phone and
+ * desktop viewer in use opens. Once open, nothing is restricted — she can print it, copy from it,
+ * hand it to her doctor; the lock is on who can open the file, not on what they do with it.
+ */
+export interface RenderPdfOptions {
+  password?: string;
+}
+
+function encryptionFor(password: string | undefined) {
+  if (!password) return {};
+  return {
+    pdfVersion: '1.7' as const,
+    userPassword: password,
+    permissions: {
+      printing: 'highResolution' as const,
+      modifying: false,
+      copying: true,
+      annotating: true,
+      fillingForms: true,
+      contentAccessibility: true,
+      documentAssembly: false,
+    },
+  };
+}
+
+function buildPdf(doc: ReportDocument, password: string | undefined): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const pdf = new PDFDocument({
+      ...encryptionFor(password),
       size: 'A4',
       margins: {
         top: PAGE_MARGIN,
@@ -445,8 +475,11 @@ async function pruneCache(): Promise<void> {
 }
 
 /** Serve from cache when we already have it; otherwise render, store, return. */
-export async function renderReportPdf(doc: ReportDocument): Promise<RenderedPdf> {
-  const cacheKey = cacheKeyFor(doc);
+export async function renderReportPdf(
+  doc: ReportDocument,
+  { password }: RenderPdfOptions = {},
+): Promise<RenderedPdf> {
+  const cacheKey = cacheKeyFor(doc, password);
   const filename = filenameFor(doc);
   const cachePath = path.join(CACHE_DIR, `${cacheKey}.pdf`);
 
@@ -462,7 +495,7 @@ export async function renderReportPdf(doc: ReportDocument): Promise<RenderedPdf>
     return { bytes: await existing, cacheKey, cached: false, filename };
   }
 
-  const job = buildPdf(doc);
+  const job = buildPdf(doc, password);
   inFlight.set(cacheKey, job);
 
   try {
