@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 // The instance for the module-level helpers and the catch blocks; `t` inside the components.
 import i18n from '../../i18n';
@@ -11,6 +11,8 @@ import type {
   MyConsultation,
 } from '@anuva/shared';
 import { shareOrDownloadFile } from '../../shared/lib/shareFile';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { fetchSharedNotes } from './notes/api';
 import { ShareNotesSheet } from './notes/ShareNotesSheet';
 import { fetchSharedSummary } from './visitSummary/api';
@@ -50,6 +52,17 @@ function formatWhen(iso: string, endsAt: string | null): string {
   return endsAt
     ? i18n.t('bookings.whenWithEnd', { day, start: time, end: formatBookingTimeLabel(endsAt) })
     : i18n.t('bookings.when', { day, time });
+}
+
+/** A date card as it is spoken: "Tuesday 4 November" rather than "Tue 4 Nov". */
+function spokenDate(ymd: string): string {
+  const [y, m, d] = ymd.split('-').map(Number);
+  if (!y || !m || !d) return ymd;
+  return new Date(y, m - 1, d, 12).toLocaleDateString(i18n.language, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
 }
 
 function statusLabel(booking: MyConsultation): string {
@@ -102,7 +115,11 @@ function RecordingPlayer({ consultationId }: { consultationId: string }) {
       >
         {loading ? t('bookings.loading') : t('bookings.playRecording')}
       </button>
-      {error ? <p className="mt-2 text-[12px] text-error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-2 text-[12px] text-error">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -175,6 +192,9 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
   const files = useRef(new Map<string, File>());
   // Every blob URL handed to an <img> or a new tab stays alive until the card unmounts.
   const blobUrls = useRef<string[]>([]);
+  const viewerTitleId = useId();
+  const closeViewer = useCallback(() => setViewing(null), []);
+  const viewerRef = useDialogA11y<HTMLDivElement>(viewing !== null, closeViewer);
 
   useEffect(() => {
     let cancelled = false;
@@ -277,7 +297,9 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
 
   if (loading) {
     return (
-      <p className="mt-3 text-[12px] text-on-surface-variant">{t('bookings.loadingDocuments')}</p>
+      <p role="status" className="mt-3 text-[12px] text-on-surface-variant">
+        {t('bookings.loadingDocuments')}
+      </p>
     );
   }
 
@@ -326,7 +348,10 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
               onClick={() => void open(doc)}
               className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-45"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-fixed text-[15px]">
+              <span
+                aria-hidden="true"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-fixed text-[15px]"
+              >
                 {doc.mimeType === 'application/pdf' ? '📄' : '🖼️'}
               </span>
               <span className="min-w-0 flex-1">
@@ -365,16 +390,28 @@ function ConsultationDocuments({ consultationId }: { consultationId: string }) {
         ))}
       </ul>
 
-      {error ? <p className="mt-2 text-[12px] text-error">{error}</p> : null}
-      {notice ? <p className="mt-2 text-[12px] text-on-surface-variant">{notice}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-2 text-[12px] text-error">
+          {error}
+        </p>
+      ) : null}
+      {notice ? (
+        <p role="status" className="mt-2 text-[12px] text-on-surface-variant">
+          {notice}
+        </p>
+      ) : null}
 
       {viewing ? (
         <div
+          ref={viewerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={viewerTitleId}
           className="fixed inset-0 z-50 flex flex-col bg-black/85"
           onClick={() => setViewing(null)}
         >
           <div className="flex items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
-            <span className="truncate text-[13px] font-semibold text-white">
+            <span id={viewerTitleId} className="truncate text-[13px] font-semibold text-white">
               {viewing.doc.title?.trim() || documentKindLabel(viewing.doc.kind)}
             </span>
             <div className="flex shrink-0 items-center gap-3">
@@ -438,6 +475,8 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const loadedKeyRef = useRef<string | null>(null);
+  const titleId = useId();
+  const dialogRef = useDialogA11y<HTMLDivElement>(true, onClose);
 
   useSlotsRefresh(() => setRefreshTick((tick) => tick + 1));
 
@@ -497,12 +536,18 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
   return (
     <div className="fixed inset-0 z-[61] flex items-end bg-black/40" onClick={onClose}>
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="flex max-h-[88dvh] w-full flex-col rounded-t-[24px] bg-surface"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-5">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-[22px]">{t('bookings.rescheduleTitle')}</h2>
+            <h2 id={titleId} className="font-display text-[22px]">
+              {t('bookings.rescheduleTitle')}
+            </h2>
             <button type="button" onClick={onClose} className="text-[13px] font-semibold text-primary">
               {t('bookings.close')}
             </button>
@@ -518,12 +563,16 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
           </div>
 
           {loading ? (
-            <p className="mt-4 px-3 text-[13px] text-on-surface-variant">
+            <p role="status" className="mt-4 px-3 text-[13px] text-on-surface-variant">
               {t('bookings.loadingTimes')}
             </p>
           ) : (
             <div className="mt-4 px-3">
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div
+                role="radiogroup"
+                aria-label={t('booking.chooseDate')}
+                className="flex gap-2 overflow-x-auto pb-1"
+              >
                 {dates.map((group) => {
                   const card = bookingDateCard(group.date);
                   const active = group.date === pickedDate;
@@ -531,6 +580,9 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
                     <button
                       key={group.date}
                       type="button"
+                      role="radio"
+                      aria-checked={active}
+                      aria-label={spokenDate(group.date)}
                       onClick={() => {
                         setPickedDate(group.date);
                         setPickedSlot(null);
@@ -562,7 +614,11 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
         </div>
 
         <div className="shrink-0 border-t border-border-default px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-3">
-          {error ? <p className="mb-2 px-3 text-[13px] text-error">{error}</p> : null}
+          {error ? (
+            <p role="alert" className="mb-2 px-3 text-[13px] text-error">
+              {error}
+            </p>
+          ) : null}
 
           <button
             type="button"
@@ -613,11 +669,12 @@ function NotesForBooking({ booking }: { booking: MyConsultation }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
         className="mt-3 flex min-h-11 w-full items-center justify-between rounded-[14px] bg-surface-container-low px-3 py-2.5 text-left text-[13px]"
       >
         <span className="font-semibold text-on-surface">{t('notes.forThisDoctor')}</span>
         <span className="text-primary">
-          {count ? t('notes.sharedCount', { count }) : t('notes.addShort')} →
+          {count ? t('notes.sharedCount', { count }) : t('notes.addShort')} <span aria-hidden="true">→</span>
         </span>
       </button>
       {open ? (
@@ -655,11 +712,13 @@ function SummaryForBooking({ booking }: { booking: MyConsultation }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
         className="mt-2 flex min-h-11 w-full items-center justify-between rounded-[14px] bg-surface-container-low px-3 py-2.5 text-left text-[13px]"
       >
         <span className="font-semibold text-on-surface">{t('visitSummary.booking.label')}</span>
         <span className="text-primary">
-          {shared ? t('visitSummary.booking.shared') : t('visitSummary.booking.make')} →
+          {shared ? t('visitSummary.booking.shared') : t('visitSummary.booking.make')}{' '}
+          <span aria-hidden="true">→</span>
         </span>
       </button>
       {open ? (
@@ -714,6 +773,7 @@ export default function MyBookingsRoute() {
       try {
         await cancelConsultation(booking.consultationId);
         await load();
+        announce(i18n.t('a11y.care.bookingCancelled', { name: booking.specialistName }));
       } catch (err) {
         setError(err instanceof Error ? err.message : i18n.t('bookings.cancelFailed'));
       } finally {
@@ -749,6 +809,7 @@ export default function MyBookingsRoute() {
             <button
               key={value}
               type="button"
+              aria-pressed={tab === value}
               onClick={() => setTab(value)}
               className={`rounded-full px-4 py-2 text-[13px] font-semibold capitalize ${
                 tab === value
@@ -767,11 +828,16 @@ export default function MyBookingsRoute() {
 
       <section className="px-4 py-4">
         {loading ? (
-          <p className="text-[13px] text-on-surface-variant">{t('bookings.loadingBookings')}</p>
+          <p role="status" className="text-[13px] text-on-surface-variant">
+            {t('bookings.loadingBookings')}
+          </p>
         ) : null}
 
         {error ? (
-          <div className="mb-3 rounded-[16px] border border-error/20 bg-error-container px-4 py-3 text-[13px] text-on-error-container">
+          <div
+            role="alert"
+            className="mb-3 rounded-[16px] border border-error/20 bg-error-container px-4 py-3 text-[13px] text-on-error-container"
+          >
             {error}
           </div>
         ) : null}
@@ -893,6 +959,7 @@ export default function MyBookingsRoute() {
           onClose={() => setRescheduling(null)}
           onDone={() => {
             setRescheduling(null);
+            announce(t('a11y.care.bookingRescheduled'));
             void load();
           }}
         />

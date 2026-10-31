@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { FamilyJoinPreviewResponse, FamilyRelationship } from '@anuva/shared';
@@ -53,6 +53,23 @@ export default function JoinRoute() {
   const [maskedPhone, setMaskedPhone] = useState('');
   const [code, setCode] = useState('');
   const [resendIn, setResendIn] = useState(0);
+
+  const id = useId();
+  const errorId = `${id}-error`;
+  const phoneLabelId = `${id}-phone-label`;
+  const phoneHintId = `${id}-phone-hint`;
+  const sentToId = `${id}-sent-to`;
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const shownStep = useRef(step);
+
+  // Each step replaces the form, taking the focused button with it: start them again at the
+  // heading, which names the new step. Not after the first check of the link, which is arrival.
+  useEffect(() => {
+    if (shownStep.current === step) return;
+    const from = shownStep.current;
+    shownStep.current = step;
+    if (from !== 'loading') headingRef.current?.focus({ preventScroll: true });
+  }, [step]);
 
   useEffect(() => {
     // No token in the fragment means they did not arrive from a link — a bookmark, or the app icon
@@ -133,7 +150,7 @@ export default function JoinRoute() {
   if (step === 'loading') {
     return (
       <AuthShell>
-        <p className="text-[13.5px] text-on-surface-variant" style={mulish}>
+        <p role="status" className="text-[13.5px] text-on-surface-variant" style={mulish}>
           {t('join.checkingLink')}
         </p>
       </AuthShell>
@@ -145,6 +162,8 @@ export default function JoinRoute() {
     return (
       <AuthShell>
         <h1
+          ref={headingRef}
+          tabIndex={-1}
           className="font-display text-[26px] font-medium leading-[1.18] text-primary"
         >
           {claimed ? t('join.claimedTitle') : t('join.inactiveTitle')}
@@ -176,7 +195,11 @@ export default function JoinRoute() {
       >
         {step === 'code' ? t('join.stepTwo') : t('join.stepOne')}
       </div>
-      <h1 className="mt-2 font-display text-[26px] font-medium leading-[1.18] text-primary">
+      <h1
+        ref={headingRef}
+        tabIndex={-1}
+        className="mt-2 font-display text-[26px] font-medium leading-[1.18] text-primary"
+      >
         {step === 'code' ? t('join.enterCode') : t('join.invitedBy', { name: her })}
       </h1>
 
@@ -228,7 +251,7 @@ export default function JoinRoute() {
             </label>
 
             <label className="block">
-              <span className="text-[12px] font-semibold text-on-surface" style={mulish}>
+              <span id={phoneLabelId} className="text-[12px] font-semibold text-on-surface" style={mulish}>
                 {t('join.phoneLabel')}
               </span>
               <input
@@ -238,17 +261,20 @@ export default function JoinRoute() {
                 onChange={(event) => setPhone(event.target.value)}
                 autoComplete="tel"
                 inputMode="tel"
+                aria-labelledby={phoneLabelId}
+                aria-describedby={error ? `${phoneHintId} ${errorId}` : phoneHintId}
+                aria-invalid={error ? true : undefined}
                 placeholder="+91"
                 className="mt-1.5 h-[52px] w-full rounded-[16px] border border-border-default bg-surface-raised px-4 text-[15px] text-on-surface shadow-soft focus:border-secondary focus:ring-2 focus:ring-secondary/25"
                 style={mulish}
               />
-              <span className="mt-1.5 block text-[11.5px] text-outline" style={mulish}>
+              <span id={phoneHintId} className="mt-1.5 block text-[11.5px] text-outline" style={mulish}>
                 {t('join.phoneHint')}
               </span>
             </label>
 
             {error ? (
-              <p className="text-[12px] leading-relaxed text-error" style={mulish} role="alert">
+              <p id={errorId} className="text-[12px] leading-relaxed text-error" style={mulish} role="alert">
                 {error}
               </p>
             ) : null}
@@ -271,7 +297,7 @@ export default function JoinRoute() {
             void verify();
           }}
         >
-          <p className="text-[13.5px] leading-[1.6] text-on-surface-variant" style={mulish}>
+          <p id={sentToId} className="text-[13.5px] leading-[1.6] text-on-surface-variant" style={mulish}>
             {t('join.sentTo', { phone: maskedPhone })}
           </p>
 
@@ -287,12 +313,14 @@ export default function JoinRoute() {
               maxLength={8}
               value={code}
               onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? `${sentToId} ${errorId}` : sentToId}
               className="mt-1.5 h-[52px] w-full rounded-[16px] border border-border-default bg-surface-raised px-4 text-center font-mono text-[20px] tracking-[0.4em] text-on-surface shadow-soft focus:border-secondary focus:ring-2 focus:ring-secondary/25"
             />
           </label>
 
           {error ? (
-            <p className="text-[12px] leading-relaxed text-error" style={mulish} role="alert">
+            <p id={errorId} className="text-[12px] leading-relaxed text-error" style={mulish} role="alert">
               {error}
             </p>
           ) : null}

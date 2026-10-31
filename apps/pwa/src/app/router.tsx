@@ -31,6 +31,7 @@ import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import SplashRoute from '../features/auth/SplashRoute';
 import { subscribeToForegroundNotifications } from '../lib/firebase';
 import { InstallGuard } from '../features/install/InstallGuard';
+import { RouteFocus } from '../lib/a11y/RouteFocus';
 import {
   alreadyHandled,
   clearPendingNavigation,
@@ -98,6 +99,7 @@ function ForegroundNotificationListener() {
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <RouteFocus />
       <ServiceWorkerNavListener />
       <ForegroundNotificationListener />
       <InstallGuard>

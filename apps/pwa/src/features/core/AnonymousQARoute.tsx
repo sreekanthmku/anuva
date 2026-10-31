@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 // The shared list is the server's vocabulary; what the screen takes from it is the topic *ids* and
 // their order. The words come from `qa.topics.*`.
@@ -22,12 +22,13 @@ type Scope = 'all' | 'mine';
 /** Order only; each scope's label is `qa.scopes.<id>`. */
 const SCOPES: Scope[] = ['all', 'mine'];
 
-function Eyebrow({ children, mint = false }: { children: string; mint?: boolean }) {
+function Eyebrow({ children, mint = false, id }: { children: string; mint?: boolean; id?: string }) {
   return (
     <div
+      id={id}
       className={`mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] ${mint ? 'text-primary' : 'text-outline'}`}
     >
-      <span className={`h-px w-3 ${mint ? 'bg-primary/60' : 'bg-outline/60'}`} />
+      <span aria-hidden="true" className={`h-px w-3 ${mint ? 'bg-primary/60' : 'bg-outline/60'}`} />
       <span style={{ fontFamily: '"Mulish", sans-serif' }}>{children}</span>
     </div>
   );
@@ -64,17 +65,18 @@ function QuestionCard({ question, showTopic }: { question: AnonymousQuestion; sh
     <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
       <div className="mb-3 flex items-start gap-2">
         <span
+          aria-hidden="true"
           className="shrink-0 text-[22px] font-medium leading-none text-primary"
           style={{ fontFamily: '"Fraunces", sans-serif' }}
         >
           {t('qa.questionMark')}
         </span>
-        <p
+        <h2
           className="flex-1 text-[15px] font-medium leading-[1.35] text-on-surface"
           style={{ fontFamily: '"Fraunces", sans-serif' }}
         >
           {question.body}
-        </p>
+        </h2>
       </div>
 
       {answered ? (
@@ -124,6 +126,8 @@ export default function AnonymousQARoute() {
   const [topic, setTopic] = useState<AnonymousQuestionTopic>('vasomotor');
   const [scope, setScope] = useState<Scope>('all');
   const qa = useAnonymousQa();
+  const questionLabelId = useId();
+  const tooShortId = useId();
   const visible = scope === 'mine' ? qa.mine : qa.feed;
 
   const trimmed = question.trim();
@@ -195,8 +199,12 @@ export default function AnonymousQARoute() {
 
       <section className="px-3 pt-3.5">
         <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
-          <Eyebrow mint>{t('qa.yourQuestion')}</Eyebrow>
+          <Eyebrow mint id={questionLabelId}>
+            {t('qa.yourQuestion')}
+          </Eyebrow>
           <textarea
+            aria-labelledby={questionLabelId}
+            aria-describedby={tooShort ? tooShortId : undefined}
             value={question}
             onChange={(e) => setQuestion(e.target.value.slice(0, MAX_QUESTION_LENGTH))}
             placeholder={t('qa.placeholder')}
@@ -205,13 +213,15 @@ export default function AnonymousQARoute() {
             className="mt-2.5 min-h-[80px] w-full resize-none border-0 bg-transparent text-[14px] leading-[1.5] text-on-surface outline-none placeholder:text-outline disabled:opacity-60"
             style={{ fontFamily: MULISH }}
           />
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div role="radiogroup" aria-label={t('a11y.care.questionTopic')} className="mt-2 flex flex-wrap gap-1.5">
             {ANONYMOUS_QA_TOPICS.map((entry) => {
               const active = topic === entry.id;
               return (
                 <button
                   key={entry.id}
                   type="button"
+                  role="radio"
+                  aria-checked={active}
                   onClick={() => setTopic(entry.id)}
                   className="whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors"
                   style={{
@@ -229,6 +239,7 @@ export default function AnonymousQARoute() {
 
           {qa.justSubmitted ? (
             <div
+              role="status"
               className="mt-3 rounded-[16px] px-3.5 py-2.5 text-[12px] leading-[1.45] text-on-surface"
               style={{
                 fontFamily: MULISH,
@@ -241,6 +252,7 @@ export default function AnonymousQARoute() {
 
           {qa.submitError ? (
             <div
+              role="alert"
               className="mt-3 rounded-[16px] border border-error/20 bg-error-container px-3.5 py-2.5 text-[12px] leading-[1.45] text-on-error-container"
               style={{ fontFamily: MULISH }}
             >
@@ -249,7 +261,7 @@ export default function AnonymousQARoute() {
           ) : null}
 
           {tooShort ? (
-            <div className="mt-3 text-[11px] text-outline" style={{ fontFamily: MULISH }}>
+            <div id={tooShortId} className="mt-3 text-[11px] text-outline" style={{ fontFamily: MULISH }}>
               {t('qa.tooShort')}
             </div>
           ) : null}
@@ -281,6 +293,7 @@ export default function AnonymousQARoute() {
       {qa.state === 'error' ? (
         <section className="px-3 pt-4">
           <div
+            role="alert"
             className="rounded-[20px] border border-error/20 bg-error-container px-4 py-3 text-[12.5px] text-on-error-container"
             style={{ fontFamily: MULISH }}
           >
@@ -295,7 +308,7 @@ export default function AnonymousQARoute() {
       <section className="px-3 py-4">
         <div className="flex items-end justify-between gap-3">
           <Eyebrow>{scope === 'mine' ? t('qa.yourQuestions') : t('qa.answeredQuestions')}</Eyebrow>
-          <div className="mb-2 flex gap-1.5">
+          <div role="group" aria-label={t('a11y.care.questionScope')} className="mb-2 flex gap-1.5">
             {SCOPES.map((entry) => {
               const active = scope === entry;
               // Only "Yours" is countable — the wall is paged, so a number there would understate it.
@@ -304,6 +317,7 @@ export default function AnonymousQARoute() {
                 <button
                   key={entry}
                   type="button"
+                  aria-pressed={active}
                   onClick={() => setScope(entry)}
                   className="rounded-full border px-3 py-1 text-[11.5px] font-medium transition-colors"
                   style={{
@@ -331,6 +345,7 @@ export default function AnonymousQARoute() {
 
         {qa.state === 'loading' ? (
           <div
+            role="status"
             className="rounded-[20px] border border-dashed border-border-default px-4 py-6 text-[12.5px] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >

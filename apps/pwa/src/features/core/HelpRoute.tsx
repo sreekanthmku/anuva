@@ -10,6 +10,7 @@ import {
 } from '@anuva/shared';
 // The instance for `ticketDate` and the catch blocks, which are not components.
 import i18n from '../../i18n';
+import { announce } from '../../lib/a11y/announce';
 import { DPDP_ACT_URL, GRIEVANCE_OFFICER_EMAIL } from '../../shared/lib/dpdp';
 import { BottomNav } from './components/BottomNav';
 import { createSupportTicket, fetchMySupportTickets } from './support/api';
@@ -26,12 +27,22 @@ const MAX_SUBJECT_LENGTH = 120;
 const CONSENT_VERSION = 'support-consent-v1';
 const RETENTION_MONTHS = 6;
 
-function Eyebrow({ children, mint = false }: { children: string; mint?: boolean }) {
+function Eyebrow({
+  children,
+  mint = false,
+  id,
+}: {
+  children: string;
+  mint?: boolean;
+  /** Lets a control group take this eyebrow as its name. */
+  id?: string;
+}) {
   return (
     <div
+      id={id}
       className={`mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] ${mint ? 'text-primary' : 'text-outline'}`}
     >
-      <span className={`h-px w-3 ${mint ? 'bg-primary/60' : 'bg-outline/60'}`} />
+      <span className={`h-px w-3 ${mint ? 'bg-primary/60' : 'bg-outline/60'}`} aria-hidden="true" />
       <span style={{ fontFamily: '"Mulish", sans-serif' }}>{children}</span>
     </div>
   );
@@ -194,12 +205,15 @@ export default function HelpRoute() {
       setTickets((current) => [response.ticket, ...current]);
       setRemainingToday(response.remainingToday);
       setJustSubmitted(response.ticket.reference);
+      announce(i18n.t('help.submitted', { reference: response.ticket.reference }));
       setSubject('');
       setMessage('');
       setContactEmail('');
       setWantsEmailReply(false);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : i18n.t('help.sendFailed'));
+      const reason = err instanceof Error ? err.message : i18n.t('help.sendFailed');
+      setSubmitError(reason);
+      announce(reason, 'assertive');
     } finally {
       setSubmitting(false);
     }
@@ -211,6 +225,7 @@ export default function HelpRoute() {
         <button
           type="button"
           onClick={() => navigate('/profile')}
+          aria-label={t('a11y.summary.backTo', { place: t('nav.profile') })}
           className="mb-2 bg-transparent p-0 text-[13px] text-on-surface-variant"
           style={{ fontFamily: MULISH }}
         >
@@ -234,15 +249,24 @@ export default function HelpRoute() {
 
       <section className="px-3">
         <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
-          <Eyebrow mint>{t('help.whatAbout')}</Eyebrow>
+          <Eyebrow mint id="help-category-label">
+            {t('help.whatAbout')}
+          </Eyebrow>
 
-          <div className="mt-1 flex flex-wrap gap-1.5">
+          {/* One topic of several: radio semantics on the chips. */}
+          <div
+            className="mt-1 flex flex-wrap gap-1.5"
+            role="radiogroup"
+            aria-labelledby="help-category-label"
+          >
             {SUPPORT_TICKET_CATEGORIES.map((entry) => {
               const active = category === entry.id;
               return (
                 <button
                   key={entry.id}
                   type="button"
+                  role="radio"
+                  aria-checked={active}
                   onClick={() => setCategory(entry.id)}
                   className="whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors"
                   style={{
@@ -262,6 +286,7 @@ export default function HelpRoute() {
             value={subject}
             onChange={(e) => setSubject(e.target.value.slice(0, MAX_SUBJECT_LENGTH))}
             placeholder={t('help.subjectPlaceholder')}
+            aria-label={t('help.subjectPlaceholder')}
             disabled={outOfQuota}
             className="mt-3.5 w-full border-0 border-b border-border-default bg-transparent pb-2 text-[14px] text-on-surface outline-none placeholder:text-outline disabled:opacity-60"
             style={{ fontFamily: MULISH }}
@@ -271,6 +296,7 @@ export default function HelpRoute() {
             value={message}
             onChange={(e) => setMessage(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
             placeholder={t('help.messagePlaceholder')}
+            aria-label={t('help.messagePlaceholder')}
             rows={4}
             disabled={outOfQuota}
             className="mt-3 min-h-[88px] w-full resize-none border-0 bg-transparent text-[14px] leading-[1.5] text-on-surface outline-none placeholder:text-outline disabled:opacity-60"
@@ -298,6 +324,7 @@ export default function HelpRoute() {
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value.slice(0, 200))}
               placeholder={t('help.emailPlaceholder')}
+              aria-label={t('a11y.summary.emailAddress')}
               inputMode="email"
               autoComplete="email"
               className="mt-2.5 w-full border-0 border-b border-border-default bg-transparent pb-2 text-[14px] text-on-surface outline-none placeholder:text-outline"
@@ -372,6 +399,7 @@ export default function HelpRoute() {
           <div
             className="rounded-[20px] border border-error/20 bg-error-container px-4 py-3 text-[12.5px] text-on-error-container"
             style={{ fontFamily: MULISH }}
+            role="alert"
           >
             {loadError}{' '}
             <button type="button" onClick={() => void load()} className="underline">
@@ -382,6 +410,7 @@ export default function HelpRoute() {
           <div
             className="rounded-[20px] border border-dashed border-border-default px-4 py-6 text-[12.5px] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
+            role="status"
           >
             {t('help.loading')}
           </div>

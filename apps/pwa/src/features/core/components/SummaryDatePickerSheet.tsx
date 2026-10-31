@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SummaryCalendarDay } from '@anuva/shared';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 import { useSummaryCalendar } from '../hooks/useSummaryCalendar';
 import {
   buildCalendarMonth,
@@ -35,6 +36,17 @@ function dotStyle(day: SummaryCalendarDay, metricCount: number) {
   };
 }
 
+/** A cell's date in full, as a screen reader should say it: "Saturday, 31 October 2026". */
+function spokenDate(iso: string, language: string): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  return new Date(year!, month! - 1, day!).toLocaleDateString(language, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
 /** Month the grid opens on. Falls back to this month if the day is missing. */
 function monthOf(iso: string) {
   const year = Number(iso.slice(0, 4));
@@ -60,7 +72,10 @@ export function SummaryDatePickerSheet({
   onSelectDate: (dateISO: string) => void;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const titleId = useId();
+  // Mounted only while open, so it is always open from the hook's point of view.
+  const dialogRef = useDialogA11y<HTMLDivElement>(true, onClose);
   const today = todayISO();
   const [cursor, setCursor] = useState(() => monthOf(selectedDate));
   const { data, loading, error } = useSummaryCalendar(isoMonth(cursor.year, cursor.month));
@@ -103,15 +118,17 @@ export function SummaryDatePickerSheet({
         aria-label={t('datePicker.close')}
       />
       <div
+        ref={dialogRef}
         className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-5"
         role="dialog"
         aria-modal="true"
-        aria-label={t('datePicker.pickADay')}
+        aria-labelledby={titleId}
         style={{ maxHeight: '90dvh', overflowY: 'auto' }}
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" />
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" aria-hidden="true" />
 
         <h2
+          id={titleId}
           className="mb-1 text-[20px] text-on-surface"
           style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
         >
@@ -149,7 +166,8 @@ export function SummaryDatePickerSheet({
           </button>
         </div>
 
-        <div className="mb-1 grid grid-cols-7 gap-1">
+        {/* Every day button says its own weekday, so the initials are for the eye only. */}
+        <div className="mb-1 grid grid-cols-7 gap-1" aria-hidden="true">
           {weekdayInitials().map((d, i) => (
             <span
               key={`${d}-${i}`}
@@ -161,7 +179,10 @@ export function SummaryDatePickerSheet({
           ))}
         </div>
 
-        <div className={`grid grid-cols-7 gap-1 ${loading && !data ? 'opacity-50' : ''}`}>
+        <div
+          className={`grid grid-cols-7 gap-1 ${loading && !data ? 'opacity-50' : ''}`}
+          aria-busy={loading && !data ? true : undefined}
+        >
           {Array.from({ length: month.leadingBlanks }, (_, i) => (
             <span key={`blank-${i}`} className="h-11" />
           ))}
@@ -183,12 +204,13 @@ export function SummaryDatePickerSheet({
                 aria-label={
                   day && day.metrics > 0
                     ? t('charts.dayMetricsLogged', {
-                        date,
+                        date: spokenDate(date, i18n.language),
                         count: day.metrics,
                         total: metricCount,
                       })
-                    : t('charts.dayNothingLogged', { date })
+                    : t('charts.dayNothingLogged', { date: spokenDate(date, i18n.language) })
                 }
+                aria-pressed={isSelected}
                 aria-current={isToday ? 'date' : undefined}
                 className="relative flex h-11 w-full flex-col items-center justify-center rounded-full text-[13px] disabled:opacity-25"
                 style={{
@@ -214,7 +236,7 @@ export function SummaryDatePickerSheet({
         </div>
 
         {error && (
-          <p className="mt-3 text-[12px] text-error" style={{ fontFamily: BODY }}>
+          <p className="mt-3 text-[12px] text-error" style={{ fontFamily: BODY }} role="alert">
             {error}
           </p>
         )}

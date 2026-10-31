@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type {
   LogJointBody,
   MoodEmotion,
@@ -11,6 +11,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { useAuth } from '../auth/auth-context';
+import { announce } from '../../lib/a11y/announce';
 import { BottomNav } from './components/BottomNav';
 import { MoodLogSheet } from './components/MoodLogSheet';
 import { SleepLogSheet } from './components/SleepLogSheet';
@@ -69,6 +70,7 @@ const FONT_MONO = '"Mulish", sans-serif';
 /** Section order. Each tier's heading is `track.tiers.<key>`. */
 const TIERS: NudgeTier[] = ['core', 'body', 'lifestyle', 'weekly'];
 
+/** One answer of a tracker's scale: picking one answers the question, so it is a radio, not a toggle. */
 function OptionChip({
   label,
   selected,
@@ -85,7 +87,8 @@ function OptionChip({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-pressed={selected}
+      role="radio"
+      aria-checked={selected}
       className="rounded-full border px-3.5 py-2 text-[12px] font-medium transition-colors outline-none focus:outline-none disabled:opacity-50"
       style={{
         backgroundColor: selected ? '#5E3566' : '#FFFFFF',
@@ -97,6 +100,19 @@ function OptionChip({
     >
       {label}
     </button>
+  );
+}
+
+/** The tick after a logged tracker's name, said as a word rather than as a symbol. */
+function LoggedTick() {
+  const { t } = useTranslation();
+  return (
+    <>
+      <span aria-hidden="true" className="ml-1.5 text-primary">
+        ✓
+      </span>
+      <span className="sr-only">{`, ${t('quickLogDialog.logged')}`}</span>
+    </>
   );
 }
 
@@ -127,6 +143,17 @@ export default function SymptomTrackRoute() {
   const [jointsSaving, setJointsSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
+  const rowId = useId();
+  // Answering folds a tracker's options away, taking the tapped one with them; focus lands on
+  // that tracker's "Change" button instead of falling back to the top of the page.
+  const focusChangeFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    const id = focusChangeFor.current;
+    if (!id) return;
+    focusChangeFor.current = null;
+    document.getElementById(`${rowId}-${id}-change`)?.focus({ preventScroll: true });
+  });
 
   // The selected day's entries. Yesterday's come from the recent lists, which reach back 14 days.
   const yesterday = useMemo(() => yesterdayAt(), []);
@@ -159,6 +186,7 @@ export default function SymptomTrackRoute() {
     setMoodSaving(true);
     try {
       await moodLog.logMood(feeling, emotions, day);
+      announce(t('a11y.tracking.moodSaved'));
       await reload();
     } finally {
       setMoodSaving(false);
@@ -173,6 +201,7 @@ export default function SymptomTrackRoute() {
     setSleepSaving(true);
     try {
       await sleepLog.logSleep(quality, hours, disruptions, day);
+      announce(t('a11y.tracking.sleepSaved'));
       await reload();
     } finally {
       setSleepSaving(false);
@@ -229,6 +258,7 @@ export default function SymptomTrackRoute() {
   const submit = async (tracker: NudgeDayTracker, answer: string) => {
     setSaving(tracker.nudgeId);
     setLocalAnswers((prev) => ({ ...prev, [tracker.nudgeId]: answer }));
+    focusChangeFor.current = tracker.nudgeId;
     setEditing((prev) => {
       const next = new Set(prev);
       next.delete(tracker.nudgeId);
@@ -268,9 +298,9 @@ export default function SymptomTrackRoute() {
   const jointsCard = (
     <div key="joints" className="flex items-center justify-between gap-2">
       <div className="min-w-0">
-        <span className="text-[13px] text-on-surface" style={{ fontFamily: FONT_BODY }}>
+        <span id={`${rowId}-joints-label`} className="text-[13px] text-on-surface" style={{ fontFamily: FONT_BODY }}>
           {t('track.joints')}
-          {jointsAnswered && <span className="ml-1.5 text-primary">✓</span>}
+          {jointsAnswered && <LoggedTick />}
         </span>
         <p className="text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
           {todayJoints ? todayJoints.summary : t('track.notLoggedYet')}
@@ -278,6 +308,8 @@ export default function SymptomTrackRoute() {
       </div>
       <button
         type="button"
+        id={`${rowId}-joints-button`}
+        aria-labelledby={`${rowId}-joints-button ${rowId}-joints-label`}
         onClick={() => setJointsOpen(true)}
         className="shrink-0 rounded-full border border-border-default px-3.5 py-1.5 text-[12px] text-on-surface"
         style={{ fontFamily: FONT_BODY }}
@@ -298,13 +330,14 @@ export default function SymptomTrackRoute() {
         <div key={tracker.nudgeId} className="flex items-center justify-between gap-2">
           <div>
             <span
+              id={`${rowId}-${tracker.nudgeId}-label`}
               className="text-[13px] text-on-surface"
               style={{ fontFamily: FONT_BODY }}
             >
               {/* Tracker labels and answers come from the day sheet, so they arrive already in
                   her language and are rendered as given. */}
               {tracker.label}
-              {answered && <span className="ml-1.5 text-primary">✓</span>}
+              {answered && <LoggedTick />}
             </span>
             <p
               className="text-[12px] text-on-surface-variant"
@@ -315,6 +348,8 @@ export default function SymptomTrackRoute() {
           </div>
           <button
             type="button"
+            id={`${rowId}-${tracker.nudgeId}-open`}
+            aria-labelledby={`${rowId}-${tracker.nudgeId}-open ${rowId}-${tracker.nudgeId}-label`}
             onClick={openSheet}
             className="rounded-full border border-border-default px-3.5 py-1.5 text-[12px] text-on-surface"
             style={{ fontFamily: FONT_BODY }}
@@ -332,15 +367,18 @@ export default function SymptomTrackRoute() {
       <div key={tracker.nudgeId}>
         <div className="mb-2 flex items-baseline justify-between gap-2">
           <span
+            id={`${rowId}-${tracker.nudgeId}-label`}
             className="text-[13px] text-on-surface"
             style={{ fontFamily: FONT_BODY }}
           >
             {tracker.label}
-            {answered && <span className="ml-1.5 text-primary">✓</span>}
+            {answered && <LoggedTick />}
           </span>
           {answered && !showOptions && (
             <button
               type="button"
+              id={`${rowId}-${tracker.nudgeId}-change`}
+              aria-labelledby={`${rowId}-${tracker.nudgeId}-change ${rowId}-${tracker.nudgeId}-label`}
               onClick={() => toggleEdit(tracker.nudgeId)}
               className="text-[10px] uppercase tracking-[0.1em] text-outline"
               style={{ fontFamily: FONT_MONO }}
@@ -351,7 +389,11 @@ export default function SymptomTrackRoute() {
         </div>
 
         {showOptions ? (
-          <div className="flex flex-wrap gap-2">
+          <div
+            className="flex flex-wrap gap-2"
+            role="radiogroup"
+            aria-labelledby={`${rowId}-${tracker.nudgeId}-label`}
+          >
             {tracker.options.map((opt) => (
               <OptionChip
                 key={opt}
@@ -399,7 +441,22 @@ export default function SymptomTrackRoute() {
           </h1>
 
           {/* Progress bar */}
-          <div className="mb-[16px] h-2 w-full overflow-hidden rounded-full bg-surface-bright">
+          <div
+            className="mb-[16px] h-2 w-full overflow-hidden rounded-full bg-surface-bright"
+            role="progressbar"
+            aria-label={t('a11y.tracking.trackProgress')}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={pct}
+            aria-valuetext={
+              loading
+                ? t('track.loading')
+                : t(day === 'yesterday' ? 'track.loggedYesterday' : 'track.loggedToday', {
+                    answered: answeredCount,
+                    total,
+                  })
+            }
+          >
             <div
               className="h-full rounded-full bg-primary transition-all"
               style={{ width: `${pct}%` }}
@@ -430,7 +487,8 @@ export default function SymptomTrackRoute() {
             ))}
           </div>
 
-          <div className="flex justify-between gap-1">
+          {/* A picture of the week; the tabs above already say which day she is filling in. */}
+          <div className="flex justify-between gap-1" aria-hidden="true">
             {weekDays.map((cell) => {
               const selected = day === 'today' ? cell.isToday : cell.isYesterday;
               return (
@@ -468,9 +526,12 @@ export default function SymptomTrackRoute() {
         </div>
       </header>
 
-      <div className="flex flex-col gap-3 px-3 pb-[22px] pt-[18px]">
+      <div className="flex flex-col gap-3 px-3 pb-[22px] pt-[18px]" aria-busy={loading || undefined}>
         {error && (
-          <div className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-3 text-[13px] text-on-surface-variant">
+          <div
+            role="alert"
+            className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-3 text-[13px] text-on-surface-variant"
+          >
             {error}{' '}
             <button type="button" onClick={reload} className="text-primary underline">
               {t('common.retry')}
@@ -500,6 +561,8 @@ export default function SymptomTrackRoute() {
             >
               <button
                 type="button"
+                aria-expanded={open}
+                aria-controls={open ? `${rowId}-tier-${tier}` : undefined}
                 onClick={() => toggleTier(tier)}
                 className={`flex w-full items-center justify-between px-4 py-3.5 text-left ${
                   open ? 'bg-primary-container' : ''
@@ -517,12 +580,20 @@ export default function SymptomTrackRoute() {
                   }`}
                   style={{ fontFamily: FONT_MONO }}
                 >
-                  {tierAnswered}/{tierTotal} {open ? '▾' : '▸'}
+                  <span aria-hidden="true">
+                    {tierAnswered}/{tierTotal} {open ? '▾' : '▸'}
+                  </span>
+                  <span className="sr-only">
+                    {t('a11y.tracking.tierProgress', { answered: tierAnswered, total: tierTotal })}
+                  </span>
                 </span>
               </button>
 
               {open && (
-                <div className="flex flex-col gap-4 border-t border-primary/10 px-4 py-4">
+                <div
+                  id={`${rowId}-tier-${tier}`}
+                  className="flex flex-col gap-4 border-t border-primary/10 px-4 py-4"
+                >
                   {items.map((tracker) => (
                     <Fragment key={tracker.nudgeId}>
                       {renderTracker(tracker)}

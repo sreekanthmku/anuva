@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { ConsultationSharedNote, HealthNote } from '@anuva/shared';
+import { announce } from '../../../lib/a11y/announce';
 import { LogSheetFrame } from '../components/LogSheetFrame';
 import { fetchNotes, fetchSharedNotes, shareNotes, unshareNote } from './api';
 
@@ -29,6 +30,8 @@ export function ShareNotesSheet({
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sharedLabelId = useId();
+  const chooseLabelId = useId();
 
   const load = useCallback(async () => {
     try {
@@ -65,6 +68,7 @@ export function ShareNotesSheet({
       setShared(result);
       setPicked(new Set());
       onChanged?.(result.length);
+      announce(t('a11y.care.notesShared', { count: picked.size, name: specialistName }));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('notes.shareFailed'));
     } finally {
@@ -80,6 +84,7 @@ export function ShareNotesSheet({
       const remaining = shared.filter((note) => note.noteId !== noteId);
       setShared(remaining);
       onChanged?.(remaining.length);
+      announce(t('a11y.care.noteTakenBack'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('notes.shareFailed'));
     } finally {
@@ -94,15 +99,21 @@ export function ShareNotesSheet({
         {t('notes.share.title', { name: specialistName })}
       </h2>
 
-      {notes === null && !error ? <p className="mt-4 text-[13.5px] text-on-surface-variant">{t('notes.loading')}</p> : null}
+      {notes === null && !error ? (
+        <p role="status" className="mt-4 text-[13.5px] text-on-surface-variant">
+          {t('notes.loading')}
+        </p>
+      ) : null}
 
       {shared.length > 0 ? (
         <div className="mt-4">
-          <p className="text-[12px] font-semibold text-on-surface-variant">{t('notes.share.alreadyShared')}</p>
-          <ul className="mt-2 flex flex-col gap-2">
+          <p id={sharedLabelId} className="text-[12px] font-semibold text-on-surface-variant">
+            {t('notes.share.alreadyShared')}
+          </p>
+          <ul aria-labelledby={sharedLabelId} className="mt-2 flex flex-col gap-2">
             {shared.map((note) => (
               <li key={note.noteId} className="rounded-[14px] bg-primary-fixed px-3 py-2.5">
-                <p className="line-clamp-3 whitespace-pre-wrap text-[13.5px] leading-snug text-on-surface">
+                <p id={`shared-note-${note.noteId}`} className="line-clamp-3 whitespace-pre-wrap text-[13.5px] leading-snug text-on-surface">
                   {note.body || t('notes.photoOnly')}
                 </p>
                 {note.canRevoke ? (
@@ -110,6 +121,7 @@ export function ShareNotesSheet({
                     type="button"
                     disabled={busy}
                     onClick={() => void takeBack(note.noteId)}
+                    aria-describedby={`shared-note-${note.noteId}`}
                     className="mt-1 min-h-9 text-[12.5px] font-semibold text-primary disabled:opacity-45"
                   >
                     {t('notes.share.takeBack')}
@@ -127,15 +139,17 @@ export function ShareNotesSheet({
         <div className="mt-4 text-[13.5px] leading-[1.5] text-on-surface-variant">
           <p>{t('notes.share.none')}</p>
           <Link to="/notes" className="mt-2 inline-flex min-h-11 items-center font-semibold text-primary">
-            {t('notes.share.writeOne')} →
+            {t('notes.share.writeOne')} <span aria-hidden="true">→</span>
           </Link>
         </div>
       ) : null}
 
       {choosable.length > 0 ? (
         <div className="mt-4">
-          <p className="text-[12px] font-semibold text-on-surface-variant">{t('notes.share.choose')}</p>
-          <ul className="mt-2 flex flex-col gap-2">
+          <p id={chooseLabelId} className="text-[12px] font-semibold text-on-surface-variant">
+            {t('notes.share.choose')}
+          </p>
+          <ul role="group" aria-labelledby={chooseLabelId} className="mt-2 flex flex-col gap-2">
             {choosable.map((note) => (
               <li key={note.id}>
                 <label className="flex cursor-pointer items-start gap-3 rounded-[14px] border border-border-default bg-surface px-3 py-2.5">
@@ -176,7 +190,11 @@ export function ShareNotesSheet({
         </>
       ) : null}
 
-      {error ? <p className="mt-3 text-[12.5px] text-error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-3 text-[12.5px] text-error">
+          {error}
+        </p>
+      ) : null}
 
       <button
         type="button"

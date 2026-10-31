@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import {
   anonymousQuestionTopicLabel,
   type AnonymousQuestion,
@@ -8,6 +8,7 @@ import { formatLongDateTime } from '../bookings/dateTime';
 import { PageHeading } from '../shell/AppShell';
 import { Card, EmptyState, ErrorNote, Pill, Segmented, SkeletonCard, StatTile } from '../shell/ui';
 import { answerDoctorQuestion, fetchDoctorQuestions } from './api';
+import { announce } from '../../lib/a11y/announce';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 type Filter = AnonymousQuestionStatus | 'all';
@@ -34,6 +35,7 @@ function QuestionCard({
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fieldId = useId();
 
   const trimmed = draft.trim();
   const ready = trimmed.length >= MIN_ANSWER_LENGTH && !sending;
@@ -48,6 +50,7 @@ function QuestionCard({
       const response = await answerDoctorQuestion(question.id, trimmed);
       setDraft('');
       onAnswered(response.question);
+      announce('Answer posted.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to post the answer.');
     } finally {
@@ -64,7 +67,7 @@ function QuestionCard({
         </Pill>
       </div>
 
-      <p className="mt-3 font-display text-[19px] leading-[1.3] text-on-surface">{question.body}</p>
+      <h2 className="mt-3 font-display text-[19px] leading-[1.3] text-on-surface">{question.body}</h2>
       <div className="mt-2 text-[11px] text-outline">
         Asked anonymously · {formatLongDateTime(question.createdAt)}
       </div>
@@ -88,10 +91,13 @@ function QuestionCard({
 
       {canAnswer ? (
         <div className="mt-4 rounded-[16px] border border-border-default px-3.5 py-3">
-          <label className="text-[11px] uppercase tracking-[0.12em] text-outline">
+          <label htmlFor={`${fieldId}-answer`} className="text-[11px] uppercase tracking-[0.12em] text-outline">
             {question.answers.length > 0 ? 'Add a follow-up' : 'Your answer'}
           </label>
           <textarea
+            id={`${fieldId}-answer`}
+            aria-describedby={error ? `${fieldId}-hint ${fieldId}-error` : `${fieldId}-hint`}
+            aria-invalid={error ? true : undefined}
             value={draft}
             onChange={(e) => setDraft(e.target.value.slice(0, MAX_ANSWER_LENGTH))}
             rows={4}
@@ -99,13 +105,21 @@ function QuestionCard({
             className="mt-2 min-h-[92px] w-full resize-none border-0 bg-transparent p-0 text-[13px] leading-[1.55] text-on-surface outline-none focus:ring-0 placeholder:text-outline"
           />
           {error ? (
-            <div className="mt-2 rounded-[12px] border border-error/20 bg-error-container px-3 py-2 text-[12px] text-on-error-container">
+            <div
+              id={`${fieldId}-error`}
+              role="alert"
+              className="mt-2 rounded-[12px] border border-error/20 bg-error-container px-3 py-2 text-[12px] text-on-error-container"
+            >
               {error}
             </div>
           ) : null}
           <div className="mt-2 flex items-center justify-between gap-3">
             <span className="text-[10px] uppercase tracking-[0.1em] text-outline">
               {trimmed.length}/{MAX_ANSWER_LENGTH}
+              {/* "Post answer" stays disabled until this many; nothing on screen says so. */}
+              <span id={`${fieldId}-hint`} className="sr-only">
+                At least {MIN_ANSWER_LENGTH} characters.
+              </span>
             </span>
             <button
               type="button"
@@ -191,6 +205,7 @@ export function DoctorQuestionsRoute() {
         <Segmented<Filter>
           value={filter}
           onChange={setFilter}
+          label="Questions"
           options={[
             { id: 'pending', label: 'Waiting' },
             { id: 'answered', label: 'Answered' },
@@ -209,6 +224,9 @@ export function DoctorQuestionsRoute() {
 
         {state === 'loading' ? (
           <>
+            <span role="status" className="sr-only">
+              Loading questions
+            </span>
             <SkeletonCard />
             <SkeletonCard />
           </>

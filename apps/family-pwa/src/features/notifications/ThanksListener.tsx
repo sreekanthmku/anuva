@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { subscribeToForegroundMessages } from '../../lib/firebase';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { PrimaryButton } from '../shell/ui';
 import { readThanksFromHash, stripThanksFromUrl, type Thanks } from './thanksLink';
@@ -60,21 +61,26 @@ export function ThanksListener() {
     [t],
   );
 
-  if (!thanks) return null;
+  const close = useCallback(() => setThanks(null), []);
+  const dialogRef = useDialogA11y<HTMLDivElement>(thanks !== null, close);
 
-  const close = () => setThanks(null);
+  if (!thanks) return null;
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[80] flex items-center justify-center px-5"
       role="dialog"
       aria-modal="true"
       aria-labelledby="family-thanks-title"
+      aria-describedby="family-thanks-body"
     >
+      {/* Tap-outside only: the Close button below is the same thing for keyboard and screen readers. */}
       <button
         type="button"
+        tabIndex={-1}
+        aria-hidden
         className="absolute inset-0 animate-[anuvaFade_260ms_ease-out] bg-[#3E2542]/55 backdrop-blur-[2px]"
-        aria-label={t('common.close')}
         onClick={close}
       />
 
@@ -95,7 +101,9 @@ export function ThanksListener() {
           {t('thanks.title', { name: thanks.from })}
         </h2>
 
-        <p className="mt-2.5 text-[15px] leading-relaxed text-on-surface-variant">{thanks.body}</p>
+        <p id="family-thanks-body" className="mt-2.5 text-[15px] leading-relaxed text-on-surface-variant">
+          {thanks.body}
+        </p>
 
         <PrimaryButton onClick={close} className="mt-6">
           {t('common.close')}

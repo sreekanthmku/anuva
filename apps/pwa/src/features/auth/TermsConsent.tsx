@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { PRIVACY_POLICY, TERMS_OF_USE, type LegalDocument } from './termsContent';
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -24,6 +25,8 @@ function TermsDialog({
   const { t } = useTranslation();
   const [tab, setTab] = useState<DocKey>(initial);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  // Focus in, Tab trap, focus back to the link that opened it. Escape is the listener below.
+  const dialogRef = useDialogA11y<HTMLDivElement>(true);
   const doc = DOCUMENTS[tab];
 
   useEffect(() => {
@@ -46,13 +49,21 @@ function TermsDialog({
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="terms-dialog-title"
       style={{ fontFamily: FONT_BODY }}
     >
-      <button type="button" aria-label={t('login.terms.close')} className="absolute inset-0 bg-[#3E2542]/60" onClick={onClose} />
+      {/* Out of the Tab order and the reading order: the Close button below does the same. */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden="true"
+        className="absolute inset-0 bg-[#3E2542]/60"
+        onClick={onClose}
+      />
       <div className="relative flex max-h-[88dvh] w-full max-w-[440px] flex-col rounded-t-[28px] bg-surface-raised shadow-[0_18px_50px_rgba(94,53,102,0.28)] sm:rounded-[28px]">
         <div className="px-5 pb-3 pt-5">
           <div className="flex rounded-full bg-surface-container p-1">

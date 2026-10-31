@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BugReportSheet } from './BugReportSheet';
 import { useShakeToReport } from './useShakeToReport';
@@ -46,8 +46,17 @@ export function BetaReporter({ app }: { app: string }) {
   const [bottom, setBottom] = useState(readBottom);
   const drag = useRef<{ startY: number; startBottom: number; moved: boolean } | null>(null);
   const openSheet = useCallback(() => setOpen(true), []);
+  const tabRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
 
   useShakeToReport(openSheet, __BETA_MODE__ && !open);
+
+  // The tab is unmounted while the sheet is up, so the sheet cannot hand focus back to it on close;
+  // do it here once it is back, or a keyboard or screen-reader user is dropped at the page top.
+  useEffect(() => {
+    if (wasOpen.current && !open) tabRef.current?.focus({ preventScroll: true });
+    wasOpen.current = open;
+  }, [open]);
 
   if (!__BETA_MODE__) return null;
 
@@ -84,6 +93,7 @@ export function BetaReporter({ app }: { app: string }) {
     <>
       {!open ? (
         <button
+          ref={tabRef}
           type="button"
           data-beta-reporter
           onPointerDown={onPointerDown}

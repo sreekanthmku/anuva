@@ -12,7 +12,16 @@ import { ACTION_LABEL_KEYS, CONFIRMED_KINDS, NUDGE_LAYER_TINT } from '../data/la
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
 import { NotificationPermissionDialog } from '../notifications/NotificationPermissionDialog';
 import { useNotificationPrompt } from '../notifications/useNotificationPrompt';
-import { Card, ErrorCard, Eyebrow, PageIntro, PrimaryButton, SectionLabel, SkeletonCard } from '../shell/ui';
+import {
+  Card,
+  ErrorCard,
+  Eyebrow,
+  LoadingStack,
+  PageIntro,
+  PrimaryButton,
+  SectionLabel,
+  SkeletonCard,
+} from '../shell/ui';
 import { SupportActionSheet, Toast } from '../support/SupportActionSheet';
 
 const TOAST_MS = 2800;
@@ -96,11 +105,11 @@ export function TodayRoute() {
 
   if (loading && !data) {
     return (
-      <div className="space-y-4">
+      <LoadingStack>
         <SkeletonCard lines={1} />
         <SkeletonCard lines={2} />
         <SkeletonCard lines={2} />
-      </div>
+      </LoadingStack>
     );
   }
 
@@ -265,8 +274,11 @@ export function TodayRoute() {
                 aria-hidden
               />
             </div>
-            <span className="font-display text-[13px] font-semibold tabular-nums text-primary">
+            <span aria-hidden className="font-display text-[13px] font-semibold tabular-nums text-primary">
               {progress.loggedDays}/{progress.totalDays}
+            </span>
+            <span className="sr-only">
+              {t('a11y.daysLogged', { logged: progress.loggedDays, total: progress.totalDays })}
             </span>
           </div>
         </Card>

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { captureScreenshot, sendReport, type Capture } from './sendReport';
 
 /**
@@ -39,6 +41,8 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
   const [capture, setCapture] = useState<Capture | null>(null);
   const [attach, setAttach] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  // Escape stays with the listener below.
+  const dialogRef = useDialogA11y<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) return;
@@ -96,6 +100,8 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
       }
 
       setSent(true);
+      // The focused Send button has just been replaced by the confirmation.
+      announce(t('beta.sentTitle'));
       window.setTimeout(onClose, 1400);
     } finally {
       setSending(false);
@@ -104,16 +110,19 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
 
   return (
     <div
+      ref={dialogRef}
       data-beta-reporter
       className="fixed inset-0 z-[95] flex items-end justify-center sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="beta-report-title"
     >
+      {/* Tap-outside only: Cancel below is the same thing for keyboard and screen readers. */}
       <button
         type="button"
+        tabIndex={-1}
+        aria-hidden
         className="absolute inset-0 bg-[#3E2542]/55 backdrop-blur-[2px]"
-        aria-label={t('common.close')}
         onClick={onClose}
       />
 
@@ -146,6 +155,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
               ✓
             </span>
             <p
+              id="beta-report-title"
               className="mt-3 text-[18px] text-on-surface"
               style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
             >
@@ -173,6 +183,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
 
             <textarea
               autoFocus
+              aria-labelledby="beta-report-title"
               value={message}
               onChange={(event) => setMessage(event.target.value.slice(0, MAX_MESSAGE))}
               rows={3}
@@ -214,7 +225,11 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12.5px] font-semibold leading-snug text-on-surface" style={mulish}>
+                  <p
+                    id="beta-report-picture"
+                    className="text-[12.5px] font-semibold leading-snug text-on-surface"
+                    style={mulish}
+                  >
                     {capture && !capture.data
                       ? t('beta.noPicture')
                       : attach
@@ -232,7 +247,8 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
                   <button
                     type="button"
                     onClick={() => setAttach((current) => !current)}
-                    aria-pressed={!attach}
+                    // The label itself flips (Remove / Add back), so no pressed state on top of it.
+                    aria-describedby="beta-report-picture"
                     className="shrink-0 rounded-full px-2.5 py-1.5 text-[11.5px] font-semibold text-secondary underline underline-offset-2"
                     style={mulish}
                   >

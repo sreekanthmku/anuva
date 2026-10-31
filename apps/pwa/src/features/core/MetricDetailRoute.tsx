@@ -1,8 +1,9 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { ReportRing, ReportRingKey, SummaryPeriod, WeeklyReportResponse } from '@anuva/shared';
 import { reportRingKeySchema } from '@anuva/shared';
+import { announce } from '../../lib/a11y/announce';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { BottomNav } from './components/BottomNav';
 import { DayBarChart } from './components/DayBarChart';
@@ -36,8 +37,11 @@ function trackingDenominator(report: WeeklyReportResponse): number {
 // ── Page ─────────────────────────────────────────────────────
 
 function DetailSkeleton() {
+  const { t } = useTranslation();
+
   return (
-    <section className="flex flex-col gap-3 px-3 pt-2" aria-busy="true">
+    <section className="flex flex-col gap-3 px-3 pt-2" role="status" aria-busy="true">
+      <span className="sr-only">{t('common.loading')}</span>
       <div className="h-[196px] animate-pulse rounded-[20px] bg-surface-raised" />
       <div className="h-[168px] animate-pulse rounded-[20px] bg-surface-raised" />
     </section>
@@ -68,15 +72,16 @@ function DetailBody({
 
   return (
     <section className="flex flex-col gap-3 px-3 pb-[22px]">
-      {/* Window stepper */}
+      {/* Window stepper. The arrows use `aria-disabled` so the one she pressed keeps focus when it
+          reaches the end; disabling it would drop her focus to the top of the page. */}
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => onStep(1)}
-            disabled={!report.canGoBack}
+            onClick={report.canGoBack ? () => onStep(1) : undefined}
+            aria-disabled={!report.canGoBack}
             aria-label={t('metric.previousPeriod', { noun })}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface disabled:opacity-25"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface aria-disabled:opacity-25"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -89,7 +94,6 @@ function DetailBody({
             </svg>
           </button>
           <span
-            aria-live="polite"
             className="min-w-[150px] text-center text-[15px] font-semibold leading-none text-on-surface"
             style={{ fontFamily: MULISH }}
           >
@@ -97,10 +101,10 @@ function DetailBody({
           </span>
           <button
             type="button"
-            onClick={() => onStep(-1)}
-            disabled={!report.canGoForward}
+            onClick={report.canGoForward ? () => onStep(-1) : undefined}
+            aria-disabled={!report.canGoForward}
             aria-label={t('metric.nextPeriod', { noun })}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface disabled:opacity-25"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface aria-disabled:opacity-25"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -142,7 +146,8 @@ function DetailBody({
           strokeRatio={0.13}
           ariaLabel={ringAriaLabel(ring)}
           center={
-            <div className="mt-1 flex max-w-[220px] flex-col items-center text-center">
+            // Already in the gauge's spoken label, so not read a second time.
+            <div className="mt-1 flex max-w-[220px] flex-col items-center text-center" aria-hidden="true">
               {/* The band word is the readout — the raw score is never shown,
                   since a bare number invites the percentage reading. */}
               <span
@@ -202,7 +207,14 @@ function DetailBody({
             key={cell.key}
             className="rounded-[20px] border border-border-default bg-surface-raised px-2 py-3 text-center"
           >
-            <div className="text-[22px] leading-none text-on-surface">{cell.value ?? '—'}</div>
+            <div className="text-[22px] leading-none text-on-surface">
+              {cell.value ?? (
+                <>
+                  <span aria-hidden="true">—</span>
+                  <span className="sr-only">{t('metric.notLogged')}</span>
+                </>
+              )}
+            </div>
             <div
               className="mt-1.5 text-[9px] uppercase tracking-[0.08em] text-outline"
               style={{ fontFamily: MULISH }}
@@ -244,6 +256,24 @@ export default function MetricDetailRoute() {
 
   const { data, loading, error, refresh } = useSummary(period, offset);
 
+  // Says which window is on screen after a tab or arrow change; not on arrival, where the title is read.
+  const announcedFirst = useRef(false);
+  useEffect(() => {
+    if (!data) return;
+    if (!announcedFirst.current) {
+      announcedFirst.current = true;
+      return;
+    }
+    const headline = periodHeadline(data);
+    const dates = periodDetail(data);
+    announce(
+      dates === headline
+        ? t('a11y.summary.showingPeriod', { period: headline })
+        : t('a11y.summary.showingPeriodDates', { period: headline, dates }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per window, not per language change
+  }, [data]);
+
   // The window lives in the URL so this page is linkable and the browser's own
   // back button returns to the summary rather than unwinding every step.
   const setWindow = useCallback(
@@ -272,6 +302,7 @@ export default function MetricDetailRoute() {
           <button
             type="button"
             onClick={onBack}
+            aria-label={t('a11y.summary.backTo', { place: t('metric.backToSummary') })}
             className="-ml-2 mb-1 flex h-11 items-center gap-1 rounded-full pl-2 pr-3 text-[13px] font-medium text-primary"
             style={{ fontFamily: MULISH }}
           >
@@ -300,7 +331,11 @@ export default function MetricDetailRoute() {
       {!loading && error && (
         <section className="px-3 pt-2">
           <article className="rounded-[20px] border border-error/25 bg-error-container p-4">
-            <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
+            <p
+              className="text-[14px] leading-[1.4] text-on-surface"
+              style={{ fontFamily: MULISH }}
+              role="alert"
+            >
               {error}
             </p>
             <button

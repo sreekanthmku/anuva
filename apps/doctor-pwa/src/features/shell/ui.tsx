@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
@@ -35,17 +35,36 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  label,
 }: {
   options: { id: T; label: string; count?: number }[];
   value: T;
   onChange: (next: T) => void;
+  /** What the tabs choose between, for a screen reader ("Bookings"). */
+  label?: string;
 }) {
+  // Arrow keys move between tabs, the way a screen reader says tabs work; only the selected one is
+  // a Tab stop.
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let target: number;
+    if (event.key === 'ArrowRight') target = (index + 1) % options.length;
+    else if (event.key === 'ArrowLeft') target = (index - 1 + options.length) % options.length;
+    else if (event.key === 'Home') target = 0;
+    else if (event.key === 'End') target = options.length - 1;
+    else return;
+    event.preventDefault();
+    onChange(options[target]!.id);
+    const tabs = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+    tabs?.[target]?.focus();
+  };
+
   return (
     <div
       role="tablist"
+      aria-label={label}
       className="flex gap-1 rounded-full border border-border-default bg-surface-container-low p-1"
     >
-      {options.map((option) => {
+      {options.map((option, index) => {
         const active = option.id === value;
         return (
           <button
@@ -53,6 +72,8 @@ export function Segmented<T extends string>({
             type="button"
             role="tab"
             aria-selected={active}
+            tabIndex={active ? 0 : -1}
+            onKeyDown={(event) => onKeyDown(event, index)}
             onClick={() => onChange(option.id)}
             className={`flex-1 rounded-full px-2 py-2 text-[12.5px] font-semibold transition-colors ${
               active ? 'bg-primary text-on-primary' : 'text-on-surface-variant'
@@ -60,7 +81,9 @@ export function Segmented<T extends string>({
           >
             {option.label}
             {typeof option.count === 'number' && option.count > 0 ? (
-              <span className={active ? 'opacity-80' : 'text-outline'}> · {option.count}</span>
+              <span className={active ? 'opacity-80' : 'text-outline'}>
+                <span aria-hidden="true"> ·</span> {option.count}
+              </span>
             ) : null}
           </button>
         );
@@ -109,7 +132,10 @@ export function EmptyState({ title, body }: { title: string; body?: string }) {
 
 export function ErrorNote({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-[18px] border border-error/20 bg-error-container px-4 py-3 text-[13px] leading-[1.5] text-on-error-container">
+    <div
+      role="alert"
+      className="rounded-[18px] border border-error/20 bg-error-container px-4 py-3 text-[13px] leading-[1.5] text-on-error-container"
+    >
       {children}
     </div>
   );
@@ -118,6 +144,6 @@ export function ErrorNote({ children }: { children: ReactNode }) {
 /** Matches the card silhouette so a loading list does not change height when it resolves. */
 export function SkeletonCard() {
   return (
-    <div className="h-[168px] animate-pulse rounded-[22px] border border-border-default bg-surface-raised" />
+    <div aria-hidden="true" className="h-[168px] animate-pulse rounded-[22px] border border-border-default bg-surface-raised" />
   );
 }

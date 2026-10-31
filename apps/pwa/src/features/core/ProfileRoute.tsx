@@ -43,6 +43,7 @@ export default function ProfileRoute() {
           <button
             type="button"
             onClick={() => navigate('/home')}
+            aria-label={t('a11y.summary.backTo', { place: t('nav.home') })}
             className="bg-transparent p-0 text-[13px] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >

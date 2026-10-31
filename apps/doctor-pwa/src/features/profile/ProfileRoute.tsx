@@ -11,6 +11,7 @@ import {
   isPushConfigured,
   pushPermission,
 } from '../../lib/push';
+import { announce } from '../../lib/a11y/announce';
 
 type PushState = 'on' | 'off' | 'blocked' | 'unavailable';
 
@@ -55,12 +56,14 @@ function PushToggle() {
       if (state === 'on') {
         await disableDoctorPush();
         setState('off');
+        announce('Push notifications off');
         return;
       }
 
       const result = await enableDoctorPush();
       if (result.ok) {
         setState('on');
+        announce('Push notifications on');
       } else {
         setState(result.reason === 'not_granted' ? 'blocked' : 'off');
         setError(result.message);
@@ -81,7 +84,7 @@ function PushToggle() {
         </span>
         <div className="min-w-0 flex-1">
           <div className="font-semibold text-[14px] text-on-surface">Push notifications</div>
-          <p className="mt-1 text-[12.5px] leading-[1.5] text-on-surface-variant">
+          <p id="push-toggle-copy" className="mt-1 text-[12.5px] leading-[1.5] text-on-surface-variant">
             {PUSH_COPY[state]}
           </p>
         </div>
@@ -90,6 +93,7 @@ function PushToggle() {
           role="switch"
           aria-checked={on}
           aria-label="Push notifications on this device"
+          aria-describedby="push-toggle-copy"
           disabled={disabled}
           onClick={() => void toggle()}
           className={`mt-0.5 h-[28px] w-[50px] shrink-0 rounded-full p-[3px] transition-colors disabled:opacity-40 ${

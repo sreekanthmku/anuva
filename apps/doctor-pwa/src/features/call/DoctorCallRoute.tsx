@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Room, RoomEvent, Track, type RemoteTrack } from 'livekit-client';
 import type { ConsultationCallState } from '@anuva/shared';
 import { endDoctorCall, startDoctorCall } from '../bookings/api';
+import { announce } from '../../lib/a11y/announce';
 import { VoiceAvatar } from './VoiceAvatar';
 
 type ConnectState = 'connecting' | 'connected' | 'ended' | 'error';
@@ -38,6 +39,20 @@ export function DoctorCallRoute() {
   const [ending, setEnding] = useState(false);
   const videoEnabled = call?.videoEnabled ?? false;
   const patientLabel = call?.patientName ?? 'Patient';
+
+  // The call's progress is shown by what appears on screen; a screen reader is told in words.
+  // Failures are not here: the error box below is an alert.
+  useEffect(() => {
+    if (state === 'connected') announce('Call connected');
+    if (state === 'ended') announce('Call ended');
+  }, [state]);
+
+  const patientWasConnected = useRef(false);
+  useEffect(() => {
+    if (remoteConnected === patientWasConnected.current) return;
+    patientWasConnected.current = remoteConnected;
+    announce(remoteConnected ? `${patientLabel} joined the call` : `${patientLabel} left the call`);
+  }, [remoteConnected, patientLabel]);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,10 +145,13 @@ export function DoctorCallRoute() {
     try {
       const microphone = await room.localParticipant.setMicrophoneEnabled(next);
       setMicOn(next);
+      announce(next ? 'Microphone on' : 'Microphone muted');
       // Unmuting can publish a fresh track; the self ring has to follow it.
       if (next) setLocalAudio(microphone?.track?.mediaStreamTrack ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not change the microphone.');
+      // Not shown on screen while the call is up, so at least say it.
+      announce(err instanceof Error ? err.message : 'Could not change the microphone.', 'assertive');
     }
   }, [micOn]);
 
@@ -145,6 +163,7 @@ export function DoctorCallRoute() {
     try {
       const publication = await room.localParticipant.setCameraEnabled(next);
       setCameraOn(next);
+      announce(next ? 'Camera on' : 'Camera off');
 
       if (next && publication?.track && localVideoRef.current) {
         publication.track.attach(localVideoRef.current);
@@ -156,6 +175,7 @@ export function DoctorCallRoute() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not change the camera.');
+      announce(err instanceof Error ? err.message : 'Could not change the camera.', 'assertive');
     }
   }, [cameraOn]);
 
@@ -180,10 +200,10 @@ export function DoctorCallRoute() {
     <main className="min-h-mobile bg-surface text-on-surface">
       <header className="border-b border-border-default bg-surface/95 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
         <div className="flex items-center justify-between gap-3">
-          <Link to="/" className="rounded-full border border-border-default px-3 py-1.5 text-[12px] font-semibold">
+          <Link to="/" aria-label="Back to bookings" className="rounded-full border border-border-default px-3 py-1.5 text-[12px] font-semibold">
             Back
           </Link>
-          <div className="rounded-full bg-primary-fixed px-3 py-1 text-[11px] font-semibold text-primary">
+          <div role="status" className="rounded-full bg-primary-fixed px-3 py-1 text-[11px] font-semibold text-primary">
             {call?.recording?.status
               ? `Recording ${call.recording.status}`
               : call?.patientConsentRequired
@@ -229,7 +249,13 @@ export function DoctorCallRoute() {
 
         {(state === 'connecting' || state === 'connected') && videoEnabled ? (
           <div className="relative aspect-[3/4] overflow-hidden rounded-[20px] border border-border-default bg-inverse-surface text-inverse-on-surface shadow-[0_16px_35px_rgba(62,37,66,0.14)] sm:aspect-video">
-            <video ref={remoteVideoRef} className="h-full w-full bg-[#2F2034] object-cover" autoPlay playsInline />
+            <video
+              ref={remoteVideoRef}
+              aria-label="Patient video"
+              className="h-full w-full bg-[#2F2034] object-cover"
+              autoPlay
+              playsInline
+            />
             <audio ref={remoteAudioRef} autoPlay />
             {!remoteConnected ? (
               <div className="absolute inset-0 grid place-items-center px-8 text-center">
@@ -251,7 +277,14 @@ export function DoctorCallRoute() {
               </div>
             ) : null}
             <div className="absolute bottom-3 right-3 h-32 w-24 overflow-hidden rounded-[16px] border border-white/30 bg-[#4A3050] shadow-lg sm:h-40 sm:w-32">
-              <video ref={localVideoRef} className="h-full w-full object-cover" autoPlay muted playsInline />
+              <video
+                ref={localVideoRef}
+                aria-label="Your video"
+                className="h-full w-full object-cover"
+                autoPlay
+                muted
+                playsInline
+              />
               {!cameraOn ? (
                 <div className="absolute inset-0 grid place-items-center bg-[#4A3050] px-2 text-center text-[10px] font-semibold text-[#EADFEF]">
                   Camera off
@@ -262,7 +295,10 @@ export function DoctorCallRoute() {
         ) : null}
 
         {state === 'error' ? (
-          <div className="mt-4 rounded-[20px] border border-error/20 bg-error-container px-4 py-3 text-[13px] text-on-error-container">
+          <div
+            role="alert"
+            className="mt-4 rounded-[20px] border border-error/20 bg-error-container px-4 py-3 text-[13px] text-on-error-container"
+          >
             {error ?? 'Unable to connect.'}
           </div>
         ) : null}
@@ -297,6 +333,7 @@ export function DoctorCallRoute() {
               type="button"
               onClick={endCall}
               disabled={ending || state !== 'connected'}
+              aria-label={ending ? 'Ending call' : 'End call'}
               className="rounded-full bg-error px-3 py-3 text-[13px] font-semibold text-on-error disabled:opacity-45"
             >
               {ending ? 'Ending' : 'End'}
@@ -305,7 +342,9 @@ export function DoctorCallRoute() {
         ) : null}
 
         {state === 'connecting' ? (
-          <p className="mt-4 text-center text-[12px] text-on-surface-variant">Starting secure room...</p>
+          <p role="status" className="mt-4 text-center text-[12px] text-on-surface-variant">
+            Starting secure room...
+          </p>
         ) : null}
 
         {state === 'ended' ? (

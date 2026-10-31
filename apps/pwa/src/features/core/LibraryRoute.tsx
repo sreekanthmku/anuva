@@ -11,7 +11,7 @@ function Eyebrow({ children, mint = false }: { children: string; mint?: boolean 
     <div
       className={`mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] ${mint ? 'text-primary' : 'text-outline'}`}
     >
-      <span className={`h-px w-3 ${mint ? 'bg-primary/60' : 'bg-outline/60'}`} />
+      <span aria-hidden="true" className={`h-px w-3 ${mint ? 'bg-primary/60' : 'bg-outline/60'}`} />
       <span style={{ fontFamily: '"Mulish", sans-serif' }}>{children}</span>
     </div>
   );
@@ -30,6 +30,11 @@ function FeatureCard({
     <article
       role="link"
       tabIndex={0}
+      aria-label={t('a11y.care.articleLabel', {
+        title: article.title,
+        category: article.categoryLabel,
+        count: article.readMinutes,
+      })}
       onClick={onOpen}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -107,6 +112,11 @@ function ArticleRow({ article, onOpen }: { article: LibraryArticleSummary; onOpe
     <article
       role="link"
       tabIndex={0}
+      aria-label={t('a11y.care.articleLabel', {
+        title: article.title,
+        category: article.categoryLabel,
+        count: article.readMinutes,
+      })}
       onClick={onOpen}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -126,6 +136,7 @@ function ArticleRow({ article, onOpen }: { article: LibraryArticleSummary; onOpe
         />
       ) : (
         <div
+          aria-hidden="true"
           className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-border-default bg-surface-container-low"
           style={{ fontFamily: FRAUNCES, fontSize: 22, color }}
         >
@@ -184,6 +195,11 @@ export default function LibraryRoute() {
         </p>
       </header>
 
+      {/* How many articles a search or category leaves, said as it changes. */}
+      <p role="status" className="sr-only">
+        {state === 'ready' && feed && filtering ? t('library.articleCount', { count: feed.articles.length }) : ''}
+      </p>
+
       <section className="px-3 pb-3">
         <input
           type="search"
@@ -198,9 +214,14 @@ export default function LibraryRoute() {
 
       {feed && feed.categories.length > 0 && (
         <section className="pb-1">
-          <div className="flex gap-2 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div
+            role="group"
+            aria-label={t('a11y.care.categories')}
+            className="flex gap-2 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             <button
               type="button"
+              aria-pressed={category === null}
               onClick={() => setCategory(null)}
               className={`h-9 shrink-0 rounded-full border px-4 text-[12px] ${
                 category === null
@@ -217,6 +238,7 @@ export default function LibraryRoute() {
                 <button
                   key={facet.key}
                   type="button"
+                  aria-pressed={active}
                   onClick={() => setCategory(active ? null : facet.key)}
                   className={`h-9 shrink-0 rounded-full border px-4 text-[12px] ${
                     active
@@ -234,10 +256,12 @@ export default function LibraryRoute() {
       )}
 
       {state === 'loading' && (
-        <section className="flex flex-col gap-2.5 px-3 py-4">
+        <section role="status" aria-busy="true" className="flex flex-col gap-2.5 px-3 py-4">
+          <span className="sr-only">{t('common.loading')}</span>
           {[0, 1, 2].map((i) => (
             <div
               key={i}
+              aria-hidden="true"
               className="h-20 animate-pulse rounded-[20px] border border-border-default bg-surface-container-low"
             />
           ))}
@@ -246,7 +270,7 @@ export default function LibraryRoute() {
 
       {state === 'error' && (
         <section className="px-3 py-6 text-center">
-          <p className="text-[13px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
+          <p role="alert" className="text-[13px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
             {error}
           </p>
           <button
@@ -290,7 +314,7 @@ export default function LibraryRoute() {
                     className="mb-1 text-[9.5px] uppercase tracking-[0.15em]"
                     style={{ fontFamily: '"Mulish", sans-serif', color: '#5B82C4' }}
                   >
-                    {feed.session.live ? '● ' : ''}
+                    {feed.session.live ? <span aria-hidden="true">● </span> : ''}
                     {feed.session.kicker}
                   </div>
                   <div

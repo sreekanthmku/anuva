@@ -36,6 +36,7 @@ function TopBar() {
           </button>
         ) : null}
         <span
+          role="img"
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-primary/15 bg-primary-fixed font-display text-[13px] font-semibold text-primary shadow-soft"
           aria-label={firstName ? t('shell.signedInAs', { name: firstName }) : t('shell.signedIn')}
         >

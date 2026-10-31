@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AppErrorBoundary } from './lib/AppErrorBoundary';
+import { RouteFocus } from './lib/a11y/RouteFocus';
 import { BetaReporter } from './features/beta/BetaReporter';
 import { AppShell } from './features/shell/AppShell';
 import { TodayRoute } from './features/today/TodayRoute';
@@ -128,7 +129,7 @@ function AccountFromLink({ children }: { children: ReactNode }) {
       <main className="flex min-h-mobile items-center justify-center px-6">
         <div className="text-center">
           <Wordmark className="justify-center" />
-          <p className="mt-4 text-[13px] text-on-surface-variant">
+          <p role="status" className="mt-4 text-[13px] text-on-surface-variant">
             {t('accounts.openingName', { name: target?.patientFirstName ?? '' })}
           </p>
         </div>
@@ -171,6 +172,7 @@ export default function App() {
     // Outside the router and the auth provider: a crash in either is what this exists to catch.
     <AppErrorBoundary>
       <BrowserRouter>
+        <RouteFocus />
         <ForegroundNotificationListener />
         <ServiceWorkerNavListener />
         <FamilyAuthProvider>

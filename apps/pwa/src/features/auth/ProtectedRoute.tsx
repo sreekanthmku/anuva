@@ -25,6 +25,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
             {t('common.brandName')}
           </p>
           <p
+            role="status"
             className="mt-3 text-[13px] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >

@@ -114,7 +114,8 @@ export function VoiceAvatar({
   const showImage = Boolean(imageUrl) && !imageFailed;
 
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
+    // Decorative for a screen reader: the name is printed beside it, and mute is on the Mute button.
+    <div className="relative shrink-0" style={{ width: size, height: size }} aria-hidden="true">
       <div
         ref={ringRef}
         className={`h-full w-full overflow-hidden rounded-full transition-opacity duration-200 ${active ? '' : 'opacity-60'}`}

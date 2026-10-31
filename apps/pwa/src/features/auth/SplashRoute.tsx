@@ -34,12 +34,13 @@ export default function SplashRoute() {
       />
 
       <div className="relative z-10 flex flex-col items-center">
+        {/* Decorative: the brand name is written out right below it. */}
         <img
           src="/anuva-logo-icon.png"
-          alt={t('common.logoAlt')}
+          alt=""
           className="mb-6 h-24 w-24 object-contain sm:h-28 sm:w-28"
         />
-        <p
+        <h1
           className="text-[26px] tracking-[0.2em] text-on-surface"
           style={{
             fontFamily: '"Fraunces", serif',
@@ -47,7 +48,7 @@ export default function SplashRoute() {
           }}
         >
           {t('common.brandName')}
-        </p>
+        </h1>
         <p
           className="mt-2 text-[20px] text-secondary"
           style={{

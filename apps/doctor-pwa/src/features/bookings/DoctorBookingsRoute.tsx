@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import type { DoctorConsultationBooking } from '@anuva/shared';
 import { useNavigate } from 'react-router-dom';
 import { useDoctorIdentity } from '../auth/identity';
@@ -85,26 +85,34 @@ function BookingCard({
   const patientLabel = booking.patientName?.trim() || 'Patient name unavailable';
   const canStartCall = booking.status === 'confirmed' && booking.callStatus !== 'ended';
   const live = booking.callStatus === 'active';
+  // The card's buttons are the same on every card; naming the patient tells them apart.
+  const nameId = useId();
 
   return (
     <Card className="overflow-hidden">
       <div className="flex items-start gap-3 px-4 pt-4">
         <Avatar name={patientLabel} size={44} />
         <div className="min-w-0 flex-1">
-          <div className="truncate font-display text-[19px] leading-tight text-on-surface">
+          <h2 id={nameId} className="truncate font-display text-[19px] leading-tight text-on-surface">
             {patientLabel}
-          </div>
+          </h2>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-on-surface-variant">
             <span className="font-semibold text-on-surface">
               {formatTimeRange(booking.scheduledAt, booking.endsAt)}
             </span>
-            <span className="text-outline">·</span>
+            <span aria-hidden="true" className="text-outline">·</span>
             <span>{relativeWhen(booking, now)}</span>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <Pill tone={statusTone(booking.status)}>{statusLabel(booking.status)}</Pill>
-          {live ? <Pill tone="primary">● Live</Pill> : null}
+          {live ? (
+            <Pill tone="primary">
+              <span>
+                <span aria-hidden="true">●</span> Live
+              </span>
+            </Pill>
+          ) : null}
         </div>
       </div>
 
@@ -132,6 +140,7 @@ function BookingCard({
         <button
           type="button"
           disabled={!canStartCall}
+          aria-describedby={nameId}
           onClick={() => onStartCall(booking.consultationId)}
           className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full bg-secondary px-4 text-[13px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -144,6 +153,7 @@ function BookingCard({
           type="button"
           disabled={booking.status === 'cancelled'}
           onClick={() => onOpenDocuments(booking)}
+          aria-describedby={nameId}
           aria-label={
             booking.documentCount > 0
               ? `Notes and plans (${booking.documentCount})`
@@ -153,7 +163,7 @@ function BookingCard({
         >
           <FileIcon />
           {booking.documentCount > 0 ? (
-            <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 text-center text-[10px] font-bold leading-[18px] text-on-primary">
+            <span aria-hidden="true" className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 text-center text-[10px] font-bold leading-[18px] text-on-primary">
               {booking.documentCount}
             </span>
           ) : null}
@@ -163,6 +173,7 @@ function BookingCard({
         <button
           type="button"
           onClick={() => onOpenAssessment(booking)}
+          aria-describedby={nameId}
           aria-label="View health assessment"
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border-default bg-surface-raised text-primary"
         >
@@ -173,6 +184,7 @@ function BookingCard({
         <button
           type="button"
           onClick={() => onOpenNotes(booking)}
+          aria-describedby={nameId}
           aria-label="View her notes"
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border-default bg-surface-raised text-primary"
         >
@@ -183,6 +195,7 @@ function BookingCard({
         <button
           type="button"
           onClick={() => onOpenSummary(booking)}
+          aria-describedby={nameId}
           aria-label="View her pre-visit summary"
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border-default bg-surface-raised text-primary"
         >
@@ -284,6 +297,7 @@ export function DoctorBookingsRoute() {
         <Segmented<Tab>
           value={tab}
           onChange={setTab}
+          label="Bookings"
           options={[
             { id: 'today', label: 'Today', count: groups.today.length },
             { id: 'upcoming', label: 'Upcoming', count: groups.upcoming.length },
@@ -295,6 +309,9 @@ export function DoctorBookingsRoute() {
       <div className="mt-4 flex flex-col gap-3">
         {state === 'loading' ? (
           <>
+            <span role="status" className="sr-only">
+              Loading bookings
+            </span>
             <SkeletonCard />
             <SkeletonCard />
           </>

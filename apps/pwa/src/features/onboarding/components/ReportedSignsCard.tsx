@@ -16,10 +16,10 @@ export function ReportedSignsCard({ signs, total }: ReportedSignsCardProps) {
 
   return (
     <article className="rounded-[20px] border border-border-default bg-surface-container-low p-[18px]">
-      <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
-        <span className="h-px w-3 bg-primary/60" />
+      <h2 className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
+        <span className="h-px w-3 bg-primary/60" aria-hidden="true" />
         <span style={{ fontFamily: '"Mulish", sans-serif' }}>{t('assessmentResult.whyTitle')}</span>
-      </div>
+      </h2>
       <p
         className="mb-2 text-[13px] leading-[1.5] text-on-surface-variant"
         style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}

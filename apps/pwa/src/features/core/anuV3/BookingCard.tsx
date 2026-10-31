@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -8,6 +8,7 @@ import type {
   AnuV3PartOfDay,
 } from '@anuva/shared';
 import { ApiError } from '../../../shared/lib/api';
+import { announce } from '../../../lib/a11y/announce';
 import { bookConsultation } from '../booking/api';
 import { formatBookingDateLong, formatBookingTimeLabel } from '../booking/dateTime';
 import { useSlotsRefresh } from '../booking/slotsChanged';
@@ -61,6 +62,7 @@ export function BookingCard({
   const [status, setStatus] = useState<Status>(booked ? 'booked' : 'idle');
   const [taken, setTaken] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const questionId = useId();
 
   const load = useCallback(async () => {
     setLoadFailed(false);
@@ -121,6 +123,12 @@ export function BookingCard({
 
   const dayLabel = (iso: string) =>
     new Date(iso).toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' });
+  // Spoken in full: "Tuesday 4 November, 10:30 AM" rather than "Tue, 4 Nov dot 10:30".
+  const spokenSlot = (slot: BookingSlot) =>
+    t('a11y.care.slotAt', {
+      date: new Date(slot.startsAt).toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long' }),
+      time: formatBookingTimeLabel(slot.startsAt),
+    });
   const typeLabel = (entry: AnuV3BookingDoctor) =>
     entry.tag ?? t(`chat.booking.types.${entry.professionalType}`, { defaultValue: '' });
 
@@ -132,7 +140,7 @@ export function BookingCard({
         className="min-h-11 rounded-full border border-primary/30 bg-surface px-4 py-2 text-[13px] font-semibold text-primary"
         style={{ fontFamily: FONT_BODY }}
       >
-        ✓ {t('chat.booking.bookedSeeBookings')} →
+        <span aria-hidden="true">✓</span> {t('chat.booking.bookedSeeBookings')} <span aria-hidden="true">→</span>
       </button>
     );
   }
@@ -157,6 +165,7 @@ export function BookingCard({
       return;
     }
     setStatus('booked');
+    if (doctor) announce(t('a11y.care.bookingConfirmed', { name: doctor.name, when: spokenSlot(selected) }));
     try {
       onAnuReply(await confirmBookingWithAnu({ consultationId, ...(turnId ? { turnId } : {}) }));
     } catch {
@@ -180,7 +189,11 @@ export function BookingCard({
 
   let body: ReactNode;
   if (doctors === null && !loadFailed) {
-    body = <p className="text-[13px] text-on-surface-variant">{t('chat.booking.loading')}</p>;
+    body = (
+      <p role="status" className="text-[13px] text-on-surface-variant">
+        {t('chat.booking.loading')}
+      </p>
+    );
   } else if (loadFailed) {
     body = (
       <div className="flex flex-col items-start gap-2">
@@ -195,8 +208,10 @@ export function BookingCard({
   } else if (!doctor) {
     body = (
       <>
-        <p className="text-[13px] font-semibold text-on-surface">{t('chat.booking.whichDoctor')}</p>
-        <div className="mt-2.5 flex flex-col gap-2">
+        <p id={questionId} className="text-[13px] font-semibold text-on-surface">
+          {t('chat.booking.whichDoctor')}
+        </p>
+        <div role="group" aria-labelledby={questionId} className="mt-2.5 flex flex-col gap-2">
           {available.map((entry) => (
             <button
               key={entry.key}
@@ -229,10 +244,10 @@ export function BookingCard({
   } else if (!chosenPart) {
     body = (
       <>
-        <p className="text-[13px] font-semibold text-on-surface">
+        <p id={questionId} className="text-[13px] font-semibold text-on-surface">
           {day ? t('chat.booking.whichPartOn', { day: dayLabel(`${day}T12:00:00`) }) : t('chat.booking.whichPart')}
         </p>
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
+        <div role="group" aria-labelledby={questionId} className="mt-2.5 flex flex-wrap gap-1.5">
           {parts.map((entry) => (
             <button
               key={entry}
@@ -252,8 +267,10 @@ export function BookingCard({
     );
   } else if (selected) {
     body = (
-      <div>
-        <p className="text-[10px] uppercase tracking-[0.1em] text-tertiary">{t('chat.booking.confirmTitle')}</p>
+      <div role="group" aria-labelledby={questionId}>
+        <p id={questionId} className="text-[10px] uppercase tracking-[0.1em] text-tertiary">
+          {t('chat.booking.confirmTitle')}
+        </p>
         <p className="mt-1 text-[14px] font-semibold text-on-surface">{doctor.name}</p>
         <p className="text-[13px] text-on-surface">
           {formatBookingDateLong(selected.date)} · {formatBookingTimeLabel(selected.startsAt)}
@@ -282,8 +299,10 @@ export function BookingCard({
   } else {
     body = (
       <>
-        <p className="text-[13px] font-semibold text-on-surface">{t('chat.booking.pickTime')}</p>
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
+        <p id={questionId} className="text-[13px] font-semibold text-on-surface">
+          {t('chat.booking.pickTime')}
+        </p>
+        <div role="group" aria-labelledby={questionId} className="mt-2.5 flex flex-wrap gap-1.5">
           {shownTimes.map((slot) => (
             <button
               key={slot.slotId}
@@ -292,6 +311,7 @@ export function BookingCard({
                 setError(null);
                 setSelected(slot);
               }}
+              aria-label={spokenSlot(slot)}
               className={`${chip} text-left`}
             >
               <span className="font-semibold">{dayLabel(slot.startsAt)}</span> · {formatBookingTimeLabel(slot.startsAt)}
@@ -324,6 +344,8 @@ export function BookingCard({
 
   return (
     <div
+      role="group"
+      aria-label={t('a11y.care.bookingCard')}
       className="flex w-full flex-col gap-2 rounded-[18px] border border-primary/25 bg-surface p-3.5"
       style={{ fontFamily: FONT_BODY }}
     >
@@ -335,6 +357,7 @@ export function BookingCard({
               type="button"
               onClick={changeDoctor}
               disabled={status === 'booking'}
+              aria-label={t('a11y.care.changeDoctor', { name: doctor.name })}
               className="min-h-9 rounded-full bg-primary/10 px-3 py-1.5 text-[12px] font-semibold text-primary"
             >
               {doctor.name} ✎
@@ -349,6 +372,7 @@ export function BookingCard({
               type="button"
               onClick={changePart}
               disabled={status === 'booking'}
+              aria-label={t('a11y.care.changePart', { part: t(`chat.booking.parts.${chosenPart}`) })}
               className="min-h-9 rounded-full bg-primary/10 px-3 py-1.5 text-[12px] font-semibold text-primary"
             >
               {t(`chat.booking.parts.${chosenPart}`)} ✎
@@ -357,7 +381,11 @@ export function BookingCard({
         </div>
       ) : null}
       {body}
-      {error && <p className="text-[12px] text-error">{error}</p>}
+      {error && (
+        <p role="alert" className="text-[12px] text-error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

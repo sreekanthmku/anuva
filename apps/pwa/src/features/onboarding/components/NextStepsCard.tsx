@@ -10,17 +10,19 @@ export function NextStepsCard({ steps }: NextStepsCardProps) {
 
   return (
     <article className="rounded-[20px] border border-border-default bg-primary-container p-[22px]">
-      <div className="mb-3.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
-        <span className="h-px w-3 bg-primary/60" />
+      <h2 className="mb-3.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
+        <span className="h-px w-3 bg-primary/60" aria-hidden="true" />
         <span style={{ fontFamily: '"Mulish", sans-serif' }}>
           {t('assessmentResult.whatHappensNext')}
         </span>
-      </div>
+      </h2>
 
-      <div className="flex flex-col gap-3">
+      {/* A list (preflight strips its bullets and indent); the 01/02 badges repeat what it says. */}
+      <ol className="flex flex-col gap-3">
         {steps.map((step, index) => (
-          <div key={step} className="flex items-start gap-3.5">
+          <li key={step} className="flex items-start gap-3.5">
             <span
+              aria-hidden="true"
               className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border border-primary bg-primary/15 text-[12px] text-primary"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
             >
@@ -40,9 +42,9 @@ export function NextStepsCard({ steps }: NextStepsCardProps) {
                 {t(`assessmentResult.steps.${step}.body`)}
               </p>
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ol>
     </article>
   );
 }

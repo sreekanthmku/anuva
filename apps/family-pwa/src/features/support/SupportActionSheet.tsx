@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { FamilySupportActionKind } from '@anuva/shared';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { CONFIRMED_KINDS, GIFT_KINDS, SUPPORT_ACTIONS } from '../data/labels';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { PrimaryButton } from '../shell/ui';
@@ -50,9 +52,12 @@ export function SupportActionSheet({
 }: Props) {
   const { t } = useTranslation();
   const titleId = useId();
+  const noteHintId = useId();
   const [selected, setSelected] = useState<FamilySupportActionKind>('message');
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  // Escape stays with the listener below.
+  const dialogRef = useDialogA11y<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) return;
@@ -82,6 +87,7 @@ export function SupportActionSheet({
         onClick={onClose}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -144,12 +150,13 @@ export function SupportActionSheet({
                 value={text}
                 onChange={(event) => setText(event.target.value.slice(0, MAX_MESSAGE))}
                 rows={3}
+                aria-describedby={noteHintId}
                 placeholder={t('support.notePlaceholder')}
                 className="mt-1.5 w-full resize-none rounded-[18px] border border-border-default bg-surface-container-low px-4 py-3 text-[14.5px] leading-[1.55] text-on-surface placeholder:text-outline focus:border-secondary focus:ring-2 focus:ring-secondary/25"
               />
             </label>
             <div className="mt-1 flex items-center justify-between text-[11px] text-outline">
-              <span>{t('support.noteDisclaimer')}</span>
+              <span id={noteHintId}>{t('support.noteDisclaimer')}</span>
               <span className="tabular-nums">
                 {text.length}/{MAX_MESSAGE}
               </span>
@@ -215,11 +222,16 @@ export function SupportActionSheet({
 }
 
 export function Toast({ message }: { message: string | null }) {
+  // Spoken through the shared live region: a `role="status"` that mounts already holding its text
+  // is not reliably read.
+  useEffect(() => {
+    if (message) announce(message);
+  }, [message]);
+
   if (!message) return null;
 
   return (
     <div
-      role="status"
       className="pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-5"
       style={{ bottom: 'calc(104px + env(safe-area-inset-bottom, 0px))' }}
     >

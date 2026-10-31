@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { subscribeToForegroundMessages } from '../../lib/firebase';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { PrimaryButton, QuietButton } from '../shell/ui';
 import { readAlertFromHash, type FamilyAlert } from './alertLink';
 import { stripThanksFromUrl } from './thanksLink';
@@ -51,12 +52,14 @@ export function AlertListener() {
     [t],
   );
 
-  if (!alert) return null;
+  const close = useCallback(() => setAlert(null), []);
+  const dialogRef = useDialogA11y<HTMLDivElement>(alert !== null, close);
 
-  const close = () => setAlert(null);
+  if (!alert) return null;
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[90] flex items-center justify-center px-5"
       role="alertdialog"
       aria-modal="true"

@@ -34,7 +34,7 @@ export function AssessmentResultSummary({
     <section className="px-[22px] pb-[18px] pt-2">
       {isInControl ? (
         <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/15 px-3 py-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
           <span
             className="text-[9.5px] uppercase tracking-[0.18em] text-primary"
             style={{ fontFamily: '"Mulish", sans-serif' }}
@@ -72,7 +72,7 @@ export function AssessmentResultSummary({
         <div className="text-center">
           <div className="mb-4 flex justify-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/15 px-3 py-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
               <span
                 className="text-[9.5px] uppercase tracking-[0.18em] text-primary"
                 style={{ fontFamily: '"Mulish", sans-serif' }}

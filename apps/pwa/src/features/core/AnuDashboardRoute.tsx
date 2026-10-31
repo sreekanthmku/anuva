@@ -13,6 +13,7 @@ import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LanguageToggle } from '../../i18n/LanguageToggle';
 import { useAuth } from '../auth/auth-context';
+import { announce } from '../../lib/a11y/announce';
 import { AmbientWash } from './components/AmbientWash';
 import { BottomNav } from './components/BottomNav';
 import { NotificationPermissionDialog } from './components/NotificationPermissionDialog';
@@ -182,6 +183,7 @@ export default function AnuDashboardRoute() {
     setMoodSaving(true);
     try {
       await mood.logMood(feeling, emotions);
+      announce(t('a11y.tracking.moodSaved'));
       await nudgeDay.reload();
     } finally {
       setMoodSaving(false);
@@ -196,6 +198,7 @@ export default function AnuDashboardRoute() {
     setSleepSaving(true);
     try {
       await sleep.logSleep(quality, hours, disruptions);
+      announce(t('a11y.tracking.sleepSaved'));
       await nudgeDay.reload();
     } finally {
       setSleepSaving(false);
@@ -406,7 +409,7 @@ export default function AnuDashboardRoute() {
             className="inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-3 py-1 text-[12.5px] font-semibold text-on-tertiary-container"
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-tertiary" />
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-tertiary" />
             {t('home.perimenopause')}
           </span>
         </div>
@@ -420,8 +423,16 @@ export default function AnuDashboardRoute() {
         <MedicationDueCard refreshKey={doseRefresh} onOpen={setDoseId} />
         {isCalibrating ? (
           <article className="flex items-center gap-4 rounded-[20px] bg-primary-container px-4 py-4">
-            <div className="relative h-24 w-24 shrink-0">
-              <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
+            <div
+              className="relative h-24 w-24 shrink-0"
+              role="img"
+              aria-label={
+                calibration
+                  ? t('a11y.tracking.calibrationRing', { day: calibration.day, total: calibration.totalDays })
+                  : t('home.calibrating')
+              }
+            >
+              <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true" focusable="false">
                 <circle
                   cx="48"
                   cy="48"
@@ -485,13 +496,16 @@ export default function AnuDashboardRoute() {
         ) : dailySummary.loading ? (
           <div
             className="h-[168px] animate-pulse rounded-[20px] bg-surface-raised"
+            role="status"
             aria-busy="true"
-            aria-label={t('home.loadingWellness')}
-          />
+          >
+            <span className="sr-only">{t('home.loadingWellness')}</span>
+          </div>
         ) : (
           <article className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
             <Eyebrow>{t('home.todaysWellness')}</Eyebrow>
             <p
+              role="alert"
               className="text-[14px] leading-[1.4] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
@@ -572,7 +586,10 @@ export default function AnuDashboardRoute() {
                 })}
               </p>
             </div>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-[15px] text-primary">
+            <span
+              aria-hidden="true"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-[15px] text-primary"
+            >
               →
             </span>
           </button>
@@ -628,6 +645,7 @@ export default function AnuDashboardRoute() {
                   {logged ? (
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary">
                       <Check size={12} strokeWidth={3} />
+                      <span className="sr-only">{t('quickLogDialog.logged')}</span>
                     </span>
                   ) : (
                     symptomCount > 0 && (
@@ -635,7 +653,10 @@ export default function AnuDashboardRoute() {
                         className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary"
                         style={{ fontFamily: '"Mulish", sans-serif' }}
                       >
-                        {symptomCount}×
+                        <span aria-hidden="true">{symptomCount}×</span>
+                        <span className="sr-only">
+                          {t('a11y.tracking.loggedTimesToday', { count: symptomCount })}
+                        </span>
                       </span>
                     )
                   )}
@@ -683,7 +704,9 @@ export default function AnuDashboardRoute() {
                 {remainingLabels}
               </span>
             </span>
-            <span className="text-[15px] text-primary">→</span>
+            <span aria-hidden="true" className="text-[15px] text-primary">
+              →
+            </span>
           </button>
         )}
       </section>

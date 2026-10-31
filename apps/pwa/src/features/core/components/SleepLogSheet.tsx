@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import type { SleepDisruption, SleepHoursBucket } from '@anuva/shared';
 import { useTranslation } from 'react-i18next';
 import { twemojiUrl } from '../../../shared/lib/twemoji';
@@ -61,6 +61,9 @@ export function SleepLogSheet({
   const [quality, setQuality] = useState<number | null>(null);
   const [hours, setHours] = useState<SleepHoursBucket | null>(null);
   const [disruptions, setDisruptions] = useState<SleepDisruption[]>([]);
+  const titleId = useId();
+  const hoursLabelId = useId();
+  const disruptionsLabelId = useId();
 
   const initialDisruptionsKey = useMemo(
     () => (initialDisruptions ?? []).join(','),
@@ -94,22 +97,24 @@ export function SleepLogSheet({
       onClose={onClose}
       closeLabel={t('sleepSheet.close')}
       maxWidthClass="max-w-[360px]"
+      hiddenClose
     >
       <div
         className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
         style={{ fontFamily: FONT_MONO }}
       >
-        <span className="h-px w-3 bg-primary/60" />
+        <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
         {t('sleepSheet.eyebrow')}
       </div>
       <h2
+        id={titleId}
         className="mb-5 text-[20px] text-on-surface"
         style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
       >
         {t('sleepSheet.title')}
       </h2>
 
-      <div className="mb-6 grid grid-cols-5 gap-2">
+      <div className="mb-6 grid grid-cols-5 gap-2" role="radiogroup" aria-labelledby={titleId}>
         {QUALITIES.map((q) => {
           const selected = quality === q.value;
           const label = t(`sleepSheet.qualities.${q.value}`);
@@ -118,14 +123,15 @@ export function SleepLogSheet({
               key={q.value}
               type="button"
               onClick={() => setQuality(q.value)}
-              aria-pressed={selected}
+              role="radio"
+              aria-checked={selected}
               className="flex flex-col items-center gap-1.5 rounded-[16px] bg-transparent px-1 py-2 outline-none transition-transform focus:outline-none focus-visible:outline-none"
               style={{
                 transform: selected ? 'scale(1.28)' : 'scale(1)',
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <img src={twemojiUrl(q.emoji)} alt={label} width={34} height={34} />
+              <img src={twemojiUrl(q.emoji)} alt="" aria-hidden="true" width={34} height={34} />
               <span
                 className={`text-[9px] uppercase tracking-[0.04em] ${selected ? 'text-on-surface' : 'text-outline'}`}
                 style={{ fontFamily: FONT_MONO }}
@@ -137,11 +143,12 @@ export function SleepLogSheet({
         })}
       </div>
 
-      <p className="mb-2.5 text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
+      <p id={hoursLabelId} className="mb-2.5 text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
         {t('sleepSheet.hoursSlept')}{' '}
         <span className="text-outline">{t('sleepSheet.optional')}</span>
       </p>
-      <div className="mb-6 flex flex-wrap gap-2">
+      {/* One answer or none: tapping the chosen one again clears it. */}
+      <div className="mb-6 flex flex-wrap gap-2" role="radiogroup" aria-labelledby={hoursLabelId}>
         {HOURS.map((bucket) => {
           const selected = hours === bucket;
           return (
@@ -149,7 +156,9 @@ export function SleepLogSheet({
               key={bucket}
               type="button"
               onClick={() => setHours(selected ? null : bucket)}
-              aria-pressed={selected}
+              role="radio"
+              aria-checked={selected}
+              aria-label={t(`a11y.tracking.sleepHours.${bucket}`)}
               className="whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors"
               style={{
                 fontFamily: FONT_BODY,
@@ -164,11 +173,11 @@ export function SleepLogSheet({
         })}
       </div>
 
-      <p className="mb-2.5 text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
+      <p id={disruptionsLabelId} className="mb-2.5 text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
         {t('sleepSheet.whatDisrupted')}{' '}
         <span className="text-outline">{t('sleepSheet.optional')}</span>
       </p>
-      <div className="mb-7 flex flex-wrap gap-2">
+      <div className="mb-7 flex flex-wrap gap-2" role="group" aria-labelledby={disruptionsLabelId}>
         {DISRUPTIONS.map((disruption) => {
           const selected = disruptions.includes(disruption);
           return (

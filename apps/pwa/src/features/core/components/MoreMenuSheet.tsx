@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 
 export type MoreMenuItem = {
   num: string;
@@ -26,6 +27,8 @@ type MoreMenuSheetProps = {
 export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // Focus in, Tab trap, focus back to More. Escape is the listener below.
+  const dialogRef = useDialogA11y<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) return;
@@ -52,12 +55,13 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
         aria-label={t('nav.closeMenu')}
       />
       <div
+        ref={dialogRef}
         className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-5"
         role="dialog"
         aria-modal="true"
         aria-labelledby="more-menu-title"
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" />
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" aria-hidden="true" />
         <h2 id="more-menu-title" className="sr-only">
           {t('nav.moreDestinations')}
         </h2>
@@ -70,6 +74,7 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
                 className="flex w-full items-center gap-4 rounded-[20px] border border-transparent px-3 py-3.5 text-left transition-colors hover:border-border-default hover:bg-surface-container-low"
               >
                 <span
+                  aria-hidden="true"
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-[12px] text-primary"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >

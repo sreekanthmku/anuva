@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type {
   JointArea,
   JointImpact,
@@ -56,11 +56,14 @@ function Chip({
   label,
   selected,
   disabled,
+  radio = false,
   onClick,
 }: {
   label: string;
   selected: boolean;
   disabled?: boolean;
+  /** One answer of several (inside a `radiogroup`) rather than a tag she can add or remove. */
+  radio?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -68,7 +71,9 @@ function Chip({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-pressed={selected}
+      role={radio ? 'radio' : undefined}
+      aria-checked={radio ? selected : undefined}
+      aria-pressed={radio ? undefined : selected}
       className="rounded-full border px-3.5 py-2 text-[12px] font-medium transition-colors disabled:opacity-50"
       style={{
         backgroundColor: selected ? '#5E3566' : 'transparent',
@@ -83,11 +88,11 @@ function Chip({
   );
 }
 
-function FieldLabel({ children, optional }: { children: string; optional?: boolean }) {
+function FieldLabel({ children, optional, id }: { children: string; optional?: boolean; id?: string }) {
   const { t } = useTranslation();
 
   return (
-    <p className="mb-2 text-[12.5px] text-on-surface" style={{ fontFamily: FONT_BODY }}>
+    <p id={id} className="mb-2 text-[12.5px] text-on-surface" style={{ fontFamily: FONT_BODY }}>
       {children} {optional && <span className="text-outline">{t('joints.optional')}</span>}
     </p>
   );
@@ -110,6 +115,23 @@ export function JointsLogSheet({
   const [timeOfDay, setTimeOfDay] = useState<JointTimeOfDay | null>(null);
   const [triggers, setTriggers] = useState<JointTrigger[]>([]);
   const [showDeeper, setShowDeeper] = useState(false);
+  const titleId = useId();
+  const fieldId = useId();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const stepShown = useRef(false);
+
+  // The step's buttons are gone once she answers, so focus follows to the new step's heading.
+  useEffect(() => {
+    if (!open) {
+      stepShown.current = false;
+      return;
+    }
+    if (!stepShown.current) {
+      stepShown.current = true;
+      return;
+    }
+    headingRef.current?.focus({ preventScroll: true });
+  }, [open, step]);
 
   // Re-opening to change an answer starts from what was already logged, on the
   // step that answer belongs to.
@@ -163,30 +185,35 @@ export function JointsLogSheet({
       closeLabel={t('joints.close')}
       maxWidthClass="max-w-[380px]"
       fontFamily={FONT_BODY}
+      hiddenClose
     >
       <div
         className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
         style={{ fontFamily: FONT_MONO }}
       >
-        <span className="h-px w-3 bg-primary/60" />
+        <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
         {t('joints.eyebrow')}
       </div>
 
       {step === 1 && (
         <>
           <h2
+            id={titleId}
+            ref={headingRef}
+            tabIndex={-1}
             className="mb-5 text-[20px] leading-snug text-on-surface"
             style={{ fontFamily: SERIF, fontWeight: 300 }}
           >
             {t('joints.step1Title')}
           </h2>
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2.5" role="radiogroup" aria-labelledby={titleId}>
             {SEVERITIES.map((value) => (
               <button
                 key={value}
                 type="button"
                 disabled={saving}
-                aria-pressed={severity === value}
+                role="radio"
+                aria-checked={severity === value}
                 onClick={() => handleSeverity(value)}
                 className="w-full rounded-[16px] border px-4 py-3 text-left text-[14px] text-on-surface disabled:opacity-50"
                 style={{
@@ -206,6 +233,9 @@ export function JointsLogSheet({
       {step === 2 && severity && severity !== 'none' && (
         <>
           <h2
+            id={titleId}
+            ref={headingRef}
+            tabIndex={-1}
             className="mb-1 text-[20px] leading-snug text-on-surface"
             style={{ fontFamily: SERIF, fontWeight: 300 }}
           >
@@ -219,8 +249,8 @@ export function JointsLogSheet({
             {t('joints.changeSeverity', { severity: t(`joints.severity.${severity}`) })}
           </button>
 
-          <FieldLabel>{t('joints.where')}</FieldLabel>
-          <div className="mb-5 flex flex-wrap gap-2">
+          <FieldLabel id={`${fieldId}-where`}>{t('joints.where')}</FieldLabel>
+          <div className="mb-5 flex flex-wrap gap-2" role="group" aria-labelledby={`${fieldId}-where`}>
             {AREAS.map((area) => (
               <Chip
                 key={area}
@@ -232,8 +262,8 @@ export function JointsLogSheet({
             ))}
           </div>
 
-          <FieldLabel>{t('joints.what')}</FieldLabel>
-          <div className="mb-5 flex flex-wrap gap-2">
+          <FieldLabel id={`${fieldId}-what`}>{t('joints.what')}</FieldLabel>
+          <div className="mb-5 flex flex-wrap gap-2" role="group" aria-labelledby={`${fieldId}-what`}>
             {SYMPTOMS.map((symptom) => (
               <Chip
                 key={symptom}
@@ -245,14 +275,15 @@ export function JointsLogSheet({
             ))}
           </div>
 
-          <FieldLabel>{t('joints.impact')}</FieldLabel>
-          <div className="mb-5 flex flex-wrap gap-2">
+          <FieldLabel id={`${fieldId}-impact`}>{t('joints.impact')}</FieldLabel>
+          <div className="mb-5 flex flex-wrap gap-2" role="radiogroup" aria-labelledby={`${fieldId}-impact`}>
             {IMPACTS.map((value) => (
               <Chip
                 key={value}
                 label={t(`joints.impacts.${value}`)}
                 selected={impact === value}
                 disabled={saving}
+                radio
                 onClick={() => setImpact(value)}
               />
             ))}
@@ -260,21 +291,22 @@ export function JointsLogSheet({
 
           {showDeeper ? (
             <>
-              <FieldLabel optional>{t('joints.when')}</FieldLabel>
-              <div className="mb-5 flex flex-wrap gap-2">
+              <FieldLabel optional id={`${fieldId}-when`}>{t('joints.when')}</FieldLabel>
+              <div className="mb-5 flex flex-wrap gap-2" role="radiogroup" aria-labelledby={`${fieldId}-when`}>
                 {TIMES.map((value) => (
                   <Chip
                     key={value}
                     label={t(`joints.timeOfDay.${value}`)}
                     selected={timeOfDay === value}
                     disabled={saving}
+                    radio
                     onClick={() => setTimeOfDay((prev) => (prev === value ? null : value))}
                   />
                 ))}
               </div>
 
-              <FieldLabel optional>{t('joints.triggers')}</FieldLabel>
-              <div className="mb-6 flex flex-wrap gap-2">
+              <FieldLabel optional id={`${fieldId}-triggers`}>{t('joints.triggers')}</FieldLabel>
+              <div className="mb-6 flex flex-wrap gap-2" role="group" aria-labelledby={`${fieldId}-triggers`}>
                 {TRIGGERS.map((value) => (
                   <Chip
                     key={value}

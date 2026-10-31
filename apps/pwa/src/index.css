@@ -180,3 +180,21 @@ input[type='range']::-moz-range-thumb {
   outline: 3px solid rgba(94, 53, 102, 0.25);
   cursor: pointer;
 }
+
+/**
+ * Keyboard focus ring. `:focus-visible` only matches keyboard (and switch) focus, never a tap, so
+ * touch users see nothing new. Unlayered and !important so it shows even on controls styled
+ * `outline-none`. Headings that take focus programmatically (RouteFocus, dialogs) stay unmarked:
+ * they are reading positions, not controls.
+ */
+:focus-visible {
+  outline-style: solid !important;
+  outline-width: 2px !important;
+  outline-color: #5e3566 !important;
+  outline-offset: 2px !important;
+}
+
+[tabindex='-1']:focus,
+[tabindex='-1']:focus-visible {
+  outline: none !important;
+}

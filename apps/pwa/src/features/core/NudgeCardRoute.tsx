@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -37,10 +37,19 @@ export default function NudgeCardRoute() {
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const titleId = useId();
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   const cards = data?.cards ?? [];
   const card: NudgeCard | undefined = cards[index];
   const isEmojiCard = card ? EMOJI_TRACKERS.has(card.nudgeId) : false;
+
+  // An answer replaces the card and the button she tapped; focus follows to the next question
+  // (or the closing message) instead of dropping to the top of the page.
+  useEffect(() => {
+    if (document.activeElement && document.activeElement !== document.body) return;
+    headingRef.current?.focus({ preventScroll: true });
+  }, [card?.nudgeId, done]);
 
   const completeCard = (message: string) => {
     setAnswerError(null);
@@ -91,7 +100,7 @@ export default function NudgeCardRoute() {
   };
 
   return (
-    <div className="min-h-dvh bg-surface px-5 py-8" style={{ fontFamily: FONT_BODY }}>
+    <main className="min-h-dvh bg-surface px-5 py-8" style={{ fontFamily: FONT_BODY }}>
       <div className="mx-auto w-full max-w-[400px]">
         <button
           type="button"
@@ -102,17 +111,29 @@ export default function NudgeCardRoute() {
           {t('nudgeCard.backHome')}
         </button>
 
-        {loading && <p className="text-on-surface-variant">{t('nudgeCard.loading')}</p>}
-        {error && <p className="text-on-surface-variant">{error}</p>}
+        {/* No card, no visible title yet: the screen still needs a heading to land on. */}
+        {(loading || error) && <h1 className="sr-only">{t('a11y.tracking.checkInTitle')}</h1>}
+        {loading && (
+          <p role="status" className="text-on-surface-variant">
+            {t('nudgeCard.loading')}
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="text-on-surface-variant">
+            {error}
+          </p>
+        )}
 
         {!loading && !error && (cards.length === 0 || done) && (
           <div className="rounded-[20px] border border-border-default bg-surface-raised px-6 py-10 text-center">
-            <h2
+            <h1
+              ref={headingRef}
+              tabIndex={-1}
               className="mb-2 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
               {done ? t('nudgeCard.allDone') : t('nudgeCard.nothingNow')}
-            </h2>
+            </h1>
             <p className="text-[13px] text-on-surface-variant">
               {done ? (finalReply ?? t('nudgeCard.thankYou')) : t('nudgeCard.comeBack')}
             </p>
@@ -133,7 +154,7 @@ export default function NudgeCardRoute() {
                 className="mb-2 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
                 style={{ fontFamily: FONT_MONO }}
               >
-                <span className="h-px w-3 bg-primary/60" />
+                <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
                 {t('nudgeCard.bundleProgress', {
                   title: data.bundleTitle,
                   current: index + 1,
@@ -141,12 +162,15 @@ export default function NudgeCardRoute() {
                 })}
               </div>
             )}
-            <h2
+            <h1
+              id={titleId}
+              ref={headingRef}
+              tabIndex={-1}
               className="mb-6 text-[19px] leading-snug text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
               {card.question}
-            </h2>
+            </h1>
 
             {isEmojiCard ? (
               <button
@@ -158,7 +182,7 @@ export default function NudgeCardRoute() {
                 {card.nudgeId === 'L1-003' ? t('nudgeCard.logMood') : t('nudgeCard.logSleep')}
               </button>
             ) : (
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-2.5" role="group" aria-labelledby={titleId}>
                 {card.options.map((opt) => (
                   <button
                     key={opt}
@@ -171,7 +195,7 @@ export default function NudgeCardRoute() {
                   </button>
                 ))}
                 {answerError && (
-                  <p className="pt-1 text-[13px] leading-relaxed text-on-surface-variant">
+                  <p role="alert" className="pt-1 text-[13px] leading-relaxed text-on-surface-variant">
                     {answerError}
                   </p>
                 )}
@@ -193,6 +217,6 @@ export default function NudgeCardRoute() {
         onClose={() => setSheetOpen(false)}
         onSave={handleLogSleep}
       />
-    </div>
+    </main>
   );
 }

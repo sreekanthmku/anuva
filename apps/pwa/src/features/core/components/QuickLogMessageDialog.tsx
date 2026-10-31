@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import { twemojiUrl } from '../../../shared/lib/twemoji';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 
 type QuickLogMessageDialogProps = {
   open: boolean;
@@ -22,15 +23,9 @@ export function QuickLogMessageDialog({
   onClose,
 }: QuickLogMessageDialogProps) {
   const { t } = useTranslation();
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  const dialogRef = useDialogA11y<HTMLDivElement>(open, onClose);
+  const captionId = useId();
+  const messageId = useId();
 
   if (!open) return null;
 
@@ -43,8 +38,11 @@ export function QuickLogMessageDialog({
         aria-label={t('quickLogDialog.dismiss')}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={caption ? captionId : messageId}
+        aria-describedby={caption ? messageId : undefined}
         className="relative w-full max-w-[340px] rounded-[20px] border border-border-default bg-surface-raised px-[22px] py-6 text-center"
       >
         {emoji && (
@@ -60,6 +58,7 @@ export function QuickLogMessageDialog({
 
         {caption && (
           <p
+            id={captionId}
             className="mb-4 text-[11px] uppercase tracking-[0.1em] text-primary"
             style={{ fontFamily: FONT_MONO }}
           >
@@ -75,6 +74,7 @@ export function QuickLogMessageDialog({
         </span>
 
         <p
+          id={messageId}
           className="mb-6 text-[15px] leading-[1.5] text-on-surface"
           style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
         >

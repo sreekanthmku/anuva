@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/auth-context';
@@ -26,12 +26,13 @@ const timeline: { key: string; status: 'done' | 'active' | 'upcoming' }[] = [
 
 const focusTagKeys = ['vasomotor', 'sleepSupport', 'hormoneBalance', 'mediterraneanDiet'];
 
-function Eyebrow({ children, mint = false }: { children: string; mint?: boolean }) {
+function Eyebrow({ children, mint = false, id }: { children: string; mint?: boolean; id?: string }) {
   return (
     <div
+      id={id}
       className={`mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] ${mint ? 'text-primary' : 'text-outline'}`}
     >
-      <span className={`h-px w-3 ${mint ? 'bg-primary/60' : 'bg-outline/60'}`} />
+      <span aria-hidden="true" className={`h-px w-3 ${mint ? 'bg-primary/60' : 'bg-outline/60'}`} />
       <span style={{ fontFamily: '"Mulish", sans-serif' }}>{children}</span>
     </div>
   );
@@ -43,6 +44,8 @@ export default function CareDirectionRoute() {
   const navigate = useNavigate();
   const [activePath, setActivePath] = useState<PathId>('combined');
   const firstName = user?.name?.trim().split(/\s+/)[0] || t('care.nameFallback');
+  const pathsLabelId = useId();
+  const journeyLabelId = useId();
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
@@ -117,14 +120,16 @@ export default function CareDirectionRoute() {
       </section>
 
       <section className="px-3 pt-[18px]">
-        <Eyebrow>{t('care.otherPaths')}</Eyebrow>
-        <div className="grid grid-cols-2 gap-2">
+        <Eyebrow id={pathsLabelId}>{t('care.otherPaths')}</Eyebrow>
+        <div role="radiogroup" aria-labelledby={pathsLabelId} className="grid grid-cols-2 gap-2">
           {paths.map((p) => {
             const isActive = activePath === p.id;
             return (
               <button
                 key={p.id}
                 type="button"
+                role="radio"
+                aria-checked={isActive}
                 onClick={() => setActivePath(p.id)}
                 className="rounded-[20px] border p-3.5 text-left transition-colors"
                 style={{
@@ -133,6 +138,7 @@ export default function CareDirectionRoute() {
                 }}
               >
                 <div
+                  aria-hidden="true"
                   className="mb-1.5 text-[22px]"
                   style={{
                     color: isActive ? '#5E3566' : '#3E2542',
@@ -164,8 +170,8 @@ export default function CareDirectionRoute() {
 
       <section className="px-3 py-[22px]">
         <article className="rounded-[20px] border border-border-default bg-surface-raised p-4">
-          <Eyebrow>{t('care.yourJourney')}</Eyebrow>
-          <div className="relative pl-1">
+          <Eyebrow id={journeyLabelId}>{t('care.yourJourney')}</Eyebrow>
+          <div role="list" aria-labelledby={journeyLabelId} className="relative pl-1">
           {timeline.map((stage, i) => {
             const isLast = i === timeline.length - 1;
             const dotBg =
@@ -173,9 +179,10 @@ export default function CareDirectionRoute() {
             const dotBorder = stage.status === 'upcoming' ? '#B49FB0' : dotBg;
 
             return (
-              <div key={stage.key} className="relative flex gap-3.5 pb-3.5">
+              <div key={stage.key} role="listitem" className="relative flex gap-3.5 pb-3.5">
                 {!isLast && (
                   <div
+                    aria-hidden="true"
                     className="absolute bottom-0 left-[9px] top-[19px] w-px"
                     style={{
                       background: stage.status === 'done' ? '#5E3566' : 'rgba(94, 53, 102, 0.2)',
@@ -183,6 +190,7 @@ export default function CareDirectionRoute() {
                   />
                 )}
                 <div
+                  aria-hidden="true"
                   className="relative z-[1] mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full"
                   style={{
                     background: dotBg,
@@ -213,6 +221,12 @@ export default function CareDirectionRoute() {
                     }}
                   >
                     {t(`care.timeline.${stage.key}`)}
+                    {stage.status !== 'active' && (
+                      <span className="sr-only">
+                        {', '}
+                        {stage.status === 'done' ? t('a11y.care.stageDone') : t('a11y.care.stageUpcoming')}
+                      </span>
+                    )}
                   </p>
                   {stage.status === 'active' && (
                     <p

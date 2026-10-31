@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LanguageToggle } from '../../i18n/LanguageToggle';
@@ -31,6 +32,16 @@ export default function AssessmentPairedRoute() {
     goBack,
     getSelectedIndex,
   } = useAssessmentPairedFlow();
+  const firstQuestionRef = useRef<HTMLHeadingElement>(null);
+  const previousStep = useRef(step);
+
+  // New questions replace the old ones under the Continue button she just pressed: move a screen
+  // reader to the first of them. Not on arrival (RouteFocus has that).
+  useEffect(() => {
+    if (previousStep.current === step) return;
+    previousStep.current = step;
+    firstQuestionRef.current?.focus({ preventScroll: true });
+  }, [step]);
 
   if (questions.length === 0) {
     return null;
@@ -81,9 +92,10 @@ export default function AssessmentPairedRoute() {
               }}
               aria-hidden
             />
+            {/* Decorative: the brand name is written out right below it. */}
             <img
               src="/anu.png"
-              alt={t('assessment.logoAlt')}
+              alt=""
               className="relative z-10 h-20 w-20 object-contain"
             />
           </div>
@@ -118,7 +130,9 @@ export default function AssessmentPairedRoute() {
             <StepBackButton visible={canGoBack} onBack={goBack} />
             <StepDots total={totalSteps} current={step} />
           </div>
+          {/* The step dots carry the same "step 3 of 6" for a screen reader. */}
           <span
+            aria-hidden="true"
             className="text-[11px] text-outline"
             style={{ fontFamily: '"Mulish", sans-serif', fontWeight: 400 }}
           >
@@ -126,18 +140,22 @@ export default function AssessmentPairedRoute() {
           </span>
         </div>
 
-        <div
+        {/* The screen's one h1 (RouteFocus lands here); the questions below are its h2s. */}
+        <h1
           className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary"
           style={{ fontFamily: '"Mulish", sans-serif', fontWeight: 400 }}
         >
-          <span className="h-px w-3 bg-primary/60" />
+          <span className="h-px w-3 bg-primary/60" aria-hidden="true" />
           {t('assessment.eyebrow')}
-        </div>
+        </h1>
 
         <div className="flex flex-1 flex-col gap-6">
-          {questions.map(({ index, question }) => (
+          {questions.map(({ index, question }, position) => (
             <div key={question.id}>
               <h2
+                ref={position === 0 ? firstQuestionRef : undefined}
+                id={`assessment-question-${question.id}`}
+                tabIndex={-1}
                 className="text-[22px] leading-[1.2] tracking-[-0.025em] text-on-surface"
                 style={{
                   fontFamily: '"Fraunces", sans-serif',
@@ -146,7 +164,11 @@ export default function AssessmentPairedRoute() {
               >
                 <QuestionTitle prompt={t(`assessment.questions.${question.id}`)} />
               </h2>
-              <div className="mt-3 flex flex-col gap-2">
+              <div
+                className="mt-3 flex flex-col gap-2"
+                role="radiogroup"
+                aria-labelledby={`assessment-question-${question.id}`}
+              >
                 {question.options.map((option, optionIndex) => (
                   <AnswerOption
                     key={option}

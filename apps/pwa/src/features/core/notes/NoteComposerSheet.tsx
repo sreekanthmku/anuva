@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HEALTH_NOTE_AUDIO_MAX_SECONDS, HEALTH_NOTE_TEXT_MAX, type HealthNote } from '@anuva/shared';
 import { ApiError } from '../../../shared/lib/api';
+import { announce } from '../../../lib/a11y/announce';
 import { LogSheetFrame } from '../components/LogSheetFrame';
 import {
   createTextNote,
@@ -151,13 +152,21 @@ export function NoteComposerSheet({
           </p>
 
           {step.kind === 'checking' ? (
-            <p className="mt-4 text-[13.5px] text-on-surface-variant">{error ?? t('notes.loading')}</p>
+            <p role="status" className="mt-4 text-[13.5px] text-on-surface-variant">
+              {error ?? t('notes.loading')}
+            </p>
           ) : null}
 
           {step.kind === 'write' ? (
             <>
               <h2 className="font-display mt-1 text-[22px] leading-tight text-on-surface">{t('notes.writeTitle')}</h2>
-              <NoteTextArea value={text} onChange={setText} placeholder={t('notes.writePlaceholder')} autoFocus />
+              <NoteTextArea
+                value={text}
+                onChange={setText}
+                label={t('a11y.care.noteText')}
+                placeholder={t('notes.writePlaceholder')}
+                autoFocus
+              />
               <PrimaryButton disabled={saving || !text.trim()} onClick={() => void saveTyped()}>
                 {saving ? t('notes.saving') : t('notes.save')}
               </PrimaryButton>
@@ -180,8 +189,8 @@ export function NoteComposerSheet({
           ) : null}
 
           {step.kind === 'working' ? (
-            <div className="flex flex-col items-center py-8 text-center">
-              <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />
+            <div role="status" className="flex flex-col items-center py-8 text-center">
+              <span aria-hidden="true" className="h-8 w-8 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />
               <p className="mt-4 text-[14px] text-on-surface">{step.label}</p>
               <p className="mt-1 text-[12px] text-on-surface-variant">{t('notes.workingHint')}</p>
             </div>
@@ -210,6 +219,7 @@ export function NoteComposerSheet({
               <NoteTextArea
                 value={text}
                 onChange={setText}
+                label={t('a11y.care.noteText')}
                 placeholder={hasPhoto(step.note) ? t('notes.photoOnlyPlaceholder') : t('notes.writePlaceholder')}
               />
               <PrimaryButton
@@ -259,7 +269,11 @@ export function NoteComposerSheet({
             </>
           ) : null}
 
-          {error && step.kind !== 'checking' ? <p className="mt-3 text-[12.5px] text-error">{error}</p> : null}
+          {error && step.kind !== 'checking' ? (
+            <p role="alert" className="mt-3 text-[12.5px] text-error">
+              {error}
+            </p>
+          ) : null}
         </>
       )}
     </LogSheetFrame>
@@ -269,16 +283,19 @@ export function NoteComposerSheet({
 function NoteTextArea({
   value,
   onChange,
+  label,
   placeholder,
   autoFocus = false,
 }: {
   value: string;
   onChange: (value: string) => void;
+  label: string;
   placeholder: string;
   autoFocus?: boolean;
 }) {
   return (
     <textarea
+      aria-label={label}
       value={value}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
@@ -315,9 +332,12 @@ function PrimaryButton({
 export function NotePhoto({
   note,
   className = 'mt-3 max-h-48 w-full rounded-[14px] object-contain',
+  alt = '',
 }: {
   note: HealthNote;
   className?: string;
+  /** Empty where the text beside it says what it is; named where the photo is the whole note. */
+  alt?: string;
 }) {
   const image = note.attachments.find((attachment) => attachment.kind === 'image');
   const [url, setUrl] = useState<string | null>(null);
@@ -340,7 +360,7 @@ export function NotePhoto({
   }, [note.id, image]);
 
   if (!image || !url) return null;
-  return <img src={url} alt="" className={className} />;
+  return <img src={url} alt={alt} className={className} />;
 }
 
 function Recorder({ onRecorded }: { onRecorded: (blob: Blob, extension: string) => void }) {
@@ -402,12 +422,14 @@ function Recorder({ onRecorded }: { onRecorded: (blob: Blob, extension: string) 
       release();
       setRecording(false);
       if (cancelled.current || chunks.length === 0) return;
+      announce(t('a11y.care.recordingStopped'));
       onRecorded(new Blob(chunks, { type: type.mimeType.split(';')[0] }), type.extension);
     };
     recorder.current = media;
     media.start(1000);
     setSeconds(0);
     setRecording(true);
+    announce(t('a11y.care.recordingStarted'));
   };
 
   return (
@@ -425,7 +447,7 @@ function Recorder({ onRecorded }: { onRecorded: (blob: Blob, extension: string) 
         }`}
       >
         {recording ? (
-          <span className="h-6 w-6 rounded-[4px] bg-current" />
+          <span aria-hidden="true" className="h-6 w-6 rounded-[4px] bg-current" />
         ) : (
           <MicIcon className="h-8 w-8" />
         )}
@@ -434,7 +456,11 @@ function Recorder({ onRecorded }: { onRecorded: (blob: Blob, extension: string) 
         {recording ? formatSeconds(seconds) : t('notes.tapToRecord')}
       </p>
       {recording ? <p className="mt-1 text-[12px] text-on-surface-variant">{t('notes.tapToStop')}</p> : null}
-      {error ? <p className="mt-3 text-[12.5px] text-error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-3 text-[12.5px] text-error">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

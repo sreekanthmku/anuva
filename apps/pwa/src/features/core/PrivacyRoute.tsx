@@ -8,6 +8,7 @@ import {
   type DataErasureScope,
   type PrivacySummaryResponse,
 } from '@anuva/shared';
+import { announce } from '../../lib/a11y/announce';
 import { DPDP_ACT_URL, GRIEVANCE_OFFICER_EMAIL } from '../../shared/lib/dpdp';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { ApiError } from '../../shared/lib/api';
@@ -94,6 +95,12 @@ export default function PrivacyRoute() {
     void load();
   }, [load]);
 
+  // The notice appears where she is not looking (the sheet just closed under her), and a status
+  // region that arrives already holding its text is not reliably read. So it is said.
+  useEffect(() => {
+    if (notice) announce(notice);
+  }, [notice]);
+
   const countFor = useMemo(() => {
     const byKey = new Map((summary?.categories ?? []).map((entry) => [entry.key, entry.count]));
     return (key: string) => byKey.get(key) ?? 0;
@@ -169,6 +176,7 @@ export default function PrivacyRoute() {
           <button
             type="button"
             onClick={() => navigate('/profile')}
+            aria-label={t('a11y.summary.backTo', { place: t('nav.profile') })}
             className="bg-transparent p-0 text-[13px] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
@@ -207,10 +215,7 @@ export default function PrivacyRoute() {
         </p>
 
         {notice ? (
-          <div
-            className="mb-5 rounded-[18px] border border-primary/25 bg-primary-container/50 px-4 py-3.5"
-            role="status"
-          >
+          <div className="mb-5 rounded-[18px] border border-primary/25 bg-primary-container/50 px-4 py-3.5">
             <p className="text-[13px] leading-[1.55] text-on-surface" style={{ fontFamily: MULISH }}>
               {notice}
             </p>
@@ -227,7 +232,7 @@ export default function PrivacyRoute() {
 
         {loadError ? (
           <div className="mb-5 rounded-[18px] border border-border-default bg-surface-raised px-4 py-3.5">
-            <p className="text-[13px] text-on-surface" style={{ fontFamily: MULISH }}>
+            <p className="text-[13px] text-on-surface" style={{ fontFamily: MULISH }} role="alert">
               {loadError}
             </p>
             <button
@@ -283,7 +288,10 @@ export default function PrivacyRoute() {
                     className="shrink-0 text-[14px] text-primary"
                     style={{ fontFamily: '"Space Mono", monospace' }}
                   >
-                    {category.count}
+                    <span aria-hidden="true">{category.count}</span>
+                    <span className="sr-only">
+                      {t('a11y.summary.itemCount', { count: category.count })}
+                    </span>
                   </span>
                 </div>
                 <p
@@ -393,7 +401,10 @@ export default function PrivacyRoute() {
                             className="shrink-0 text-[13px] text-outline"
                             style={{ fontFamily: '"Space Mono", monospace' }}
                           >
-                            {count}
+                            <span aria-hidden="true">{count}</span>
+                            <span className="sr-only">
+                              {t('a11y.summary.itemCount', { count })}
+                            </span>
                           </span>
                         ) : null}
                       </span>

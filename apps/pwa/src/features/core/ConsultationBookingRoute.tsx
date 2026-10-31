@@ -52,6 +52,7 @@ export default function ConsultationBookingRoute() {
       <section className="px-3 pt-[18px]">
         {booking.loadingSpecialists ? (
           <p
+            role="status"
             className="text-[12px] text-on-surface-variant"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
@@ -71,6 +72,7 @@ export default function ConsultationBookingRoute() {
                 />
                 {booking.loadingSlots ? (
                   <p
+                    role="status"
                     className="mt-4 text-[12px] text-on-surface-variant"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
@@ -105,6 +107,7 @@ export default function ConsultationBookingRoute() {
 
         {booking.error && (
           <p
+            role="alert"
             className="mt-4 text-[12px] text-red-300"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >

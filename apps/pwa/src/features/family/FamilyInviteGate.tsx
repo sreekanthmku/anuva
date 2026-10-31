@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import type { FamilyInvite } from '@anuva/shared';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import {
   canNativeShare,
   copyToClipboard,
@@ -63,6 +65,10 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
     };
   }, [open]);
 
+  // Focus trap and return only. No onClose: Escape stays swallowed above. When the send button is
+  // still disabled (nothing agreed yet) focus lands on the first control, the agreement.
+  const dialogRef = useDialogA11y<HTMLDivElement>(open && Boolean(status?.invite));
+
   useEffect(() => {
     if (!copied) return;
     const timer = window.setTimeout(() => setCopied(false), 2400);
@@ -80,6 +86,7 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-6"
       role="dialog"
       aria-modal="true"
@@ -179,6 +186,7 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
                 if (!ok) {
                   throw new Error(t('family.gate.copyFailed'));
                 }
+                announce(t('a11y.family.linkCopied'));
               })
             }
             className="inline-flex min-h-[46px] w-full items-center justify-center rounded-full px-5 text-[13px] font-medium text-on-surface-variant disabled:opacity-60"

@@ -20,10 +20,11 @@ export function TrustStrip() {
           <path d="M8 10V7a4 4 0 018 0v3" stroke="#B49FB0" strokeWidth="2" />
         </svg>
         {t('trust.dpdp')}
+        <span className="sr-only"> {t('a11y.shell.opensInNewTab')}</span>
       </a>
-      <span className="opacity-40">·</span>
+      <span className="opacity-40" aria-hidden="true">·</span>
       <span>{t('trust.anonymous')}</span>
-      <span className="opacity-40">·</span>
+      <span className="opacity-40" aria-hidden="true">·</span>
       <span>{t('trust.encrypted')}</span>
     </div>
   );

@@ -61,7 +61,8 @@ function Steps({ items }: { items: React.ReactNode[] }) {
           key={index}
           className="flex gap-3 rounded-[20px] border border-border-default bg-surface-raised px-4 py-3.5 shadow-soft"
         >
-          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-secondary text-[12px] font-bold text-on-secondary">
+          {/* The list is already numbered for a screen reader. */}
+          <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-secondary text-[12px] font-bold text-on-secondary">
             {index + 1}
           </span>
           <span className="text-[13.5px] leading-[1.55] text-on-surface">{item}</span>

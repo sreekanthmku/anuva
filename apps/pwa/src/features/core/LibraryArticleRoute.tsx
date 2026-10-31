@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
@@ -107,11 +107,21 @@ export default function LibraryArticleRoute() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { state, error, data, reload } = useLibraryArticle(slug);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   // Each article opens at the top, even when navigated to from a related card.
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [slug]);
+
+  // The title only exists once the article has loaded, after RouteFocus has looked for it. If focus
+  // was left on nothing in particular, it goes to the title so a screen reader starts there.
+  useEffect(() => {
+    if (state !== 'ready') return;
+    const active = document.activeElement;
+    if (active && active !== document.body && active.tagName !== 'MAIN') return;
+    headingRef.current?.focus({ preventScroll: true });
+  }, [state, slug]);
 
   const accent = data ? TONE_COLOR[data.article.tone] : TONE_COLOR.mint;
 
@@ -129,7 +139,8 @@ export default function LibraryArticleRoute() {
       </header>
 
       {state === 'loading' && (
-        <section className="flex flex-col gap-3 px-3">
+        <section role="status" aria-busy="true" className="flex flex-col gap-3 px-3">
+          <span className="sr-only">{t('common.loading')}</span>
           <div className="h-32 animate-pulse rounded-[20px] bg-surface-container-low" />
           <div className="h-4 w-2/3 animate-pulse rounded-full bg-surface-container-low" />
           <div className="h-4 w-full animate-pulse rounded-full bg-surface-container-low" />
@@ -139,7 +150,7 @@ export default function LibraryArticleRoute() {
 
       {state === 'error' && (
         <section className="px-3 py-6 text-center">
-          <p className="text-[13px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
+          <p role="alert" className="text-[13px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
             {error}
           </p>
           <button
@@ -183,6 +194,8 @@ export default function LibraryArticleRoute() {
             </div>
 
             <h1
+              ref={headingRef}
+              tabIndex={-1}
               className="mt-2 text-[26px] font-medium leading-[1.15] text-on-surface"
               style={{ fontFamily: FRAUNCES }}
             >
@@ -217,12 +230,12 @@ export default function LibraryArticleRoute() {
 
             {data.article.keyTakeaways.length > 0 && (
               <section className="mt-5 rounded-[20px] border border-border-default bg-surface-raised p-4">
-                <div
+                <h2
                   className="mb-2.5 text-[9.5px] uppercase tracking-[0.15em] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
                   {t('library.inShort')}
-                </div>
+                </h2>
                 <ul className="flex flex-col gap-2">
                   {data.article.keyTakeaways.map((takeaway) => (
                     <li key={takeaway} className="flex gap-2.5">
@@ -272,13 +285,13 @@ export default function LibraryArticleRoute() {
 
           {data.related.length > 0 && (
             <section className="px-3 pt-7">
-              <div
+              <h2
                 className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-outline"
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
-                <span className="h-px w-3 bg-outline/60" />
+                <span aria-hidden="true" className="h-px w-3 bg-outline/60" />
                 {t('library.readNext')}
-              </div>
+              </h2>
               <div className="flex flex-col gap-2.5">
                 {data.related.map((related) => (
                   <button
@@ -297,6 +310,7 @@ export default function LibraryArticleRoute() {
                       />
                     ) : (
                       <div
+                        aria-hidden="true"
                         className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px] border border-border-default bg-surface-container-low"
                         style={{
                           fontFamily: FRAUNCES,

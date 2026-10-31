@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { sendFamilyThanks } from './api';
 import type { FamilyGift, FamilyGiftKind } from './familyMessageLink';
@@ -82,6 +84,7 @@ export function FamilyGiftDialog({
         : [],
     [gift],
   );
+  const dialogRef = useDialogA11y<HTMLDivElement>(gift !== null, onDismiss);
 
   if (!gift) return null;
 
@@ -96,21 +99,26 @@ export function FamilyGiftDialog({
   const thankAndClose = () => {
     if (thanking) return;
     setThanking(true);
+    announce(t('a11y.family.thanksSent', { name: gift.from }));
     void sendFamilyThanks({ kind: gift.kind }).catch(() => undefined);
     onDismiss();
   };
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[85] flex items-center justify-center px-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="family-gift-title"
+      aria-describedby={copy.bodyKey ? 'family-gift-headline family-gift-body' : undefined}
     >
+      {/* Tap-outside only: keyboard and screen readers close it with Escape or the thank-you button. */}
       <button
         type="button"
+        tabIndex={-1}
+        aria-hidden
         className="absolute inset-0 bg-[#3E2542]/70 backdrop-blur-[3px] animate-[giftFade_320ms_ease-out]"
-        aria-label={t('common.close')}
         onClick={onDismiss}
       />
 
@@ -165,6 +173,7 @@ export function FamilyGiftDialog({
 
           {copy.headlineKey ? (
             <h2
+              id="family-gift-headline"
               className="mt-2.5 text-[23px] leading-[1.25] text-on-surface"
               style={{ fontFamily: '"Fraunces", serif', fontWeight: 400 }}
             >
@@ -173,7 +182,7 @@ export function FamilyGiftDialog({
           ) : null}
 
           {copy.bodyKey ? (
-            <p className="mt-3 text-[14px] leading-[1.6] text-on-surface-variant" style={mulish}>
+            <p id="family-gift-body" className="mt-3 text-[14px] leading-[1.6] text-on-surface-variant" style={mulish}>
               {t(copy.bodyKey, { name: gift.from })}
             </p>
           ) : null}

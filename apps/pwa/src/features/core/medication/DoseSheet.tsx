@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MEDICATION_SNOOZE_MINUTES, type MedicationDose, type MedicationDoseAction } from '@anuva/shared';
 import { ApiError } from '../../../shared/lib/api';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 import { fetchDose, respondToDose } from './api';
 import { formatReminderTime } from './format';
 
@@ -25,6 +26,7 @@ export function DoseSheet({
   const [dose, setDose] = useState<MedicationDose | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const dialogRef = useDialogA11y<HTMLDivElement>(true, onClose);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,14 +67,16 @@ export function DoseSheet({
     <div className="fixed inset-0 z-[70] flex items-end justify-center px-4 pb-[calc(var(--bottom-nav-height)+16px)] pt-4 sm:items-center sm:pb-4">
       <button type="button" className="absolute inset-0 bg-black/55" onClick={onClose} aria-label={t('common.close')} />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="dose-sheet-title"
+        aria-busy={(!dose && !error) || undefined}
         className="relative w-full max-w-[360px] rounded-[20px] border border-border-default bg-surface-raised px-[22px] py-5"
         style={{ fontFamily: FONT_BODY }}
       >
         <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary">
-          <span className="h-px w-3 bg-primary/60" />
+          <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
           {t('medication.dose.eyebrow')}
         </div>
         <h2
@@ -82,6 +86,11 @@ export function DoseSheet({
         >
           {t(`medication.dose.title.${dose?.kind ?? 'none'}`)}
         </h2>
+        {!dose && !error && (
+          <p role="status" className="sr-only">
+            {t('common.loading')}
+          </p>
+        )}
         {dose && (
           <p className="mt-1 text-[13px] text-on-surface-variant">
             {t('medication.dose.scheduled', { time: formatReminderTime(dose.time, i18n.language) })}
@@ -123,7 +132,11 @@ export function DoseSheet({
         )}
         {dose && !dose.answerable && <p className="mt-4 text-[13px] text-on-surface">{t('medication.dose.earlierDay')}</p>}
 
-        {error && <p className="mt-3 text-[12px] text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-3 text-[12px] text-error">
+            {error}
+          </p>
+        )}
 
         <button type="button" onClick={onClose} className="mt-3 min-h-11 w-full text-[13px] text-on-surface-variant underline">
           {t('medication.dose.close')}

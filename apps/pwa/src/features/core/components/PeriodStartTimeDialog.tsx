@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PERIOD_START_TIMES, type PeriodStartTimeOfDay } from '@anuva/shared';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 import { formatCycleDateLong } from './cycleTrackerDisplay';
 
 const BODY = '"Mulish", -apple-system, system-ui, sans-serif';
@@ -18,6 +19,7 @@ function StartTimeIcon({ value }: { value: StartTime }) {
     strokeWidth: 1.6,
     strokeLinecap: 'round' as const,
     'aria-hidden': true,
+    focusable: 'false' as const,
   };
   if (value === 'night') {
     return (
@@ -58,6 +60,9 @@ export function PeriodStartTimeDialog({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  // Escape stays with the capture listener below, which has to beat the sheet underneath.
+  const dialogRef = useDialogA11y<HTMLDivElement>(true);
+  const bodyId = useId();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -80,9 +85,11 @@ export function PeriodStartTimeDialog({
         aria-label={t('common.cancel')}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="period-start-time-title"
+        aria-describedby={bodyId}
         className="relative w-full max-w-[340px] rounded-[20px] border border-border-default bg-surface px-[22px] py-6"
       >
         <h2
@@ -92,11 +99,11 @@ export function PeriodStartTimeDialog({
         >
           {t('cycleSheet.startTimeTitle')}
         </h2>
-        <p className="mb-5 text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
+        <p id={bodyId} className="mb-5 text-[12px] text-on-surface-variant" style={{ fontFamily: BODY }}>
           {t('cycleSheet.startTimeBody', { date: formatCycleDateLong(date) })}
         </p>
 
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5" role="group" aria-labelledby="period-start-time-title">
           {PERIOD_START_TIMES.map((value) => (
             <button
               key={value}

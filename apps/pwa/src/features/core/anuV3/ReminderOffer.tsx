@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { announce } from '../../../lib/a11y/announce';
 import { fetchReminders } from '../medication/api';
 import { ReminderEditorSheet } from '../medication/ReminderEditorSheet';
 
@@ -42,7 +43,7 @@ export function ReminderOffer() {
         className="min-h-11 rounded-full border border-primary/30 bg-surface px-4 py-2 text-[13px] font-semibold text-primary"
         style={{ fontFamily: FONT_BODY }}
       >
-        ✓ {t('chat.reminder.set')} →
+        <span aria-hidden="true">✓</span> {t('chat.reminder.set')} <span aria-hidden="true">→</span>
       </button>
     );
   }
@@ -62,7 +63,10 @@ export function ReminderOffer() {
         open={editorOpen}
         reminder={null}
         onClose={closeEditor}
-        onSaved={() => setSaved(true)}
+        onSaved={() => {
+          setSaved(true);
+          announce(t('a11y.care.reminderSaved'));
+        }}
       />
     </>
   );

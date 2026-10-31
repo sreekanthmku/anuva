@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { captureScreenshot, sendReport, type Capture } from './sendReport';
 
 /**
@@ -37,6 +39,8 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
   const [capture, setCapture] = useState<Capture | null>(null);
   const [attach, setAttach] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  // Escape is already handled below, so the hook only moves, traps and restores focus.
+  const dialogRef = useDialogA11y<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) return;
@@ -94,6 +98,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
       }
 
       setSent(true);
+      announce('Sent. Thank you.');
       window.setTimeout(onClose, 1400);
     } finally {
       setSending(false);
@@ -102,6 +107,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
 
   return (
     <div
+      ref={dialogRef}
       data-beta-reporter
       className="fixed inset-0 z-[95] flex items-end justify-center sm:items-center"
       role="dialog"
@@ -171,6 +177,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
 
             <textarea
               autoFocus
+              aria-labelledby="beta-report-title"
               value={message}
               onChange={(event) => setMessage(event.target.value.slice(0, MAX_MESSAGE))}
               rows={3}

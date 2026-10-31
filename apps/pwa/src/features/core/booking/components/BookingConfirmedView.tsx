@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { formatBookingDateLong } from '../dateTime';
 import { BookingEyebrow } from './BookingEyebrow';
@@ -19,6 +20,13 @@ export function BookingConfirmedView({
   onAddNotes,
 }: BookingConfirmedViewProps) {
   const { t } = useTranslation();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // The booking form is swapped for this view on the same route, so nothing else moves focus: the
+  // heading takes it and a screen reader reads that the consult is booked.
+  useEffect(() => {
+    headingRef.current?.focus({ preventScroll: true });
+  }, []);
 
   return (
     <div className="flex flex-col items-center px-3 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] text-center">
@@ -27,9 +35,9 @@ export function BookingConfirmedView({
         className="mt-2 mb-5 flex h-[88px] w-[88px] items-center justify-center rounded-full border border-primary/30 bg-primary/10"
         style={{}}
       >
-        <img src="/anu.png" alt={t('booking.anuAlt')} className="h-[72px] w-[72px] object-contain" />
+        <img src="/anu.png" alt="" className="h-[72px] w-[72px] object-contain" />
       </div>
-      <h1 className="font-display mb-2 max-w-[18rem] text-[26px] leading-[1.15] text-on-surface">
+      <h1 ref={headingRef} tabIndex={-1} className="font-display mb-2 max-w-[18rem] text-[26px] leading-[1.15] text-on-surface">
         <Trans
           i18nKey="booking.confirmedTitle"
           components={{

@@ -98,19 +98,20 @@ export default function AnuGreetingRoute() {
             transition: 'transform 1.4s ease-in-out',
           }}
         >
+          {/* Decorative: "Hello, I'm ANU" right below says who this is. */}
           <img
             src="/anu.png"
-            alt={t('greeting.anuAlt')}
+            alt=""
             className="h-[84px] w-[84px] object-contain"
           />
         </div>
 
-        <p
+        <h1
           className="mt-[26px] text-[11px] uppercase tracking-[0.3em] text-primary"
           style={{ fontFamily: '"Mulish", sans-serif' }}
         >
           {t('greeting.hello')}
-        </p>
+        </h1>
 
         <p className="font-display mt-[18px] px-2 text-center text-[22px] leading-[1.4] text-on-surface">
           {t('greeting.quote')}
@@ -123,21 +124,23 @@ export default function AnuGreetingRoute() {
         </p>
 
         <article className="mt-[26px] w-full rounded-[20px] border border-border-default bg-surface-raised p-[18px]">
-          <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
-            <span className="h-px w-3 bg-primary/60" />
+          <h2 className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
+            <span className="h-px w-3 bg-primary/60" aria-hidden="true" />
             <span style={{ fontFamily: '"Mulish", sans-serif' }}>
               {t('greeting.nextSevenDays')}
             </span>
-          </div>
+          </h2>
 
-          <div>
+          {/* A list (preflight strips its bullets and indent); the 01/02 badges repeat what it says. */}
+          <ol>
             {sevenDayPlan.map((item, index) => (
-              <div
+              <li
                 key={item.key}
                 className="flex items-center gap-3 py-2"
                 style={{ borderTop: index === 0 ? 'none' : '1px solid rgba(94, 53, 102, 0.2)' }}
               >
                 <span
+                  aria-hidden="true"
                   className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px]"
                   style={{
                     background: index === 0 ? '#5E3566' : 'transparent',
@@ -171,9 +174,9 @@ export default function AnuGreetingRoute() {
                 >
                   {item.eta}
                 </span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </article>
 
         <button

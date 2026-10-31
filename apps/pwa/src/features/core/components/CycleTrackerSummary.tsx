@@ -46,7 +46,9 @@ export function CyclePhaseBadge({
         fontFamily: '"Mulish", sans-serif',
       }}
     >
-      {t('cycle.phaseBadge', { phase: cyclePhaseLabel(phase) })}
+      {/* The badge opens with a "●", which a screen reader would read out as a symbol. */}
+      <span aria-hidden="true">{t('cycle.phaseBadge', { phase: cyclePhaseLabel(phase) })}</span>
+      <span className="sr-only">{t('a11y.tracking.phaseName', { phase: cyclePhaseLabel(phase) })}</span>
     </span>
   );
 }
@@ -68,11 +70,20 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
   const headline = getCycleHeadline(cycleData);
   const subline = getCycleSubline(cycleData);
   const ringColor = isLate ? '#C0405A' : (phaseConfig?.color ?? '#5E3566');
+  // The ring's centre, as a sentence: a bare "12 / of 28d" means nothing read aloud.
+  const ringSpoken =
+    !cycleData || cycleData.currentCycleDay == null
+      ? t('a11y.tracking.cycleRingNotSet')
+      : cycleData.status === 'stale'
+        ? t('cycle.headline.outOfDate')
+        : cycleData.status === 'late'
+          ? t('cycle.headline.late', { count: cycleData.daysLate ?? 0 })
+          : t('a11y.tracking.cycleRingDay', { day: cycleData.currentCycleDay, length: cycleLength });
 
   if (loading && !cycleData) {
     return (
       <div className="flex items-center justify-center py-6">
-        <span className="text-[12px] text-outline" style={{ fontFamily: '"Mulish", sans-serif' }}>
+        <span role="status" className="text-[12px] text-outline" style={{ fontFamily: '"Mulish", sans-serif' }}>
           {t('cycle.summary.loading')}
         </span>
       </div>
@@ -82,8 +93,8 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
   if (!ready) {
     return (
       <div className="flex items-center gap-4">
-        <div className="relative shrink-0" style={{ width: ringPx, height: ringPx }}>
-          <svg width={ringPx} height={ringPx} viewBox="0 0 96 96" aria-hidden="true">
+        <div aria-hidden="true" className="relative shrink-0" style={{ width: ringPx, height: ringPx }}>
+          <svg width={ringPx} height={ringPx} viewBox="0 0 96 96" aria-hidden="true" focusable="false">
             <circle
               cx="48"
               cy="48"
@@ -132,12 +143,18 @@ export function CycleTrackerSummary({ cycleData, loading, ringSize = 'home' }: P
 
   return (
     <div className="flex items-center gap-5">
-      <div className="relative shrink-0" style={{ width: ringPx, height: ringPx }}>
+      <div
+        role="img"
+        aria-label={ringSpoken}
+        className="relative shrink-0"
+        style={{ width: ringPx, height: ringPx }}
+      >
         <svg
           width={ringPx}
           height={ringPx}
           viewBox="0 0 96 96"
           aria-hidden="true"
+          focusable="false"
           className="block"
         >
           <circle

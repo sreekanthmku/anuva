@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AnuV3SummaryOffer } from '@anuva/shared';
+import { announce } from '../../../lib/a11y/announce';
 import { VisitSummarySheet } from '../visitSummary/VisitSummarySheet';
 import { declineSummaryOffer } from './api';
 
@@ -15,9 +16,11 @@ export function SummaryOfferCard({ offer, turnId }: { offer: AnuV3SummaryOffer; 
   const { t } = useTranslation();
   const [state, setState] = useState(offer.state);
   const [open, setOpen] = useState(false);
+  const titleId = useId();
 
   const decline = () => {
     setState('declined');
+    announce(t('visitSummary.offer.declined'));
     // Only remembers the dismissal across reloads; the card is gone either way.
     if (turnId) void declineSummaryOffer({ turnId }).catch(() => undefined);
   };
@@ -40,7 +43,8 @@ export function SummaryOfferCard({ offer, turnId }: { offer: AnuV3SummaryOffer; 
           className="min-h-11 rounded-full border border-primary/30 bg-surface px-4 py-2 text-[13px] font-semibold text-primary"
           style={{ fontFamily: FONT_BODY }}
         >
-          ✓ {t('visitSummary.offer.shared', { name: offer.specialistName })} →
+          <span aria-hidden="true">✓</span> {t('visitSummary.offer.shared', { name: offer.specialistName })}{' '}
+          <span aria-hidden="true">→</span>
         </button>
         {sheet}
       </>
@@ -58,10 +62,12 @@ export function SummaryOfferCard({ offer, turnId }: { offer: AnuV3SummaryOffer; 
   return (
     <>
       <div
+        role="group"
+        aria-labelledby={titleId}
         className="flex w-full flex-col gap-2 rounded-[18px] border border-primary/25 bg-surface p-3.5"
         style={{ fontFamily: FONT_BODY }}
       >
-        <p className="text-[13.5px] font-semibold text-on-surface">
+        <p id={titleId} className="text-[13.5px] font-semibold text-on-surface">
           {t('visitSummary.offer.title', { name: offer.specialistName })}
         </p>
         <p className="text-[12.5px] leading-[1.5] text-on-surface-variant">

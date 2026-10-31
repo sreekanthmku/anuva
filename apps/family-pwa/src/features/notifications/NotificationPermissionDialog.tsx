@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { BellIcon, PrimaryButton } from '../shell/ui';
 
 /**
@@ -20,20 +21,25 @@ export function NotificationPermissionDialog({
   onDismiss: () => void;
 }) {
   const { t } = useTranslation();
+  const dialogRef = useDialogA11y<HTMLDivElement>(open, onDismiss);
 
   if (!open) return null;
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[70] flex items-end justify-center px-5 pb-[calc(112px+env(safe-area-inset-bottom,0px))] pt-4 sm:items-center sm:pb-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="family-notify-title"
+      aria-describedby="family-notify-body"
     >
+      {/* Tap-outside only: "Not now" below is the same thing for keyboard and screen readers. */}
       <button
         type="button"
+        tabIndex={-1}
+        aria-hidden
         className="absolute inset-0 animate-[anuvaFade_260ms_ease-out] bg-[#3E2542]/50 backdrop-blur-[2px]"
-        aria-label={t('common.notNow')}
         onClick={onDismiss}
       />
 
@@ -58,7 +64,7 @@ export function NotificationPermissionDialog({
           >
             {t('notifications.title')}
           </h2>
-          <p className="mt-2.5 text-[13.5px] leading-[1.6] text-on-surface-variant">
+          <p id="family-notify-body" className="mt-2.5 text-[13.5px] leading-[1.6] text-on-surface-variant">
             {t('notifications.body')}
           </p>
 

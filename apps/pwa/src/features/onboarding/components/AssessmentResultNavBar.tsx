@@ -12,6 +12,7 @@ export function AssessmentResultNavBar({ onBack }: AssessmentResultNavBarProps) 
       <button
         type="button"
         onClick={onBack}
+        aria-label={t('common.back')}
         className="bg-transparent p-0 text-[13px] text-on-surface-variant"
         style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
       >

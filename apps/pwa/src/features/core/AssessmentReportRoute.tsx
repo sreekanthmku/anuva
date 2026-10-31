@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 // The instance for the fetch/download error paths, which run inside callbacks.
 import i18n from '../../i18n';
 import { useNavigate } from 'react-router-dom';
+import { announce } from '../../lib/a11y/announce';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { ApiError, apiFetch, apiUrl } from '../../shared/lib/api';
 import { useAuth } from '../auth/auth-context';
@@ -62,12 +63,12 @@ function Card({
 }) {
   return (
     <div className="mb-3 rounded-[20px] border border-border-default bg-surface-raised px-5 py-4">
-      <p
+      <h2
         className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-tertiary"
         style={{ fontFamily: MULISH }}
       >
         {label}
-      </p>
+      </h2>
       <p className="text-[14px] leading-relaxed text-on-surface" style={{ fontFamily: MULISH }}>
         {children}
       </p>
@@ -121,6 +122,7 @@ export default function AssessmentReportRoute() {
 
   // Blob URLs stay alive until the page unmounts, so the opened tab keeps working.
   const blobUrls = useRef<string[]>([]);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -158,6 +160,18 @@ export default function AssessmentReportRoute() {
       .catch((err) => console.error(err));
   }, [doc, alreadyOpened, refreshUser]);
 
+  // The heading screen-reader focus landed on while loading is gone once the report arrives, which
+  // leaves her focus nowhere. Hand it to the heading that replaced it.
+  useEffect(() => {
+    if (loading) return;
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    const heading = headingRef.current;
+    if (!heading) return;
+    if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+    heading.focus({ preventScroll: true });
+  }, [loading]);
+
   useEffect(
     () => () => {
       blobUrls.current.forEach((url) => URL.revokeObjectURL(url));
@@ -176,6 +190,7 @@ export default function AssessmentReportRoute() {
   const openPdf = useCallback(async () => {
     setOpening(true);
     setError(null);
+    announce(i18n.t('assessmentReport.preparingPdf'));
     try {
       const response = await fetch(apiUrl('/api/report14/pdf'), {
         credentials: 'include',
@@ -200,6 +215,7 @@ export default function AssessmentReportRoute() {
         link.download = 'anuva-assessment-report.pdf';
         link.click();
       }
+      announce(i18n.t('a11y.summary.pdfReady'));
     } catch (err) {
       setError(err instanceof Error ? err.message : i18n.t('assessmentReport.openFailed'));
     } finally {
@@ -214,6 +230,7 @@ export default function AssessmentReportRoute() {
           <button
             type="button"
             onClick={() => navigate('/profile')}
+            aria-label={t('a11y.summary.backTo', { place: t('nav.profile') })}
             className="bg-transparent p-0 text-[13px] text-on-surface-variant"
             style={{ fontFamily: MULISH }}
           >
@@ -230,8 +247,19 @@ export default function AssessmentReportRoute() {
       <section className="px-3 pb-6 pt-2">
         <Eyebrow>{t('assessmentReport.eyebrow')}</Eyebrow>
 
+        {/* Every state has one page heading; until there is a report to title, it is this. */}
+        {!doc && !needsAssessment && (
+          <h1 ref={headingRef} className="sr-only">
+            {t('assessmentReport.eyebrow')}
+          </h1>
+        )}
+
         {loading && (
-          <p className="py-8 text-[14px] text-on-surface-variant" style={{ fontFamily: MULISH }}>
+          <p
+            className="py-8 text-[14px] text-on-surface-variant"
+            style={{ fontFamily: MULISH }}
+            role="status"
+          >
             {t('assessmentReport.preparing')}
           </p>
         )}
@@ -239,6 +267,7 @@ export default function AssessmentReportRoute() {
         {!loading && needsAssessment && (
           <div className="rounded-[20px] border border-border-default bg-surface-raised px-5 py-6">
             <h1
+              ref={headingRef}
               className="mb-2 font-display text-[21px] leading-tight text-on-surface"
             >
               {t('assessmentReport.almostThere')}
@@ -265,6 +294,7 @@ export default function AssessmentReportRoute() {
             <p
               className="text-[14px] leading-relaxed text-on-surface-variant"
               style={{ fontFamily: MULISH }}
+              role="alert"
             >
               {error ?? t('assessmentReport.loadFailed')}
             </p>
@@ -273,7 +303,9 @@ export default function AssessmentReportRoute() {
 
         {doc && (
           <>
-            <h1 className="font-display text-[26px] leading-tight text-on-surface">{doc.title}</h1>
+            <h1 ref={headingRef} className="font-display text-[26px] leading-tight text-on-surface">
+              {doc.title}
+            </h1>
             <p
               className="mt-1 text-[12.5px] uppercase tracking-[0.08em] text-outline"
               style={{ fontFamily: MONO }}
@@ -307,6 +339,7 @@ export default function AssessmentReportRoute() {
               <p
                 className="mt-3 rounded-2xl border border-border-default bg-surface-raised px-4 py-3 text-[13px] text-on-surface-variant"
                 style={{ fontFamily: MULISH }}
+                role="alert"
               >
                 {error}
               </p>

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import type { FamilyInvite, FamilyMemberSummary, FamilyShareChannel, FamilyStatusResponse } from '@anuva/shared';
+import { announce } from '../../lib/a11y/announce';
 import {
   dismissFamilyDeparture,
   fetchFamilyStatus,
@@ -52,6 +53,8 @@ export function FamilyConnectionSection() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Whose "Disconnect" button opened the confirmation, so "Keep them" can hand focus back to it.
+  const lastConfirmingId = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -74,6 +77,19 @@ export function FamilyConnectionSection() {
     }
   }, [loaded]);
 
+  // The button that was tapped is replaced by the confirmation (and back again), so focus would
+  // otherwise drop to the top of the page. Move it to the question, or back to that person's button.
+  useEffect(() => {
+    if (confirmingId) {
+      lastConfirmingId.current = confirmingId;
+      document.getElementById(`family-confirm-${confirmingId}`)?.focus({ preventScroll: true });
+      return;
+    }
+    const previous = lastConfirmingId.current;
+    lastConfirmingId.current = null;
+    if (previous) document.getElementById(`family-disconnect-${previous}`)?.focus({ preventScroll: true });
+  }, [confirmingId]);
+
   useEffect(() => {
     if (!copied) return;
     const timer = window.setTimeout(() => setCopied(false), 2200);
@@ -81,12 +97,16 @@ export function FamilyConnectionSection() {
   }, [copied]);
 
   const revoke = useCallback(
-    async (memberId: string) => {
+    async (memberId: string, name: string) => {
       setBusy(true);
       try {
         await removeFamilyMember(memberId);
+        lastConfirmingId.current = null;
         setConfirmingId(null);
+        announce(t('a11y.family.disconnected', { name }));
         await load();
+        // Their row, and the button that was focused, are gone: land on the section instead.
+        document.getElementById('family-sharing-title')?.focus({ preventScroll: true });
       } catch (e) {
         setError(e instanceof Error ? e.message : t('family.sharing.disconnectFailed'));
       } finally {
@@ -142,11 +162,14 @@ export function FamilyConnectionSection() {
   const { members, invite, departures } = status;
 
   return (
-    <article
+    <section
       id="family"
+      aria-labelledby="family-sharing-title"
       className="mt-4 scroll-mt-4 overflow-hidden rounded-[20px] border border-border-default bg-surface-container-low px-[18px] py-4"
     >
       <h2
+        id="family-sharing-title"
+        tabIndex={-1}
         className="text-[15px] leading-snug text-on-surface"
         style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
       >
@@ -185,14 +208,14 @@ export function FamilyConnectionSection() {
           <ul className="mt-2 divide-y divide-border-default">
             {members.map((member) => (
               <li key={member.id} className="py-3">
-                <p className="text-[13px] leading-[1.55] text-on-surface" style={mulish}>
+                <h3 className="text-[13px] leading-[1.55] text-on-surface" style={mulish}>
                   {t('family.sharing.nameAndRelationship', {
                     name: member.name,
                     relationship: t(`family.relationships.${member.relationship}`, {
                       defaultValue: t('family.relationships.other'),
                     }),
                   })}
-                </p>
+                </h3>
                 <p className="mt-0.5 text-[11.5px] text-outline" style={mulish}>
                   {t('family.sharing.phoneAndJoined', {
                     phone: member.maskedPhone,
@@ -214,14 +237,19 @@ export function FamilyConnectionSection() {
 
                 {confirmingId === member.id ? (
                   <div className="mt-2.5 rounded-[14px] border border-error/30 bg-error-container/40 px-3.5 py-3">
-                    <p className="text-[12.5px] leading-[1.5] text-on-surface" style={mulish}>
+                    <p
+                      id={`family-confirm-${member.id}`}
+                      tabIndex={-1}
+                      className="text-[12.5px] leading-[1.5] text-on-surface"
+                      style={mulish}
+                    >
                       {t('family.sharing.confirmDisconnect', { name: member.name })}
                     </p>
                     <div className="mt-2.5 flex gap-2">
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={() => void revoke(member.id)}
+                        onClick={() => void revoke(member.id, member.name)}
                         className="min-h-11 flex-1 rounded-full bg-error px-3 text-[12.5px] font-semibold text-on-error disabled:opacity-60"
                         style={mulish}
                       >
@@ -240,6 +268,7 @@ export function FamilyConnectionSection() {
                   </div>
                 ) : (
                   <button
+                    id={`family-disconnect-${member.id}`}
                     type="button"
                     onClick={() => setConfirmingId(member.id)}
                     className="mt-2 min-h-11 rounded-full border border-border-default px-4 text-[12.5px] font-medium text-on-surface-variant"
@@ -309,6 +338,7 @@ export function FamilyConnectionSection() {
                   const ok = await copyToClipboard(invite.shareUrl);
                   setCopied(ok);
                   if (!ok) throw new Error(t('family.gate.copyFailed'));
+                  announce(t('a11y.family.linkCopied'));
                 })
               }
               className="min-h-11 w-full rounded-full px-3 text-[12.5px] font-medium text-on-surface-variant disabled:opacity-60"
@@ -325,6 +355,6 @@ export function FamilyConnectionSection() {
           {error}
         </p>
       ) : null}
-    </article>
+    </section>
   );
 }

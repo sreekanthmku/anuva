@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import type {
@@ -9,6 +9,7 @@ import type {
   SummaryPeriod,
   WeeklyReportResponse,
 } from '@anuva/shared';
+import { announce } from '../../lib/a11y/announce';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { BottomNav } from './components/BottomNav';
 import { DayBalanceStrip } from './components/DayBalanceStrip';
@@ -25,7 +26,13 @@ import { useSummary } from './hooks/useWeeklyReport';
 import { RING_COLORS } from './ringColors';
 import { DELTA_TONE_COLOR } from './ringDisplay';
 import { SUGGESTION_EMOJI } from './summaryEmoji';
-import { daysBetweenIso, formatShortDay, periodHeadline, periodNoun } from './summaryDates';
+import {
+  daysBetweenIso,
+  formatShortDay,
+  periodDetail,
+  periodHeadline,
+  periodNoun,
+} from './summaryDates';
 
 /**
  * A stat card's line colour matches the ring the metric taps through to, so the
@@ -223,13 +230,15 @@ function ArrowButton({
   onClick: () => void;
   label: string;
 }) {
+  // `aria-disabled` rather than `disabled`: stepping to the last window would otherwise disable the
+  // very button that has focus, and the browser drops her focus to the top of the page.
   return (
     <button
       type="button"
-      onClick={onClick}
-      disabled={disabled}
+      onClick={disabled ? undefined : onClick}
+      aria-disabled={disabled}
       aria-label={label}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface transition-opacity disabled:opacity-25"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface transition-opacity aria-disabled:opacity-25"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
@@ -256,6 +265,7 @@ function CalendarButton({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label={t('report.pickADay')}
+      aria-haspopup="dialog"
       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface transition-opacity active:opacity-60"
     >
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -304,8 +314,8 @@ function PeriodNav({
           onClick={() => onStep(1)}
           label={t('report.previousPeriod', { noun })}
         />
+        {/* Not a live region: it blanks to "—" while loading. The route announces the new window. */}
         <span
-          aria-live="polite"
           className="min-w-[128px] text-center text-[15px] font-semibold leading-none text-on-surface"
           style={{ fontFamily: '"Mulish", sans-serif' }}
         >
@@ -350,8 +360,11 @@ function PeriodNav({
 // ── Body ─────────────────────────────────────────────────────
 
 function ReportSkeleton() {
+  const { t } = useTranslation();
+
   return (
-    <section className="flex flex-col gap-3 px-3 pb-[22px] pt-2" aria-busy="true">
+    <section className="flex flex-col gap-3 px-3 pb-[22px] pt-2" role="status" aria-busy="true">
+      <span className="sr-only">{t('common.loading')}</span>
       <div className="h-[248px] animate-pulse rounded-[20px] bg-surface-raised" />
       <div className="grid grid-cols-2 gap-2.5">
         <div className="h-[104px] animate-pulse rounded-[20px] bg-surface-raised" />
@@ -801,6 +814,25 @@ export default function WeeklyReportRoute() {
   const [offset, setOffset] = useState(0);
   const { data, loading, error, refresh } = useSummary(period, offset);
 
+  // Says which window is now on screen after a tab, arrow or calendar change. Not on arrival: the
+  // page title is read then, and the window is right under it.
+  const announcedFirst = useRef(false);
+  useEffect(() => {
+    if (!data) return;
+    if (!announcedFirst.current) {
+      announcedFirst.current = true;
+      return;
+    }
+    const headline = periodHeadline(data);
+    const dates = periodDetail(data);
+    announce(
+      dates === headline
+        ? t('a11y.summary.showingPeriod', { period: headline })
+        : t('a11y.summary.showingPeriodDates', { period: headline, dates }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per window, not per language change
+  }, [data]);
+
   // Open the metric page on the same window the user is looking at.
   const openMetric = useCallback(
     (key: ReportRingKey) => {
@@ -878,7 +910,11 @@ export default function WeeklyReportRoute() {
       {!loading && error && (
         <section className="px-3 pt-2">
           <article className="rounded-[20px] border border-error/25 bg-error-container p-4">
-            <p className="text-[14px] leading-[1.4] text-on-surface" style={{ fontFamily: MULISH }}>
+            <p
+              className="text-[14px] leading-[1.4] text-on-surface"
+              style={{ fontFamily: MULISH }}
+              role="alert"
+            >
               {error}
             </p>
             <button

@@ -13,7 +13,9 @@ export function FamilyProtectedRoute({ children }: { children: ReactNode }) {
       <main className="flex min-h-mobile items-center justify-center px-6">
         <div className="animate-[anuvaFade_400ms_ease-out] text-center">
           <Wordmark className="justify-center" />
-          <p className="mt-4 text-[13px] text-on-surface-variant">{t('shell.checkingLink')}</p>
+          <p role="status" className="mt-4 text-[13px] text-on-surface-variant">
+            {t('shell.checkingLink')}
+          </p>
         </div>
       </main>
     );

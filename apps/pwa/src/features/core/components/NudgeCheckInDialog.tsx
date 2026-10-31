@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MoodEmotion, NudgeCard, NudgeSlot, SleepDisruption, SleepHoursBucket } from '@anuva/shared';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 import { useNudgeToday } from '../hooks/useNudgeToday';
 import { useMoodLog } from '../hooks/useMoodLog';
 import { useSleepLog } from '../hooks/useSleepLog';
@@ -29,11 +30,24 @@ export function NudgeCheckInDialog({ slot, onClose, onComplete }: NudgeCheckInDi
   const [done, setDone] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const completedSheetSave = useRef(false);
+  const titleId = useId();
+  const statusId = useId();
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   const cards = data?.cards ?? [];
   const card: NudgeCard | undefined = cards[index];
   const isEmojiCard = card ? EMOJI_TRACKERS.has(card.nudgeId) : false;
   const shouldOpenTargetSheet = !loading && !error && !done && card && isEmojiCard;
+  const dialogRef = useDialogA11y<HTMLDivElement>(!shouldOpenTargetSheet, onClose);
+
+  // An answer swaps the card (or ends the bundle), taking the tapped button with it; focus goes to
+  // the new question so a screen reader carries on from there rather than from the top.
+  useEffect(() => {
+    const root = dialogRef.current;
+    const active = document.activeElement;
+    if (!root || (active && active !== root && root.contains(active))) return;
+    headingRef.current?.focus({ preventScroll: true });
+  }, [card?.nudgeId, done, dialogRef]);
 
   useEffect(() => {
     completedSheetSave.current = false;
@@ -134,19 +148,31 @@ export function NudgeCheckInDialog({ slot, onClose, onComplete }: NudgeCheckInDi
         aria-label={t('nudgeCard.closeCheckIn')}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={loading || error ? statusId : titleId}
+        aria-busy={loading || undefined}
         className="relative w-full max-w-[380px] rounded-[20px] border border-border-default bg-surface-raised px-[22px] py-6"
         style={{ maxHeight: '88dvh', overflowY: 'auto', fontFamily: FONT_BODY }}
       >
         {loading && (
-          <p className="text-[14px] text-on-surface-variant">{t('nudgeCard.loadingDots')}</p>
+          <p id={statusId} role="status" className="text-[14px] text-on-surface-variant">
+            {t('nudgeCard.loadingDots')}
+          </p>
         )}
-        {error && <p className="text-[14px] text-on-surface-variant">{error}</p>}
+        {error && (
+          <p id={loading ? undefined : statusId} role="alert" className="text-[14px] text-on-surface-variant">
+            {error}
+          </p>
+        )}
 
         {!loading && !error && (cards.length === 0 || done) && (
           <div className="text-center">
             <h2
+              id={titleId}
+              ref={headingRef}
+              tabIndex={-1}
               className="mb-2 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
@@ -172,7 +198,7 @@ export function NudgeCheckInDialog({ slot, onClose, onComplete }: NudgeCheckInDi
                 className="mb-2 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
                 style={{ fontFamily: FONT_MONO }}
               >
-                <span className="h-px w-3 bg-primary/60" />
+                <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
                 {t('nudgeCard.bundleProgress', {
                   title: data.bundleTitle,
                   current: index + 1,
@@ -181,6 +207,9 @@ export function NudgeCheckInDialog({ slot, onClose, onComplete }: NudgeCheckInDi
               </div>
             )}
             <h2
+              id={titleId}
+              ref={headingRef}
+              tabIndex={-1}
               className="mb-6 text-[19px] leading-snug text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
@@ -197,7 +226,7 @@ export function NudgeCheckInDialog({ slot, onClose, onComplete }: NudgeCheckInDi
                 {card.nudgeId === 'L1-003' ? t('nudgeCard.logMood') : t('nudgeCard.logSleep')}
               </button>
             ) : (
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-2.5" role="group" aria-labelledby={titleId}>
                 {card.options.map((opt) => (
                   <button
                     key={opt}
@@ -210,7 +239,7 @@ export function NudgeCheckInDialog({ slot, onClose, onComplete }: NudgeCheckInDi
                   </button>
                 ))}
                 {answerError && (
-                  <p className="pt-1 text-[13px] leading-relaxed text-on-surface-variant">
+                  <p role="alert" className="pt-1 text-[13px] leading-relaxed text-on-surface-variant">
                     {answerError}
                   </p>
                 )}

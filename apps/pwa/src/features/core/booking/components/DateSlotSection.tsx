@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BookingEyebrow } from './BookingEyebrow';
 
@@ -25,11 +26,23 @@ export function DateSlotSection({
   onNextPage,
   onSelectDate,
 }: DateSlotSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const labelId = useId();
+
+  // The card shows "NOV 4 TUE"; a screen reader hears "Tuesday 4 November".
+  const spokenDate = (ymd: string) => {
+    const [y, m, d] = ymd.split('-').map(Number);
+    if (!y || !m || !d) return ymd;
+    return new Date(y, m - 1, d, 12).toLocaleDateString(i18n.language, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+  };
 
   return (
     <div>
-      <BookingEyebrow>{t('booking.chooseDate')}</BookingEyebrow>
+      <BookingEyebrow id={labelId}>{t('booking.chooseDate')}</BookingEyebrow>
       <div className="mb-2 flex items-center justify-between gap-2">
         <button
           type="button"
@@ -69,13 +82,16 @@ export function DateSlotSection({
           </svg>
         </button>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div role="radiogroup" aria-labelledby={labelId} className="grid grid-cols-3 gap-2">
         {slots.map((s) => {
           const sel = pickedDateId === s.id;
           return (
             <button
               key={s.id}
               type="button"
+              role="radio"
+              aria-checked={sel}
+              aria-label={spokenDate(s.id)}
               onClick={() => onSelectDate(s.id)}
               className="rounded-[20px] border px-2 py-2.5 text-center transition-colors"
               style={{

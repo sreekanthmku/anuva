@@ -82,7 +82,7 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border-default bg-surface px-1.5 pt-2.5">
+      <nav aria-label={t('a11y.shell.mainNav')} className="fixed inset-x-0 bottom-0 z-50 border-t border-border-default bg-surface px-1.5 pt-2.5">
         <ul className="flex gap-0.5">
           {navItems.map((item) =>
             item.isMore ? (
@@ -93,6 +93,8 @@ export function BottomNav() {
                   className="flex w-full flex-col items-center gap-1 px-0.5 py-1"
                   aria-expanded={moreOpen}
                   aria-haspopup="dialog"
+                  // Its highlight marks one of the More screens as the current one.
+                  aria-current={moreActive ? 'page' : undefined}
                 >
                   <span
                     className="flex h-[38px] w-[38px] items-center justify-center rounded-full transition-colors"
@@ -140,7 +142,7 @@ export function BottomNav() {
             )
           )}
         </ul>
-        <div className="h-[calc(env(safe-area-inset-bottom,0px)+6px)]" />
+        <div className="h-[calc(env(safe-area-inset-bottom,0px)+6px)]" aria-hidden="true" />
       </nav>
 
       <MoreMenuSheet open={moreOpen} onClose={() => setMoreOpen(false)} />

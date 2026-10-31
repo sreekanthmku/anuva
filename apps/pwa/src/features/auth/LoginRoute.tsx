@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TERMS_CONSENT_VERSION, toIndianMobile } from '@anuva/shared';
 import i18n from '../../i18n';
+import { announce } from '../../lib/a11y/announce';
 import { TrustStrip } from '../onboarding/components/TrustStrip';
 import { useAuth } from './auth-context';
 import { getPostAuthPath } from './postAuthPath';
@@ -106,6 +107,8 @@ export default function LoginRoute() {
       setMaskedPhone(response.maskedPhone);
       setPhone(response.phone);
       setResendAvailableAt(Date.now() + response.resendAfterSeconds * 1000);
+      // The phone form she was on is replaced by the code form; say so.
+      announce(t('login.otpSentTo', { phone: response.maskedPhone }));
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -176,14 +179,15 @@ export default function LoginRoute() {
               }}
               aria-hidden
             />
+            {/* Decorative: the brand name is written out right below it. */}
             <img
               src="/anuva-logo-icon.png"
-              alt={t('common.logoAlt')}
+              alt=""
               className="relative z-10 h-20 w-20 object-contain"
             />
           </div>
         </div>
-        <p
+        <h1
           className="mt-4 text-[16px] tracking-[0.16em] text-on-surface"
           style={{
             fontFamily: '"Fraunces", sans-serif',
@@ -192,7 +196,7 @@ export default function LoginRoute() {
           }}
         >
           {t('common.brandName')}
-        </p>
+        </h1>
         <p
           className="mt-0.5 text-[13px] tracking-normal text-primary"
           style={{
@@ -223,12 +227,14 @@ export default function LoginRoute() {
             </p>
 
             <label
+              htmlFor="login-beta-email"
               className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
               Email
             </label>
             <input
+              id="login-beta-email"
               type="email"
               name="email"
               autoComplete="email"
@@ -241,12 +247,14 @@ export default function LoginRoute() {
             />
 
             <label
+              htmlFor="login-beta-name"
               className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
               Full name (optional)
             </label>
             <input
+              id="login-beta-name"
               type="text"
               name="name"
               autoComplete="name"
@@ -261,6 +269,8 @@ export default function LoginRoute() {
 
             {errorMessage && (
               <p
+                id="login-error"
+                role="alert"
                 className="mb-3 text-[13px] text-error"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
@@ -303,6 +313,7 @@ export default function LoginRoute() {
                     <button
                       key={option}
                       type="button"
+                      aria-pressed={active}
                       onClick={() => resetOtpStep(option)}
                       className="rounded-full px-4 py-2.5 text-[12px] uppercase tracking-[0.12em] transition-colors"
                       style={{
@@ -336,12 +347,16 @@ export default function LoginRoute() {
                 </div>
 
                 <label
+                  htmlFor="login-otp"
                   className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
                   {t('login.otpLabel')}
                 </label>
                 <input
+                  id="login-otp"
+                  aria-invalid={errorMessage !== null}
+                  aria-describedby={errorMessage ? 'login-error' : undefined}
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -356,6 +371,8 @@ export default function LoginRoute() {
 
                 {errorMessage && (
                   <p
+                    id="login-error"
+                    role="alert"
                     className="mb-3 text-[13px] text-error"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
@@ -404,6 +421,7 @@ export default function LoginRoute() {
                         setPhone(response.phone);
                         setResendAvailableAt(Date.now() + response.resendAfterSeconds * 1000);
                         setErrorMessage(null);
+                        announce(t('login.otpSentTo', { phone: response.maskedPhone }));
                       })
                       .catch((error) => {
                         setErrorMessage(getErrorMessage(error));
@@ -423,12 +441,14 @@ export default function LoginRoute() {
                 {mode === 'signup' && (
                   <>
                     <label
+                      htmlFor="login-name"
                       className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
                       style={{ fontFamily: '"Mulish", sans-serif' }}
                     >
                       {t('login.nameLabel')}
                     </label>
                     <input
+                      id="login-name"
                       type="text"
                       name="name"
                       autoComplete="name"
@@ -442,12 +462,14 @@ export default function LoginRoute() {
                 )}
 
                 <label
+                  htmlFor="login-phone"
                   className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
                   {t('login.phoneLabel')}
                 </label>
                 <input
+                  id="login-phone"
                   type="tel"
                   name="phone"
                   autoComplete="tel"
@@ -485,6 +507,8 @@ export default function LoginRoute() {
 
                 {errorMessage && (
                   <p
+                    id="login-error"
+                    role="alert"
                     className="mb-3 text-[13px] text-error"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >

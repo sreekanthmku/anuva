@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { Room, RoomEvent, Track, type RemoteTrack } from 'livekit-client';
 import type { ConsultationCallState } from '@anuva/shared';
+import { announce } from '../../lib/a11y/announce';
 import {
   consentToConsultationRecording,
   endConsultationCall,
@@ -166,10 +167,13 @@ export default function ConsultationCallRoute() {
     try {
       const microphone = await room.localParticipant.setMicrophoneEnabled(next);
       setMicOn(next);
+      announce(next ? i18n.t('a11y.care.micOn') : i18n.t('call.muted'));
       // Unmuting can publish a fresh track; the self ring has to follow it.
       if (next) setLocalAudio(microphone?.track?.mediaStreamTrack ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : i18n.t('call.micFailed'));
+      // Only the error screen prints `error`; mid-call it would otherwise go unheard.
+      announce(i18n.t('call.micFailed'), 'assertive');
     }
   }, [micOn]);
 
@@ -181,6 +185,7 @@ export default function ConsultationCallRoute() {
     try {
       const publication = await room.localParticipant.setCameraEnabled(next);
       setCameraOn(next);
+      announce(next ? i18n.t('call.cameraOn') : i18n.t('call.cameraOff'));
 
       if (next && publication?.track && localVideoRef.current) {
         publication.track.attach(localVideoRef.current);
@@ -192,6 +197,7 @@ export default function ConsultationCallRoute() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : i18n.t('call.cameraFailed'));
+      announce(i18n.t('call.cameraFailed'), 'assertive');
     }
   }, [cameraOn]);
 
@@ -212,6 +218,22 @@ export default function ConsultationCallRoute() {
       setLeaving(false);
     }
   }, [id, leaving]);
+
+  // Spoken whenever it changes, from a region that is always mounted so the change is heard.
+  const spokenStatus =
+    screen === 'loading'
+      ? t('call.checkingStatus')
+      : screen === 'waiting'
+        ? t('call.waitingTitle')
+        : screen === 'connecting'
+          ? t('call.connecting')
+          : screen === 'connected'
+            ? remoteConnected
+              ? t('a11y.care.callConnected', { name: call?.doctor.name ?? '' })
+              : t('call.keepOpen')
+            : screen === 'ended'
+              ? t('call.endedTitle')
+              : '';
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface text-on-surface">
@@ -235,6 +257,9 @@ export default function ConsultationCallRoute() {
       </header>
 
       <section className="px-4 py-4">
+        <p role="status" className="sr-only">
+          {spokenStatus}
+        </p>
         {screen === 'loading' ? (
           <div className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-6 text-[13px] text-on-surface-variant">
             {t('call.checkingStatus')}
@@ -341,6 +366,8 @@ export default function ConsultationCallRoute() {
                 type="button"
                 onClick={toggleMic}
                 disabled={screen !== 'connected'}
+                aria-label={t('call.mute')}
+                aria-pressed={!micOn}
                 className="rounded-full border border-border-default bg-surface-raised px-3 py-3 text-[13px] font-semibold disabled:opacity-45"
               >
                 {micOn ? t('call.mute') : t('call.unmute')}
@@ -350,6 +377,8 @@ export default function ConsultationCallRoute() {
                   type="button"
                   onClick={toggleCamera}
                   disabled={screen !== 'connected'}
+                  aria-label={t('a11y.care.camera')}
+                  aria-pressed={cameraOn}
                   className="rounded-full border border-border-default bg-surface-raised px-3 py-3 text-[13px] font-semibold disabled:opacity-45"
                 >
                   {cameraOn ? t('call.cameraOff') : t('call.cameraOn')}
@@ -368,7 +397,10 @@ export default function ConsultationCallRoute() {
         ) : null}
 
         {screen === 'error' ? (
-          <div className="rounded-[20px] border border-error/20 bg-error-container px-4 py-4 text-[13px] text-on-error-container">
+          <div
+            role="alert"
+            className="rounded-[20px] border border-error/20 bg-error-container px-4 py-4 text-[13px] text-on-error-container"
+          >
             {error ?? t('call.openFailed')}
           </div>
         ) : null}

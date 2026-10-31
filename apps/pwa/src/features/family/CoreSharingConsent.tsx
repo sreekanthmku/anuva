@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { announce } from '../../lib/a11y/announce';
 
 const mulish = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' };
 
-function SharedList({ items }: { items: string[] }) {
+function SharedList({ items, id }: { items: string[]; id?: string }) {
   return (
-    <ul className="mt-1.5 flex list-disc flex-col gap-1 pl-4">
+    <ul id={id} className="mt-1.5 flex list-disc flex-col gap-1 pl-4">
       {items.map((item) => (
         <li key={item} className="text-[12px] leading-[1.5] text-on-surface-variant" style={mulish}>
           {item}
@@ -33,12 +34,18 @@ export function CoreSharingConsent({
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const id = useId();
+  const titleId = `${id}-title`;
+  const listId = `${id}-list`;
+  const requiredId = `${id}-required`;
+  const errorId = `${id}-error`;
 
   const toggle = async () => {
     setBusy(true);
     setError(null);
     try {
       await onChange(!agreed);
+      announce(t('a11y.family.saved'));
     } catch (e) {
       setError(e instanceof Error ? e.message : t('family.core.failed'));
     } finally {
@@ -47,29 +54,33 @@ export function CoreSharingConsent({
   };
 
   return (
-    <div className="mt-4 rounded-[16px] border border-border-default bg-surface px-3.5 py-3">
-      <p className="text-[13px] font-semibold text-on-surface" style={mulish}>
+    <div
+      role="group"
+      aria-labelledby={titleId}
+      className="mt-4 rounded-[16px] border border-border-default bg-surface px-3.5 py-3"
+    >
+      <p id={titleId} className="text-[13px] font-semibold text-on-surface" style={mulish}>
         {t('family.core.title')}
       </p>
-      <SharedList items={items} />
+      <SharedList items={items} id={listId} />
       <label className="mt-2.5 flex min-h-11 cursor-pointer items-center gap-3">
         <input
           type="checkbox"
           checked={agreed}
           disabled={busy}
           onChange={() => void toggle()}
-          aria-describedby="family-core-required"
+          aria-describedby={error ? `${listId} ${requiredId} ${errorId}` : `${listId} ${requiredId}`}
           className="h-5 w-5 shrink-0 accent-[#5E3566]"
         />
         <span className="text-[12.5px] font-semibold leading-[1.45] text-on-surface" style={mulish}>
           {t('family.core.agree')}
         </span>
       </label>
-      <p id="family-core-required" className="mt-0.5 text-[11.5px] leading-[1.5] text-outline" style={mulish}>
+      <p id={requiredId} className="mt-0.5 text-[11.5px] leading-[1.5] text-outline" style={mulish}>
         {t('family.core.required')}
       </p>
       {error ? (
-        <p className="mt-1.5 text-[11.5px] text-error" style={mulish} role="alert">
+        <p id={errorId} className="mt-1.5 text-[11.5px] text-error" style={mulish} role="alert">
           {error}
         </p>
       ) : null}

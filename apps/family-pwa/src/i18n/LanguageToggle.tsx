@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { announce } from '../lib/a11y/announce';
 import { LANGUAGES, languageFor, type LanguageCode } from './languages';
 import { TRANSLATED_LANGUAGES } from './index';
 
@@ -60,6 +61,9 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+  const menuLabelId = useId();
   const current = languageFor(i18n.resolvedLanguage ?? i18n.language);
 
   // A tap anywhere else closes the menu — on a phone there is no `Escape` key to lean on.
@@ -69,7 +73,10 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
       if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      // The list is about to unmount; keep focus from falling to the top of the page.
+      if (containerRef.current?.contains(document.activeElement)) triggerRef.current?.focus({ preventScroll: true });
     };
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
@@ -81,16 +88,21 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
 
   const choose = (code: LanguageCode) => {
     setOpen(false);
-    if (code !== i18n.language) void i18n.changeLanguage(code);
+    if (code === i18n.language) return;
+    // The pages remount in the new language (LanguageKeyed), so say what happened, in it.
+    void i18n
+      .changeLanguage(code)
+      .then(() => announce(i18n.t('a11y.languageChanged', { language: languageFor(code).nativeName })));
   };
 
   return (
     <div ref={containerRef} className={`relative shrink-0 ${className}`}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((wasOpen) => !wasOpen)}
-        aria-haspopup="listbox"
         aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
         aria-label={t('language.switchTo', { language: current.englishName })}
         className={`press flex min-h-[44px] items-center justify-center gap-1.5 rounded-full border border-primary/15 bg-surface-raised text-primary shadow-soft ${
           variant === 'compact' ? 'w-11' : 'px-3.5'
@@ -105,12 +117,15 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
       </button>
 
       {open ? (
+        // A disclosure of plain buttons rather than a listbox: each language is its own Tab stop, and
+        // a listbox promises arrow-key handling this does not have.
         <div
-          role="listbox"
-          aria-label={t('language.label')}
+          id={menuId}
+          role="group"
+          aria-labelledby={menuLabelId}
           className="absolute right-0 top-[calc(100%+8px)] z-50 max-h-[min(70vh,26rem)] w-[15rem] overflow-y-auto overscroll-contain rounded-[20px] border border-border-default bg-surface-raised p-1.5 shadow-lift"
         >
-          <p className="px-3 pb-1.5 pt-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-tertiary">
+          <p id={menuLabelId} className="px-3 pb-1.5 pt-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-tertiary">
             {t('language.label')}
           </p>
           {LANGUAGES.map((language) => {
@@ -120,8 +135,7 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
               <button
                 key={language.code}
                 type="button"
-                role="option"
-                aria-selected={selected}
+                aria-current={selected ? 'true' : undefined}
                 disabled={!available}
                 onClick={() => choose(language.code)}
                 className={`flex min-h-[44px] w-full items-center gap-2 rounded-[14px] px-3 text-left transition-colors ${

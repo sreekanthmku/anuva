@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BookingEyebrow } from './BookingEyebrow';
 
@@ -17,10 +18,11 @@ export function TimeSlotSection({
   emptyMessage,
 }: TimeSlotSectionProps) {
   const { t } = useTranslation();
+  const labelId = useId();
 
   return (
     <div className="mt-4">
-      <BookingEyebrow>{t('booking.chooseTime')}</BookingEyebrow>
+      <BookingEyebrow id={labelId}>{t('booking.chooseTime')}</BookingEyebrow>
       {slots.length === 0 ? (
         <div
           className="rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-3 text-[12px] text-on-surface-variant"
@@ -29,13 +31,15 @@ export function TimeSlotSection({
           {emptyMessage ?? t('booking.noTimeSlots')}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div role="radiogroup" aria-labelledby={labelId} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {slots.map((t) => {
             const sel = pickedTimeId === t.id;
             return (
               <button
                 key={t.id}
                 type="button"
+                role="radio"
+                aria-checked={sel}
                 onClick={() => onSelectTime(t.id)}
                 className="rounded-[20px] border px-2 py-2.5 text-center transition-colors"
                 style={{

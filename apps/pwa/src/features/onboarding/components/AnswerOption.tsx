@@ -8,6 +8,8 @@ export function AnswerOption({ label, isSelected, onSelect }: AnswerOptionProps)
   return (
     <button
       type="button"
+      role="radio"
+      aria-checked={isSelected}
       onClick={onSelect}
       className="flex w-full items-center gap-3.5 rounded-[20px] border px-4 py-3.5 text-left transition-colors"
       style={{
@@ -16,6 +18,7 @@ export function AnswerOption({ label, isSelected, onSelect }: AnswerOptionProps)
       }}
     >
       <span
+        aria-hidden="true"
         className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px]"
         style={{ borderColor: isSelected ? '#5E3566' : '#B49FB0' }}
       >

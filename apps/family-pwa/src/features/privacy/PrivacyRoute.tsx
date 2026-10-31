@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchPrivacy } from '../../shared/lib/familyApi';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
 import { LeaveCard } from '../leave/LeaveCard';
-import { Card, ErrorCard, Eyebrow, PageIntro, SkeletonCard } from '../shell/ui';
+import { Card, ErrorCard, Eyebrow, LoadingStack, PageIntro, SkeletonCard } from '../shell/ui';
 
 export function PrivacyRoute() {
   const { t } = useTranslation();
@@ -10,10 +10,10 @@ export function PrivacyRoute() {
 
   if (loading && !data) {
     return (
-      <div className="space-y-4">
+      <LoadingStack>
         <SkeletonCard lines={3} />
         <SkeletonCard lines={3} />
-      </div>
+      </LoadingStack>
     );
   }
 

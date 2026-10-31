@@ -7,6 +7,7 @@ import {
   type DetailedQuestion,
   type DoctorDetailedAssessmentResponse,
 } from '@anuva/shared';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { fetchDetailedAssessment } from './api';
 
 type Props = {
@@ -113,6 +114,8 @@ export function DetailedAssessmentSheet({ consultationId, patientLabel, onClose 
   const [data, setData] = useState<DoctorDetailedAssessmentResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Mounted only while open.
+  const dialogRef = useDialogA11y<HTMLDivElement>(true, onClose);
 
   const load = useCallback(async () => {
     try {
@@ -139,13 +142,22 @@ export function DetailedAssessmentSheet({ consultationId, patientLabel, onClose 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/45" onClick={onClose}>
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detailed-assessment-title"
+        aria-describedby="detailed-assessment-patient"
         className="max-h-[92vh] w-full overflow-y-auto rounded-t-[24px] bg-surface px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-on-surface"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-display text-[22px] leading-tight">Health assessment</h2>
-            <p className="mt-1 truncate text-[12px] text-on-surface-variant">{patientLabel}</p>
+            <h2 id="detailed-assessment-title" className="font-display text-[22px] leading-tight">
+              Health assessment
+            </h2>
+            <p id="detailed-assessment-patient" className="mt-1 truncate text-[12px] text-on-surface-variant">
+              {patientLabel}
+            </p>
           </div>
           <button
             type="button"
@@ -171,9 +183,17 @@ export function DetailedAssessmentSheet({ consultationId, patientLabel, onClose 
           </div>
         )}
 
-        {loading && <p className="mt-6 text-[13px] text-on-surface-variant">Loading…</p>}
+        {loading && (
+          <p role="status" className="mt-6 text-[13px] text-on-surface-variant">
+            Loading…
+          </p>
+        )}
 
-        {error && <p className="mt-6 text-[13px] text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-6 text-[13px] text-error">
+            {error}
+          </p>
+        )}
 
         {!loading && !error && visibleSections.length === 0 && (
           <p className="mt-6 text-[13px] text-on-surface-variant">

@@ -241,5 +241,10 @@
     "doneTitle": "You have stopped receiving updates",
     "doneBody": "You will not get any more updates about {{name}}. If you want to reconnect, ask her for a new invite link.",
     "doneBodyNoName": "You will not get any more updates. If you want to reconnect, ask her for a new invite link."
+  },
+  "a11y": {
+    "loading": "Loading…",
+    "daysLogged": "Logged on {{logged}} of {{total}} days",
+    "languageChanged": "Language changed to {{language}}"
   }
 }

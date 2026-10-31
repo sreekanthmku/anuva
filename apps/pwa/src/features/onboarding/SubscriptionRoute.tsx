@@ -66,6 +66,7 @@ export default function SubscriptionRoute() {
         <button
           type="button"
           onClick={() => navigate('/assessment-result')}
+          aria-label={t('common.back')}
           className="bg-transparent p-0 text-[13px] text-on-surface-variant"
           style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
         >
@@ -73,13 +74,13 @@ export default function SubscriptionRoute() {
         </button>
         <div className="flex items-center gap-2">
           <LanguageToggle variant="compact" />
-          <img src="/anu.png" alt={t('subscription.logoAlt')} className="h-5 w-5 object-contain" />
+          <img src="/anu.png" alt="" className="h-5 w-5 object-contain" />
         </div>
       </section>
 
       <section className="px-3 pb-[18px] pt-2">
         <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-secondary">
-          <span className="h-px w-3 bg-secondary/70" />
+          <span className="h-px w-3 bg-secondary/70" aria-hidden="true" />
           <span style={{ fontFamily: '"Mulish", sans-serif' }}>
             {t('subscription.fullExperience')}
           </span>
@@ -112,15 +113,15 @@ export default function SubscriptionRoute() {
 
       <section className="px-3 pb-4">
         <article className="rounded-[20px] border border-border-default bg-primary-container p-[18px]">
-          <div className="mb-3.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
-            <span className="h-px w-3 bg-primary/60" />
+          <h2 className="mb-3.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary">
+            <span className="h-px w-3 bg-primary/60" aria-hidden="true" />
             <span style={{ fontFamily: '"Mulish", sans-serif' }}>
               {t('subscription.everythingIncluded')}
             </span>
-          </div>
-          <div className="grid grid-cols-2 gap-x-[14px] gap-y-[10px]">
+          </h2>
+          <ul className="grid grid-cols-2 gap-x-[14px] gap-y-[10px]">
             {includedKeys.map((item) => (
-              <div key={item} className="flex items-start gap-1.5">
+              <li key={item} className="flex items-start gap-1.5">
                 <svg
                   width="13"
                   height="13"
@@ -152,6 +153,7 @@ export default function SubscriptionRoute() {
                             href={DPDP_ACT_URL}
                             target="_blank"
                             rel="noopener noreferrer"
+                            aria-description={t('a11y.shell.opensInNewTab')}
                             className="text-inherit no-underline"
                           />
                         ),
@@ -161,13 +163,17 @@ export default function SubscriptionRoute() {
                     t(`subscription.included.${item}`)
                   )}
                 </span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </article>
       </section>
 
-      <section className="flex flex-col gap-2.5 px-3">
+      <section
+        className="flex flex-col gap-2.5 px-3"
+        role="radiogroup"
+        aria-label={t('a11y.shell.choosePlan')}
+      >
         {planIds.map((planId) => {
           const isSelected = selectedPlanId === planId;
           const badge = t(`subscription.plans.${planId}.badge`, { defaultValue: '' });
@@ -176,6 +182,8 @@ export default function SubscriptionRoute() {
             <button
               key={planId}
               type="button"
+              role="radio"
+              aria-checked={isSelected}
               onClick={() => setSelectedPlanId(planId)}
               className="relative flex items-center gap-3.5 rounded-[18px] px-4 py-3.5 text-left transition-colors"
               style={{
@@ -197,6 +205,7 @@ export default function SubscriptionRoute() {
               )}
 
               <span
+                aria-hidden="true"
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px]"
                 style={{ borderColor: isSelected ? '#5E3566' : '#B49FB0' }}
               >
@@ -267,6 +276,7 @@ export default function SubscriptionRoute() {
                 style={style}
               >
                 {badge.label}
+                <span className="sr-only"> {t('a11y.shell.opensInNewTab')}</span>
               </a>
             );
           }

@@ -40,7 +40,11 @@ export function NoteAiConsentPanel({
         <p>{t('notes.aiConsent.kept')}</p>
         <p>{t('notes.aiConsent.choice')}</p>
       </div>
-      {error ? <p className="mt-3 text-[12.5px] text-error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-3 text-[12.5px] text-error">
+          {error}
+        </p>
+      ) : null}
       <button
         type="button"
         disabled={saving}

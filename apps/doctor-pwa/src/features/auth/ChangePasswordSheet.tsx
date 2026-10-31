@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { DOCTOR_PASSWORD_MIN } from '@anuva/shared';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { changeDoctorPassword } from './api';
 
 /**
@@ -13,6 +15,8 @@ export function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Mounted only while open, so always open.
+  const dialogRef = useDialogA11y<HTMLDivElement>(true, onClose);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -31,6 +35,7 @@ export function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
     try {
       await changeDoctorPassword(currentPassword, newPassword);
       setDone(true);
+      announce('Password changed. Any other device you were signed in on has been signed out.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to change the password.');
     } finally {
@@ -40,9 +45,15 @@ export function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-password-title"
+        className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+      >
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-display text-lg text-on-surface">Change password</h2>
+          <h2 id="change-password-title" className="font-display text-lg text-on-surface">Change password</h2>
           <button
             type="button"
             onClick={onClose}
@@ -79,10 +90,11 @@ export function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
               value={newPassword}
               autoComplete="new-password"
               minLength={DOCTOR_PASSWORD_MIN}
+              aria-describedby="new-password-hint"
               onChange={(event) => setNewPassword(event.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
             />
-            <p className="mt-1 text-xs text-slate-400">
+            <p id="new-password-hint" className="mt-1 text-xs text-slate-400">
               At least {DOCTOR_PASSWORD_MIN} characters.
             </p>
 
@@ -94,11 +106,17 @@ export function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
               type="password"
               value={confirmPassword}
               autoComplete="new-password"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'change-password-error' : undefined}
               onChange={(event) => setConfirmPassword(event.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
             />
 
-            {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+            {error ? (
+              <p id="change-password-error" role="alert" className="mt-2 text-sm text-red-600">
+                {error}
+              </p>
+            ) : null}
 
             <button
               type="submit"

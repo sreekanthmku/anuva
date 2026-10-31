@@ -27,7 +27,7 @@ export function Eyebrow({
   const color = TONE_COLOR[tone];
   return (
     <div className={`mb-2 flex items-center gap-2 ${className}`}>
-      <span className="h-px w-4" style={{ background: color, opacity: 0.5 }} />
+      <span className="h-px w-4" style={{ background: color, opacity: 0.5 }} aria-hidden="true" />
       <span
         className="text-[11px] font-semibold uppercase tracking-[0.13em]"
         style={{ color, fontFamily: '"Mulish", sans-serif' }}

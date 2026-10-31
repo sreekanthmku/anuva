@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES, languageFor, type LanguageCode } from './languages';
 import { TRANSLATED_LANGUAGES } from './index';
@@ -15,6 +15,7 @@ function GlobeIcon({ className = '' }: { className?: string }) {
       strokeLinejoin="round"
       className={className}
       aria-hidden
+      focusable="false"
     >
       <circle cx="12" cy="12" r="9" />
       <path d="M3 12h18" />
@@ -34,6 +35,7 @@ function CheckIcon() {
       strokeLinejoin="round"
       className="h-4 w-4"
       aria-hidden
+      focusable="false"
     >
       <path d="m5 12.5 4.5 4.5L19 7" />
     </svg>
@@ -60,6 +62,9 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+  const labelId = useId();
   const current = languageFor(i18n.resolvedLanguage ?? i18n.language);
 
   // A tap anywhere else closes the menu — on a phone there is no `Escape` key to lean on.
@@ -69,7 +74,10 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
       if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key !== 'Escape') return;
+      // Focus was on a language that is about to disappear: put it back on the toggle.
+      if (containerRef.current?.contains(document.activeElement)) buttonRef.current?.focus();
+      setOpen(false);
     };
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
@@ -87,10 +95,11 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
   return (
     <div ref={containerRef} className={`relative shrink-0 ${className}`}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((wasOpen) => !wasOpen)}
-        aria-haspopup="listbox"
         aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
         aria-label={t('language.switchTo', { language: current.englishName })}
         className={`press flex min-h-[44px] items-center justify-center gap-1.5 rounded-full border border-primary/15 bg-surface-raised text-primary shadow-soft ${
           variant === 'compact' ? 'w-11' : 'px-3.5'
@@ -105,12 +114,15 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
       </button>
 
       {open ? (
+        // A group of plain buttons rather than a listbox: a listbox promises arrow-key handling that
+        // this does not have. The current language is the pressed one.
         <div
-          role="listbox"
-          aria-label={t('language.label')}
+          id={menuId}
+          role="group"
+          aria-labelledby={labelId}
           className="absolute right-0 top-[calc(100%+8px)] z-50 max-h-[min(70vh,26rem)] w-[15rem] overflow-y-auto overscroll-contain rounded-[20px] border border-border-default bg-surface-raised p-1.5 shadow-lift"
         >
-          <p className="px-3 pb-1.5 pt-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-tertiary">
+          <p id={labelId} className="px-3 pb-1.5 pt-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-tertiary">
             {t('language.label')}
           </p>
           {LANGUAGES.map((language) => {
@@ -120,8 +132,7 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
               <button
                 key={language.code}
                 type="button"
-                role="option"
-                aria-selected={selected}
+                aria-pressed={selected}
                 disabled={!available}
                 onClick={() => choose(language.code)}
                 className={`flex min-h-[44px] w-full items-center gap-2 rounded-[14px] px-3 text-left transition-colors ${
@@ -129,7 +140,8 @@ export function LanguageToggle({ className = '', variant = 'pill' }: LanguageTog
                 } ${available ? 'press hover:bg-surface-container' : 'cursor-not-allowed opacity-45'}`}
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14.5px] font-semibold leading-tight">
+                  {/* `lang`, so a screen reader reads each name in its own voice. */}
+                  <span lang={language.code} className="block truncate text-[14.5px] font-semibold leading-tight">
                     {language.nativeName}
                   </span>
                   {language.nativeName === language.englishName ? null : (

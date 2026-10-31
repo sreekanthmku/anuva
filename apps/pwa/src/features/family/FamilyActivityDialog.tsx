@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { FamilyActivityResponse, FamilySupportActionKind } from '@anuva/shared';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { twemojiUrl } from '../../shared/lib/twemoji';
 import { sendFamilyThanks } from './api';
 
@@ -39,15 +41,7 @@ export function FamilyActivityDialog({
 }) {
   const { t } = useTranslation();
   const [thanked, setThanked] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  const dialogRef = useDialogA11y<HTMLDivElement>(open, onClose);
 
   if (!open || !activity?.member || !activity.today) return null;
 
@@ -58,20 +52,24 @@ export function FamilyActivityDialog({
   const thank = () => {
     if (thanked) return;
     setThanked(true);
+    announce(t('a11y.family.thanksSent', { name: firstNameOf(member.name) }));
     void sendFamilyThanks({ memberId: member.id }).catch(() => undefined);
   };
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="family-activity-title"
     >
+      {/* Tap-outside only: the Close button below is the same thing for keyboard and screen readers. */}
       <button
         type="button"
+        tabIndex={-1}
+        aria-hidden
         className="absolute inset-0 bg-[#3E2542]/60 backdrop-blur-[2px]"
-        aria-label={t('common.close')}
         onClick={onClose}
       />
 

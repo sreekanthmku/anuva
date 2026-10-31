@@ -137,8 +137,16 @@ export function WellnessTrendCard({ report }: { report: WeeklyReportResponse }) 
       : t('wellness.trendAriaSummary', {
           series: seriesName,
           unit,
-          points: loggedIndices
-            .map((i) => wellnessAriaLabel(pointNames[i] ?? '', values[i]!))
+          // Every column in the window, in order, so a missed day is heard where it falls.
+          points: values
+            .map((v, i) => {
+              if (inactive[i]) return null;
+              const name = pointNames[i] ?? '';
+              return v != null
+                ? wellnessAriaLabel(name, v)
+                : t('charts.barAria', { date: name, value: t('charts.notLogged') });
+            })
+            .filter((point): point is string => point != null)
             .join('. '),
           missingNote:
             missingIndices.length > 0
@@ -231,6 +239,7 @@ export function WellnessTrendCard({ report }: { report: WeeklyReportResponse }) 
               preserveAspectRatio="none"
               className="block h-full w-full"
               aria-hidden="true"
+              focusable="false"
             >
               <defs>
                 {/* The line takes its colour from the bands it passes through,

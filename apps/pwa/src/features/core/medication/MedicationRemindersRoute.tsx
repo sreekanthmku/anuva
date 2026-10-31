@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { MedicationReminder } from '@anuva/shared';
@@ -20,6 +20,7 @@ export default function MedicationRemindersRoute() {
   // `null` closed, 'new' for a new reminder, otherwise the one being edited.
   const [editing, setEditing] = useState<MedicationReminder | 'new' | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
+  const rowId = useId();
 
   const load = useCallback(async () => {
     try {
@@ -68,7 +69,16 @@ export default function MedicationRemindersRoute() {
 
         <PushReadiness />
 
-        {error && <p className="mb-3 text-[12px] text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="mb-3 text-[12px] text-error">
+            {error}
+          </p>
+        )}
+        {!reminders && !error && (
+          <p role="status" className="sr-only">
+            {t('common.loading')}
+          </p>
+        )}
 
         {reminders && reminders.length === 0 && (
           <p className="mb-4 text-[13px] text-on-surface-variant">{t('medication.empty')}</p>
@@ -84,7 +94,10 @@ export default function MedicationRemindersRoute() {
                     onClick={() => setEditing(reminder)}
                     className="min-h-11 min-w-0 flex-1 text-left"
                   >
-                    <span className={`block text-[14px] ${reminder.active ? 'text-on-surface' : 'text-outline'}`}>
+                    <span
+                      id={`${rowId}-${reminder.id}`}
+                      className={`block text-[14px] ${reminder.active ? 'text-on-surface' : 'text-outline'}`}
+                    >
                       {reminderSummary(t, reminder, i18n.language)}
                     </span>
                     {!reminder.active && (
@@ -96,6 +109,9 @@ export default function MedicationRemindersRoute() {
                     role="switch"
                     aria-checked={reminder.active}
                     aria-label={t('medication.activeToggle')}
+                    // "Reminder on", then which reminder: every row's switch would otherwise sound the same.
+                    id={`${rowId}-${reminder.id}-switch`}
+                    aria-labelledby={`${rowId}-${reminder.id}-switch ${rowId}-${reminder.id}`}
                     disabled={toggling === reminder.id}
                     onClick={() => void toggle(reminder)}
                     className="relative inline-flex h-11 w-14 shrink-0 items-center disabled:opacity-60"

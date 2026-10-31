@@ -100,6 +100,18 @@ export default function AnuChatRoute() {
   /// and costs a real model call, so a remount, a StrictMode double-effect or a
   /// back-navigation must not send it twice.
   const didAutoSend = useRef(false);
+  /// The log only speaks once the restored history is on screen; otherwise opening the chat would
+  /// read the whole thread aloud as if every old message were new.
+  const [liveReady, setLiveReady] = useState(false);
+
+  useEffect(() => {
+    if (historyLoading) {
+      setLiveReady(false);
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => setLiveReady(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [historyLoading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -288,18 +300,18 @@ export default function AnuChatRoute() {
 
           <div className="relative">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-surface-container-low">
-              <img src="/anu.png" alt={t('chat.anuAvatarAlt')} className="h-6 w-6 object-contain" />
+              <img src="/anu.png" alt="" className="h-6 w-6 object-contain" />
             </span>
-            <span className="absolute -bottom-[1px] -right-[1px] h-2.5 w-2.5 rounded-full border-2 border-surface bg-primary" />
+            <span aria-hidden="true" className="absolute -bottom-[1px] -right-[1px] h-2.5 w-2.5 rounded-full border-2 border-surface bg-primary" />
           </div>
 
           <div className="flex-1">
-            <p
+            <h1
               className="text-[17px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
             >
               {t('chat.anuName')}
-            </p>
+            </h1>
             <p
               className="text-[10px] uppercase tracking-[0.08em] text-primary"
               style={{ fontFamily: '"Mulish", sans-serif' }}
@@ -337,10 +349,14 @@ export default function AnuChatRoute() {
                 />
                 <div
                   role="menu"
+                  aria-labelledby="anu-chat-engine-title"
                   className="absolute right-0 top-full z-50 mt-1 w-56 rounded-[18px] border border-border-default bg-surface p-1.5 shadow-[0_8px_24px_rgba(94,53,102,0.18)]"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  <p className="px-3 pb-1 pt-1.5 text-[10px] uppercase tracking-[0.08em] text-on-surface-variant">
+                  <p
+                    id="anu-chat-engine-title"
+                    className="px-3 pb-1 pt-1.5 text-[10px] uppercase tracking-[0.08em] text-on-surface-variant"
+                  >
                     {t('chat.engine.title')}
                   </p>
                   {(['current', 'v3'] as const).map((option) => (
@@ -376,8 +392,19 @@ export default function AnuChatRoute() {
 
       <section
         ref={messageListRef}
+        role="log"
+        aria-label={t('a11y.care.conversation')}
+        aria-live={liveReady ? 'polite' : 'off'}
+        aria-relevant="additions"
+        aria-busy={historyLoading}
         className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-3 pt-[18px]"
       >
+        {historyLoading && (
+          <p role="status" className="sr-only">
+            {t('common.loading')}
+          </p>
+        )}
+
         {!historyLoading && messages.length === 0 && (
           <p
             className="mt-6 text-center text-[13px] leading-[1.6] text-on-surface-variant"
@@ -413,6 +440,13 @@ export default function AnuChatRoute() {
                 }`}
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
+                <span className="sr-only">
+                  {isUser
+                    ? t('a11y.care.youSaid')
+                    : message.isEscalation
+                      ? t('a11y.care.anuSaidSafety')
+                      : t('a11y.care.anuSaid')}{' '}
+                </span>
                 {message.text}
               </div>
               {message.familyAlerted && (
@@ -446,7 +480,8 @@ export default function AnuChatRoute() {
                   className="min-h-11 rounded-full border border-primary/30 bg-surface px-4 py-2 text-[13px] font-semibold text-primary"
                   style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                 >
-                  {t(`chat.actions.${message.action.type}`, { defaultValue: t('chat.actions.fallback') })} →
+                  {t(`chat.actions.${message.action.type}`, { defaultValue: t('chat.actions.fallback') })}{' '}
+                  <span aria-hidden="true">→</span>
                 </button>
               )}
               </div>
@@ -462,6 +497,7 @@ export default function AnuChatRoute() {
               className="h-6 w-6 shrink-0 rounded-full border border-border-default bg-surface-container-low p-1"
             />
             <div
+              role="status"
               className="rounded-[20px_20px_20px_4px] bg-primary-container px-[14px] py-[10px] text-[14px] text-on-surface-variant"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
@@ -472,6 +508,7 @@ export default function AnuChatRoute() {
 
         {error && (
           <p
+            role="alert"
             className="text-center text-[12px] text-error"
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
@@ -484,7 +521,7 @@ export default function AnuChatRoute() {
       <section className="shrink-0 bg-surface">
         {chips.length > 0 && (
           <section className="no-scrollbar overflow-x-auto border-t border-border-default px-4 py-2">
-            <div className="flex gap-1.5">
+            <div role="group" aria-label={t('a11y.care.suggestedReplies')} className="flex gap-1.5">
               {chips.map((chip) => (
                 <button
                   key={chip}
@@ -514,6 +551,7 @@ export default function AnuChatRoute() {
                 if (event.key === 'Enter') void send(input);
               }}
               disabled={sending}
+              aria-label={t('a11y.care.messageToAnu')}
               placeholder={t('chat.placeholder')}
               className="w-full appearance-none border-none bg-transparent text-[16px] text-on-surface placeholder:text-outline [-webkit-tap-highlight-color:transparent] [outline:none] focus:[outline:none]"
               style={{

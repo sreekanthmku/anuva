@@ -55,6 +55,7 @@ export default function ChooseAccountRoute() {
             <button
               type="button"
               disabled={opening !== null}
+              aria-current={account.current ? 'true' : undefined}
               onClick={() => void open(account.memberId, account.current)}
               className="press flex min-h-[64px] w-full items-center justify-between gap-3 rounded-[18px] border border-border-default bg-surface-raised px-5 py-3.5 text-left shadow-soft disabled:opacity-60"
             >
@@ -65,11 +66,13 @@ export default function ChooseAccountRoute() {
                 </span>
               </span>
               <span className="shrink-0 text-[12.5px] font-semibold text-secondary" style={mulish}>
-                {opening === account.memberId
-                  ? t('accounts.opening')
-                  : switching && account.current
-                    ? t('accounts.openNow')
-                    : '→'}
+                {opening === account.memberId ? (
+                  t('accounts.opening')
+                ) : switching && account.current ? (
+                  t('accounts.openNow')
+                ) : (
+                  <span aria-hidden>→</span>
+                )}
               </span>
             </button>
           </li>

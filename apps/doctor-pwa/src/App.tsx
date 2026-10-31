@@ -9,6 +9,7 @@ import { ProfileRoute } from './features/profile/ProfileRoute';
 import { DoctorQuestionsRoute } from './features/questions/DoctorQuestionsRoute';
 import { AppShell } from './features/shell/AppShell';
 import { AppErrorBoundary } from './lib/AppErrorBoundary';
+import { RouteFocus } from './lib/a11y/RouteFocus';
 import { BetaReporter } from './features/beta/BetaReporter';
 
 /**
@@ -51,6 +52,7 @@ export default function App() {
     // Outside the router and the login gate: a crash in either is what this exists to catch.
     <AppErrorBoundary>
     <BrowserRouter>
+      <RouteFocus />
       <DoctorLoginGate>
         <NotificationsProvider>
           <PushNavigationBridge />

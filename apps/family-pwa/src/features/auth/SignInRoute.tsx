@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '../../shared/lib/api';
@@ -30,6 +30,19 @@ export default function SignInRoute() {
   const [resendIn, setResendIn] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const id = useId();
+  const errorId = `${id}-error`;
+  const sentToId = `${id}-sent-to`;
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const shownStep = useRef(step);
+
+  // The form is replaced between steps, taking the focused button with it: start them again at the
+  // heading, which now names the new step.
+  useEffect(() => {
+    if (shownStep.current === step) return;
+    shownStep.current = step;
+    headingRef.current?.focus({ preventScroll: true });
+  }, [step]);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -84,7 +97,11 @@ export default function SignInRoute() {
       >
         {step === 'code' ? t('signIn.stepTwo') : t('signIn.welcomeBack')}
       </div>
-      <h1 className="mt-2 font-display text-[26px] font-medium leading-[1.18] text-primary">
+      <h1
+        ref={headingRef}
+        tabIndex={-1}
+        className="mt-2 font-display text-[26px] font-medium leading-[1.18] text-primary"
+      >
         {step === 'code' ? t('signIn.enterCode') : t('signIn.title')}
       </h1>
 
@@ -111,6 +128,8 @@ export default function SignInRoute() {
               onChange={(event) => setPhone(event.target.value)}
               autoComplete="tel"
               inputMode="tel"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? errorId : undefined}
               placeholder="+91"
               className="mt-1.5 h-[52px] w-full rounded-[16px] border border-border-default bg-surface-raised px-4 text-[15px] text-on-surface shadow-soft focus:border-secondary focus:ring-2 focus:ring-secondary/25"
               style={mulish}
@@ -118,7 +137,7 @@ export default function SignInRoute() {
           </label>
 
           {error ? (
-            <p className="text-[12px] leading-relaxed text-error" style={mulish} role="alert">
+            <p id={errorId} className="text-[12px] leading-relaxed text-error" style={mulish} role="alert">
               {error}
             </p>
           ) : null}
@@ -144,7 +163,7 @@ export default function SignInRoute() {
             void verify();
           }}
         >
-          <p className="text-[13.5px] leading-[1.6] text-on-surface-variant" style={mulish}>
+          <p id={sentToId} className="text-[13.5px] leading-[1.6] text-on-surface-variant" style={mulish}>
             {t('signIn.sentTo', { phone: maskedPhone })}
           </p>
 
@@ -160,12 +179,14 @@ export default function SignInRoute() {
               maxLength={8}
               value={code}
               onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? `${sentToId} ${errorId}` : sentToId}
               className="mt-1.5 h-[52px] w-full rounded-[16px] border border-border-default bg-surface-raised px-4 text-center font-mono text-[20px] tracking-[0.4em] text-on-surface shadow-soft focus:border-secondary focus:ring-2 focus:ring-secondary/25"
             />
           </label>
 
           {error ? (
-            <p className="text-[12px] leading-relaxed text-error" style={mulish} role="alert">
+            <p id={errorId} className="text-[12px] leading-relaxed text-error" style={mulish} role="alert">
               {error}
             </p>
           ) : null}

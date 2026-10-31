@@ -74,7 +74,11 @@ export function PushReadiness() {
       {state === 'blocked' && <p>{t('medication.push.blocked')}</p>}
       {state === 'iosInstall' && <p>{t('medication.push.iosInstall')}</p>}
       {state === 'unsupported' && <p>{t('medication.push.unsupported')}</p>}
-      {error && <p className="mt-2 text-[12px] text-error">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-2 text-[12px] text-error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

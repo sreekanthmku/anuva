@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { HealthNote, NoteAiConsent } from '@anuva/shared';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
+import { announce } from '../../../lib/a11y/announce';
 import { BottomNav } from '../components/BottomNav';
 import { deleteNote, fetchAiConsent, fetchNotes, withdrawAiConsent } from './api';
 import { NoteComposerSheet, NotePhoto } from './NoteComposerSheet';
@@ -29,6 +30,7 @@ export default function NotesRoute() {
   const [editing, setEditing] = useState<HealthNote | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const keepRef = useRef<HTMLButtonElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -45,12 +47,18 @@ export default function NotesRoute() {
     void load();
   }, [load]);
 
+  // The Delete she tapped is replaced by the question, so focus goes to its safe answer.
+  useEffect(() => {
+    if (confirmingDelete) keepRef.current?.focus({ preventScroll: true });
+  }, [confirmingDelete]);
+
   const remove = async (note: HealthNote) => {
     setBusy(true);
     try {
       await deleteNote(note.id);
       setNotes((current) => current?.filter((n) => n.id !== note.id) ?? null);
       setConfirmingDelete(null);
+      announce(t('a11y.care.noteDeleted'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('notes.saveFailed'));
     } finally {
@@ -62,6 +70,7 @@ export default function NotesRoute() {
     setBusy(true);
     try {
       setConsent(await withdrawAiConsent());
+      announce(t('notes.aiConsent.statusOff'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('notes.saveFailed'));
     } finally {
@@ -78,6 +87,7 @@ export default function NotesRoute() {
         <button
           type="button"
           onClick={() => navigate('/home')}
+          aria-label={t('nav.home')}
           className="min-h-11 bg-transparent p-0 text-[13px] text-on-surface-variant"
         >
           {t('notes.back')}
@@ -90,15 +100,23 @@ export default function NotesRoute() {
       <NoteForDoctorBar onSaved={() => void load()} />
 
       <section className="px-3 pt-4">
-        {error ? <p className="mb-3 text-[13px] text-error">{error}</p> : null}
-        {notes === null && !error ? <p className="text-[13.5px] text-on-surface-variant">{t('notes.loading')}</p> : null}
+        {error ? (
+          <p role="alert" className="mb-3 text-[13px] text-error">
+            {error}
+          </p>
+        ) : null}
+        {notes === null && !error ? (
+          <p role="status" className="text-[13.5px] text-on-surface-variant">
+            {t('notes.loading')}
+          </p>
+        ) : null}
         {notes?.length === 0 ? <p className="text-[13.5px] text-on-surface-variant">{t('notes.empty')}</p> : null}
 
         <ul className="flex flex-col gap-3">
           {notes?.map((note) => (
             <li key={note.id} className="rounded-[20px] border border-border-default bg-surface-raised px-4 py-4">
               <div className="flex items-center justify-between gap-2 text-[11.5px] text-on-surface-variant">
-                <span>
+                <span id={`note-meta-${note.id}`}>
                   {t(`notes.source.${note.source}`)} · {writtenOn(note.createdAt, i18n.language)}
                 </span>
                 {note.status !== 'ready' ? (
@@ -111,7 +129,11 @@ export default function NotesRoute() {
               {note.body ? (
                 <p className="mt-2 whitespace-pre-wrap text-[14.5px] leading-[1.5] text-on-surface">{note.body}</p>
               ) : note.status === 'ready' ? (
-                <NotePhoto note={note} className="mt-2 max-h-56 w-full rounded-[14px] object-cover" />
+                <NotePhoto
+                  note={note}
+                  alt={t('notes.source.photo')}
+                  className="mt-2 max-h-56 w-full rounded-[14px] object-cover"
+                />
               ) : null}
 
               {note.shares.length > 0 ? (
@@ -128,8 +150,14 @@ export default function NotesRoute() {
               ) : null}
 
               {confirmingDelete === note.id ? (
-                <div className="mt-3 rounded-[14px] bg-surface-container-low px-3 py-3">
-                  <p className="text-[13px] text-on-surface">{t('notes.deleteConfirm')}</p>
+                <div
+                  role="group"
+                  aria-labelledby={`note-delete-${note.id}`}
+                  className="mt-3 rounded-[14px] bg-surface-container-low px-3 py-3"
+                >
+                  <p id={`note-delete-${note.id}`} className="text-[13px] text-on-surface">
+                    {t('notes.deleteConfirm')}
+                  </p>
                   {note.shares.some((share) => !share.canRevoke) ? (
                     <p className="mt-1 text-[12px] text-on-surface-variant">{t('notes.deleteKeptByDoctor')}</p>
                   ) : null}
@@ -144,6 +172,7 @@ export default function NotesRoute() {
                     </button>
                     <button
                       type="button"
+                      ref={keepRef}
                       onClick={() => setConfirmingDelete(null)}
                       className="min-h-11 flex-1 rounded-full border border-border-default px-3 py-2 text-[13px] font-semibold"
                     >
@@ -153,12 +182,18 @@ export default function NotesRoute() {
                 </div>
               ) : (
                 <div className="mt-3 flex gap-4 text-[13px] font-semibold">
-                  <button type="button" onClick={() => setEditing(note)} className="min-h-9 text-primary">
+                  <button
+                    type="button"
+                    onClick={() => setEditing(note)}
+                    aria-describedby={`note-meta-${note.id}`}
+                    className="min-h-9 text-primary"
+                  >
                     {note.status === 'ready' ? t('notes.edit') : t('notes.check')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmingDelete(note.id)}
+                    aria-describedby={`note-meta-${note.id}`}
                     className="min-h-9 text-on-surface-variant"
                   >
                     {t('notes.delete')}

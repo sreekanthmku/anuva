@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { FamilyArticleSummary } from '@anuva/shared';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -13,24 +14,28 @@ import { useTranslation } from 'react-i18next';
 export function ArticleCard({ article }: { article: FamilyArticleSummary }) {
   const { t } = useTranslation();
   const restricted = article.audience !== 'everyone';
+  const id = useId();
 
   return (
     <li>
       <Link
         to={`/learn/${article.slug}`}
+        // Named by the title alone; the teaser and reading time follow as its description.
+        aria-labelledby={`${id}-title`}
+        aria-describedby={`${id}-teaser ${id}-meta`}
         className="press flex min-h-[44px] items-start gap-3.5 rounded-[22px] border border-border-default bg-surface-raised px-4 py-4 shadow-soft transition-colors active:bg-surface-container-low"
       >
-        <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-fixed font-display text-[12.5px] font-semibold tabular-nums text-primary">
+        <span aria-hidden className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-fixed font-display text-[12.5px] font-semibold tabular-nums text-primary">
           {String(article.number).padStart(2, '0')}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-[16px] font-medium leading-snug text-on-surface">
+          <span id={`${id}-title`} className="block font-display text-[16px] font-medium leading-snug text-on-surface">
             {article.title}
           </span>
-          <span className="mt-1 block text-[13px] leading-[1.5] text-on-surface-variant">
+          <span id={`${id}-teaser`} className="mt-1 block text-[13px] leading-[1.5] text-on-surface-variant">
             {article.teaser}
           </span>
-          <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-outline">
+          <span id={`${id}-meta`} className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-outline">
             <span>{t('article.readingMinutes', { count: article.readingMinutes })}</span>
             {restricted ? (
               <>

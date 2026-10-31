@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import type { MoodEmotion } from '@anuva/shared';
 import { useTranslation } from 'react-i18next';
 import { twemojiUrl } from '../../../shared/lib/twemoji';
@@ -51,6 +51,8 @@ export function MoodLogSheet({
   const { t } = useTranslation();
   const [feeling, setFeeling] = useState<number | null>(null);
   const [emotions, setEmotions] = useState<MoodEmotion[]>([]);
+  const titleId = useId();
+  const emotionsLabelId = useId();
 
   const initialEmotionsKey = useMemo(() => (initialEmotions ?? []).join(','), [initialEmotions]);
 
@@ -80,22 +82,24 @@ export function MoodLogSheet({
       onClose={onClose}
       closeLabel={t('moodSheet.close')}
       maxWidthClass="max-w-[360px]"
+      hiddenClose
     >
       <div
         className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
         style={{ fontFamily: FONT_MONO }}
       >
-        <span className="h-px w-3 bg-primary/60" />
+        <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
         {t('moodSheet.eyebrow')}
       </div>
       <h2
+        id={titleId}
         className="mb-5 text-[20px] text-on-surface"
         style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
       >
         {t('moodSheet.title')}
       </h2>
 
-      <div className="mb-6 grid grid-cols-5 gap-2">
+      <div className="mb-6 grid grid-cols-5 gap-2" role="radiogroup" aria-labelledby={titleId}>
         {FEELINGS.map((f) => {
           const selected = feeling === f.value;
           const label = t(`moodSheet.feelings.${f.value}`);
@@ -104,14 +108,15 @@ export function MoodLogSheet({
               key={f.value}
               type="button"
               onClick={() => setFeeling(f.value)}
-              aria-pressed={selected}
+              role="radio"
+              aria-checked={selected}
               className="flex flex-col items-center gap-1.5 rounded-[16px] bg-transparent px-1 py-2 outline-none transition-transform focus:outline-none focus-visible:outline-none"
               style={{
                 transform: selected ? 'scale(1.28)' : 'scale(1)',
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <img src={twemojiUrl(f.emoji)} alt={label} width={34} height={34} />
+              <img src={twemojiUrl(f.emoji)} alt="" aria-hidden="true" width={34} height={34} />
               <span
                 className={`text-[9px] uppercase tracking-[0.04em] ${selected ? 'text-on-surface' : 'text-outline'}`}
                 style={{ fontFamily: FONT_MONO }}
@@ -123,11 +128,11 @@ export function MoodLogSheet({
         })}
       </div>
 
-      <p className="mb-2.5 text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
+      <p id={emotionsLabelId} className="mb-2.5 text-[12px] text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
         {t('moodSheet.anythingSpecific')}{' '}
         <span className="text-outline">{t('moodSheet.optional')}</span>
       </p>
-      <div className="mb-7 flex flex-wrap gap-2">
+      <div className="mb-7 flex flex-wrap gap-2" role="group" aria-labelledby={emotionsLabelId}>
         {EMOTIONS.map((emotion) => {
           const selected = emotions.includes(emotion);
           return (

@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CycleStateResponse, PeriodFlow, PeriodStartTimeOfDay } from '@anuva/shared';
+import { announce } from '../../../lib/a11y/announce';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 import { CycleCalendar } from './CycleCalendar';
 import { PeriodStartTimeDialog } from './PeriodStartTimeDialog';
 import { CyclePhaseBadge, CycleTrackerSummary } from './CycleTrackerSummary';
@@ -40,6 +42,7 @@ function RangeSlider({
   defaultValue,
   unit,
   defaultLabel,
+  labelledBy,
   onChange,
 }: {
   value: number;
@@ -48,8 +51,11 @@ function RangeSlider({
   defaultValue: number;
   unit: string;
   defaultLabel: string;
+  /** Id of the visible question or label this slider answers. */
+  labelledBy: string;
   onChange: (v: number) => void;
 }) {
+  const { t } = useTranslation();
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <div>
@@ -72,6 +78,8 @@ function RangeSlider({
           max={max}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
+          aria-labelledby={labelledBy}
+          aria-valuetext={t('a11y.tracking.days', { count: value })}
           className="w-full appearance-none"
           style={{
             height: '6px',
@@ -181,6 +189,13 @@ export function CycleTrackerSheet({
   } | null>(null);
   /** The setup flow's answer, held until its last step saves everything. */
   const [setupStartTime, setSetupStartTime] = useState<PeriodStartTimeOfDay | undefined>(undefined);
+  const dialogRef = useDialogA11y<HTMLDivElement>(open, onClose);
+  // Each view's heading (or, where a view has none, its eyebrow) carries this id; one view shows at a time.
+  const titleId = useId();
+  const fieldId = useId();
+  const shownView = useRef<View | null>(null);
+  const removeTitleRef = useRef<HTMLParagraphElement>(null);
+  const undoRef = useRef<HTMLButtonElement>(null);
 
   // Only reset the view when the sheet opens — logging a period from the calendar
   // changes cycleData, and that must not throw the user back to the main view.
@@ -206,14 +221,26 @@ export function CycleTrackerSheet({
     setSelectedPeriodLength(cycleData.settings.periodLength);
   }, [cycleData?.settings]);
 
+  // Moving between views removes the button she pressed; focus follows to the new view's heading.
   useEffect(() => {
-    if (!open || askStartTime) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose, askStartTime]);
+    if (!open) {
+      shownView.current = null;
+      return;
+    }
+    if (shownView.current !== null && shownView.current !== view) {
+      document.getElementById(titleId)?.focus({ preventScroll: true });
+    }
+    shownView.current = view;
+  }, [open, view, titleId]);
+
+  // "Remove this period?" appears above the button that asked it; take her to the question.
+  useEffect(() => {
+    if (confirmRemoveId) removeTitleRef.current?.focus({ preventScroll: true });
+  }, [confirmRemoveId]);
+
+  useEffect(() => {
+    if (undoRemovedId) undoRef.current?.focus({ preventScroll: true });
+  }, [undoRemovedId]);
 
   const selectedMark = useMemo(
     () => buildCycleDayMarks(cycleData, selectedDate, selectedDate)[0] ?? null,
@@ -335,6 +362,7 @@ export function CycleTrackerSheet({
     if (!ok) return;
     setConfirmRemoveId(null);
     setUndoRemovedId(id);
+    announce(t('cycleSheet.periodRemoved'));
   };
 
   const handleRestorePeriod = async (id: string) => {
@@ -383,11 +411,14 @@ export function CycleTrackerSheet({
       />
       <div
         className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-5"
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        aria-label={t('cycleSheet.eyebrow')}
         style={{ maxHeight: '90dvh', overflowY: 'auto' }}
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" />
+        <div aria-hidden="true" className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" />
 
         {/* SETUP: Date picker */}
         {view === 'setup-date' && (
@@ -396,10 +427,12 @@ export function CycleTrackerSheet({
               className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              <span className="h-px w-3 bg-primary/60" />
+              <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
               {t('cycleSheet.setupStep', { step: 1, total: totalSetupSteps })}
             </div>
             <h2
+              id={titleId}
+              tabIndex={-1}
               className="mb-1 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
@@ -459,10 +492,12 @@ export function CycleTrackerSheet({
               className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              <span className="h-px w-3 bg-primary/60" />
+              <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
               {t('cycleSheet.setupStep', { step: 2, total: totalSetupSteps })}
             </div>
             <h2
+              id={titleId}
+              tabIndex={-1}
               className="mb-1 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
@@ -482,6 +517,7 @@ export function CycleTrackerSheet({
               defaultValue={CYCLE_DEFAULT}
               unit={t('cycleSheet.dayUnit')}
               defaultLabel={t('cycleSheet.averageCycleLength')}
+              labelledBy={titleId}
               onChange={setSelectedCycleLength}
             />
 
@@ -513,10 +549,12 @@ export function CycleTrackerSheet({
               className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              <span className="h-px w-3 bg-primary/60" />
+              <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
               {t('cycleSheet.setupStep', { step: 3, total: totalSetupSteps })}
             </div>
             <h2
+              id={titleId}
+              tabIndex={-1}
               className="mb-1 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
@@ -536,6 +574,7 @@ export function CycleTrackerSheet({
               defaultValue={PERIOD_DEFAULT}
               unit={t('cycleSheet.dayUnit')}
               defaultLabel={t('cycleSheet.averagePeriodLength')}
+              labelledBy={titleId}
               onChange={setSelectedPeriodLength}
             />
 
@@ -567,6 +606,7 @@ export function CycleTrackerSheet({
             {loading && !cycleData ? (
               <div className="flex items-center justify-center py-12">
                 <span
+                  role="status"
                   className="text-[12px] text-outline"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
@@ -577,10 +617,12 @@ export function CycleTrackerSheet({
               <>
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <div
+                    id={titleId}
+                    tabIndex={-1}
                     className="flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
                     style={{ fontFamily: '"Mulish", sans-serif' }}
                   >
-                    <span className="h-px w-3 bg-primary/60" />
+                    <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
                     {t('cycleSheet.eyebrow')}
                   </div>
                   {cycleData?.phase ? (
@@ -738,10 +780,12 @@ export function CycleTrackerSheet({
           <div>
             <div className="mb-4 flex items-center justify-between gap-2">
               <div
+                id={titleId}
+                tabIndex={-1}
                 className="flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
                 style={{ fontFamily: '"Mulish", sans-serif' }}
               >
-                <span className="h-px w-3 bg-primary/60" />
+                <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
                 {t('cycleSheet.calendarEyebrow')}
               </div>
               <button
@@ -762,6 +806,7 @@ export function CycleTrackerSheet({
 
             {actionError && (
               <p
+                role="alert"
                 className="mt-4 rounded-[14px] border p-3 text-[12px] leading-[1.5]"
                 style={{
                   background: 'rgba(192, 64, 90,0.08)',
@@ -783,6 +828,8 @@ export function CycleTrackerSheet({
                 }}
               >
                 <p
+                  ref={removeTitleRef}
+                  tabIndex={-1}
                   className="text-[14px] text-on-surface"
                   style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
                 >
@@ -823,6 +870,7 @@ export function CycleTrackerSheet({
                   {t('cycleSheet.periodRemoved')}
                 </p>
                 <button
+                  ref={undoRef}
                   type="button"
                   disabled={saving}
                   onClick={() => handleRestorePeriod(undoRemovedId)}
@@ -873,12 +921,13 @@ export function CycleTrackerSheet({
               {selectedMark?.isPeriod && !selectedMark.isFuture && (
                 <div className="mt-4">
                   <p
+                    id={`${fieldId}-flow`}
                     className="mb-2 text-[11px] uppercase tracking-[0.12em] text-outline"
                     style={{ fontFamily: BODY }}
                   >
                     {t('cycleSheet.flow')}
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" role="radiogroup" aria-labelledby={`${fieldId}-flow`}>
                     {FLOW_OPTIONS.map((option) => {
                       const active = selectedFlow === option;
                       return (
@@ -886,7 +935,8 @@ export function CycleTrackerSheet({
                           key={option}
                           type="button"
                           disabled={saving}
-                          aria-pressed={active}
+                          role="radio"
+                          aria-checked={active}
                           onClick={() => handleLogFlow(option)}
                           className="flex-1 rounded-full border py-[10px] text-[12.5px] font-medium disabled:opacity-50"
                           style={{
@@ -1021,10 +1071,12 @@ export function CycleTrackerSheet({
                   className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
                   style={{ fontFamily: BODY }}
                 >
-                  <span className="h-px w-3 bg-primary/60" />
+                  <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
                   {t('cycleSheet.changeStartDate')}
                 </div>
                 <h2
+                  id={titleId}
+                  tabIndex={-1}
                   className="text-[20px] text-on-surface"
                   style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
                 >
@@ -1077,6 +1129,7 @@ export function CycleTrackerSheet({
 
             {actionError && (
               <p
+                role="alert"
                 className="mt-3 text-[12px] leading-[1.5]"
                 style={{ color: '#C0405A', fontFamily: BODY }}
               >
@@ -1107,10 +1160,12 @@ export function CycleTrackerSheet({
               className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
-              <span className="h-px w-3 bg-primary/60" />
+              <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
               {t('cycleSheet.editSettings')}
             </div>
             <h2
+              id={titleId}
+              tabIndex={-1}
               className="mb-2 text-[20px] text-on-surface"
               style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
             >
@@ -1130,6 +1185,7 @@ export function CycleTrackerSheet({
             </p>
 
             <p
+              id={`${fieldId}-cycle-length`}
               className="mb-3 text-[11px] uppercase tracking-[0.12em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
@@ -1142,10 +1198,12 @@ export function CycleTrackerSheet({
               defaultValue={CYCLE_DEFAULT}
               unit={t('cycleSheet.dayUnit')}
               defaultLabel={t('cycleSheet.averageCycleLength')}
+              labelledBy={`${fieldId}-cycle-length`}
               onChange={setSelectedCycleLength}
             />
 
             <p
+              id={`${fieldId}-period-length`}
               className="mb-3 mt-6 text-[11px] uppercase tracking-[0.12em] text-outline"
               style={{ fontFamily: '"Mulish", sans-serif' }}
             >
@@ -1158,6 +1216,7 @@ export function CycleTrackerSheet({
               defaultValue={PERIOD_DEFAULT}
               unit={t('cycleSheet.dayUnit')}
               defaultLabel={t('cycleSheet.averagePeriodLength')}
+              labelledBy={`${fieldId}-period-length`}
               onChange={setSelectedPeriodLength}
             />
 

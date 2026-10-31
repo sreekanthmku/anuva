@@ -70,10 +70,11 @@ export function DayBalanceStrip({
         </span>
       </div>
 
-      <div className="relative flex items-stretch">
+      <div className="relative flex items-stretch" role="list">
         {columns.map((column, i) => (
           <div
             key={column.key}
+            role="listitem"
             className={`flex flex-1 flex-col items-center gap-1 px-1 py-2 ${
               i > 0 ? 'border-l border-border-default' : ''
             }`}
@@ -87,13 +88,22 @@ export function DayBalanceStrip({
             >
               {BALANCE_EMOJI[column.key]}
             </span>
+            {/* Number and label are two lines on screen; spoken, they are one phrase. */}
+            <span className="sr-only">
+              {i18n.t('a11y.summary.countAndLabel', {
+                number: column.count,
+                label: columnLabel(column.key, column.count),
+              })}
+            </span>
             <span
+              aria-hidden="true"
               className="text-[21px] leading-none"
               style={{ fontFamily: FRAUNCES, color: column.color }}
             >
               {column.count}
             </span>
             <span
+              aria-hidden="true"
               className="text-center text-[9.5px] leading-[1.25] text-on-surface-variant"
               style={{ fontFamily: MULISH }}
             >

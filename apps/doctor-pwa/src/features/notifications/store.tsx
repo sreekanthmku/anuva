@@ -4,10 +4,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 import type { DoctorNotification } from '@anuva/shared';
+import { announce } from '../../lib/a11y/announce';
 import { onForegroundPush, syncDoctorPushIfGranted } from '../../lib/push';
 import { fetchDoctorNotifications, markDoctorNotificationsRead } from './api';
 
@@ -35,10 +37,22 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Ids already seen, so a refresh that brings in a new alert can say so. Null until the first
+  // load: what is there on sign-in is not news.
+  const seenIds = useRef<Set<string> | null>(null);
 
   const refresh = useCallback(async () => {
     try {
       const response = await fetchDoctorNotifications();
+      const seen = seenIds.current;
+      if (seen) {
+        const fresh = response.notifications.filter(
+          (item) => item.readAt === null && !seen.has(item.id),
+        );
+        if (fresh.length === 1) announce(`New notification: ${fresh[0]!.title}`);
+        else if (fresh.length > 1) announce(`${fresh.length} new notifications`);
+      }
+      seenIds.current = new Set([...(seen ?? []), ...response.notifications.map((item) => item.id)]);
       setNotifications(response.notifications);
       setUnreadCount(response.unreadCount);
       setError(null);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
   AnuV3LogOption,
@@ -13,6 +13,7 @@ import type {
   SleepHoursBucket,
 } from '@anuva/shared';
 import { apiFetch } from '../../../shared/lib/api';
+import { announce } from '../../../lib/a11y/announce';
 import { JointsLogSheet } from '../components/JointsLogSheet';
 import { MoodLogSheet } from '../components/MoodLogSheet';
 import { SleepLogSheet } from '../components/SleepLogSheet';
@@ -44,6 +45,7 @@ export function LogOptions({ options }: { options: AnuV3LogOption[] }) {
   const [error, setError] = useState<string | null>(null);
   const [inline, setInline] = useState<NudgeDayTracker | null>(null);
   const [busy, setBusy] = useState(false);
+  const questionId = useId();
 
   // `done` alone is lost when she leaves the chat and comes back, so a tracker
   // she already logged today would offer "Log" again. Ask the server what today
@@ -80,18 +82,21 @@ export function LogOptions({ options }: { options: AnuV3LogOption[] }) {
     };
   }, [options]);
 
-  const markDone = (key: string) => {
-    setDone((prev) => new Set(prev).add(key));
-    setActive(null);
-    setInline(null);
-  };
-
   const label = (option: AnuV3LogOption) =>
     option.kind === 'tracker'
       ? option.label
       : option.kind === 'joints'
         ? t('track.joints')
         : t(`home.quickLogItems.${option.symptom}.label`);
+
+  const markDone = (key: string) => {
+    setDone((prev) => new Set(prev).add(key));
+    setActive(null);
+    setInline(null);
+    // The button she tapped is now disabled, so focus leaves it silently: say it was saved.
+    const option = options.find((entry) => optionKey(entry) === key);
+    if (option) announce(t('chat.log.logged', { name: label(option) }));
+  };
 
   const open = async (option: AnuV3LogOption) => {
     const key = optionKey(option);
@@ -149,8 +154,8 @@ export function LogOptions({ options }: { options: AnuV3LogOption[] }) {
   };
 
   return (
-    <div className="flex w-full flex-col gap-2" style={{ fontFamily: FONT_BODY }}>
-      <div className="flex flex-wrap gap-1.5">
+    <div className="flex w-full flex-col gap-2" style={{ fontFamily: FONT_BODY }} aria-busy={busy}>
+      <div role="group" aria-label={t('a11y.care.logOptions')} className="flex flex-wrap gap-1.5">
         {options.map((option) => {
           const key = optionKey(option);
           const isDone = done.has(key);
@@ -159,12 +164,19 @@ export function LogOptions({ options }: { options: AnuV3LogOption[] }) {
               key={key}
               type="button"
               disabled={busy || isDone}
+              aria-expanded={option.kind === 'quick' || isDone ? undefined : active === key}
               onClick={() => void open(option)}
               className={`min-h-11 rounded-full border px-4 py-2 text-[13px] font-semibold disabled:opacity-70 ${
                 active === key ? 'border-primary bg-primary/10 text-primary' : 'border-primary/30 bg-surface text-primary'
               }`}
             >
-              {isDone ? `✓ ${t('chat.log.logged', { name: label(option) })}` : t('chat.log.button', { name: label(option) })}
+              {isDone ? (
+                <>
+                  <span aria-hidden="true">✓</span> {t('chat.log.logged', { name: label(option) })}
+                </>
+              ) : (
+                t('chat.log.button', { name: label(option) })
+              )}
             </button>
           );
         })}
@@ -172,8 +184,10 @@ export function LogOptions({ options }: { options: AnuV3LogOption[] }) {
 
       {inline && active === inline.nudgeId && (
         <div className="rounded-[18px] border border-primary/25 bg-surface p-3.5">
-          <p className="text-[13px] text-on-surface">{inline.question}</p>
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          <p id={questionId} className="text-[13px] text-on-surface">
+            {inline.question}
+          </p>
+          <div role="group" aria-labelledby={questionId} className="mt-2.5 flex flex-wrap gap-2">
             {inline.options.map((opt) => (
               <button
                 key={opt}
@@ -207,7 +221,11 @@ export function LogOptions({ options }: { options: AnuV3LogOption[] }) {
         </div>
       )}
 
-      {error && <p className="text-[12px] text-error">{error}</p>}
+      {error && (
+        <p role="alert" className="text-[12px] text-error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

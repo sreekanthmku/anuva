@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 
 type Report14ReadySheetProps = {
   open: boolean;
@@ -10,15 +10,7 @@ type Report14ReadySheetProps = {
 /** Day 15: her 14-day report is ready. Shown until she opens it; see `report14Guide.ts`. */
 export function Report14ReadySheet({ open, onOpenReport, onClose }: Report14ReadySheetProps) {
   const { t } = useTranslation();
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  const dialogRef = useDialogA11y<HTMLDivElement>(open, onClose);
 
   if (!open) return null;
 
@@ -31,12 +23,13 @@ export function Report14ReadySheet({ open, onOpenReport, onClose }: Report14Read
         aria-label={t('report14Ready.later')}
       />
       <div
+        ref={dialogRef}
         className="fixed inset-x-0 bottom-0 z-[61] rounded-t-[28px] border border-b-0 border-border-default bg-surface px-6 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-5"
         role="dialog"
         aria-modal="true"
         aria-labelledby="report14-ready-title"
       >
-        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-outline/40" />
+        <div aria-hidden="true" className="mx-auto mb-5 h-1 w-10 rounded-full bg-outline/40" />
         <p
           className="mb-2 text-[10px] uppercase tracking-[0.18em] text-tertiary"
           style={{ fontFamily: '"Mulish", sans-serif' }}

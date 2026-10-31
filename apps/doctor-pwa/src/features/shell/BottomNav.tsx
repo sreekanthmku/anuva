@@ -21,7 +21,8 @@ function Badge({ count }: { count: number }) {
   }
 
   return (
-    <span className="absolute -right-1.5 -top-1 min-w-[18px] rounded-full bg-secondary px-1 text-center font-mono text-[10px] font-bold leading-[18px] text-on-secondary ring-2 ring-surface-raised">
+    // Hidden: the nav link carries the count as words ("3 unread"), not a bare number.
+    <span aria-hidden="true" className="absolute -right-1.5 -top-1 min-w-[18px] rounded-full bg-secondary px-1 text-center font-mono text-[10px] font-bold leading-[18px] text-on-secondary ring-2 ring-surface-raised">
       {count > 9 ? '9+' : count}
     </span>
   );
@@ -31,7 +32,7 @@ export function BottomNav() {
   const { unreadCount } = useNotifications();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border-default bg-surface-raised/95 backdrop-blur">
+    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 border-t border-border-default bg-surface-raised/95 backdrop-blur">
       <ul className="mx-auto flex max-w-[560px] px-2 pt-2">
         {NAV_ITEMS.map(({ to, label, Icon }) => (
           <li key={to} className="flex-1">
@@ -58,6 +59,9 @@ export function BottomNav() {
                     }`}
                   >
                     {label}
+                    {to === '/notifications' && unreadCount > 0 ? (
+                      <span className="sr-only">, {unreadCount} unread</span>
+                    ) : null}
                   </span>
                 </>
               )}

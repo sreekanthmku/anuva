@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { fetchFamilyArticle } from '../../shared/lib/familyApi';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
-import { Card, ErrorCard, Eyebrow, SectionLabel, SkeletonCard } from '../shell/ui';
+import { Card, ErrorCard, Eyebrow, LoadingStack, SectionLabel, SkeletonCard } from '../shell/ui';
 import { ArticleCard } from './ArticleCard';
 
 /**
@@ -23,10 +23,10 @@ function ArticleView({ slug }: { slug: string }) {
 
   if (loading && !data) {
     return (
-      <div className="space-y-4">
+      <LoadingStack>
         <SkeletonCard lines={4} />
         <SkeletonCard lines={2} />
-      </div>
+      </LoadingStack>
     );
   }
 

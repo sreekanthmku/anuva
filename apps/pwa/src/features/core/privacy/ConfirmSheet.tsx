@@ -1,6 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PrivacyOtpIntent } from '@anuva/shared';
+import { announce } from '../../../lib/a11y/announce';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 import { ApiError } from '../../../shared/lib/api';
 import { requestPrivacyOtp } from './api';
 
@@ -49,6 +51,10 @@ export function ConfirmSheet({
   const [maskedPhone, setMaskedPhone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const titleId = useId();
+  const bodyId = useId();
+  // Escape backs out, as the backdrop does, and is ignored while a request is in flight.
+  const dialogRef = useDialogA11y<HTMLElement>(open, busy ? undefined : onClose);
 
   // Reopening must not inherit a stale challenge — a code from the previous attempt is already
   // spent, and the failure would read as "wrong code" instead of "ask for a new one".
@@ -74,6 +80,8 @@ export function ConfirmSheet({
       const response = await requestPrivacyOtp({ intent: otpIntent });
       setChallengeId(response.challengeId);
       setMaskedPhone(response.maskedPhone);
+      // The button she pressed is replaced by the code field; say what to do next.
+      announce(t('privacy.confirm.enterCode', { phone: response.maskedPhone }));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('privacy.confirm.sendCodeFailed'));
     } finally {
@@ -98,7 +106,7 @@ export function ConfirmSheet({
   const canConfirm = !busy && (!needsCode || (Boolean(challengeId) && otp.trim().length === 6));
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[60] flex items-end">
       <button
         type="button"
         aria-label={t('common.close')}
@@ -106,10 +114,19 @@ export function ConfirmSheet({
         className="absolute inset-0 border-0 bg-[rgba(62,37,66,0.45)] p-0"
       />
 
-      <section className="relative z-10 max-h-[88dvh] w-full overflow-y-auto rounded-t-[28px] bg-surface-raised px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5">
+      {/* The sheet is the dialog, not the backdrop, so focus starts on its first real control. */}
+      <section
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={bodyId}
+        className="relative z-10 max-h-[88dvh] w-full overflow-y-auto rounded-t-[28px] bg-surface-raised px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5"
+      >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/30" aria-hidden />
 
         <h2
+          id={titleId}
           className="mb-2 text-[19px] leading-tight text-on-surface"
           style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 500 }}
         >
@@ -117,6 +134,7 @@ export function ConfirmSheet({
         </h2>
 
         <div
+          id={bodyId}
           className="space-y-2 text-[13px] leading-[1.6] text-on-surface-variant"
           style={{ fontFamily: MULISH }}
         >

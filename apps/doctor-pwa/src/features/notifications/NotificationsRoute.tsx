@@ -56,6 +56,9 @@ export function NotificationsRoute() {
       <div className="flex flex-col gap-2.5">
         {loading && notifications.length === 0 ? (
           <>
+            <span role="status" className="sr-only">
+              Loading notifications
+            </span>
             <SkeletonCard />
             <SkeletonCard />
           </>
@@ -96,20 +99,24 @@ export function NotificationsRoute() {
                 </span>
 
                 <span className="min-w-0 flex-1">
+                  {unread ? <span className="sr-only">Unread. </span> : null}
                   <span className="flex items-center gap-2">
                     <span className="truncate font-semibold text-[14px] text-on-surface">
                       {notification.title}
                     </span>
                     {unread ? (
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-secondary" aria-label="Unread" />
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-secondary" aria-hidden="true" />
                     ) : null}
                   </span>
                   <span className="mt-1 block text-[13px] leading-[1.5] text-on-surface-variant">
                     {notification.body}
                   </span>
-                  <span className="mt-1.5 block text-[11px] text-outline">
+                  <time
+                    dateTime={notification.createdAt}
+                    className="mt-1.5 block text-[11px] text-outline"
+                  >
                     {relativeTime(notification.createdAt)}
-                  </span>
+                  </time>
                 </span>
 
                 {target ? (

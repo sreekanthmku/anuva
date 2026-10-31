@@ -13,6 +13,8 @@ import {
   fetchConsultationDocuments,
   uploadConsultationDocument,
 } from './api';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { shareOrDownloadFile } from '../../lib/shareFile';
 import { compressImageForUpload } from './compressImage';
 
@@ -74,6 +76,9 @@ export function ConsultationDocumentsSheet({
   const cameraInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const blobUrls = useRef<string[]>([]);
+  // Mounted only while open. The image viewer stacks on top and takes Escape while it is up.
+  const dialogRef = useDialogA11y<HTMLDivElement>(true, onClose);
+  const viewerRef = useDialogA11y<HTMLDivElement>(viewing !== null, () => setViewing(null));
   // Downloaded files, kept so Share runs inside the tap that triggered it — iOS Safari refuses
   // navigator.share once an await has resolved in between.
   const files = useRef(new Map<string, File>());
@@ -110,6 +115,7 @@ export function ConsultationDocumentsSheet({
 
       for (const [index, original] of files.entries()) {
         setStatus(`Uploading ${index + 1} of ${files.length}…`);
+        announce(`Uploading ${index + 1} of ${files.length}`);
         setProgress(0);
 
         try {
@@ -139,6 +145,7 @@ export function ConsultationDocumentsSheet({
 
       setProgress(null);
       setStatus(uploaded > 0 ? `${uploaded} uploaded. The patient has been notified.` : null);
+      if (uploaded > 0) announce(`${uploaded} uploaded. The patient has been notified.`);
 
       if (uploaded > 0) {
         setTitle('');
@@ -197,6 +204,7 @@ export function ConsultationDocumentsSheet({
         const outcome = await shareOrDownloadFile(file, doc.title?.trim() || KIND_LABEL[doc.kind]);
         if (outcome === 'downloaded') {
           setStatus(`Saved as ${file.name}. Attach it from your downloads.`);
+          announce(`Saved as ${file.name}. Attach it from your downloads.`);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not share this document.');
@@ -216,6 +224,7 @@ export function ConsultationDocumentsSheet({
         await load();
         onChanged();
         setStatus('Document withdrawn. The patient can no longer see it.');
+        announce('Document withdrawn. The patient can no longer see it.');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not withdraw this document.');
       } finally {
@@ -235,6 +244,7 @@ export function ConsultationDocumentsSheet({
       await createConsultationNote(consultationId, body);
       setNoteText('');
       setStatus('Note shared. The patient has been notified.');
+      announce('Note shared. The patient has been notified.');
       await load();
       onChanged();
     } catch (err) {
@@ -253,6 +263,7 @@ export function ConsultationDocumentsSheet({
         await load();
         onChanged();
         setStatus('Note withdrawn. The patient can no longer see it.');
+        announce('Note withdrawn. The patient can no longer see it.');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not withdraw this note.');
       } finally {
@@ -267,13 +278,20 @@ export function ConsultationDocumentsSheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/45" onClick={onClose}>
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="consultation-documents-title"
+        aria-describedby="consultation-documents-patient"
         className="max-h-[92vh] w-full overflow-y-auto rounded-t-[24px] bg-surface px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-on-surface"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-display text-[22px] leading-tight">Notes &amp; plans</h2>
-            <p className="mt-1 truncate text-[12px] text-on-surface-variant">{patientLabel}</p>
+            <h2 id="consultation-documents-title" className="font-display text-[22px] leading-tight">
+              Notes &amp; plans
+            </h2>
+            <p id="consultation-documents-patient" className="mt-1 truncate text-[12px] text-on-surface-variant">{patientLabel}</p>
           </div>
           <button
             type="button"
@@ -299,6 +317,7 @@ export function ConsultationDocumentsSheet({
         </label>
         <div className="mt-2 flex items-center justify-between gap-3">
           <span className="text-[11px] text-on-surface-variant">
+            <span className="sr-only">Characters used: </span>
             {noteText.length}/{CONSULTATION_NOTE_MAX_CHARS}
           </span>
           <button
@@ -312,12 +331,15 @@ export function ConsultationDocumentsSheet({
         </div>
 
         <div className="mt-5 border-t border-border-default pt-4">
-          <div className="text-[11px] uppercase tracking-[0.12em] text-outline">File type</div>
-          <div className="mt-2 flex gap-2">
+          <div id="consultation-file-type" className="text-[11px] uppercase tracking-[0.12em] text-outline">
+            File type
+          </div>
+          <div role="group" aria-labelledby="consultation-file-type" className="mt-2 flex gap-2">
             {KIND_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 type="button"
+                aria-pressed={kind === option.value}
                 onClick={() => setKind(option.value)}
                 className={`rounded-full px-3 py-2 text-[12px] font-semibold ${
                   kind === option.value
@@ -377,6 +399,7 @@ export function ConsultationDocumentsSheet({
             type="button"
             disabled={uploading}
             onClick={() => cameraInput.current?.click()}
+            aria-describedby="consultation-file-formats"
             className="flex-1 rounded-full bg-secondary px-4 py-3 text-[13px] font-semibold text-on-secondary disabled:opacity-45"
           >
             Take photo
@@ -385,19 +408,27 @@ export function ConsultationDocumentsSheet({
             type="button"
             disabled={uploading}
             onClick={() => fileInput.current?.click()}
+            aria-describedby="consultation-file-formats"
             className="flex-1 rounded-full border border-border-default px-4 py-3 text-[13px] font-semibold disabled:opacity-45"
           >
             Choose file
           </button>
         </div>
 
-        <p className="mt-2 text-[11px] text-on-surface-variant">
+        <p id="consultation-file-formats" className="mt-2 text-[11px] text-on-surface-variant">
           JPEG, PNG, WebP, HEIC or PDF, up to 10MB each. Photos are shrunk before upload.
         </p>
 
         {uploading ? (
           <div className="mt-3">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-low">
+            <div
+              role="progressbar"
+              aria-label="Upload progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round((progress ?? 0) * 100)}
+              className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-low"
+            >
               <div
                 className="h-full bg-primary transition-[width]"
                 style={{ width: `${Math.round((progress ?? 0) * 100)}%` }}
@@ -412,7 +443,10 @@ export function ConsultationDocumentsSheet({
         ) : null}
 
         {error ? (
-          <div className="mt-3 rounded-[16px] border border-error/20 bg-error-container px-3 py-2.5 text-[12px] text-on-error-container">
+          <div
+            role="alert"
+            className="mt-3 rounded-[16px] border border-error/20 bg-error-container px-3 py-2.5 text-[12px] text-on-error-container"
+          >
             {error}
           </div>
         ) : null}
@@ -423,7 +457,9 @@ export function ConsultationDocumentsSheet({
           </div>
 
           {loading ? (
-            <p className="mt-2 text-[12px] text-on-surface-variant">Loading…</p>
+            <p role="status" className="mt-2 text-[12px] text-on-surface-variant">
+              Loading…
+            </p>
           ) : documents.length === 0 && notes.length === 0 ? (
             <p className="mt-2 text-[12px] text-on-surface-variant">Nothing shared yet.</p>
           ) : (
@@ -445,6 +481,10 @@ export function ConsultationDocumentsSheet({
                       type="button"
                       disabled={busyId === note.id}
                       onClick={() => void withdrawNote(note)}
+                      aria-label={`Withdraw note from ${new Date(note.createdAt).toLocaleDateString(undefined, {
+                        day: 'numeric',
+                        month: 'short',
+                      })}`}
                       className="shrink-0 text-[12px] font-semibold text-error disabled:opacity-45"
                     >
                       Withdraw
@@ -458,7 +498,10 @@ export function ConsultationDocumentsSheet({
                   key={doc.id}
                   className="flex items-center gap-3 rounded-[16px] border border-border-default bg-surface-raised px-3 py-2.5"
                 >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/12 text-[15px]">
+                  <span
+                    aria-hidden="true"
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/12 text-[15px]"
+                  >
                     {doc.mimeType === 'application/pdf' ? '📄' : '🖼️'}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -477,6 +520,7 @@ export function ConsultationDocumentsSheet({
                     type="button"
                     disabled={busyId === doc.id}
                     onClick={() => void openDocument(doc)}
+                    aria-label={`View ${doc.title?.trim() || KIND_LABEL[doc.kind]}`}
                     className="shrink-0 text-[12px] font-semibold text-primary disabled:opacity-45"
                   >
                     View
@@ -485,6 +529,7 @@ export function ConsultationDocumentsSheet({
                     type="button"
                     disabled={busyId === doc.id}
                     onClick={() => void shareDocument(doc)}
+                    aria-label={`Share ${doc.title?.trim() || KIND_LABEL[doc.kind]}`}
                     className="shrink-0 text-[12px] font-semibold text-primary disabled:opacity-45"
                   >
                     Share
@@ -493,6 +538,7 @@ export function ConsultationDocumentsSheet({
                     type="button"
                     disabled={busyId === doc.id}
                     onClick={() => void withdraw(doc)}
+                    aria-label={`Withdraw ${doc.title?.trim() || KIND_LABEL[doc.kind]}`}
                     className="shrink-0 text-[12px] font-semibold text-error disabled:opacity-45"
                   >
                     Withdraw
@@ -506,11 +552,15 @@ export function ConsultationDocumentsSheet({
 
       {viewing ? (
         <div
+          ref={viewerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="consultation-document-viewer-title"
           className="fixed inset-0 z-[60] flex flex-col bg-black/90"
           onClick={() => setViewing(null)}
         >
           <div className="flex items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
-            <span className="truncate text-[13px] font-semibold text-white">
+            <span id="consultation-document-viewer-title" className="truncate text-[13px] font-semibold text-white">
               {viewing.doc.title?.trim() || KIND_LABEL[viewing.doc.kind]}
             </span>
             <div className="flex shrink-0 items-center gap-3">

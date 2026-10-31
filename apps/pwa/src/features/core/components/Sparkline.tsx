@@ -192,6 +192,7 @@ export function Sparkline({
             preserveAspectRatio="none"
             className="block h-full w-full"
             aria-hidden="true"
+            focusable="false"
           >
             {segments.map((d, i) => (
               <path

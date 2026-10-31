@@ -1,6 +1,8 @@
-import { useEffect } from 'react';
+import { useId } from 'react';
 import type { PeriodFlow } from '@anuva/shared';
 import { useTranslation } from 'react-i18next';
+import { announce } from '../../../lib/a11y/announce';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 import { formatCycleDateLong, todayISO } from './cycleTrackerDisplay';
 
 type PeriodFlowSheetProps = {
@@ -30,15 +32,9 @@ export function PeriodFlowSheet({
   onSave,
 }: PeriodFlowSheetProps) {
   const { t } = useTranslation();
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  const dialogRef = useDialogA11y<HTMLDivElement>(open, onClose);
+  const titleId = useId();
+  const dateId = useId();
 
   if (!open) return null;
 
@@ -47,6 +43,7 @@ export function PeriodFlowSheet({
   const handleSelect = async (flow: PeriodFlow) => {
     if (saving) return;
     await onSave(flow);
+    announce(t('a11y.tracking.flowSaved'));
   };
 
   return (
@@ -58,8 +55,11 @@ export function PeriodFlowSheet({
         aria-label={t('periodSheet.close')}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={dateId}
         className="relative w-full max-w-[360px] rounded-[20px] border border-border-default bg-surface-raised px-[22px] py-6"
         style={{ maxHeight: '88dvh', overflowY: 'auto', fontFamily: FONT_BODY }}
       >
@@ -67,21 +67,22 @@ export function PeriodFlowSheet({
           className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary"
           style={{ fontFamily: FONT_MONO }}
         >
-          <span className="h-px w-3 bg-primary/60" />
+          <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
           {t('periodSheet.eyebrow')}
         </div>
         <h2
+          id={titleId}
           className="mb-1.5 text-[20px] leading-snug text-on-surface"
           style={{ fontFamily: SERIF, fontWeight: 300 }}
         >
           {t('periodSheet.title')}
         </h2>
         {/* Named day when backfilling, so an answer is never given about the wrong day. */}
-        <p className="mb-5 text-[12.5px] text-on-surface-variant">
+        <p id={dateId} className="mb-5 text-[12.5px] text-on-surface-variant">
           {isToday ? t('periodSheet.today') : formatCycleDateLong(date)}
         </p>
 
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2.5" role="radiogroup" aria-labelledby={titleId}>
           {FLOWS.map((flow) => {
             const selected = initialFlow === flow;
             return (
@@ -89,7 +90,8 @@ export function PeriodFlowSheet({
                 key={flow}
                 type="button"
                 disabled={saving}
-                aria-pressed={selected}
+                role="radio"
+                aria-checked={selected}
                 onClick={() => handleSelect(flow)}
                 className="w-full rounded-[16px] border px-4 py-3 text-left transition-colors disabled:opacity-50"
                 style={{

@@ -28,7 +28,8 @@ export function NoteForDoctorBar({ onSaved }: { onSaved?: (note: HealthNote) => 
         <div className="flex items-start justify-between gap-2">
           <div>
             <Eyebrow className="mb-1">{t('notes.bar.eyebrow')}</Eyebrow>
-            <p className="text-[13px] leading-snug text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
+            {/* A status, so "Saved to your notes" is heard when it replaces the hint. */}
+            <p role="status" className="text-[13px] leading-snug text-on-surface-variant" style={{ fontFamily: FONT_BODY }}>
               {savedAt ? t('notes.bar.saved') : t('notes.bar.hint')}
             </p>
           </div>
@@ -37,7 +38,7 @@ export function NoteForDoctorBar({ onSaved }: { onSaved?: (note: HealthNote) => 
             className="inline-flex min-h-11 shrink-0 items-center text-[12.5px] font-semibold text-primary"
             style={{ fontFamily: FONT_BODY }}
           >
-            {t('notes.bar.all')} →
+            {t('notes.bar.all')} <span aria-hidden="true">→</span>
           </Link>
         </div>
         <div className="mt-2 grid grid-cols-3 gap-2">
@@ -46,6 +47,7 @@ export function NoteForDoctorBar({ onSaved }: { onSaved?: (note: HealthNote) => 
               key={action.mode}
               type="button"
               onClick={() => setMode(action.mode)}
+              aria-haspopup="dialog"
               className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-surface-raised px-3 py-2.5 text-[13px] font-semibold text-primary transition-opacity active:opacity-80"
               style={{ fontFamily: FONT_BODY }}
             >

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { leaveFamily } from '../auth/session';
@@ -20,6 +20,20 @@ export function LeaveCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const name = me?.patientFirstName ?? '';
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const ctaRef = useRef<HTMLButtonElement>(null);
+  const opened = useRef(false);
+
+  // The tapped button is swapped for the confirmation and back, so focus follows: to the question
+  // when it opens, back to the link when they keep the connection.
+  useEffect(() => {
+    if (confirming) {
+      opened.current = true;
+      titleRef.current?.focus({ preventScroll: true });
+    } else if (opened.current) {
+      ctaRef.current?.focus({ preventScroll: true });
+    }
+  }, [confirming]);
 
   const leave = async () => {
     if (busy) return;
@@ -46,6 +60,7 @@ export function LeaveCard() {
     return (
       <div className="pt-2 text-center">
         <button
+          ref={ctaRef}
           type="button"
           onClick={() => setConfirming(true)}
           className="min-h-[44px] px-4 text-[13px] font-semibold text-on-surface-variant underline underline-offset-4"
@@ -58,7 +73,7 @@ export function LeaveCard() {
 
   return (
     <Card tone="quiet" className="px-5 py-5">
-      <h2 className="font-display text-[20px] font-medium leading-[1.2] text-primary">
+      <h2 ref={titleRef} tabIndex={-1} className="font-display text-[20px] font-medium leading-[1.2] text-primary">
         {t('leave.confirmTitle', { name })}
       </h2>
       <p className="mt-2 text-[14px] leading-[1.55] text-on-surface-variant">{t('leave.confirmBody', { name })}</p>

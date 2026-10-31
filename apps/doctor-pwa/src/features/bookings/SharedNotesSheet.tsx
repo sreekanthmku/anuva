@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DoctorSharedNote, HealthNoteSource } from '@anuva/shared';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { fetchSharedNoteImage, fetchSharedNotes } from './api';
 import { formatLongDateTime } from './dateTime';
 
@@ -28,6 +29,9 @@ export function SharedNotesSheet({ consultationId, patientLabel, onClose }: Prop
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const [viewing, setViewing] = useState<string | null>(null);
   const blobUrls = useRef<string[]>([]);
+  // Mounted only while open. The photo viewer stacks on top and takes Escape while it is up.
+  const dialogRef = useDialogA11y<HTMLDivElement>(true, onClose);
+  const viewerRef = useDialogA11y<HTMLDivElement>(viewing !== null, () => setViewing(null));
 
   const load = useCallback(async () => {
     try {
@@ -69,13 +73,22 @@ export function SharedNotesSheet({ consultationId, patientLabel, onClose }: Prop
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/45" onClick={onClose}>
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shared-notes-title"
+        aria-describedby="shared-notes-patient"
         className="max-h-[92vh] w-full overflow-y-auto rounded-t-[24px] bg-surface px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-on-surface"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-display text-[22px] leading-tight">Her notes</h2>
-            <p className="mt-1 truncate text-[12px] text-on-surface-variant">{patientLabel}</p>
+            <h2 id="shared-notes-title" className="font-display text-[22px] leading-tight">
+              Her notes
+            </h2>
+            <p id="shared-notes-patient" className="mt-1 truncate text-[12px] text-on-surface-variant">
+              {patientLabel}
+            </p>
           </div>
           <button
             type="button"
@@ -87,10 +100,16 @@ export function SharedNotesSheet({ consultationId, patientLabel, onClose }: Prop
         </div>
 
         {notes === null && !error && (
-          <p className="mt-6 text-[13px] text-on-surface-variant">Loading…</p>
+          <p role="status" className="mt-6 text-[13px] text-on-surface-variant">
+            Loading…
+          </p>
         )}
 
-        {error && <p className="mt-6 text-[13px] text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-6 text-[13px] text-error">
+            {error}
+          </p>
+        )}
 
         {notes !== null && notes.length === 0 && (
           <p className="mt-6 text-[13px] text-on-surface-variant">
@@ -107,9 +126,9 @@ export function SharedNotesSheet({ consultationId, patientLabel, onClose }: Prop
               >
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] uppercase tracking-[0.12em] text-outline">
                   <span>{SOURCE_LABEL[note.source]}</span>
-                  <span>·</span>
+                  <span aria-hidden="true">·</span>
                   <span>Written {formatLongDateTime(note.writtenAt)}</span>
-                  <span>·</span>
+                  <span aria-hidden="true">·</span>
                   <span>Shared {formatLongDateTime(note.sharedAt)}</span>
                 </div>
 
@@ -152,6 +171,10 @@ export function SharedNotesSheet({ consultationId, patientLabel, onClose }: Prop
 
       {viewing ? (
         <div
+          ref={viewerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="shared-notes-viewer-title"
           className="fixed inset-0 z-[60] flex flex-col bg-black/90"
           onClick={(event) => {
             event.stopPropagation();
@@ -159,7 +182,9 @@ export function SharedNotesSheet({ consultationId, patientLabel, onClose }: Prop
           }}
         >
           <div className="flex items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
-            <span className="truncate text-[13px] font-semibold text-white">Note photo</span>
+            <span id="shared-notes-viewer-title" className="truncate text-[13px] font-semibold text-white">
+              Note photo
+            </span>
             <button
               type="button"
               onClick={(event) => {

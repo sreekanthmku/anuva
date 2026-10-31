@@ -1,6 +1,7 @@
 import type { ConsultationSpecialist } from '@anuva/shared';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDialogA11y } from '../../../../lib/a11y/useDialogA11y';
 import { BookingEyebrow } from './BookingEyebrow';
 
 type SpecialistPickerProps = {
@@ -12,12 +13,13 @@ type SpecialistPickerProps = {
 export function SpecialistPicker({ specialists: items, value, onChange }: SpecialistPickerProps) {
   const { t } = useTranslation();
   const [detailsOpenFor, setDetailsOpenFor] = useState<ConsultationSpecialist | null>(null);
+  const labelId = useId();
 
   return (
     <>
       <section className="px-3">
-        <BookingEyebrow>{t('booking.chooseSpecialist')}</BookingEyebrow>
-        <div className="flex flex-col gap-2">
+        <BookingEyebrow id={labelId}>{t('booking.chooseSpecialist')}</BookingEyebrow>
+        <div role="radiogroup" aria-labelledby={labelId} className="flex flex-col gap-2">
           {items.map((s) => {
             const sel = value === s.key;
             const disabled = !s.bookable;
@@ -42,7 +44,7 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
                     {s.imageUrl ? (
                       <img
                         src={s.imageUrl}
-                        alt={s.name}
+                        alt=""
                         className="h-11 w-11 shrink-0 rounded-full border border-border-default object-cover"
                       />
                     ) : (
@@ -56,6 +58,8 @@ export function SpecialistPicker({ specialists: items, value, onChange }: Specia
                       if (!disabled) onChange(s.key);
                     }}
                     disabled={disabled}
+                    role="radio"
+                    aria-checked={sel}
                     className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-not-allowed"
                   >
                     <div className="min-w-0 flex-1">
@@ -132,6 +136,8 @@ type SpecialistDetailsModalProps = {
 
 function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalProps) {
   const { t } = useTranslation();
+  // Escape is handled by the listener below, so the hook only moves and traps focus.
+  const dialogRef = useDialogA11y<HTMLDivElement>(!!specialist);
 
   useEffect(() => {
     if (!specialist) return;
@@ -158,16 +164,18 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
         type="button"
         className="fixed inset-0 z-[60] cursor-default border-none bg-black/60 p-0"
         onClick={onClose}
-        aria-label={t('booking.closeDetails')}
+        aria-hidden="true"
+        tabIndex={-1}
       />
       <div
+        ref={dialogRef}
         className="fixed left-1/2 top-1/2 z-[61] w-[calc(100vw-1.5rem)] max-w-[22.5rem] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[28px] border border-border-default bg-surface"
         role="dialog"
         aria-modal="true"
         aria-labelledby="specialist-details-title"
       >
         <div className="bg-primary-container px-5 pb-5 pt-4">
-          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" />
+          <div aria-hidden="true" className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline/40" />
           <div className="flex items-start gap-3.5">
             <div
               className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/30 bg-primary/10 text-[18px] text-primary"
@@ -177,7 +185,7 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
               {specialist.imageUrl ? (
                 <img
                   src={specialist.imageUrl}
-                  alt={specialist.name}
+                  alt=""
                   className="h-full w-full object-cover"
                 />
               ) : (

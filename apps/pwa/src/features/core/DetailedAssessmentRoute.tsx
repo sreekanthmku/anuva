@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 // Both forms: `t` inside components so a language switch re-renders them, and the instance in the
@@ -15,6 +15,8 @@ import {
   type DetailedAssessmentSection,
   type DetailedQuestion,
 } from '@anuva/shared';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
+import { announce } from '../../lib/a11y/announce';
 import { ApiError } from '../../shared/lib/api';
 import { useAuth } from '../auth/auth-context';
 import { BottomNav } from './components/BottomNav';
@@ -118,6 +120,9 @@ export default function DetailedAssessmentRoute() {
 
   /** What the server is known to hold, so each save can send only the difference. */
   const savedRef = useRef<AnswersMap>({});
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  /** Set by a section change; the next render moves focus to the new section's title. */
+  const focusHeading = useRef(false);
 
   // Hydrate saved answers once loaded.
   useEffect(() => {
@@ -153,7 +158,21 @@ export default function DetailedAssessmentRoute() {
   const goToStep = (next: number) => {
     setStep(next);
     window.scrollTo({ top: 0 });
+    focusHeading.current = true;
   };
+
+  // After a section change, or once the form replaces the loading screen and her focus went with
+  // it, the section title takes focus, so a screen reader says which section she is now in.
+  useEffect(() => {
+    const active = document.activeElement;
+    const lost = !active || active === document.body;
+    if (!focusHeading.current && !(hydrated && lost)) return;
+    focusHeading.current = false;
+    const heading = headingRef.current;
+    if (!heading) return;
+    if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+    heading.focus({ preventScroll: true });
+  }, [step, hydrated]);
 
   const handleNext = async () => {
     setError(null);
@@ -171,12 +190,14 @@ export default function DetailedAssessmentRoute() {
 
       // The draft is stored either way — an unfinished section costs the user nothing.
       if (missingHere.length > 0) {
-        setShowRequired(true);
-        setError(
+        const message =
           missingHere.length === 1
             ? t('detailedAssessment.answerHighlighted')
-            : t('detailedAssessment.answerHighlightedMany', { count: missingHere.length })
-        );
+            : t('detailedAssessment.answerHighlightedMany', { count: missingHere.length });
+        setShowRequired(true);
+        setError(message);
+        // Read out even when the message is the same as last time, which a live region would skip.
+        announce(message, 'assertive');
         return;
       }
 
@@ -199,10 +220,12 @@ export default function DetailedAssessmentRoute() {
         );
         setShowRequired(true);
         setError(err.message);
+        announce(err.message, 'assertive');
         if (target >= 0 && target !== step) goToStep(target);
         return;
       }
       setError(t('detailedAssessment.saveFailed'));
+      announce(t('detailedAssessment.saveFailed'), 'assertive');
     } finally {
       setSaving(false);
     }
@@ -229,7 +252,10 @@ export default function DetailedAssessmentRoute() {
   if (loading && !hydrated) {
     return (
       <main className="flex min-h-mobile items-center justify-center bg-surface text-outline">
-        <span style={{ fontFamily: '"Mulish", sans-serif' }}>{t('common.loading')}</span>
+        <h1 className="sr-only">{t('detailedAssessment.eyebrow')}</h1>
+        <span style={{ fontFamily: '"Mulish", sans-serif' }} role="status">
+          {t('common.loading')}
+        </span>
       </main>
     );
   }
@@ -241,6 +267,7 @@ export default function DetailedAssessmentRoute() {
           <button
             type="button"
             onClick={handleBack}
+            aria-label={t('common.back')}
             className="text-[13px] text-outline transition-opacity hover:opacity-80"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
@@ -250,13 +277,17 @@ export default function DetailedAssessmentRoute() {
             className="text-[11px] uppercase tracking-[0.12em] text-outline"
             style={{ fontFamily: '"Mulish", sans-serif' }}
           >
-            {progressLabel}
+            {/* "02 / 05" is read as a fraction; spoken, it is the section count. */}
+            <span aria-hidden="true">{progressLabel}</span>
+            <span className="sr-only">
+              {t('a11y.summary.sectionProgress', { current: step + 1, total: totalSteps })}
+            </span>
           </span>
         </div>
 
         <StepDots total={totalSteps} current={step} />
 
-        <h1 className="mt-6 font-display text-[26px] leading-[1.15] text-on-surface">
+        <h1 ref={headingRef} className="mt-6 font-display text-[26px] leading-[1.15] text-on-surface">
           {/* `defaultValue` is the English from `@anuva/shared`: a section or prompt the translator
               has not reached yet still renders as words rather than as a raw key. */}
           {t(`detailedAssessment.sections.${section.key}`, { defaultValue: section.title })}
@@ -325,6 +356,16 @@ type FieldProps = {
   onChange: (value: string) => void;
 };
 
+/**
+ * How a field's control is named and described for a screen reader: by the question's own visible
+ * prompt, and by its "required" message while that is showing. Spread onto inputs and groups alike.
+ */
+type FieldA11y = {
+  'aria-labelledby': string;
+  'aria-describedby'?: string;
+  'aria-invalid'?: true;
+};
+
 function QuestionField({
   question,
   value,
@@ -332,6 +373,13 @@ function QuestionField({
   onChange,
 }: FieldProps & { invalid?: boolean }) {
   const { t } = useTranslation();
+  const id = useId();
+  const labelId = `${id}-label`;
+  const errorId = `${id}-error`;
+  const a11y: FieldA11y = {
+    'aria-labelledby': labelId,
+    ...(invalid ? { 'aria-describedby': errorId, 'aria-invalid': true as const } : {}),
+  };
 
   return (
     <div
@@ -339,6 +387,7 @@ function QuestionField({
       style={{ borderColor: invalid ? '#B3261E' : undefined }}
     >
       <label
+        id={labelId}
         className="block text-[15px] leading-[1.4] text-on-surface"
         style={{ fontFamily: '"Mulish", sans-serif' }}
       >
@@ -348,10 +397,14 @@ function QuestionField({
         )}
       </label>
       <div className="mt-2.5">
-        <FieldInput question={question} value={value} onChange={onChange} />
+        <FieldInput question={question} value={value} onChange={onChange} a11y={a11y} />
       </div>
       {invalid && (
-        <p className="mt-2 text-[12px] text-error" style={{ fontFamily: '"Mulish", sans-serif' }}>
+        <p
+          id={errorId}
+          className="mt-2 text-[12px] text-error"
+          style={{ fontFamily: '"Mulish", sans-serif' }}
+        >
           {t('detailedAssessment.required')}
         </p>
       )}
@@ -359,20 +412,40 @@ function QuestionField({
   );
 }
 
-function FieldInput({ question, value, onChange }: FieldProps) {
+function FieldInput({ question, value, onChange, a11y }: FieldProps & { a11y: FieldA11y }) {
   switch (question.inputType) {
     case 'yesno':
-      return <ChipGroup options={[...YESNO_OPTIONS]} value={value} onChange={onChange} />;
+      return (
+        <ChipGroup options={[...YESNO_OPTIONS]} value={value} onChange={onChange} a11y={a11y} />
+      );
     case 'severity':
-      return <ChipGroup options={[...SEVERITY_OPTIONS]} value={value} onChange={onChange} />;
+      return (
+        <ChipGroup options={[...SEVERITY_OPTIONS]} value={value} onChange={onChange} a11y={a11y} />
+      );
     case 'qol':
-      return <ChipGroup options={[...QOL_OPTIONS]} value={value} onChange={onChange} />;
+      return (
+        <ChipGroup options={[...QOL_OPTIONS]} value={value} onChange={onChange} a11y={a11y} />
+      );
     case 'select':
-      return <ChipGroup options={question.options ?? []} value={value} onChange={onChange} />;
+      return (
+        <ChipGroup
+          options={question.options ?? []}
+          value={value}
+          onChange={onChange}
+          a11y={a11y}
+        />
+      );
     case 'multiselect':
-      return <ChipMultiGroup options={question.options ?? []} value={value} onChange={onChange} />;
+      return (
+        <ChipMultiGroup
+          options={question.options ?? []}
+          value={value}
+          onChange={onChange}
+          a11y={a11y}
+        />
+      );
     case 'signature':
-      return <SignaturePad value={value} onChange={onChange} />;
+      return <SignaturePad value={value} onChange={onChange} a11y={a11y} />;
     case 'number':
       return (
         <TextInput
@@ -380,20 +453,32 @@ function FieldInput({ question, value, onChange }: FieldProps) {
           value={value}
           onChange={onChange}
           placeholder={question.placeholder}
+          a11y={a11y}
         />
       );
     case 'date':
       return question.autoFill === 'today' ? (
-        <ReadOnlyDate value={value} />
+        <ReadOnlyDate value={value} a11y={a11y} />
       ) : (
-        <DatePicker value={value} onChange={onChange} />
+        <DatePicker value={value} onChange={onChange} a11y={a11y} />
       );
     case 'textarea':
-      return <TextArea value={value} onChange={onChange} placeholder={question.placeholder} />;
+      return (
+        <TextArea
+          value={value}
+          onChange={onChange}
+          placeholder={question.placeholder}
+          a11y={a11y}
+        />
+      );
     case 'textlist':
-      return <TextList rows={question.rows ?? 5} value={value} onChange={onChange} />;
+      return (
+        <TextList rows={question.rows ?? 5} value={value} onChange={onChange} a11y={a11y} />
+      );
     case 'dynlist':
-      return <DynList columns={question.columns} value={value} onChange={onChange} />;
+      return (
+        <DynList columns={question.columns} value={value} onChange={onChange} a11y={a11y} />
+      );
     case 'text':
     default:
       return (
@@ -402,6 +487,7 @@ function FieldInput({ question, value, onChange }: FieldProps) {
           value={value}
           onChange={onChange}
           placeholder={question.placeholder}
+          a11y={a11y}
         />
       );
   }
@@ -411,19 +497,24 @@ function ChipGroup({
   options,
   value,
   onChange,
+  a11y,
 }: {
   options: string[];
   value: string;
   onChange: (value: string) => void;
+  a11y: FieldA11y;
 }) {
+  // One answer from several: radio semantics. Tapping the chosen chip again still clears it.
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2" role="radiogroup" {...a11y}>
       {options.map((option) => {
         const active = value === option;
         return (
           <button
             key={option}
             type="button"
+            role="radio"
+            aria-checked={active}
             onClick={() => onChange(active ? '' : option)}
             className="rounded-full border px-4 py-2 text-[14px] transition-colors"
             style={{
@@ -446,10 +537,12 @@ function ChipMultiGroup({
   options,
   value,
   onChange,
+  a11y,
 }: {
   options: string[];
   value: string;
   onChange: (value: string) => void;
+  a11y: FieldA11y;
 }) {
   const selected = useMemo(
     () =>
@@ -470,14 +563,15 @@ function ChipMultiGroup({
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2" role="group" {...a11y}>
       {options.map((option) => {
         const active = selected.includes(option);
         return (
           <button
             key={option}
             type="button"
-            aria-pressed={active}
+            role="checkbox"
+            aria-checked={active}
             onClick={() => toggle(option)}
             className="rounded-full border px-4 py-2 text-[14px] transition-colors"
             style={{
@@ -499,9 +593,11 @@ const inputClass =
   'w-full rounded-2xl border border-border-default bg-surface-container-lowest px-4 py-3 text-[15px] text-on-surface placeholder:text-outline focus:border-primary focus:outline-none';
 
 /** Auto-filled dates are shown, not edited — the value is stamped at hydration. */
-function ReadOnlyDate({ value }: { value: string }) {
+function ReadOnlyDate({ value, a11y }: { value: string; a11y: FieldA11y }) {
   return (
     <div
+      role="group"
+      {...a11y}
       className="flex w-full items-center justify-between rounded-2xl border border-border-default bg-surface-container-lowest px-4 py-3 text-[15px] text-on-surface"
       style={{ fontFamily: '"Mulish", sans-serif' }}
     >
@@ -518,14 +614,17 @@ function TextInput({
   value,
   onChange,
   placeholder,
+  a11y,
 }: {
   type: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  a11y: FieldA11y;
 }) {
   return (
     <input
+      {...a11y}
       type={type}
       value={value}
       placeholder={placeholder}
@@ -540,13 +639,16 @@ function TextArea({
   value,
   onChange,
   placeholder,
+  a11y,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  a11y: FieldA11y;
 }) {
   return (
     <textarea
+      {...a11y}
       value={value}
       placeholder={placeholder}
       rows={3}
@@ -562,10 +664,12 @@ function TextList({
   rows,
   value,
   onChange,
+  a11y,
 }: {
   rows: number;
   value: string;
   onChange: (value: string) => void;
+  a11y: FieldA11y;
 }) {
   const items = useMemo<string[]>(() => {
     try {
@@ -587,11 +691,12 @@ function TextList({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2" role="group" {...a11y}>
       {lines.map((line, index) => (
         <input
           key={index}
           type="text"
+          aria-label={i18n.t('a11y.summary.lineNumber', { number: index + 1 })}
           value={line}
           placeholder={i18n.t('detailedAssessment.listItem', { number: index + 1 })}
           onChange={(event) => update(index, event.target.value)}
@@ -646,8 +751,17 @@ function formatDisplay(iso: string): string {
 /** Roughly how tall the popover renders; only used to decide which way it should open. */
 const CALENDAR_HEIGHT = 340;
 
-function DatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function DatePicker({
+  value,
+  onChange,
+  a11y,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  a11y: FieldA11y;
+}) {
   const { t } = useTranslation();
+  const valueId = useId();
   const today = new Date();
   const parsed = parseDate(value);
   const [open, setOpen] = useState(false);
@@ -656,6 +770,11 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
   const [viewMonth, setViewMonth] = useState(parsed?.month ?? today.getMonth());
   const [pickingYear, setPickingYear] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Escape closes it, and focus goes back to the field when it does.
+  const popoverRef = useDialogA11y<HTMLDivElement>(open, () => {
+    setOpen(false);
+    setPickingYear(false);
+  });
 
   /**
    * Fields low on the screen — date of birth sits under a sticky footer — have no room to open
@@ -722,9 +841,13 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Trigger */}
+      {/* Trigger. Named by the question, then the date it holds. */}
       <button
         type="button"
+        {...a11y}
+        aria-labelledby={`${a11y['aria-labelledby']} ${valueId}`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         onClick={() => {
           if (!open) chooseDirection();
           setOpen((o) => !o);
@@ -737,12 +860,14 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
           borderColor: open ? '#5E3566' : undefined,
         }}
       >
-        <span>{formatDisplay(value)}</span>
+        <span id={valueId}>{formatDisplay(value)}</span>
         <svg
           width="16"
           height="16"
           viewBox="0 0 16 16"
           fill="none"
+          aria-hidden="true"
+          focusable="false"
           style={{
             opacity: 0.6,
             flexShrink: 0,
@@ -759,6 +884,10 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
       {/* Popover */}
       {open && (
         <div
+          ref={popoverRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('detailedAssessment.selectDate')}
           className={`absolute left-0 z-50 w-full overflow-hidden rounded-2xl border ${
             dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
           }`}
@@ -783,6 +912,7 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
                 <button
                   type="button"
                   onClick={() => setPickingYear(false)}
+                  aria-label={t('common.close')}
                   className="text-[20px] leading-none text-outline transition-opacity hover:opacity-70"
                 >
                   ×
@@ -793,6 +923,7 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
                   <button
                     key={year}
                     type="button"
+                    aria-pressed={year === viewYear}
                     onClick={() => {
                       setViewYear(year);
                       setPickingYear(false);
@@ -817,6 +948,7 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
                 <button
                   type="button"
                   onClick={prevMonth}
+                  aria-label={t('datePicker.previousMonth')}
                   className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10 text-outline text-[18px]"
                 >
                   ‹
@@ -824,6 +956,10 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
                 <button
                   type="button"
                   onClick={() => setPickingYear(true)}
+                  aria-label={t('a11y.summary.chooseYear', {
+                    month: monthNames()[viewMonth],
+                    year: viewYear,
+                  })}
                   className="text-[14px] font-medium text-on-surface transition-opacity hover:opacity-70"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
@@ -832,14 +968,15 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
                 <button
                   type="button"
                   onClick={nextMonth}
+                  aria-label={t('datePicker.nextMonth')}
                   className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10 text-outline text-[18px]"
                 >
                   ›
                 </button>
               </div>
 
-              {/* Day-of-week headers */}
-              <div className="mb-1 grid grid-cols-7 text-center">
+              {/* Day-of-week headers. For the eye only: each day button says its full date. */}
+              <div className="mb-1 grid grid-cols-7 text-center" aria-hidden="true">
                 {weekdayInitials().map((d) => (
                   <span
                     key={d}
@@ -865,6 +1002,9 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
                     <button
                       key={idx}
                       type="button"
+                      aria-label={formatDisplay(toIso(viewYear, viewMonth, day))}
+                      aria-pressed={isSelected}
+                      aria-current={isToday ? 'date' : undefined}
                       onClick={() => selectDay(day)}
                       className="mx-auto flex h-8 w-8 items-center justify-center rounded-full text-[14px] transition-colors"
                       style={{
@@ -925,10 +1065,12 @@ function DynList({
   columns,
   value,
   onChange,
+  a11y,
 }: {
   columns?: string[];
   value: string;
   onChange: (v: string) => void;
+  a11y: FieldA11y;
 }) {
   const { t } = useTranslation();
   const headers = columns ?? [];
@@ -966,8 +1108,16 @@ function DynList({
     emit(next.length > 0 ? next : [Array.from({ length: columnCount }, () => '')]);
   };
 
+  /** A cell's placeholder, which is its column's name, or the row's name with no columns. */
+  const cellName = (rowIndex: number, cellIndex: number) =>
+    headers[cellIndex]
+      ? t(`detailedAssessment.columns.${optionKey(headers[cellIndex])}`, {
+          defaultValue: headers[cellIndex],
+        })
+      : t('detailedAssessment.medicationRow', { number: rowIndex + 1 });
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" role="group" {...a11y}>
       {rows.map((row, rowIndex) => (
         <div key={rowIndex} className="flex items-start gap-2">
           <div className="flex flex-1 flex-col gap-2">
@@ -976,12 +1126,15 @@ function DynList({
                 key={cellIndex}
                 type="text"
                 value={cell}
-                placeholder={
+                placeholder={cellName(rowIndex, cellIndex)}
+                // A placeholder is not a name, and every row repeats the column names.
+                aria-label={
                   headers[cellIndex]
-                    ? t(`detailedAssessment.columns.${optionKey(headers[cellIndex])}`, {
-                        defaultValue: headers[cellIndex],
+                    ? t('a11y.summary.rowCell', {
+                        column: cellName(rowIndex, cellIndex),
+                        number: rowIndex + 1,
                       })
-                    : t('detailedAssessment.medicationRow', { number: rowIndex + 1 })
+                    : cellName(rowIndex, cellIndex)
                 }
                 onChange={(event) => update(rowIndex, cellIndex, event.target.value)}
                 className={inputClass}
@@ -994,7 +1147,7 @@ function DynList({
               type="button"
               onClick={() => remove(rowIndex)}
               className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border border-border-default bg-surface-container-lowest text-outline transition-colors hover:border-error hover:text-error"
-              aria-label={t('detailedAssessment.remove')}
+              aria-label={t('a11y.summary.removeRow', { number: rowIndex + 1 })}
             >
               ×
             </button>
@@ -1007,7 +1160,10 @@ function DynList({
         className="mt-1 flex items-center gap-1.5 text-[13px] text-primary transition-opacity hover:opacity-70"
         style={{ fontFamily: '"Mulish", sans-serif' }}
       >
-        <span className="flex h-5 w-5 items-center justify-center rounded-full border border-primary/40 text-[14px] leading-none">
+        <span
+          aria-hidden="true"
+          className="flex h-5 w-5 items-center justify-center rounded-full border border-primary/40 text-[14px] leading-none"
+        >
           +
         </span>
         {t('detailedAssessment.addAnother')}
@@ -1023,7 +1179,15 @@ function DynList({
 const SIGNATURE_WIDTH = 600;
 const SIGNATURE_HEIGHT = 200;
 
-function SignaturePad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function SignaturePad({
+  value,
+  onChange,
+  a11y,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  a11y: FieldA11y;
+}) {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
@@ -1110,7 +1274,7 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (v: string
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2" role="group" {...a11y}>
       <canvas
         ref={canvasRef}
         onPointerDown={start}
@@ -1118,6 +1282,7 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (v: string
         onPointerUp={end}
         onPointerLeave={end}
         onPointerCancel={end}
+        role="img"
         aria-label={t('detailedAssessment.signatureArea')}
         className="w-full rounded-2xl border bg-surface-container-lowest"
         style={{
@@ -1127,7 +1292,11 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (v: string
         }}
       />
       <div className="flex items-center justify-between">
-        <span className="text-[12px] text-outline" style={{ fontFamily: '"Mulish", sans-serif' }}>
+        <span
+          className="text-[12px] text-outline"
+          style={{ fontFamily: '"Mulish", sans-serif' }}
+          aria-live="polite"
+        >
           {hasInk ? t('detailedAssessment.signed') : t('detailedAssessment.drawSignature')}
         </span>
         <button
@@ -1150,6 +1319,13 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (v: string
 
 function ThanksScreen({ onDismiss }: { onDismiss: () => void }) {
   const { t } = useTranslation();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // Same route, so RouteFocus does not run; the finish button she pressed has gone with the form.
+  useEffect(() => {
+    headingRef.current?.focus({ preventScroll: true });
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(onDismiss, 2000);
     return () => clearTimeout(timer);
@@ -1164,7 +1340,7 @@ function ThanksScreen({ onDismiss }: { onDismiss: () => void }) {
           border: '1.5px solid rgba(94, 53, 102, 0.3)',
         }}
       >
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true" focusable="false">
           <path
             d="M6 14.5l5.5 5.5L22 9"
             stroke="#5E3566"
@@ -1176,6 +1352,8 @@ function ThanksScreen({ onDismiss }: { onDismiss: () => void }) {
       </div>
 
       <h1
+        ref={headingRef}
+        tabIndex={-1}
         className="font-display text-[28px] leading-[1.2] text-on-surface"
         style={{ fontWeight: 300 }}
       >

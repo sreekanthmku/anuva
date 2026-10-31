@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { fetchLearn } from '../../shared/lib/familyApi';
 import { useFamilyResource } from '../../shared/lib/useFamilyResource';
-import { Card, ErrorCard, Eyebrow, PageIntro, SectionLabel, SkeletonCard } from '../shell/ui';
+import { Card, ErrorCard, Eyebrow, LoadingStack, PageIntro, SectionLabel, SkeletonCard } from '../shell/ui';
 import { ArticleCard } from './ArticleCard';
 
 /**
@@ -18,10 +18,10 @@ export function LearnRoute() {
 
   if (loading && !data) {
     return (
-      <div className="space-y-4">
+      <LoadingStack>
         <SkeletonCard lines={2} />
         <SkeletonCard lines={2} />
-      </div>
+      </LoadingStack>
     );
   }
 

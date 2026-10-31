@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { LanguageToggle } from '../../i18n/LanguageToggle';
+import { announce } from '../../lib/a11y/announce';
 import { promptInstall } from '../../lib/pwa/installPrompt';
 import { getInAppBrowserName } from '../../lib/pwa/platform';
 import { useInstallGate } from './useInstallGate';
@@ -9,6 +10,7 @@ const HEADING_FONT = { fontFamily: '"Fraunces", serif', fontWeight: 500 } as con
 const BODY_FONT = { fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' } as const;
 
 export default function InstallGate() {
+  const { t } = useTranslation();
   const { variant } = useInstallGate();
 
   if (variant === 'checking') {
@@ -17,6 +19,9 @@ export default function InstallGate() {
     return (
       <Shell>
         <Wordmark />
+        <p className="sr-only" role="status">
+          {t('common.loading')}
+        </p>
       </Shell>
     );
   }
@@ -52,9 +57,10 @@ function Wordmark() {
 
   return (
     <>
+      {/* Decorative: the brand name is written out right below it. */}
       <img
         src="/anuva-logo-icon.png"
-        alt={t('common.logoAlt')}
+        alt=""
         className="mb-5 h-20 w-20 object-contain"
       />
       <p className="text-[22px] tracking-[0.18em]" style={HEADING_FONT}>
@@ -116,7 +122,9 @@ function Steps({ items }: { items: React.ReactNode[] }) {
       {items.map((item, index) => (
         // Index keys are safe here: the step lists are static, ordered copy.
         <li key={index} className="flex gap-3 rounded-2xl bg-surface-container-low p-4">
+          {/* The <ol> already numbers the steps for a screen reader. */}
           <span
+            aria-hidden="true"
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] text-on-primary"
             style={{ ...BODY_FONT, fontWeight: 700 }}
           >
@@ -154,7 +162,11 @@ function PromptScreen() {
     setBusy(false);
     // 'accepted' re-renders as 'just-installed' via the appinstalled event, so
     // only the dismissed and unavailable paths need handling here.
-    if (outcome !== 'accepted') setDismissed(true);
+    if (outcome !== 'accepted') {
+      setDismissed(true);
+      // The note appears below the button she is still on; the <1> markup is for sighted emphasis.
+      announce(t('install.promptDismissed').replace(/<\/?\d+>/g, ''));
+    }
   }
 
   return (

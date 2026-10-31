@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   MEDICATION_MAX_TIMES,
@@ -7,6 +7,7 @@ import {
   type MedicationReminder,
 } from '@anuva/shared';
 import { ApiError } from '../../../shared/lib/api';
+import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 import { createReminder, deleteReminder, deviceTimeZone, updateReminder } from './api';
 import { WEEK_ORDER, weekdayName } from './format';
 import { PushReadiness } from './PushReadiness';
@@ -16,12 +17,25 @@ const DEFAULT_TIME = '09:00';
 const DAY_OPTIONS: MedicationDays[] = ['daily', 'weekdays', 'alternate'];
 const KINDS: MedicationKind[] = ['medication', 'supplement'];
 
-function Chip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
+function Chip({
+  selected,
+  radio = false,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  /** One choice of several (inside a `radiogroup`) rather than a day she can add or remove. */
+  radio?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-pressed={selected}
+      role={radio ? 'radio' : undefined}
+      aria-checked={radio ? selected : undefined}
+      aria-pressed={radio ? undefined : selected}
       className="min-h-11 whitespace-nowrap rounded-full border px-3.5 py-2 text-[13px] font-medium transition-colors"
       style={{
         fontFamily: FONT_BODY,
@@ -61,6 +75,8 @@ export function ReminderEditorSheet({
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useDialogA11y<HTMLDivElement>(open, onClose);
+  const fieldId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -71,14 +87,6 @@ export function ReminderEditorSheet({
     setError(null);
   }, [open, reminder]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -129,6 +137,7 @@ export function ReminderEditorSheet({
     <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-6">
       <button type="button" className="absolute inset-0 bg-black/60" onClick={onClose} aria-label={t('common.close')} />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reminder-editor-title"
@@ -136,7 +145,7 @@ export function ReminderEditorSheet({
         style={{ maxHeight: '88dvh', overflowY: 'auto', fontFamily: FONT_BODY }}
       >
         <div className="mb-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.18em] text-primary">
-          <span className="h-px w-3 bg-primary/60" />
+          <span aria-hidden="true" className="h-px w-3 bg-primary/60" />
           {t('medication.editor.eyebrow')}
         </div>
         <h2
@@ -149,12 +158,13 @@ export function ReminderEditorSheet({
 
         <PushReadiness />
 
-        <p className="mb-2.5 text-[12px] text-on-surface-variant">
+        <p id={`${fieldId}-kind`} className="mb-2.5 text-[12px] text-on-surface-variant">
           {t('medication.editor.kindQuestion')} <span className="text-outline">{t('medication.editor.optional')}</span>
         </p>
-        <div className="mb-6 flex flex-wrap gap-2">
+        {/* One answer or none: tapping the chosen one again clears it. */}
+        <div className="mb-6 flex flex-wrap gap-2" role="radiogroup" aria-labelledby={`${fieldId}-kind`}>
           {KINDS.map((value) => (
-            <Chip key={value} selected={kind === value} onClick={() => setKind(kind === value ? null : value)}>
+            <Chip key={value} radio selected={kind === value} onClick={() => setKind(kind === value ? null : value)}>
               {t(`medication.kind.${value}`)}
             </Chip>
           ))}
@@ -181,7 +191,7 @@ export function ReminderEditorSheet({
                   aria-label={t('medication.editor.removeTime')}
                   className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border-default text-on-surface-variant"
                 >
-                  ×
+                  <span aria-hidden="true">×</span>
                 </button>
               )}
             </div>
@@ -193,20 +203,22 @@ export function ReminderEditorSheet({
             onClick={() => setTimes((prev) => [...prev, ''])}
             className="mb-6 min-h-11 text-[13px] font-semibold text-primary"
           >
-            + {t('medication.editor.addTime')}
+            <span aria-hidden="true">+</span> {t('medication.editor.addTime')}
           </button>
         )}
 
-        <p className="mb-2.5 mt-2 text-[12px] text-on-surface-variant">{t('medication.editor.days')}</p>
-        <div className="mb-3 flex flex-wrap gap-2">
+        <p id={`${fieldId}-days`} className="mb-2.5 mt-2 text-[12px] text-on-surface-variant">
+          {t('medication.editor.days')}
+        </p>
+        <div className="mb-3 flex flex-wrap gap-2" role="radiogroup" aria-labelledby={`${fieldId}-days`}>
           {DAY_OPTIONS.map((value) => (
-            <Chip key={value} selected={days === value} onClick={() => setDays(value)}>
+            <Chip key={value} radio selected={days === value} onClick={() => setDays(value)}>
               {t(`medication.editor.dayOptions.${value}`)}
             </Chip>
           ))}
         </div>
         {days === 'weekdays' && (
-          <div className="mb-2 flex flex-wrap gap-1.5">
+          <div className="mb-2 flex flex-wrap gap-1.5" role="group" aria-labelledby={`${fieldId}-days`}>
             {WEEK_ORDER.map((day) => (
               <Chip key={day} selected={weekdays.includes(day)} onClick={() => toggleWeekday(day)}>
                 {weekdayName(day, i18n.language)}
@@ -218,7 +230,11 @@ export function ReminderEditorSheet({
           <p className="mb-2 text-[12px] text-on-surface-variant">{t('medication.editor.pickDays')}</p>
         )}
 
-        {error && <p className="mt-3 text-[12px] text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-3 text-[12px] text-error">
+            {error}
+          </p>
+        )}
 
         <div className="mt-6 flex flex-col gap-2">
           <button

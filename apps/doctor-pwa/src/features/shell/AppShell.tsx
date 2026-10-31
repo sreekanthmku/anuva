@@ -62,7 +62,7 @@ function TopBar() {
         >
           <BellIcon size={20} />
           {unreadCount > 0 ? (
-            <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-secondary ring-2 ring-surface-raised" />
+            <span aria-hidden="true" className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-secondary ring-2 ring-surface-raised" />
           ) : null}
         </button>
       </div>

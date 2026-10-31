@@ -67,8 +67,11 @@ export function MetricRing({
         width={size}
         height={height}
         viewBox={`0 0 ${size} ${height}`}
-        role="img"
+        // Unlabelled, the dial says nothing a screen reader can use, so it is hidden instead.
+        role={ariaLabel ? 'img' : undefined}
         aria-label={ariaLabel}
+        aria-hidden={ariaLabel ? undefined : true}
+        focusable="false"
         className="block"
       >
         {GAUGE_BANDS.map((color, i) => {

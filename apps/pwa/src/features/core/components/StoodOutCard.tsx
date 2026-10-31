@@ -1,4 +1,5 @@
 import type { ReportDeltaTone, ReportRing, ReportRingKey } from '@anuva/shared';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eyebrow } from '../../../shared/components/Eyebrow';
 
@@ -69,6 +70,7 @@ export function StoodOutCard({
   onSelect: (key: ReportRingKey) => void;
 }) {
   const { t } = useTranslation();
+  const idPrefix = useId();
   const grouped = COLUMNS.map((column) => ({
     ...column,
     rings: rings.filter((ring) => ring.pct != null && ring.deltaTone === column.tone),
@@ -99,6 +101,7 @@ export function StoodOutCard({
                 {column.emoji}
               </span>
               <span
+                id={`${idPrefix}-${column.tone}`}
                 className="min-w-0 text-[10.5px] font-semibold leading-[1.25]"
                 style={{ color: column.accent, fontFamily: MULISH }}
               >
@@ -106,7 +109,8 @@ export function StoodOutCard({
               </span>
             </div>
 
-            <ul className="flex flex-col gap-1">
+            {/* Each list is named by its column heading, so "Sleep" is heard as getting better. */}
+            <ul className="flex flex-col gap-1" aria-labelledby={`${idPrefix}-${column.tone}`}>
               {column.rings.map((ring) => {
                 const body = (
                   <>

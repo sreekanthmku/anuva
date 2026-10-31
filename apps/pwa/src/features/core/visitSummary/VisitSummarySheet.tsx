@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   VISIT_SUMMARY_PATIENT_NOTE_MAX,
@@ -7,6 +7,7 @@ import {
   type VisitSummarySectionKey,
 } from '@anuva/shared';
 import { ApiError } from '../../../shared/lib/api';
+import { announce } from '../../../lib/a11y/announce';
 import { LogSheetFrame } from '../components/LogSheetFrame';
 import { createSummaryDraft, fetchSharedSummary, revokeSummary, shareSummary } from './api';
 
@@ -30,7 +31,7 @@ function SectionCard({
       }`}
     >
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-tertiary">{section.title}</p>
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-tertiary">{section.title}</h3>
         {onToggle ? (
           <label className="flex min-h-11 cursor-pointer items-center gap-2 text-[12.5px] text-on-surface-variant">
             {included ? t('visitSummary.include') : t('visitSummary.leftOut')}
@@ -88,6 +89,7 @@ export function VisitSummarySheet({
   const [pickedNotes, setPickedNotes] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const notesTitleId = useId();
 
   const buildDraft = useCallback(async () => {
     setLoading(true);
@@ -157,6 +159,7 @@ export function VisitSummarySheet({
       });
       setSummary(shared);
       onShared?.(true);
+      announce(t('visitSummary.offer.shared', { name: specialistName }));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('visitSummary.shareFailed'));
     } finally {
@@ -170,6 +173,7 @@ export function VisitSummarySheet({
     try {
       await revokeSummary(consultationId);
       onShared?.(false);
+      announce(t('a11y.care.summaryTakenBack'));
       await buildDraft();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('visitSummary.shareFailed'));
@@ -200,11 +204,17 @@ export function VisitSummarySheet({
           : t('visitSummary.title', { name: specialistName })}
       </h2>
 
-      {loading ? <p className="mt-4 text-[13.5px] text-on-surface-variant">{t('visitSummary.building')}</p> : null}
+      {loading ? (
+        <p role="status" className="mt-4 text-[13.5px] text-on-surface-variant">
+          {t('visitSummary.building')}
+        </p>
+      ) : null}
 
       {!loading && !summary && error ? (
         <div className="mt-4">
-          <p className="text-[13px] text-error">{error}</p>
+          <p role="alert" className="text-[13px] text-error">
+            {error}
+          </p>
           <button
             type="button"
             onClick={() => void buildDraft()}
@@ -284,9 +294,11 @@ export function VisitSummarySheet({
 
               {choosableNotes.length > 0 ? (
                 <div className="mt-3">
-                  <p className="text-[12.5px] font-semibold text-on-surface">{t('visitSummary.notesTitle')}</p>
+                  <p id={notesTitleId} className="text-[12.5px] font-semibold text-on-surface">
+                    {t('visitSummary.notesTitle')}
+                  </p>
                   <p className="text-[12px] text-on-surface-variant">{t('visitSummary.notesHint')}</p>
-                  <ul className="mt-2 flex flex-col gap-2">
+                  <ul role="group" aria-labelledby={notesTitleId} className="mt-2 flex flex-col gap-2">
                     {choosableNotes.map((note) => (
                       <li key={note.noteId}>
                         <label className="flex cursor-pointer items-start gap-3 rounded-[14px] border border-border-default bg-surface px-3 py-2.5">
@@ -321,7 +333,11 @@ export function VisitSummarySheet({
             </>
           )}
 
-          {error ? <p className="mt-3 text-[12.5px] text-error">{error}</p> : null}
+          {error ? (
+            <p role="alert" className="mt-3 text-[12.5px] text-error">
+              {error}
+            </p>
+          ) : null}
           {/* An out-of-date draft or notice is fixed by building a new one from today's data. */}
           {error && !isShared ? (
             <button

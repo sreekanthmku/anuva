@@ -110,7 +110,7 @@ export function Card({
 export function Eyebrow({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <div className={`mb-2.5 flex items-center gap-2 ${className}`}>
-      <span className="h-px w-5 bg-tertiary/60" />
+      <span aria-hidden className="h-px w-5 bg-tertiary/60" />
       <span className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-tertiary">
         {children}
       </span>
@@ -193,10 +193,25 @@ export function QuietButton({
   );
 }
 
+/**
+ * Wraps a screen's skeleton cards: a screen reader hears "Loading" instead of nothing. The label
+ * goes last so the stack's `space-y-*` spacing still starts at the first card.
+ */
+export function LoadingStack({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-4" role="status">
+      {children}
+      <span className="sr-only">{t('a11y.loading')}</span>
+    </div>
+  );
+}
+
 /** Card-shaped placeholder while a screen's single fetch is in flight. */
 export function SkeletonCard({ lines = 2 }: { lines?: number }) {
   return (
-    <div className="rounded-[24px] border border-border-default bg-surface-raised px-5 py-5 shadow-soft">
+    <div aria-hidden className="rounded-[24px] border border-border-default bg-surface-raised px-5 py-5 shadow-soft">
       <div className="h-2.5 w-20 animate-pulse rounded-full bg-surface-container" />
       <div className="mt-3.5 h-5 w-3/4 animate-pulse rounded-full bg-surface-container" />
       {Array.from({ length: lines }).map((_, index) => (

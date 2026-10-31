@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CycleStateResponse } from '@anuva/shared';
 import {
@@ -20,6 +20,25 @@ type Props = {
 const MONO = '"Space Mono", ui-monospace, monospace';
 const BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 
+/** What a screen reader hears for a day: the full date, then what the colours and rings mean. */
+function dayLabel(mark: CycleDayMark, language: string, t: (key: string) => string): string {
+  const date = new Date(mark.dateISO + 'T00:00:00').toLocaleDateString(language, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+  const notes: string[] = [];
+  if (mark.isPeriod) {
+    notes.push(t(mark.isAssumedPeriod ? 'a11y.tracking.dayPeriodEstimated' : 'a11y.tracking.dayPeriod'));
+  } else if (mark.isPredictedPeriod) {
+    notes.push(t('a11y.tracking.dayPredictedPeriod'));
+  } else if (mark.isFertile) {
+    notes.push(t('a11y.tracking.dayFertile'));
+  }
+  if (mark.isOvulation) notes.push(t('a11y.tracking.dayOvulation'));
+  return [date, ...notes].join(', ');
+}
+
 function DayCell({
   mark,
   selected,
@@ -29,6 +48,7 @@ function DayCell({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const { t, i18n } = useTranslation();
   const dayNum = Number(mark.dateISO.slice(8, 10));
 
   let background = 'transparent';
@@ -54,7 +74,8 @@ function DayCell({
     <button
       type="button"
       onClick={onSelect}
-      aria-label={mark.dateISO}
+      aria-label={dayLabel(mark, i18n.language, t)}
+      aria-pressed={selected}
       aria-current={mark.isToday ? 'date' : undefined}
       className="relative flex h-9 w-full items-center justify-center rounded-full text-[13px]"
       style={{
@@ -68,6 +89,7 @@ function DayCell({
       {dayNum}
       {mark.isOvulation && (
         <span
+          aria-hidden="true"
           className="absolute bottom-[1px] h-[3px] w-[3px] rounded-full"
           style={{ background: CYCLE_MARK_COLORS.fertile }}
         />
@@ -79,7 +101,7 @@ function DayCell({
 function LegendDot({ label, style }: { label: string; style: React.CSSProperties }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className="h-2.5 w-2.5 rounded-full" style={style} />
+      <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={style} />
       <span className="text-[10px] text-on-surface-variant" style={{ fontFamily: BODY }}>
         {label}
       </span>
@@ -89,6 +111,7 @@ function LegendDot({ label, style }: { label: string; style: React.CSSProperties
 
 export function CycleCalendar({ cycleData, selectedDate, onSelectDate }: Props) {
   const { t } = useTranslation();
+  const monthLabelId = useId();
   const today = todayISO();
   const [cursor, setCursor] = useState(() => ({
     year: Number(selectedDate.slice(0, 4)),
@@ -110,10 +133,12 @@ export function CycleCalendar({ cycleData, selectedDate, onSelectDate }: Props) 
           className="flex h-11 w-11 items-center justify-center rounded-full border border-border-default text-[14px] text-on-surface-variant"
           aria-label={t('calendar.previousMonth')}
         >
-          ←
+          <span aria-hidden="true">←</span>
         </button>
-        <div className="text-center">
+        {/* Read out when the arrows change it: nothing else says which month is showing. */}
+        <div className="text-center" aria-live="polite">
           <p
+            id={monthLabelId}
             className="text-[15px] text-on-surface"
             style={{ fontFamily: '"Fraunces", sans-serif', fontWeight: 300 }}
           >
@@ -131,11 +156,12 @@ export function CycleCalendar({ cycleData, selectedDate, onSelectDate }: Props) 
           className="flex h-11 w-11 items-center justify-center rounded-full border border-border-default text-[14px] text-on-surface-variant"
           aria-label={t('calendar.nextMonth')}
         >
-          →
+          <span aria-hidden="true">→</span>
         </button>
       </div>
 
-      <div className="mb-1 grid grid-cols-7 gap-1">
+      {/* Each day's own label already names its weekday. */}
+      <div className="mb-1 grid grid-cols-7 gap-1" aria-hidden="true">
         {weekdayInitials().map((d, i) => (
           <span
             key={`${d}-${i}`}
@@ -147,7 +173,7 @@ export function CycleCalendar({ cycleData, selectedDate, onSelectDate }: Props) 
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1" role="group" aria-labelledby={monthLabelId}>
         {Array.from({ length: month.leadingBlanks }, (_, i) => (
           <span key={`blank-${i}`} className="h-9" />
         ))}

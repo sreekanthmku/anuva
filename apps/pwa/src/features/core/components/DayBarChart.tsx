@@ -191,7 +191,7 @@ export function DayBarChart({
         </div>
       </div>
 
-      <div className="mt-1.5 flex" style={{ gap }}>
+      <div className="mt-1.5 flex" style={{ gap }} aria-hidden="true">
         {values.map((_, i) => (
           <span
             key={i}

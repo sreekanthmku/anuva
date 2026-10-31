@@ -114,7 +114,9 @@ export function VoiceAvatar({
   const showImage = Boolean(imageUrl) && !imageFailed;
 
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
+    // Decorative (the photo, the initials, the speaking ring) apart from the muted badge, so it is
+    // only exposed when that badge is there to read.
+    <div className="relative shrink-0" style={{ width: size, height: size }} aria-hidden={muted ? undefined : true}>
       <div
         ref={ringRef}
         className={`h-full w-full overflow-hidden rounded-full transition-opacity duration-200 ${active ? '' : 'opacity-60'}`}

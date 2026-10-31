@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { captureScreenshot, sendReport, type Capture } from './sendReport';
 
 /**
@@ -39,6 +41,8 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
   const [capture, setCapture] = useState<Capture | null>(null);
   const [attach, setAttach] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  // Focus in, Tab trap, focus back to the reporter tab. Escape is the listener below.
+  const dialogRef = useDialogA11y<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) return;
@@ -96,6 +100,8 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
       }
 
       setSent(true);
+      // Send (where focus was) is replaced by the thank-you, which nobody would otherwise hear.
+      announce(t('beta.sentTitle'));
       window.setTimeout(onClose, 1400);
     } finally {
       setSending(false);
@@ -104,6 +110,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
 
   return (
     <div
+      ref={dialogRef}
       data-beta-reporter
       className="fixed inset-0 z-[95] flex items-end justify-center sm:items-center"
       role="dialog"
@@ -125,6 +132,8 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
           className="absolute inset-0 z-10 flex items-center justify-center bg-[#3E2542]/90 p-4"
           onClick={() => setExpanded(false)}
           aria-label={t('beta.closePreview')}
+          // It covers the sheet, so focus goes onto it rather than staying on a control behind it.
+          autoFocus
         >
           <img
             src={capture.previewUrl}
@@ -145,12 +154,13 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
             >
               ✓
             </span>
-            <p
+            <h2
+              id="beta-report-title"
               className="mt-3 text-[18px] text-on-surface"
               style={{ fontFamily: '"Fraunces", serif', fontWeight: 500 }}
             >
               {t('beta.sentTitle')}
-            </p>
+            </h2>
             <p className="mt-1.5 text-[13px] text-on-surface-variant" style={mulish}>
               {t('beta.sentBody')}
             </p>
@@ -177,6 +187,7 @@ export function BugReportSheet({ open, app, prompt, onClose }: Props) {
               onChange={(event) => setMessage(event.target.value.slice(0, MAX_MESSAGE))}
               rows={3}
               placeholder={t('beta.messagePlaceholder')}
+              aria-labelledby="beta-report-title"
               className="mt-3 w-full resize-none rounded-[18px] border border-border-default bg-surface-container-low px-4 py-3 text-[15px] leading-[1.55] text-on-surface placeholder:text-outline focus:border-secondary focus:ring-2 focus:ring-secondary/25"
               style={mulish}
             />

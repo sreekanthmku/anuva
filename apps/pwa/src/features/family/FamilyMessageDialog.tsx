@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { announce } from '../../lib/a11y/announce';
+import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { sendFamilyThanks } from './api';
 import type { FamilyMessage } from './familyMessageLink';
 
@@ -17,6 +19,7 @@ export function FamilyMessageDialog({
 }) {
   const { t } = useTranslation();
   const [thanking, setThanking] = useState(false);
+  const dialogRef = useDialogA11y<HTMLDivElement>(message !== null, onDismiss);
 
   if (!message) return null;
 
@@ -27,21 +30,26 @@ export function FamilyMessageDialog({
   const thankAndClose = () => {
     if (thanking) return;
     setThanking(true);
+    announce(t('a11y.family.thanksSent', { name: message.from }));
     void sendFamilyThanks({ kind: 'message' }).catch(() => undefined);
     onDismiss();
   };
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[80] flex items-center justify-center px-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="family-message-title"
+      aria-describedby="family-message-text"
     >
+      {/* Tap-outside only: the Close button below is the same thing for keyboard and screen readers. */}
       <button
         type="button"
+        tabIndex={-1}
+        aria-hidden
         className="absolute inset-0 bg-[#3E2542]/60"
-        aria-label={t('family.message.dismiss')}
         onClick={onDismiss}
       />
 
@@ -62,6 +70,7 @@ export function FamilyMessageDialog({
         </p>
 
         <blockquote
+          id="family-message-text"
           className="mt-3 text-[18px] leading-[1.5] text-on-surface"
           style={{ fontFamily: '"Fraunces", serif', fontWeight: 400 }}
         >

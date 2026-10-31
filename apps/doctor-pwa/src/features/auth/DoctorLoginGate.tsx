@@ -93,8 +93,11 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
   if (state === 'checking') {
     return (
       <div className="grid min-h-mobile place-items-center bg-surface px-6 text-center">
-        <div>
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />
+        <div role="status">
+          <div
+            aria-hidden="true"
+            className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-primary/25 border-t-primary"
+          />
           <p className="mt-4 text-[13px] text-on-surface-variant">Checking your access…</p>
         </div>
       </div>
@@ -108,7 +111,7 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="grid min-h-mobile place-items-center bg-surface px-5 py-10 text-on-surface">
+    <main className="grid min-h-mobile place-items-center bg-surface px-5 py-10 text-on-surface">
       <div className="w-full max-w-[400px]">
         <div className="mb-6 text-center">
           <div className="text-[10.5px] uppercase tracking-[0.2em] text-tertiary">Anuva</div>
@@ -140,6 +143,8 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'doctor-login-error' : undefined}
             onChange={(event) => setUsername(event.target.value)}
             className="mt-1.5 min-h-[46px] w-full rounded-[14px] border border-border-default bg-surface-container-low px-3.5 text-[14px] text-on-surface outline-none focus:border-primary focus:ring-0"
           />
@@ -156,12 +161,18 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
             type="password"
             value={password}
             autoComplete="current-password"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'doctor-login-error' : undefined}
             onChange={(event) => setPassword(event.target.value)}
             className="mt-1.5 min-h-[46px] w-full rounded-[14px] border border-border-default bg-surface-container-low px-3.5 text-[14px] text-on-surface outline-none focus:border-primary focus:ring-0"
           />
 
           {error ? (
-            <div className="mt-3 rounded-[14px] border border-error/20 bg-error-container px-3.5 py-2.5 text-[12.5px] text-on-error-container">
+            <div
+              id="doctor-login-error"
+              role="alert"
+              className="mt-3 rounded-[14px] border border-error/20 bg-error-container px-3.5 py-2.5 text-[12.5px] text-on-error-container"
+            >
               {error}
             </div>
           ) : null}
@@ -179,6 +190,6 @@ export function DoctorLoginGate({ children }: { children: ReactNode }) {
           Lost your password? Ask the Anuva team to set a new one for you.
         </p>
       </div>
-    </div>
+    </main>
   );
 }
