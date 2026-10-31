@@ -9,16 +9,23 @@ import { useEffect, useRef } from 'react';
  * offer until she tapped it and was refused.
  *
  * So a list reloads when a booking, reschedule or cancel anywhere in the app says times changed,
- * when the app comes back on screen, and once a minute while it is visible (for times taken by
- * other people, which nothing on this device can announce).
+ * when the app comes back on screen, and every 15 seconds while it is visible (for times taken by
+ * other people, which nothing on this device can announce). Only while a screen offering times is
+ * open, and the read is one indexed query, so the short interval costs little.
  */
 
 const SLOTS_CHANGED = 'anuva:slots-changed';
-const POLL_MS = 60_000;
+const POLL_MS = 15_000;
 
 /** A booking, reschedule or cancel just changed which times are free. */
 export function announceSlotsChanged(): void {
   window.dispatchEvent(new Event(SLOTS_CHANGED));
+}
+
+/** Runs `listener` whenever times change in this app; returns the unsubscribe. */
+export function onSlotsChanged(listener: () => void): () => void {
+  window.addEventListener(SLOTS_CHANGED, listener);
+  return () => window.removeEventListener(SLOTS_CHANGED, listener);
 }
 
 /** Calls `reload` whenever the times on offer may have changed, while `enabled`. */
