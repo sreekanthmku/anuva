@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  countScoredQuestions,
   getAssessmentOutcome,
+  reportedSigns,
   scoreAssessmentQuestions,
 } from '../src/features/onboarding/data/assessmentOutcome';
 import type { AssessmentQuestion } from '../src/features/onboarding/data/assessmentQuestions';
@@ -77,5 +79,33 @@ describe('getAssessmentOutcome', () => {
   it('respects a custom threshold', () => {
     expect(getAssessmentOutcome(5, 5).status).toBe('further_assessment');
     expect(getAssessmentOutcome(4, 5).status).toBe('in_control');
+  });
+});
+
+describe('reportedSigns', () => {
+  const questions: AssessmentQuestion[] = [
+    { id: 'a', options: ['yes', 'no', 'sometimes'] },
+    { id: 'b', options: ['yes', 'no', 'sometimes'] },
+    { id: 'c', options: ['yes', 'no', 'sometimes'] },
+    { id: 'd', options: ['yes', 'no', 'sometimes'] },
+    { id: 'age', options: ['age_29_below', 'age_30_34'] },
+  ];
+
+  it('lists yes before sometimes, each in question order, and leaves out no and unanswered', () => {
+    // a: sometimes, b: yes, c: no, d: unanswered, age: answered
+    expect(reportedSigns({ 0: 2, 1: 0, 2: 1, 4: 1 }, questions)).toEqual([
+      { id: 'b', value: 'yes' },
+      { id: 'a', value: 'sometimes' },
+    ]);
+  });
+
+  it('returns nothing when she reported no signs', () => {
+    expect(reportedSigns({ 0: 1, 1: 1 }, questions)).toEqual([]);
+  });
+});
+
+describe('countScoredQuestions', () => {
+  it('counts the ten symptom questions and not the age bracket', () => {
+    expect(countScoredQuestions(assessmentQuestions)).toBe(10);
   });
 });

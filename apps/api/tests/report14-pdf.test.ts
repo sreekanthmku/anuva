@@ -52,9 +52,9 @@ function classificationFor(
     domain,
     overlays: [...overlays],
     window: {
-      anchorMode: 'day_after_bleeding' as const,
-      start: null,
-      end: null,
+      anchorMode: 'trial_start' as const,
+      start: new Date('2026-08-01'),
+      end: new Date('2026-08-14'),
       daysCovered: 14,
       reason: '',
     },

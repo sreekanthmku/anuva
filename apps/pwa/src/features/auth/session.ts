@@ -44,6 +44,13 @@ export async function completeOnboarding(): Promise<AuthUser> {
   });
 }
 
+/** She has opened her 14-day report; Home stops guiding her to it. Only the first call records. */
+export async function markReport14Opened(): Promise<AuthUser> {
+  return apiFetch<AuthUser>('/api/report14-opened', {
+    method: 'POST',
+  });
+}
+
 export async function startTrial(): Promise<StartTrialResponse> {
   return apiFetch<StartTrialResponse>('/api/subscription/start-trial', {
     method: 'POST',

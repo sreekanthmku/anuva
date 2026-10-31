@@ -464,66 +464,34 @@ describe('resolveOverlays', () => {
 // ─────────────────────────────────────────────
 
 describe('resolveWindow', () => {
-  it('anchors day 1 to the day after logged bleeding stops', () => {
-    const r = resolveWindow({
-      periods: [{ startDate: new Date('2026-08-01'), endDate: new Date('2026-08-05') }],
-      periodLengthDays: 5,
-      assessmentCompletedAt: new Date('2026-07-25'),
-      firstLogAt: new Date('2026-08-02'),
-      now: NOW,
-    });
-    expect(r.anchorMode).toBe('day_after_bleeding');
-    expect(r.start?.getDate()).toBe(6);
-    expect(r.end?.getDate()).toBe(19);
+  it('anchors day 1 to the first day of her trial, whatever her cycle', () => {
+    const r = resolveWindow({ journeyStartAt: new Date('2026-08-03T18:30:00'), now: NOW });
+    expect(r.anchorMode).toBe('trial_start');
+    expect(r.start.getDate()).toBe(3);
+    expect(r.start.getHours()).toBe(0);
+    expect(r.end.getDate()).toBe(16);
   });
 
-  it('estimates the bleed end from the user\'s own period length when endDate is absent', () => {
+  it('counts days covered so far while the window is still open', () => {
     const r = resolveWindow({
-      periods: [{ startDate: new Date('2026-08-01'), endDate: null }],
-      periodLengthDays: 7,
-      assessmentCompletedAt: new Date('2026-07-25'),
-      firstLogAt: null,
-      now: NOW,
+      journeyStartAt: new Date('2026-08-01T09:00:00'),
+      now: new Date('2026-08-05T23:00:00'),
     });
-    // 1 Aug + (7 - 1) = 7 Aug is the last bleed day; window opens on the 8th.
-    expect(r.start?.getDate()).toBe(8);
-    expect(r.reason).toMatch(/estimated period end/);
+    // 1–5 Aug: day 5 of 14.
+    expect(r.daysCovered).toBe(5);
   });
 
-  it('falls back to the first log when there is no period to anchor to', () => {
+  it('is complete on day 15: the window has closed and covers all 14 days', () => {
     const r = resolveWindow({
-      periods: [],
-      periodLengthDays: null,
-      assessmentCompletedAt: new Date('2026-08-01'),
-      firstLogAt: new Date('2026-08-04T09:00:00'),
-      now: NOW,
+      journeyStartAt: new Date('2026-08-01T09:00:00'),
+      now: new Date('2026-08-15T08:00:00'),
     });
-    expect(r.anchorMode).toBe('first_log');
-    expect(r.start?.getDate()).toBe(4);
-    expect(r.reason).toMatch(/not directly comparable/);
+    expect(r.end.getDate()).toBe(14);
+    expect(r.daysCovered).toBe(CFG.windowDays);
   });
 
-  it('reports no window at all when there is neither a cycle nor a log', () => {
-    const r = resolveWindow({
-      periods: [],
-      periodLengthDays: null,
-      assessmentCompletedAt: new Date('2026-08-01'),
-      firstLogAt: null,
-      now: NOW,
-    });
-    expect(r.anchorMode).toBe('assessment');
-    expect(r.start).toBeNull();
-    expect(r.daysCovered).toBe(0);
-  });
-
-  it('caps days covered at the window length once the window has closed', () => {
-    const r = resolveWindow({
-      periods: [{ startDate: new Date('2026-06-01'), endDate: new Date('2026-06-05') }],
-      periodLengthDays: 5,
-      assessmentCompletedAt: new Date('2026-05-20'),
-      firstLogAt: new Date('2026-06-06'),
-      now: NOW,
-    });
+  it('caps days covered at the window length long after it closes', () => {
+    const r = resolveWindow({ journeyStartAt: new Date('2026-05-20'), now: NOW });
     expect(r.daysCovered).toBe(CFG.windowDays);
   });
 });
@@ -544,7 +512,7 @@ describe('buildDocument', () => {
       domain: 'B',
       overlays: [],
       window: {
-        anchorMode: 'day_after_bleeding', start: null, end: null,
+        anchorMode: 'trial_start', start: NOW, end: NOW,
         daysCovered: 14, reason: '',
       },
       stageDetail: { stage: 2, rule: 'S5', reason: '', flags: [] },

@@ -56,8 +56,8 @@ function diagnostics(result: Awaited<ReturnType<typeof classifyUser>>) {
     flags: c.flags,
     window: {
       anchorMode: c.window.anchorMode,
-      start: c.window.start?.toISOString() ?? null,
-      end: c.window.end?.toISOString() ?? null,
+      start: c.window.start.toISOString(),
+      end: c.window.end.toISOString(),
       daysCovered: c.window.daysCovered,
       reason: c.window.reason,
     },

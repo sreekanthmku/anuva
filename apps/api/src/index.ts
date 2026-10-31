@@ -684,6 +684,7 @@ type UserWithSubscription = {
   phoneVerifiedAt: Date | null;
   /** Null for English; see the schema. */
   preferredLanguage?: string | null;
+  report14OpenedAt: Date | null;
   createdAt: Date;
   subscription?: {
     plan: 'monthly' | 'annual' | null;
@@ -739,6 +740,7 @@ function serializeUser(user: {
   email: string | null;
   onboardingCompleted: boolean;
   phoneVerifiedAt: Date | null;
+  report14OpenedAt: Date | null;
   createdAt: Date;
   subscription?: UserWithSubscription['subscription'];
   detailedAssessment?: UserWithSubscription['detailedAssessment'];
@@ -761,6 +763,7 @@ function serializeUser(user: {
     trialAvailable: access.trialAvailable,
     requiresPayment: access.requiresPayment,
     phoneVerifiedAt: user.phoneVerifiedAt?.toISOString() ?? null,
+    report14OpenedAt: user.report14OpenedAt?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
   });
 }
@@ -4127,6 +4130,22 @@ app.post('/onboarding/complete', async (req, res, next) => {
     });
 
     res.json(authUserSchema.parse(serializeUser(await loadUserWithSubscription(updated.id))));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// She has opened her 14-day report, so Home stops guiding her to it. Only the first opening is
+// recorded: `updateMany` on a null column makes a second call (another tab, a retry) a no-op.
+// Lives here rather than in the report14 module, which reads and never writes.
+app.post('/report14-opened', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    await prisma.user.updateMany({
+      where: { id: user.id, report14OpenedAt: null },
+      data: { report14OpenedAt: new Date() },
+    });
+    res.json(authUserSchema.parse(serializeUser(await loadUserWithSubscription(user.id))));
   } catch (e) {
     next(e);
   }

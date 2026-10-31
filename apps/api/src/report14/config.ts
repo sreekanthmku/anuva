@@ -12,7 +12,8 @@
  */
 
 export type LogBlendMode = 'relative' | 'absolute';
-export type WindowAnchorMode = 'day_after_bleeding' | 'cycle_day_1' | 'first_log';
+/** Where day 1 of the window falls. One rule for everyone; see classify/window.ts. */
+export type WindowAnchorMode = 'trial_start';
 
 export interface Report14Config {
   /**
@@ -46,28 +47,12 @@ export interface Report14Config {
    */
   minLogDays: number;
 
-  /** Length of the tracking window in days. */
+  /**
+   * Length of the tracking window in days, counted from the first day of her
+   * trial. Matches the PWA's `WELLNESS_CALIBRATION_DAYS`: the home countdown and
+   * the report's window end on the same day.
+   */
   windowDays: number;
-
-  /**
-   * `day_after_bleeding` anchors day 1 to the day after her period stops.
-   * `cycle_day_1` anchors to the first day of bleeding. `first_log` ignores the
-   * cycle and uses her earliest log.
-   */
-  windowAnchor: WindowAnchorMode;
-
-  /** Extra days to shift the resolved anchor by. Normally 0. */
-  anchorOffsetDays: number;
-
-  /**
-   * How long to wait for a period start before falling back to `first_log`.
-   * The questionnaire defines a long cycle as >35 days, so 45 covers a
-   * long-but-normal cycle with buffer. Beyond that, waiting serves nobody.
-   */
-  anchorWaitDays: number;
-
-  /** Assumed bleed duration when a PeriodLog row has no endDate. */
-  fallbackPeriodLengthDays: number;
 
   /** Months since the last menstrual period that places a user at stage 3. */
   lateStageAmenorrhoeaMonths: number;
@@ -129,10 +114,6 @@ export const REPORT14_CONFIG: Report14Config = {
   minLogDays: 1,
 
   windowDays: 14,
-  windowAnchor: 'day_after_bleeding',
-  anchorOffsetDays: 0,
-  anchorWaitDays: 45,
-  fallbackPeriodLengthDays: 5,
 
   lateStageAmenorrhoeaMonths: 9,
   bleedVetoLookbackDays: 90,

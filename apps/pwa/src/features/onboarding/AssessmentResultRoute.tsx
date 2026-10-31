@@ -7,13 +7,13 @@ import { AssessmentResultCTA } from './components/AssessmentResultCTA';
 import { AssessmentResultNavBar } from './components/AssessmentResultNavBar';
 import { AssessmentResultSummary } from './components/AssessmentResultSummary';
 import { NextStepsCard } from './components/NextStepsCard';
-import { controlNextSteps, nextSteps, riskPills } from './data/assessmentResult';
-import type { AssessmentOutcome, AssessmentOutcomeStatus } from './data/assessmentOutcome';
+import { controlNextSteps, nextSteps } from './data/assessmentResult';
+import type { AssessmentOutcomeStatus, AssessmentResult } from './data/assessmentOutcome';
 import type { RiskPill } from './data/assessmentResult';
 import { clearAssessmentProgress } from './data/assessmentProgress';
 import { persistOnboardingCompletionIfAuthenticated } from './persistOnboardingCompletion';
 
-type AssessmentResultRouteState = AssessmentOutcome | null;
+type AssessmentResultRouteState = AssessmentResult | null;
 
 const readStoredOutcome = (): AssessmentResultRouteState => {
   try {
@@ -39,13 +39,15 @@ export default function AssessmentResultRoute() {
   const score = state?.score ?? 0;
   const status: AssessmentOutcomeStatus = state?.status ?? 'in_control';
   const isInControl = status === 'in_control';
+  // Missing from a result stored before the signs were kept.
+  const signs = state?.signs ?? [];
   const summaryItems: RiskPill[] = isInControl
     ? [
         { titleKey: 'score', valueKey: 'inControl', color: '#5E3566' },
         { titleKey: 'status', valueKey: 'inControl', color: '#4F9D6B' },
         { titleKey: 'checkBack', valueKey: 'threeMonths', color: '#5B82C4' },
       ]
-    : riskPills;
+    : [];
   // The score is a number she answered her way to, not copy. It is passed through untranslated.
   const literalValues = isInControl ? { score: String(score) } : undefined;
   const steps = isInControl ? controlNextSteps : nextSteps;
@@ -83,6 +85,7 @@ export default function AssessmentResultRoute() {
         score={score}
         status={status}
         riskItems={summaryItems}
+        signs={signs}
         literalValues={literalValues}
       />
 

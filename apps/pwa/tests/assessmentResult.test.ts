@@ -3,9 +3,9 @@ import {
   controlNextSteps,
   controlPills,
   nextSteps,
-  riskPills,
   type RiskPill,
 } from '../src/features/onboarding/data/assessmentResult';
+import { assessmentQuestions } from '../src/features/onboarding/data/assessmentQuestions';
 import en from '../src/i18n/locales/en.json';
 
 /**
@@ -30,11 +30,6 @@ function assertStepKey(step: string) {
 }
 
 describe('assessmentResult content shape', () => {
-  it('exposes three risk pills with title/value keys and a colour', () => {
-    expect(riskPills).toHaveLength(3);
-    riskPills.forEach(assertRiskPillShape);
-  });
-
   it('exposes three control pills with title/value keys and a colour', () => {
     expect(controlPills).toHaveLength(3);
     controlPills.forEach(assertRiskPillShape);
@@ -48,5 +43,18 @@ describe('assessmentResult content shape', () => {
   it('exposes controlNextSteps as keys with title and body copy', () => {
     expect(controlNextSteps.length).toBeGreaterThan(0);
     controlNextSteps.forEach(assertStepKey);
+  });
+});
+
+describe('assessmentResult reported signs copy', () => {
+  // The "why" card names each sign by its question id; a scored question with no short label
+  // would render as the raw key.
+  it('has a short English label for every scored question', () => {
+    const symptoms = assessmentQuestions.filter((q) => q.options.includes('yes'));
+    for (const question of symptoms) {
+      expect(
+        en.assessmentResult.signs[question.id as keyof typeof en.assessmentResult.signs],
+      ).toEqual(expect.stringMatching(/\S/));
+    }
   });
 });

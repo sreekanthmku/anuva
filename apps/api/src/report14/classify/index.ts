@@ -36,19 +36,12 @@ export async function classifyUser(
     );
   }
 
-  const window = resolveWindow({
-    periods: source.periods,
-    periodLengthDays: source.periodLengthDays,
-    assessmentCompletedAt: source.assessmentCompletedAt,
-    firstLogAt: source.firstLogAt,
-    now,
-  });
+  const window = resolveWindow({ journeyStartAt: source.journeyStartAt, now });
 
-  // Only read logs when there is a window and tracking data is switched on.
-  const logDays =
-    CFG.useTrackingData && window.start && window.end
-      ? await loadLogWindow(userId, window.start, window.end)
-      : [];
+  // Only read logs when tracking data is switched on.
+  const logDays = CFG.useTrackingData
+    ? await loadLogWindow(userId, window.start, window.end)
+    : [];
 
   const recentBleed = await hasRecentBleed(
     userId,

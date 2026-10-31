@@ -32,6 +32,12 @@ import { DoseSheet } from './medication/DoseSheet';
 import { MedicationDueCard } from './medication/MedicationDueCard';
 import { NoteForDoctorBar } from './notes/NoteForDoctorBar';
 import { PeriodFlowSheet } from './components/PeriodFlowSheet';
+import { Report14ReadySheet } from './components/Report14ReadySheet';
+import {
+  dismissReport14Guide,
+  isReport14GuideDismissed,
+  shouldGuideToReport14,
+} from './report14Guide';
 import { useHomeNotificationPrompt } from './hooks/useHomeNotificationPrompt';
 import { useCycleTracker } from './hooks/useCycleTracker';
 import { useMoodLog } from './hooks/useMoodLog';
@@ -247,6 +253,16 @@ export default function AnuDashboardRoute() {
   // Only fetched once the countdown is over — see `useDailySummary`.
   const dailySummary = useDailySummary(!isCalibrating);
 
+  // Day 15 onwards, until she opens it: her 14-day report is ready. Behind the notification
+  // prompt rather than stacked on it; closing it hides it until the app is next opened.
+  const [report14GuideDismissed, setReport14GuideDismissed] = useState(isReport14GuideDismissed);
+  const showReport14Guide =
+    shouldGuideToReport14(user, now) && !report14GuideDismissed && !notificationPrompt.open;
+  const closeReport14Guide = () => {
+    dismissReport14Guide();
+    setReport14GuideDismissed(true);
+  };
+
   useEffect(() => {
     const tick = () => {
       setGreetingSlot(getGreetingSlot());
@@ -319,6 +335,11 @@ export default function AnuDashboardRoute() {
         isRegistering={notificationPrompt.isRegistering}
         onAccept={notificationPrompt.accept}
         onDismiss={notificationPrompt.dismiss}
+      />
+      <Report14ReadySheet
+        open={showReport14Guide}
+        onOpenReport={() => navigate('/assessment-report')}
+        onClose={closeReport14Guide}
       />
       <section className="px-3 pb-2.5">
         {notificationPrompt.syncMessage && (

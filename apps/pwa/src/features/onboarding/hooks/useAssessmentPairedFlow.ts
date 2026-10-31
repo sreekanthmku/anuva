@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { assessmentQuestions } from '../data/assessmentQuestions';
 import { buildAssessmentPages } from '../data/assessmentPages';
-import { getAssessmentOutcome, scoreAssessmentQuestions } from '../data/assessmentOutcome';
+import {
+  getAssessmentOutcome,
+  reportedSigns,
+  scoreAssessmentQuestions,
+} from '../data/assessmentOutcome';
 import {
   readAssessmentProgress,
   sessionStore,
@@ -56,6 +60,7 @@ export function useAssessmentPairedFlow() {
   const isLastStep = step === assessmentPages.length - 1;
   const score = useMemo(() => scoreAssessmentQuestions(answers, assessmentQuestions), [answers]);
   const outcome = useMemo(() => getAssessmentOutcome(score), [score]);
+  const signs = useMemo(() => reportedSigns(answers, assessmentQuestions), [answers]);
 
   const selectOption = (questionIndex: number, optionIndex: number) => {
     setAnswers((prev) => ({ ...prev, [questionIndex]: optionIndex }));
@@ -75,6 +80,7 @@ export function useAssessmentPairedFlow() {
     isLastStep,
     score,
     outcome,
+    signs,
     selectOption,
     goNext,
     getSelectedIndex: (questionIndex: number) => answers[questionIndex],

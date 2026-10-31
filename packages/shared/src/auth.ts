@@ -101,6 +101,8 @@ export const authUserSchema = z.object({
   trialAvailable: z.boolean(),
   requiresPayment: z.boolean(),
   phoneVerifiedAt: z.string().datetime().nullable(),
+  /** When she first opened her 14-day report; null until then. */
+  report14OpenedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
 });
 

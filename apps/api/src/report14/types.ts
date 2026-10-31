@@ -76,9 +76,9 @@ export interface DomainResult {
 }
 
 export interface WindowResult {
-  anchorMode: WindowAnchorMode | 'assessment';
-  start: Date | null;
-  end: Date | null;
+  anchorMode: WindowAnchorMode;
+  start: Date;
+  end: Date;
   daysCovered: number;
   reason: string;
 }

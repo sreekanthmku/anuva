@@ -12,12 +12,6 @@ export type RiskPill = {
   color: string;
 };
 
-export const riskPills: RiskPill[] = [
-  { titleKey: 'vasomotor', valueKey: 'high', color: '#C0405A' },
-  { titleKey: 'sleep', valueKey: 'moderate', color: '#5B82C4' },
-  { titleKey: 'cognitive', valueKey: 'low', color: '#5E3566' },
-];
-
 export const controlPills: RiskPill[] = [
   { titleKey: 'score', valueKey: 'inControl', color: '#5E3566' },
   { titleKey: 'followUp', valueKey: 'threeMonths', color: '#5B82C4' },

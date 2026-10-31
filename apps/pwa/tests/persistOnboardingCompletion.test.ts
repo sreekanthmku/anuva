@@ -27,6 +27,7 @@ function makeUser(overrides: Partial<AuthUser> = {}): AuthUser {
     trialAvailable: true,
     requiresPayment: false,
     phoneVerifiedAt: null,
+    report14OpenedAt: null,
     createdAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
   };

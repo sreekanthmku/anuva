@@ -14,6 +14,7 @@
 
 import { prisma } from '@anuva/database';
 import { localDayStart } from '../../dayKey.js';
+import { journeyStart } from '../../report/calendar.js';
 
 export interface PeriodRow {
   startDate: Date;
@@ -42,9 +43,10 @@ export interface Report14Source {
   assessmentCompletedAt: Date | null;
   /** questionKey -> answer value. */
   answers: Map<string, string>;
+  /** Cycle history, for staging. Not used to place the window. */
   periods: PeriodRow[];
-  periodLengthDays: number | null;
-  firstLogAt: Date | null;
+  /** Day 1 of the tracking window: her trial start, or signup if she has none. */
+  journeyStartAt: Date;
 }
 
 function isoLocalDay(d: Date): string {
@@ -63,12 +65,15 @@ function isoDbDate(d: Date): string {
 }
 
 /**
- * Assessment answers, cycle history and the earliest log timestamp — everything
- * needed to resolve the window and run the assessment side of the classifier.
+ * Assessment answers, cycle history and her trial start — everything needed to
+ * resolve the window and run the assessment side of the classifier.
  */
 export async function loadSource(userId: string): Promise<Report14Source> {
-  const [user, assessment, periods, cycleSettings] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+  const [user, assessment, periods] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, createdAt: true, subscription: { select: { startedAt: true } } },
+    }),
     prisma.detailedAssessment.findUnique({
       where: { userId },
       select: {
@@ -83,10 +88,6 @@ export async function loadSource(userId: string): Promise<Report14Source> {
       take: 24,
       select: { startDate: true, endDate: true },
     }),
-    prisma.cycleSettings.findUnique({
-      where: { userId },
-      select: { periodLength: true },
-    }),
   ]);
 
   const answers = new Map<string, string>();
@@ -99,42 +100,9 @@ export async function loadSource(userId: string): Promise<Report14Source> {
     assessmentCompletedAt: assessment?.status === 'completed' ? assessment.completedAt : null,
     answers,
     periods,
-    periodLengthDays: cycleSettings?.periodLength ?? null,
-    firstLogAt: await findFirstLogAt(userId),
+    // A missing user cannot reach here through an authenticated route; `now` keeps the type honest.
+    journeyStartAt: user ? journeyStart(user) : new Date(),
   };
-}
-
-/**
- * Earliest timestamp across every log surface, used as the fallback window
- * anchor. Each query is indexed on `(userId, date)` or `(userId, loggedAt)`, so
- * this is a set of cheap index scans rather than a table sweep.
- */
-async function findFirstLogAt(userId: string): Promise<Date | null> {
-  const where = { userId };
-  const byDate = { orderBy: { date: 'asc' }, select: { date: true }, where } as const;
-  const byLoggedAt = { orderBy: { loggedAt: 'asc' }, select: { loggedAt: true }, where } as const;
-
-  const [sleep, mood, energy, stress, hotFlash, brainFog, quick] = await Promise.all([
-    prisma.sleepLog.findFirst(byLoggedAt),
-    prisma.moodLog.findFirst(byLoggedAt),
-    prisma.energyLog.findFirst(byDate),
-    prisma.stressLog.findFirst(byDate),
-    prisma.hotFlashDailyLog.findFirst(byDate),
-    prisma.brainFogLog.findFirst(byDate),
-    prisma.quickSymptomLog.findFirst(byLoggedAt),
-  ]);
-
-  const candidates: Date[] = [];
-  if (sleep) candidates.push(sleep.loggedAt);
-  if (mood) candidates.push(mood.loggedAt);
-  if (energy) candidates.push(new Date(isoDbDate(energy.date) + 'T00:00:00'));
-  if (stress) candidates.push(new Date(isoDbDate(stress.date) + 'T00:00:00'));
-  if (hotFlash) candidates.push(new Date(isoDbDate(hotFlash.date) + 'T00:00:00'));
-  if (brainFog) candidates.push(new Date(isoDbDate(brainFog.date) + 'T00:00:00'));
-  if (quick) candidates.push(quick.loggedAt);
-
-  if (!candidates.length) return null;
-  return candidates.reduce((a, b) => (a <= b ? a : b));
 }
 
 /**

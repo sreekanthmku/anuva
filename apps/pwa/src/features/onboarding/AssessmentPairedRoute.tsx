@@ -7,6 +7,7 @@ import { QuestionTitle } from './components/QuestionTitle';
 import { StepBackButton } from './components/StepBackButton';
 import { StepDots } from './components/StepDots';
 import { TrustStrip } from './components/TrustStrip';
+import type { AssessmentResult } from './data/assessmentOutcome';
 import { useAssessmentPairedFlow } from './hooks/useAssessmentPairedFlow';
 import { persistOnboardingCompletionIfAuthenticated } from './persistOnboardingCompletion';
 
@@ -23,6 +24,7 @@ export default function AssessmentPairedRoute() {
     isLastStep,
     score,
     outcome,
+    signs,
     selectOption,
     goNext,
     canGoBack,
@@ -39,11 +41,12 @@ export default function AssessmentPairedRoute() {
   const handleContinue = () => {
     if (!canContinue) return;
     if (isLastStep) {
-      const result = {
+      const result: AssessmentResult = {
         score,
         threshold: outcome.threshold,
         status: outcome.status,
-      } as const;
+        signs,
+      };
 
       try {
         window.sessionStorage.setItem('anuva-assessment-result', JSON.stringify(result));

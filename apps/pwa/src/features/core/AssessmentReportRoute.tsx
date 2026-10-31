@@ -5,6 +5,8 @@ import i18n from '../../i18n';
 import { useNavigate } from 'react-router-dom';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { ApiError, apiFetch, apiUrl } from '../../shared/lib/api';
+import { useAuth } from '../auth/auth-context';
+import { markReport14Opened } from '../auth/session';
 import { BottomNav } from './components/BottomNav';
 
 /**
@@ -109,6 +111,7 @@ function Recommendations({ blocks }: { blocks: RecommendationBlock[] }) {
 export default function AssessmentReportRoute() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user, refreshUser } = useAuth();
   const [doc, setDoc] = useState<ReportDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -144,6 +147,16 @@ export default function AssessmentReportRoute() {
       active = false;
     };
   }, []);
+
+  // Recorded once the report has actually loaded, not on arrival: if it fails to load, Home keeps
+  // guiding her here. Fire and forget — a failed write only means she is guided once more.
+  const alreadyOpened = !!user?.report14OpenedAt;
+  useEffect(() => {
+    if (!doc || alreadyOpened) return;
+    void markReport14Opened()
+      .then(() => refreshUser())
+      .catch((err) => console.error(err));
+  }, [doc, alreadyOpened, refreshUser]);
 
   useEffect(
     () => () => {

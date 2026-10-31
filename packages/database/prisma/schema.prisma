@@ -29,6 +29,9 @@ model User {
   /// sends. Only read where there is no request to ask — push notifications and background jobs.
   /// Optional: null means English, and an unknown value is treated as English too.
   preferredLanguage   String?
+  /// When she first opened her 14-day report. Null until then; while null and her first 14 days are
+  /// over, Home guides her to it once per launch. Opening it from Profile counts too.
+  report14OpenedAt    DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

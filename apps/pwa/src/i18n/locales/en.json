@@ -109,9 +109,10 @@
     "yourResult": "Your result",
     "inControlTitle": "Everything is in <1>control</1>.",
     "inControlBody": "Your assessment score is {{score}}. Check back after 3 months.",
-    "detectedTitleLine1": "Strong indicators of",
-    "detectedTitleLine2": "<1>perimenopause</1> detected",
-    "detectedBody": "Based on your responses, you're likely in early-stage transition. Clinically common for women 42-50.",
+    "likelyTitle": "What you're feeling may be <1>perimenopause</1>",
+    "likelyBody": "Many of the changes you told us about are common in the years before menopause. This isn't a diagnosis. It's a starting point for understanding your body, and a doctor can confirm it.",
+    "whyTitle": "Why we're saying this",
+    "whyCount": "You said yes or sometimes to {{reported}} of {{total}} common signs:",
     "whatHappensNext": "What happens next",
     "startingTrial": "Starting your trial...",
     "startTrial": "Start Your 14-Day Free Trial",
@@ -119,15 +120,9 @@
       "score": "Score",
       "status": "Status",
       "checkBack": "Check back",
-      "vasomotor": "Vasomotor",
-      "sleep": "Sleep",
-      "cognitive": "Cognitive",
       "followUp": "Follow-up"
     },
     "values": {
-      "high": "High",
-      "moderate": "Moderate",
-      "low": "Low",
       "inControl": "In control",
       "stable": "Stable",
       "threeMonths": "3 months"
@@ -161,6 +156,18 @@
         "title": "Keep tracking lightly",
         "body": "Stay in tune with your body and cycles"
       }
+    },
+    "signs": {
+      "periods-unpredictable": "Irregular periods",
+      "hot-flashes": "Hot flashes",
+      "night-sweats": "Night sweats",
+      "mood-swings": "Mood swings",
+      "weight-gain": "Weight gain around the tummy",
+      "vaginal-dryness": "Vaginal dryness",
+      "brain-fog": "Brain fog",
+      "low-interest-intimacy": "Lower interest in intimacy",
+      "facial-hair-body-odour": "More facial hair or body odour",
+      "aches-fatigue": "Aches or tiredness"
     }
   },
   "greeting": {
@@ -2119,5 +2126,12 @@
       "shared": "Shared",
       "make": "Make one"
     }
+  },
+  "report14Ready": {
+    "eyebrow": "Your first 14 days",
+    "title": "Your 14-day report is ready",
+    "body": "It brings together your detailed assessment and everything you tracked over these two weeks, in plain language. You can find it anytime in Profile.",
+    "open": "See my report",
+    "later": "Later"
   }
 }
