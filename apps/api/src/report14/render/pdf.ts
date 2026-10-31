@@ -19,7 +19,21 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import PDFDocument from 'pdfkit';
-import { ANUVA_LOGO_PNG } from '../assets/logo.js';
+import {
+  drawPageHeader,
+  GOLD,
+  INK,
+  INK_SOFT,
+  openLogo,
+  PAGE_MARGIN,
+  PLUM,
+  ROSE,
+  RULE,
+  SANS,
+  SANS_BOLD,
+  SERIF,
+  SERIF_BOLD,
+} from '../../pdf/brand.js';
 import type { RecommendationBlock } from '../content/domains.js';
 import type { ReportDocument } from '../content/index.js';
 
@@ -33,66 +47,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR =
   process.env.REPORT14_CACHE_DIR?.trim() ||
   path.join(__dirname, '../../../../../.data/report14');
-
-// Anuva Wellness palette (DESIGN.md).
-const INK = '#3E2542';
-const INK_SOFT = '#6B4F6E';
-const PLUM = '#5E3566';
-const ROSE = '#C97E92';
-const GOLD = '#8A6E2A'; // darkened from #B8923C for print contrast on white
-const RULE = '#D9C9D5';
-
-/**
- * PDFKit's built-in fonts need no shipped assets. DESIGN.md specifies Fraunces
- * (serif) for headings and Mulish (sans) for body; Times and Helvetica are the
- * closest standard-14 stand-ins and keep the serif/sans pairing intact. To use
- * the real faces, drop the TTFs into ./fonts and register them here — the rest of
- * this file does not change.
- */
-const SERIF = 'Times-Roman';
-const SERIF_BOLD = 'Times-Bold';
-const SANS = 'Helvetica';
-const SANS_BOLD = 'Helvetica-Bold';
-
-const PAGE_MARGIN = 56; // ~20mm
-
-/**
- * The lotus mark sits INSIDE the top margin rather than in the text column, so it
- * brands every page without consuming any content height — no layout below it
- * has to know the header exists.
- */
-const LOGO_SIZE = 24;
-const LOGO_TOP = 20;
-
-/**
- * `openImage` embeds the PNG once and hands back a reference that every page can
- * draw. It is missing from @types/pdfkit but present at runtime, hence the narrow
- * shim rather than a cast to `any`.
- *
- * This matters more than it looks: `image()` only deduplicates when passed a
- * *string path*, so handing it the same Buffer on each page re-embeds the whole
- * PNG — a 5-page report went from 16KB to 91KB (five copies of the image plus
- * five alpha masks) before this was fixed.
- */
-interface OpensImages {
-  openImage(src: Buffer): unknown;
-}
-
-function openLogo(doc: PDFKit.PDFDocument): unknown {
-  return (doc as unknown as OpensImages).openImage(ANUVA_LOGO_PNG);
-}
-
-/** Drawn on every page via the `pageAdded` hook. */
-function drawPageHeader(doc: PDFKit.PDFDocument, logo: unknown): void {
-  doc.image(logo as Buffer, PAGE_MARGIN, LOGO_TOP, {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-  });
-  // The mark lives in the top margin, so reset the cursor to where the text
-  // column actually starts — every page's content begins at the margin.
-  doc.x = PAGE_MARGIN;
-  doc.y = PAGE_MARGIN;
-}
 
 interface Ctx {
   doc: PDFKit.PDFDocument;

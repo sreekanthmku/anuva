@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import type {
   JointsSummary,
@@ -15,6 +15,7 @@ import { BottomNav } from './components/BottomNav';
 import { DayBalanceStrip } from './components/DayBalanceStrip';
 import { GlanceGrid } from './components/GlanceGrid';
 import { PeriodToggle } from './components/PeriodToggle';
+import { ReportPdfCard } from './components/ReportPdfCard';
 import { StoodOutCard } from './components/StoodOutCard';
 import { SummaryDatePickerSheet } from './components/SummaryDatePickerSheet';
 import { Sparkline } from './components/Sparkline';
@@ -656,6 +657,11 @@ function ReportBody({
 
   return (
     <section className="flex flex-col gap-3 px-3 pb-[22px] pt-2">
+      {/* A completed week or month: its PDF, or a tracking reminder when too few days were logged
+          for one. First, because the Monday / 1st-of-month push lands her here for it. An empty
+          period already has its own "log how you feel" card below. */}
+      {hasAnyData && <ReportPdfCard report={report} />}
+
       {/* The day view opens with this; the week view does not have it in the
           reference — "Day balance" below is that tab's opening summary. Hidden,
           not removed; drop the guard to bring it back on every tab.
@@ -797,6 +803,20 @@ function ReportBody({
 
 // ── Route ────────────────────────────────────────────────────
 
+/**
+ * `?period=weekly&offset=1`: the report push opens the week or month it is about. Read once, on
+ * arrival; stepping and switching tabs afterwards work as usual.
+ */
+function linkedPeriod(params: URLSearchParams): SummaryPeriod | null {
+  const value = params.get('period');
+  return value === 'weekly' || value === 'monthly' || value === 'daily' ? value : null;
+}
+
+function linkedOffset(params: URLSearchParams): number {
+  const value = Number(params.get('offset'));
+  return Number.isInteger(value) && value > 0 ? value : 0;
+}
+
 function initialPeriod(): SummaryPeriod {
   try {
     const stored = sessionStorage.getItem(PERIOD_STORAGE_KEY);
@@ -810,8 +830,9 @@ function initialPeriod(): SummaryPeriod {
 export default function WeeklyReportRoute() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [period, setPeriod] = useState<SummaryPeriod>(initialPeriod);
-  const [offset, setOffset] = useState(0);
+  const [searchParams] = useSearchParams();
+  const [period, setPeriod] = useState<SummaryPeriod>(() => linkedPeriod(searchParams) ?? initialPeriod());
+  const [offset, setOffset] = useState(() => (linkedPeriod(searchParams) ? linkedOffset(searchParams) : 0));
   const { data, loading, error, refresh } = useSummary(period, offset);
 
   // Says which window is now on screen after a tab, arrow or calendar change. Not on arrival: the

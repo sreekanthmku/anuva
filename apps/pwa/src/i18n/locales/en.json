@@ -1327,6 +1327,31 @@
       "hard_other": "Hard days",
       "untracked_one": "Untracked day",
       "untracked_other": "Untracked days"
+    },
+    "pdf": {
+      "eyebrow": {
+        "weekly": "Weekly report",
+        "monthly": "Monthly report"
+      },
+      "body": {
+        "weekly": "This week is complete. Download its summary as a PDF to keep, or to share with your doctor.",
+        "monthly": "This month is complete. Download its summary as a PDF to keep, or to share with your doctor."
+      },
+      "limited": {
+        "weekly": "Limited report: based on {{logged}} of {{total}} days logged, so read it as early signs rather than firm trends.",
+        "monthly": "Preliminary report: based on {{logged}} of {{total}} days logged. A full monthly report needs {{full}} days."
+      },
+      "download": "Download PDF",
+      "downloading": "Preparing your PDF…",
+      "failed": "Your report could not be prepared. Please try again.",
+      "insufficientEyebrow": {
+        "weekly": "Not enough for a weekly report",
+        "monthly": "Not enough for a monthly report"
+      },
+      "insufficientBody": {
+        "weekly": "A weekly report needs at least {{need}} days logged, and this week has {{logged}}. A quick check-in each day will get you next week’s.",
+        "monthly": "A monthly report needs at least {{need}} days logged, and this month has {{logged}}. Keep checking in and next month’s will be ready."
+      }
     }
   },
   "wellness": {

@@ -171,6 +171,7 @@ import {
   answerAnonymousQuestionBodySchema,
   answerAnonymousQuestionResponseSchema,
   weeklyReportQuerySchema,
+  periodReportPdfQuerySchema,
   weeklyReportResponseSchema,
   SUPPORT_TICKET_DAILY_LIMIT,
   supportTicketSchema,
@@ -260,6 +261,7 @@ import {
 import { runNudgeSelfTest } from './nudge/selfTest.js';
 import { buildSummary } from './report/build.js';
 import { buildSummaryCalendar, journeyStart, summaryAnchor } from './report/calendar.js';
+import { periodReportFilename, renderPeriodReportPdf } from './periodReport/render.js';
 import { randomQuickLogMessage } from './quickLogMessages.js';
 import { recordQuickSymptom } from './logging/writeThrough.js';
 import { dayKey } from './dayKey.js';
@@ -285,6 +287,7 @@ import { startFamilyJobs } from './family/jobs.js';
 import { initialReminderSentFor, startConsultationReminderJob } from './consultationReminders.js';
 import { isTrackingDate, trackingTime, TRACKING_DAY_TEXT } from './trackingDay.js';
 import { startMissedTrackingJob } from './missedTracking.js';
+import { startPeriodReportJobs } from './periodReport/jobs.js';
 import { AdminError } from './admin/errors.js';
 import {
   endLoginSessions,
@@ -5771,6 +5774,39 @@ app.get('/report', async (req, res, next) => {
 });
 
 /**
+ * A completed week or month as a PDF: the same summary `/report` serves for it, built in English
+ * (the PDF's fonts have no Indic glyphs) and drawn by `periodReport/render.ts`. Not offered for the
+ * period in progress, nor for one with too few logged days — the summary page shows a tracking
+ * reminder there instead of the download.
+ */
+app.get('/report/pdf', async (req, res, next) => {
+  try {
+    const user = await requireCurrentUser(req);
+    const { period, offset } = periodReportPdfQuerySchema.parse(req.query);
+    const now = new Date();
+    const report = await withLanguage('en', () =>
+      buildSummary(user.id, summaryAnchor(user), period, offset, now, journeyStart(user)),
+    );
+    // `buildSummary` clamps an offset older than her history; a clamp back to the current period
+    // must not hand out a report for a week that is not over.
+    if (!report.pdf || report.offset < 1) {
+      throw new HttpError(404, 'There is no report for this period.');
+    }
+    if (report.pdf.tier === 'insufficient') {
+      throw new HttpError(409, 'Not enough days were logged in this period for a report.');
+    }
+    const bytes = await renderPeriodReportPdf(report, now);
+    setNoStoreHeaders(res);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', String(bytes.length));
+    res.setHeader('Content-Disposition', `inline; filename="${periodReportFilename(report)}"`);
+    res.end(bytes);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
  * Month grid for the summary's date picker (daily view only). Same anchor rule
  * as `/report`, so a day the picker offers is a day the report can render.
  */
@@ -7079,6 +7115,7 @@ async function startServer() {
   startMedicationReminderJob();
   startConsultationReminderJob();
   startMissedTrackingJob();
+  startPeriodReportJobs();
   startSupportRetentionJob();
   startPrivacyRetentionJobs();
   startFamilyJobs();

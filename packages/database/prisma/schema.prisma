@@ -60,6 +60,7 @@ model User {
   sleepLogs          SleepLog[]
   quickSymptomLogs   QuickSymptomLog[]
   detailedAssessment DetailedAssessment?
+  periodReportNotices PeriodReportNotice[]
   energyLogs         EnergyLog[]
   stressLogs         StressLog[]
   hotFlashDailyLogs  HotFlashDailyLog[]
@@ -1785,6 +1786,25 @@ model MedicationDose {
 // ─────────────────────────────────────────────
 // Nudge engine — governor state & send history
 // ─────────────────────────────────────────────
+
+/// The Monday / 1st-of-month push about a completed week's or month's report: "your report is
+/// ready", or a tracking reminder when too few days were logged for one. One row per user, period
+/// and period start, written before the push goes out, so a restart or a second instance cannot
+/// send it twice. See apps/api/src/periodReport/jobs.ts.
+model PeriodReportNotice {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// `weekly` | `monthly`.
+  period      String
+  /// First day of the week or month the notice is about.
+  periodStart DateTime @db.Date
+  /// `ready` (a report to download) | `reminder` (too few days logged for one).
+  kind        String
+  sentAt      DateTime @default(now())
+
+  @@unique([userId, period, periodStart])
+}
 
 model NudgeDailyState {
   id                     String   @id @default(cuid())

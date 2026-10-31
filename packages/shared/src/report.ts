@@ -287,6 +287,24 @@ export const summarySuggestionSchema = z.object({
   body: z.string(),
 });
 
+/**
+ * How much of a weekly or monthly report a completed period supports, by days logged.
+ *
+ *   insufficient — too few days for a report; the summary shows a tracking reminder instead
+ *   limited      — a report, marked low-confidence (weekly) or preliminary (monthly)
+ *   full         — a full report
+ */
+export const periodReportTierSchema = z.enum(['insufficient', 'limited', 'full']);
+
+/** The downloadable PDF of a completed week or month. */
+export const periodReportPdfSchema = z.object({
+  tier: periodReportTierSchema,
+  /** Logged days a report needs at all: 4 for a week, 15 for a month. */
+  minDays: z.number().int(),
+  /** Logged days for a full report: 6 for a week, 24 for a month. */
+  fullDays: z.number().int(),
+});
+
 export const weeklyReportQuerySchema = z.object({
   period: summaryPeriodSchema.default('daily'),
   /** Periods back from the current one. 0 = current. */
@@ -373,6 +391,17 @@ export const weeklyReportResponseSchema = z.object({
   /** Populated on monthly only; empty otherwise. */
   weekBreakdown: z.array(summaryWeekBreakdownSchema),
   anuReflection: z.string(),
+  /**
+   * The week or month as a PDF to download. Null on daily, and on the period still in progress:
+   * only a completed week or month has a report.
+   */
+  pdf: periodReportPdfSchema.nullable(),
+});
+
+/** `GET /report/pdf`: a completed week or month (offset 1 or more). */
+export const periodReportPdfQuerySchema = z.object({
+  period: z.enum(['weekly', 'monthly']),
+  offset: z.coerce.number().int().min(1),
 });
 
 /**
@@ -427,3 +456,6 @@ export type SummaryCalendarDay = z.infer<typeof summaryCalendarDaySchema>;
 export type SummaryCalendarResponse = z.infer<typeof summaryCalendarResponseSchema>;
 export type WeeklyReportQuery = z.infer<typeof weeklyReportQuerySchema>;
 export type WeeklyReportResponse = z.infer<typeof weeklyReportResponseSchema>;
+export type PeriodReportTier = z.infer<typeof periodReportTierSchema>;
+export type PeriodReportPdf = z.infer<typeof periodReportPdfSchema>;
+export type PeriodReportPdfQuery = z.infer<typeof periodReportPdfQuerySchema>;

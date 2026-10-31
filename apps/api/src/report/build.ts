@@ -35,6 +35,7 @@ import {
 } from './scoring.js';
 import { dayKey, fromDayKey, isoDay } from '../dayKey.js';
 import { buildJointsSummary } from './joints.js';
+import { periodReportPdf } from '../periodReport/tier.js';
 
 export const WEEK_DAYS = 7;
 
@@ -1714,5 +1715,6 @@ export async function buildSummary(
             : buildPeriodInsights(rings, w.period, weekBreakdown),
     weekBreakdown,
     anuReflection: buildReflection(w.period, rings, daysLogged, dataState, calibrating, daysOnApp),
+    pdf: periodReportPdf(w.period, w.offset, daysLogged),
   };
 }

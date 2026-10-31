@@ -1708,6 +1708,16 @@
     "missedTracking": {
       "title": "You missed yesterday’s check-in",
       "body": "Want to add how yesterday went? You can fill it in until midnight tonight."
+    },
+    "periodReport": {
+      "weeklyReadyTitle": "Your weekly report is ready",
+      "weeklyReadyBody": "See how last week went, and download it as a PDF from your summary.",
+      "weeklyReminderTitle": "Not enough check-ins for last week’s report",
+      "weeklyReminderBody": "A weekly report needs at least 4 days logged. A quick check-in each day will get you this week’s.",
+      "monthlyReadyTitle": "Your monthly report is ready",
+      "monthlyReadyBody": "See how last month went, and download it as a PDF from your summary.",
+      "monthlyReminderTitle": "Not enough check-ins for last month’s report",
+      "monthlyReminderBody": "A monthly report needs at least 15 days logged. Keep checking in and this month’s will be ready."
     }
   },
   "patient": {

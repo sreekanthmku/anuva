@@ -62,6 +62,8 @@ export const ERASURE_TRACKER_MODELS = [
   'wellnessSnapshot',
   'nudgeDailyState',
   'nudgeSendLog',
+  // Which weekly/monthly report notices went out: says which weeks she tracked.
+  'periodReportNotice',
   'l3TriggerLog',
 ] as const;
 
