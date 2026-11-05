@@ -4,7 +4,7 @@ import { z } from 'zod';
  * Notes for the doctor — something she jots down to remember, typed, spoken or photographed.
  *
  * Private to her by default. Sharing one with a consultation freezes a copy for that doctor alone,
- * and records the consent she gave for it. A voice note or photo is turned into text by OpenAI, which
+ * and records the consent she gave for it. She can take a shared note back at any time. A voice note or photo is turned into text by OpenAI, which
  * needs its own consent first (`NOTE_AI_CONSENT_VERSION`); a typed note never leaves our servers.
  *
  * Bump a consent version whenever the wording she agrees to changes materially. A stored consent for
@@ -17,8 +17,11 @@ import { z } from 'zod';
  */
 export const NOTE_AI_CONSENT_VERSION = 'notes-ai-v2';
 
-/** Consent to share the chosen notes with the doctor of one consultation. */
-export const NOTE_SHARE_CONSENT_VERSION = 'notes-share-v1';
+/**
+ * Consent to share the chosen notes with the doctor of one consultation. v2: she can take a note
+ * back at any time, not only until the consultation starts.
+ */
+export const NOTE_SHARE_CONSENT_VERSION = 'notes-share-v2';
 
 export const HEALTH_NOTE_TEXT_MAX = 4000;
 
@@ -67,7 +70,7 @@ export const healthNoteShareSchema = z.object({
   specialistName: z.string(),
   scheduledAt: z.string(),
   sharedAt: z.string(),
-  /** Until the consultation begins she can take it back. */
+  /** She can take it back at any time; false only on a cancelled consultation. */
   canRevoke: z.boolean(),
 });
 export type HealthNoteShare = z.infer<typeof healthNoteShareSchema>;

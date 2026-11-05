@@ -108,7 +108,8 @@ function AnswerValue({ question, value }: { question: DetailedQuestion; value: s
 /**
  * The reviewer's read of a user's detailed assessment. Sections arrive already narrowed to the
  * lenses this specialist holds — this component renders what it was given and never filters, so
- * what appears here is exactly what the server decided may be seen.
+ * what appears here is exactly what the server decided may be seen. Nothing arrives until she has
+ * shared her assessment with this consultation; what does is the copy frozen when she shared it.
  */
 export function DetailedAssessmentSheet({ consultationId, patientLabel, onClose }: Props) {
   const [data, setData] = useState<DoctorDetailedAssessmentResponse | null>(null);
@@ -173,13 +174,20 @@ export function DetailedAssessmentSheet({ consultationId, patientLabel, onClose 
             <span className="rounded-full border border-border-default px-2.5 py-1">
               {lensSummary(data.lenses)}
             </span>
-            <span className="rounded-full border border-border-default px-2.5 py-1">
-              {data.status === 'completed'
-                ? `Submitted ${data.completedAt ? formatIsoDate(data.completedAt.slice(0, 10)) : ''}`
-                : data.status === 'in_progress'
-                  ? 'In progress'
-                  : 'Not started'}
-            </span>
+            {data.shared ? (
+              <span className="rounded-full border border-border-default px-2.5 py-1">
+                {data.status === 'completed'
+                  ? `Submitted ${data.completedAt ? formatIsoDate(data.completedAt.slice(0, 10)) : ''}`
+                  : data.status === 'in_progress'
+                    ? 'In progress'
+                    : 'Not started'}
+              </span>
+            ) : null}
+            {data.sharedAt ? (
+              <span className="rounded-full border border-border-default px-2.5 py-1">
+                Shared {formatIsoDate(data.sharedAt.slice(0, 10))}
+              </span>
+            ) : null}
           </div>
         )}
 
@@ -195,14 +203,21 @@ export function DetailedAssessmentSheet({ consultationId, patientLabel, onClose 
           </p>
         )}
 
-        {!loading && !error && visibleSections.length === 0 && (
+        {!loading && !error && data && !data.shared && (
+          <p className="mt-6 text-[13px] text-on-surface-variant">
+            She hasn’t shared her health assessment for this consultation. She can share it from her
+            booking in the app, and can take it back at any time.
+          </p>
+        )}
+
+        {!loading && !error && data?.shared && visibleSections.length === 0 && (
           <p className="mt-6 text-[13px] text-on-surface-variant">
             No sections are assigned to your specialty. Ask an administrator to assign your review
             lens.
           </p>
         )}
 
-        {!loading && !error && visibleSections.length > 0 && answeredCount === 0 && (
+        {!loading && !error && data?.shared && visibleSections.length > 0 && answeredCount === 0 && (
           <p className="mt-6 text-[13px] text-on-surface-variant">
             She has not answered any of your sections yet.
           </p>

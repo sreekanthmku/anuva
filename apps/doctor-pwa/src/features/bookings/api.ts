@@ -10,6 +10,7 @@ import type {
   DoctorConsultationBookingsResponse,
   DoctorDetailedAssessmentResponse,
   DoctorSharedNotesResponse,
+  DoctorSharedReportsResponse,
   DoctorVisitSummaryResponse,
   UploadConsultationDocumentResponse,
 } from '@anuva/shared';
@@ -202,6 +203,29 @@ export async function fetchSharedNoteImage(args: {
 
   if (!response.ok) {
     throw new ApiError(response.status, 'This photo could not be opened.');
+  }
+
+  return response.blob();
+}
+
+/** The reports she chose to share with this consultation — frozen copies, read-only. */
+export async function fetchSharedReports(consultationId: string): Promise<DoctorSharedReportsResponse> {
+  return apiFetch<DoctorSharedReportsResponse>(`/api/doctor/consultations/${consultationId}/reports`);
+}
+
+/** One shared report as a PDF. Fetched as a blob for the same cookie reason as documents. */
+export async function fetchSharedReportPdf(args: { consultationId: string; shareId: string }): Promise<Blob> {
+  const response = await fetch(
+    apiUrl(`/api/doctor/consultations/${args.consultationId}/reports/${args.shareId}/pdf`),
+    { credentials: 'include' },
+  );
+
+  if (!response.ok) {
+    // 404 also means she took it back since the list was loaded.
+    throw new ApiError(
+      response.status,
+      response.status === 404 ? 'This report is no longer shared with you.' : 'This report could not be opened.',
+    );
   }
 
   return response.blob();

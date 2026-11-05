@@ -148,7 +148,6 @@ export const SUMMARY_ERRORS = copy('visitSummary.errors', {
   consultationClosed: 'A summary can only be shared before the consultation starts.',
   draftExpired: 'This summary is out of date. Please make a fresh one.',
   consentOutdated: 'The sharing notice has changed. Please read it again.',
-  cannotRevoke: 'This consultation has started, so the doctor keeps the summary you shared.',
   noteNotFound: 'One of those notes is no longer available.',
   noteNotReady: 'Only saved notes can be shared. Check and save each note first.',
   tooManyNotes: 'Up to {{count}} notes can be shared with one consultation.',

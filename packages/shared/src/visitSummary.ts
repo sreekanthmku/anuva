@@ -6,14 +6,17 @@ import { z } from 'zod';
  * Built as a draft that only she sees. She reviews it, switches off any section she would rather
  * keep to herself, adds what she wants to discuss, and shares it under a versioned notice
  * (`VISIT_SUMMARY_SHARE_CONSENT_VERSION`). Sharing freezes that exact draft for the doctor of that
- * consultation alone. She can take it back until the consultation starts.
+ * consultation alone. She can take it back at any time.
  *
  * The server stores numbers and stored answers, not sentences, and renders them on read: her copy
  * in her language, the doctor's in theirs. Both are the same frozen record.
  */
 
-/** Consent to share one visit summary, and any notes picked with it, with one consultation's doctor. */
-export const VISIT_SUMMARY_SHARE_CONSENT_VERSION = 'visit-summary-share-v1';
+/**
+ * Consent to share one visit summary, and any notes picked with it, with one consultation's doctor.
+ * v2: she can take it back at any time, not only until the consultation starts.
+ */
+export const VISIT_SUMMARY_SHARE_CONSENT_VERSION = 'visit-summary-share-v2';
 
 /** Order matters: it is the order the sections are shown in. */
 export const VISIT_SUMMARY_SECTIONS = [
@@ -94,8 +97,10 @@ export const visitSummarySchema = z.object({
   /** On a draft: her saved notes from the window. Empty on a shared summary. */
   notes: z.array(visitSummaryNoteOptionSchema),
   sharedAt: z.string().nullable(),
-  /** Until the consultation begins she can take it back. */
+  /** A shared summary she can take back — at any time, unless the consultation was cancelled. */
   canRevoke: z.boolean(),
+  /** The consultation has not started yet, so she can still make and share a fresh summary. */
+  canShare: z.boolean(),
   createdAt: z.string(),
 });
 export type VisitSummary = z.infer<typeof visitSummarySchema>;

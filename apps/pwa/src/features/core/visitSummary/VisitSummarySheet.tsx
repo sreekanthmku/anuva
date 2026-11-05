@@ -89,6 +89,7 @@ export function VisitSummarySheet({
   const [pickedNotes, setPickedNotes] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [takenBack, setTakenBack] = useState(false);
   const notesTitleId = useId();
 
   const buildDraft = useCallback(async () => {
@@ -171,10 +172,17 @@ export function VisitSummarySheet({
     setBusy(true);
     setError(null);
     try {
+      const couldShare = summary?.canShare ?? false;
       await revokeSummary(consultationId);
       onShared?.(false);
       announce(t('a11y.care.summaryTakenBack'));
-      await buildDraft();
+      // Once the consultation is over there is no fresh summary to make: she is told it is gone.
+      if (couldShare) {
+        await buildDraft();
+      } else {
+        setSummary(null);
+        setTakenBack(true);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('visitSummary.shareFailed'));
     } finally {
@@ -207,6 +215,12 @@ export function VisitSummarySheet({
       {loading ? (
         <p role="status" className="mt-4 text-[13.5px] text-on-surface-variant">
           {t('visitSummary.building')}
+        </p>
+      ) : null}
+
+      {takenBack && !summary ? (
+        <p role="status" className="mt-4 text-[13.5px] leading-[1.5] text-on-surface-variant">
+          {t('visitSummary.takenBack', { name: specialistName })}
         </p>
       ) : null}
 
@@ -265,10 +279,8 @@ export function VisitSummarySheet({
                 >
                   {busy ? t('visitSummary.working') : t('visitSummary.takeBack')}
                 </button>
-              ) : (
-                <p className="mt-3 text-[12px] text-on-surface-variant">{t('visitSummary.locked')}</p>
-              )}
-              {summary.canRevoke ? (
+              ) : null}
+              {summary.canShare ? (
                 <button
                   type="button"
                   disabled={busy}

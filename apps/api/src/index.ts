@@ -282,6 +282,11 @@ import { loadCache, cacheStats } from './anu/cache.js';
 import { httpLogger, logger } from './logger.js';
 import { createAdminRouter } from './admin/index.js';
 import { createReport14Router } from './report14/index.js';
+import {
+  createConsultationReportsRouter,
+  createDoctorReportsRouter,
+  readSharedDetailedAssessment,
+} from './reportShares/router.js';
 import { createFamilyRouter } from './family/index.js';
 import { startFamilyJobs } from './family/jobs.js';
 import { initialReminderSentFor, startConsultationReminderJob } from './consultationReminders.js';
@@ -296,6 +301,11 @@ import {
   shouldTouch,
   touchLoginSession,
 } from './loginHistory.js';
+import {
+  OTP_EXPIRED_MESSAGE,
+  OTP_TOO_MANY_ATTEMPTS_MESSAGE,
+  spentChallengeRejection,
+} from './otpChallenge.js';
 import {
   CLEARED_LOCK_STATE,
   DUMMY_DOCTOR_PASSWORD_HASH,
@@ -501,6 +511,22 @@ app.use(
 app.use(
   '/doctor/consultations/:id/notes',
   createDoctorNotesRouter({
+    resolveConsultationScope: (req) => doctorConsultationScope(requireDoctorIdentity(req)),
+  }),
+);
+
+// Reports for the doctor — self-contained module under apps/api/src/reportShares/. Her detailed
+// assessment, 14-day report and weekly and monthly reports, each shared with one consultation only
+// when she ticks it, frozen when shared, and revocable at any time.
+app.use(
+  '/consultations/:id/reports',
+  createConsultationReportsRouter({
+    resolveUserId: async (req) => (await requireCurrentUser(req)).id,
+  }),
+);
+app.use(
+  '/doctor/consultations/:id/reports',
+  createDoctorReportsRouter({
     resolveConsultationScope: (req) => doctorConsultationScope(requireDoctorIdentity(req)),
   }),
 );
@@ -874,7 +900,7 @@ async function verifyOtpWithTwoFactor(providerSessionId: string, otp: string): P
   // Never pass `Details` through: it is the provider's English ("OTP Mismatch"), not ours to show.
   const details = payload.Details?.toLowerCase() ?? '';
   if (details.includes('expired')) {
-    throw new HttpError(400, 'This OTP has expired. Please request a new one.');
+    throw new HttpError(400, OTP_EXPIRED_MESSAGE);
   }
   if (details.includes('mismatch') || details.includes('invalid otp')) {
     throw new HttpError(400, 'Incorrect OTP. Please check the code and try again.');
@@ -3938,7 +3964,8 @@ app.post('/auth/verify-otp', async (req, res, next) => {
 
     const now = new Date();
     if (challenge.status !== 'pending') {
-      throw new HttpError(400, 'This OTP has already been used. Please request a new one.');
+      const rejection = spentChallengeRejection(challenge.status);
+      throw new HttpError(rejection.status, rejection.message);
     }
 
     if (challenge.expiresAt <= now) {
@@ -3946,7 +3973,7 @@ app.post('/auth/verify-otp', async (req, res, next) => {
         where: { id: challenge.id },
         data: { status: 'expired' },
       });
-      throw new HttpError(400, 'This OTP has expired. Please request a new one.');
+      throw new HttpError(400, OTP_EXPIRED_MESSAGE);
     }
 
     if (challenge.attemptCount >= OTP_MAX_VERIFY_ATTEMPTS) {
@@ -3954,7 +3981,7 @@ app.post('/auth/verify-otp', async (req, res, next) => {
         where: { id: challenge.id },
         data: { status: 'failed' },
       });
-      throw new HttpError(429, 'Too many incorrect OTP attempts. Please request a new OTP.');
+      throw new HttpError(429, OTP_TOO_MANY_ATTEMPTS_MESSAGE);
     }
 
     let user = await prisma.user.findUnique({ where: { phone } });
@@ -5991,9 +6018,14 @@ app.post('/detailed-assessment/submit', async (req, res, next) => {
 
 /**
  * The reviewer's read of one user's detailed assessment, narrowed to the sections their lens
- * covers. Two gates apply in order: the consultation must be this doctor's (or the caller must
- * hold the admin key), and the answers are then cut down to the questions their lens owns. The
- * narrowing happens here rather than in the portal, so no client bug can widen what is returned.
+ * covers. Three gates apply in order: the consultation must be this doctor's (or the caller must
+ * hold the admin key); she must have shared her assessment with this consultation and not taken it
+ * back; and the answers are then cut down to the questions their lens owns. A doctor reads the copy
+ * frozen when she shared it, never her live answers. The narrowing happens here rather than in the
+ * portal, so no client bug can widen what is returned.
+ *
+ * The admin key is the operations key and is not a doctor of hers: it reads her live answers, as
+ * it reads every consultation.
  *
  * A specialist with no lens assigned sees no sections at all — the map in bookingCatalog denies
  * by default rather than granting.
@@ -6026,18 +6058,49 @@ app.get('/doctor/consultations/:id/detailed-assessment', async (req, res, next) 
       );
     }
 
-    const assessment = await readDetailedAssessment(consultation.userId);
+    let source: {
+      shared: boolean;
+      sharedAt: string | null;
+      status: 'not_started' | 'in_progress' | 'completed';
+      completedAt: string | null;
+      answers: Record<string, string>;
+    };
+    if (identity.scope === 'admin') {
+      const live = await readDetailedAssessment(consultation.userId);
+      source = {
+        shared: true,
+        sharedAt: null,
+        status: live?.status ?? 'not_started',
+        completedAt: live?.completedAt?.toISOString() ?? null,
+        answers: Object.fromEntries((live?.answers ?? []).map((answer) => [answer.questionKey, answer.value])),
+      };
+    } else {
+      const shared = await readSharedDetailedAssessment(req.params.id);
+      source = shared
+        ? {
+            shared: true,
+            sharedAt: shared.sharedAt.toISOString(),
+            status: shared.assessment.status,
+            completedAt: shared.assessment.completedAt,
+            answers: shared.assessment.answers,
+          }
+        : { shared: false, sharedAt: null, status: 'not_started', completedAt: null, answers: {} };
+    }
+
     const answers: Record<string, string> = {};
-    for (const answer of assessment?.answers ?? []) {
-      if (visibleKeys.has(answer.questionKey)) {
-        answers[answer.questionKey] = answer.value;
+    for (const [questionKey, value] of Object.entries(source.answers)) {
+      if (visibleKeys.has(questionKey)) {
+        answers[questionKey] = value;
       }
     }
 
+    setNoStoreHeaders(res);
     res.json(
       doctorDetailedAssessmentResponseSchema.parse({
-        status: assessment?.status ?? 'not_started',
-        completedAt: assessment?.completedAt?.toISOString() ?? null,
+        shared: source.shared,
+        sharedAt: source.sharedAt,
+        status: source.status,
+        completedAt: source.completedAt,
         lenses: [...lenses],
         sectionKeys: visible.map((section) => section.key),
         answers,
@@ -6620,17 +6683,18 @@ async function consumePrivacyOtp(
   }
 
   if (challenge.status !== 'pending') {
-    throw new HttpError(400, 'This OTP has already been used. Please request a new one.');
+    const rejection = spentChallengeRejection(challenge.status);
+    throw new HttpError(rejection.status, rejection.message);
   }
 
   if (challenge.expiresAt <= new Date()) {
     await prisma.otpChallenge.update({ where: { id: challenge.id }, data: { status: 'expired' } });
-    throw new HttpError(400, 'This OTP has expired. Please request a new one.');
+    throw new HttpError(400, OTP_EXPIRED_MESSAGE);
   }
 
   if (challenge.attemptCount >= OTP_MAX_VERIFY_ATTEMPTS) {
     await prisma.otpChallenge.update({ where: { id: challenge.id }, data: { status: 'failed' } });
-    throw new HttpError(429, 'Too many incorrect OTP attempts. Please request a new OTP.');
+    throw new HttpError(429, OTP_TOO_MANY_ATTEMPTS_MESSAGE);
   }
 
   try {

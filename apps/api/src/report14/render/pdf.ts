@@ -269,6 +269,11 @@ function cacheKeyFor(doc: ReportDocument, password: string | undefined): string 
  */
 export interface RenderPdfOptions {
   password?: string;
+  /**
+   * False renders in memory and writes nothing to disk. For an unlocked copy — the one a doctor
+   * opens from a share — which must not sit in the cache as a file anyone on the box could read.
+   */
+  cache?: boolean;
 }
 
 function encryptionFor(password: string | undefined) {
@@ -431,10 +436,13 @@ async function pruneCache(): Promise<void> {
 /** Serve from cache when we already have it; otherwise render, store, return. */
 export async function renderReportPdf(
   doc: ReportDocument,
-  { password }: RenderPdfOptions = {},
+  { password, cache = true }: RenderPdfOptions = {},
 ): Promise<RenderedPdf> {
   const cacheKey = cacheKeyFor(doc, password);
   const filename = filenameFor(doc);
+  if (!cache) {
+    return { bytes: await buildPdf(doc, password), cacheKey, cached: false, filename };
+  }
   const cachePath = path.join(CACHE_DIR, `${cacheKey}.pdf`);
 
   try {

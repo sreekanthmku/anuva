@@ -10,17 +10,21 @@ const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 
 /**
  * Choosing which notes one doctor sees. Nothing is ticked for her: every note shared is one she
- * picked, under a notice that says what the doctor gets and what she can take back. The wording is
- * versioned (`NOTE_SHARE_CONSENT_VERSION`) and recorded on every share.
+ * picked, under a notice that says what the doctor gets and that she can take it back at any time.
+ * The wording is versioned (`NOTE_SHARE_CONSENT_VERSION`) and recorded on every share.
+ *
+ * `canShareMore` is false once the consultation is over: she can still take notes back, not add.
  */
 export function ShareNotesSheet({
   consultationId,
   specialistName,
+  canShareMore = true,
   onClose,
   onChanged,
 }: {
   consultationId: string;
   specialistName: string;
+  canShareMore?: boolean;
   onClose: () => void;
   onChanged?: (sharedCount: number) => void;
 }) {
@@ -49,8 +53,10 @@ export function ShareNotesSheet({
   }, [load]);
 
   const sharedIds = new Set(shared.map((note) => note.noteId));
-  const choosable = (notes ?? []).filter((note) => note.status === 'ready' && !sharedIds.has(note.id));
-  const unchecked = (notes ?? []).filter((note) => note.status !== 'ready').length;
+  const choosable = canShareMore
+    ? (notes ?? []).filter((note) => note.status === 'ready' && !sharedIds.has(note.id))
+    : [];
+  const unchecked = canShareMore ? (notes ?? []).filter((note) => note.status !== 'ready').length : 0;
 
   const toggle = (id: string) =>
     setPicked((current) => {
@@ -126,16 +132,18 @@ export function ShareNotesSheet({
                   >
                     {t('notes.share.takeBack')}
                   </button>
-                ) : (
-                  <p className="mt-1 text-[11.5px] text-on-surface-variant">{t('notes.share.locked')}</p>
-                )}
+                ) : null}
               </li>
             ))}
           </ul>
         </div>
       ) : null}
 
-      {notes !== null && choosable.length === 0 && shared.length === 0 ? (
+      {!canShareMore && notes !== null ? (
+        <p className="mt-4 text-[13px] leading-[1.5] text-on-surface-variant">{t('notes.share.closed')}</p>
+      ) : null}
+
+      {canShareMore && notes !== null && choosable.length === 0 && shared.length === 0 ? (
         <div className="mt-4 text-[13.5px] leading-[1.5] text-on-surface-variant">
           <p>{t('notes.share.none')}</p>
           <Link to="/notes" className="mt-2 inline-flex min-h-11 items-center font-semibold text-primary">

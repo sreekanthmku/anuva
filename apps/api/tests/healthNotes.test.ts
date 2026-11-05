@@ -550,35 +550,49 @@ describe('sharing with a consultation', () => {
     expect(db.healthNoteShare).toHaveLength(0);
   });
 
-  it('she can take a share back before the consultation, not after the doctor started it', async () => {
+  it('she can take a share back at any time — before, during or after the consultation', async () => {
     const before = seedConsultation({ id: 'consult-later' });
     const started = seedConsultation({ id: 'consult-now', startsInHours: -0.1, doctorStarted: true });
+    const finished = seedConsultation({ id: 'consult-done', startsInHours: -0.1, doctorStarted: true });
     const note = await typedNote();
-    for (const id of [before, started]) {
-      // The started one is still `confirmed`, so sharing is allowed while it runs.
+    for (const id of [before, started, finished]) {
+      // The started ones are still `confirmed`, so sharing is allowed while they run.
       await request(app)
         .post(`/consultations/${id}/notes`)
         .set('x-user', 'priya')
         .send({ noteIds: [note.id], consentTextVersion: shared.NOTE_SHARE_CONSENT_VERSION })
         .expect(201);
     }
+    db.consultation!.find((row) => row.id === finished)!.status = 'completed';
 
-    await request(app).delete(`/consultations/${before}/notes/${note.id}`).set('x-user', 'priya').expect(200);
-    await request(app).delete(`/consultations/${started}/notes/${note.id}`).set('x-user', 'priya').expect(409);
+    const mine = await request(app).get('/health-notes').set('x-user', 'priya').expect(200);
+    expect(mine.body.notes[0].shares.map((share: { canRevoke: boolean }) => share.canRevoke)).toEqual([true, true, true]);
 
-    // A doctor who opens the call early has started it, even though the slot is still ahead.
-    const early = seedConsultation({ id: 'consult-early', startsInHours: 0.2, doctorStarted: true });
-    await request(app)
-      .post(`/consultations/${early}/notes`)
-      .set('x-user', 'priya')
-      .send({ noteIds: [note.id], consentTextVersion: shared.NOTE_SHARE_CONSENT_VERSION })
-      .expect(201);
-    await request(app).delete(`/consultations/${early}/notes/${note.id}`).set('x-user', 'priya').expect(409);
+    for (const id of [before, started, finished]) {
+      await request(app).delete(`/consultations/${id}/notes/${note.id}`).set('x-user', 'priya').expect(200);
+      const doctor = await request(app).get(`/doctor/consultations/${id}/notes`).set('x-doctor', 'doc-1').expect(200);
+      expect(doctor.body.notes).toHaveLength(0);
+    }
+    // Taking it back deletes the doctor's frozen copy, not only their view of it.
+    expect(db.healthNoteShare!.map((share) => share.snapshotBody)).toEqual(['', '', '']);
+    // Already taken back: nothing left to take.
+    await request(app).delete(`/consultations/${before}/notes/${note.id}`).set('x-user', 'priya').expect(404);
+  });
 
-    const doctorBefore = await request(app).get(`/doctor/consultations/${before}/notes`).set('x-doctor', 'doc-1').expect(200);
-    expect(doctorBefore.body.notes).toHaveLength(0);
-    const doctorStarted = await request(app).get(`/doctor/consultations/${started}/notes`).set('x-doctor', 'doc-1').expect(200);
-    expect(doctorStarted.body.notes).toHaveLength(1);
+  it('once the consultation has begun, sharing a note again leaves the doctor’s copy as it was', async () => {
+    const started = seedConsultation({ id: 'consult-now', startsInHours: -0.1, doctorStarted: true });
+    const note = await typedNote();
+    const send = () =>
+      request(app)
+        .post(`/consultations/${started}/notes`)
+        .set('x-user', 'priya')
+        .send({ noteIds: [note.id], consentTextVersion: shared.NOTE_SHARE_CONSENT_VERSION })
+        .expect(201);
+    await send();
+    await request(app).patch(`/health-notes/${note.id}`).set('x-user', 'priya').send({ body: 'Edited later' }).expect(200);
+    await send();
+    const doctor = await request(app).get(`/doctor/consultations/${started}/notes`).set('x-doctor', 'doc-1').expect(200);
+    expect(doctor.body.notes[0].body).not.toBe('Edited later');
   });
 
   it('only the consultation’s own doctor sees the notes and the photo', async () => {

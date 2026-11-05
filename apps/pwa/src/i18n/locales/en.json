@@ -2024,7 +2024,7 @@
     "delete": "Delete",
     "keep": "Keep",
     "deleteConfirm": "Delete this note?",
-    "deleteKeptByDoctor": "Your doctor keeps the copy you shared for that consultation.",
+    "deleteKeptByDoctor": "The copy you shared stays with your doctor. To remove it, take it back from My bookings.",
     "checkBadge": "Needs checking",
     "notReadBadge": "Not turned into text",
     "sharedWith": "Shared with {{name}}",
@@ -2094,17 +2094,17 @@
       "title": "Share notes with {{name}}",
       "alreadyShared": "Already shared",
       "takeBack": "Take back",
-      "locked": "The consultation has started, so the doctor keeps this note.",
       "none": "You don't have any notes yet.",
       "writeOne": "Write a note",
       "choose": "Choose notes to share",
       "needsChecking_one": "{{count}} note needs checking before it can be shared.",
       "needsChecking_other": "{{count}} notes need checking before they can be shared.",
       "consentWhat": "{{name}} will be able to read the notes you tick, and see the photo a note was made from. Recordings are never shared.",
-      "consentKeep": "You can take a note back until the consultation starts. After that it stays in your consultation record, even if you delete the note.",
+      "consentKeep": "You can take a note back at any time, even after the consultation. Deleting a note doesn't take it back.",
       "cta_one": "Share {{count}} note",
       "cta_other": "Share {{count}} notes",
-      "cta_zero": "Choose notes to share"
+      "cta_zero": "Choose notes to share",
+      "closed": "This consultation is over, so you can't add notes. You can still take back anything you shared."
     },
     "reviewHintPhoto": "This is what we read or estimated from your photo. Fix anything that's wrong before you save it.",
     "photoOnlyHint": "There's no writing or food to read in this photo, so it's saved as it is. Add a few words if you like.",
@@ -2128,12 +2128,11 @@
     "notesTitle": "Your notes from this time",
     "notesHint": "Tick any you'd like the doctor to read too.",
     "consentWhat": "{{name}} will be able to read the parts of this summary you keep, what you'd like to discuss and any notes you tick, for this consultation only.",
-    "consentKeep": "You can take the summary back until the consultation starts. After that it stays in your consultation record.",
+    "consentKeep": "You can take the summary back at any time, even after the consultation.",
     "share": "Share with {{name}}",
     "working": "One moment…",
     "shareFailed": "Couldn't share right now. Please try again.",
     "takeBack": "Take it back",
-    "locked": "The consultation has started, so the doctor keeps this summary.",
     "makeFresh": "Make a fresh summary",
     "notNow": "Not now",
     "done": "Done",
@@ -2150,7 +2149,8 @@
       "label": "Summary for this doctor",
       "shared": "Shared",
       "make": "Make one"
-    }
+    },
+    "takenBack": "Summary taken back. {{name}} can no longer see it."
   },
   "report14Ready": {
     "eyebrow": "Your first 14 days",
@@ -2242,7 +2242,10 @@
       "stageDone": "done",
       "stageUpcoming": "coming up",
       "suggestedReplies": "Suggested replies",
-      "summaryTakenBack": "Summary taken back. The doctor can no longer see it."
+      "summaryTakenBack": "Summary taken back. The doctor can no longer see it.",
+      "reportsShared_one": "{{count}} report shared with {{name}}",
+      "reportsShared_other": "{{count}} reports shared with {{name}}",
+      "reportTakenBack": "Report taken back"
     },
     "family": {
       "switchOn": "{{label}}: on",
@@ -2251,6 +2254,39 @@
       "thanksSent": "Thank you sent to {{name}}",
       "disconnected": "{{name}} has been disconnected",
       "linkCopied": "Link copied"
+    }
+  },
+  "reports": {
+    "eyebrow": "For your doctor",
+    "forThisDoctor": "Reports for this doctor",
+    "sharedCount_one": "{{count}} shared",
+    "sharedCount_other": "{{count}} shared",
+    "addShort": "Add",
+    "loading": "Loading…",
+    "loadFailed": "Couldn't load your reports. Please try again.",
+    "shareFailed": "Couldn't share right now. Please try again.",
+    "saving": "One moment…",
+    "done": "Done",
+    "close": "Close",
+    "kind": {
+      "detailed_assessment": "Your health assessment",
+      "assessment_14day": "Your 14-day report",
+      "weekly": "Weekly report, {{range}}",
+      "monthly": "Monthly report, {{month}}"
+    },
+    "share": {
+      "title": "Share reports with {{name}}",
+      "alreadyShared": "Already shared",
+      "sharedOn": "Shared {{date}}",
+      "takeBack": "Take back",
+      "choose": "Choose reports to share",
+      "none": "You don't have a report to share yet. A weekly report is ready once a week has at least 4 days logged.",
+      "closed": "This consultation is over, so you can't add reports. You can still take back anything you shared.",
+      "consentWhat": "{{name}} will be able to open the reports you tick, for this consultation only. Each one is shared as it is now. Anything you log later isn't added.",
+      "consentKeep": "You can take a report back at any time, even after the consultation. That stops {{name}} opening it, but can't remove a copy they've already saved.",
+      "cta_one": "Share {{count}} report",
+      "cta_other": "Share {{count}} reports",
+      "cta_zero": "Choose reports to share"
     }
   }
 }

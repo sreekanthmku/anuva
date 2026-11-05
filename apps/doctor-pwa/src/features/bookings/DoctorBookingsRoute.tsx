@@ -3,12 +3,13 @@ import type { DoctorConsultationBooking } from '@anuva/shared';
 import { useNavigate } from 'react-router-dom';
 import { useDoctorIdentity } from '../auth/identity';
 import { Avatar, PageHeading } from '../shell/AppShell';
-import { ClipboardIcon, FileIcon, NoteIcon, PhoneIcon, SummaryIcon } from '../shell/icons';
+import { ClipboardIcon, FileIcon, NoteIcon, PhoneIcon, ReportIcon, SummaryIcon } from '../shell/icons';
 import { Card, EmptyState, ErrorNote, Pill, Segmented, SkeletonCard, StatTile } from '../shell/ui';
 import { fetchDoctorBookings } from './api';
 import { ConsultationDocumentsSheet } from './ConsultationDocumentsSheet';
 import { DetailedAssessmentSheet } from './DetailedAssessmentSheet';
 import { SharedNotesSheet } from './SharedNotesSheet';
+import { SharedReportsSheet } from './SharedReportsSheet';
 import { VisitSummarySheet } from './VisitSummarySheet';
 import { formatTimeRange } from './dateTime';
 
@@ -70,6 +71,7 @@ function BookingCard({
   onOpenDocuments,
   onOpenAssessment,
   onOpenNotes,
+  onOpenReports,
   onOpenSummary,
 }: {
   booking: DoctorConsultationBooking;
@@ -80,6 +82,7 @@ function BookingCard({
   onOpenDocuments: (booking: DoctorConsultationBooking) => void;
   onOpenAssessment: (booking: DoctorConsultationBooking) => void;
   onOpenNotes: (booking: DoctorConsultationBooking) => void;
+  onOpenReports: (booking: DoctorConsultationBooking) => void;
   onOpenSummary: (booking: DoctorConsultationBooking) => void;
 }) {
   const patientLabel = booking.patientName?.trim() || 'Patient name unavailable';
@@ -136,13 +139,14 @@ function BookingCard({
         ) : null}
       </div>
 
-      <div className="mt-4 flex items-center gap-2 border-t border-border-default bg-surface-container-low px-3 py-3">
+      {/* Five record buttons and the call: on a phone the call takes its own line above them. */}
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border-default bg-surface-container-low px-3 py-3">
         <button
           type="button"
           disabled={!canStartCall}
           aria-describedby={nameId}
           onClick={() => onStartCall(booking.consultationId)}
-          className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full bg-secondary px-4 text-[13px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex min-h-[44px] flex-1 basis-full items-center justify-center gap-2 rounded-full bg-secondary px-4 text-[13px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-40 sm:basis-0"
         >
           <PhoneIcon size={17} />
           {callLabel(booking)}
@@ -191,6 +195,17 @@ function BookingCard({
           <NoteIcon />
         </button>
 
+        {/* Her 14-day, weekly and monthly reports she chose to share, frozen as she shared them. */}
+        <button
+          type="button"
+          onClick={() => onOpenReports(booking)}
+          aria-describedby={nameId}
+          aria-label="View her reports"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border-default bg-surface-raised text-primary"
+        >
+          <ReportIcon />
+        </button>
+
         {/* The pre-visit summary she shared, with only the sections she chose to include. */}
         <button
           type="button"
@@ -217,6 +232,7 @@ export function DoctorBookingsRoute() {
   const [documentsFor, setDocumentsFor] = useState<DoctorConsultationBooking | null>(null);
   const [assessmentFor, setAssessmentFor] = useState<DoctorConsultationBooking | null>(null);
   const [notesFor, setNotesFor] = useState<DoctorConsultationBooking | null>(null);
+  const [reportsFor, setReportsFor] = useState<DoctorConsultationBooking | null>(null);
   const [summaryFor, setSummaryFor] = useState<DoctorConsultationBooking | null>(null);
   // Recomputed on every load so "In 20 min" does not go stale behind a long-open tab.
   const [now, setNow] = useState(() => Date.now());
@@ -346,6 +362,7 @@ export function DoctorBookingsRoute() {
             onOpenDocuments={setDocumentsFor}
             onOpenAssessment={setAssessmentFor}
             onOpenNotes={setNotesFor}
+            onOpenReports={setReportsFor}
             onOpenSummary={setSummaryFor}
           />
         ))}
@@ -375,6 +392,14 @@ export function DoctorBookingsRoute() {
           consultationId={notesFor.consultationId}
           patientLabel={notesFor.patientName?.trim() || 'this patient'}
           onClose={() => setNotesFor(null)}
+        />
+      ) : null}
+
+      {reportsFor ? (
+        <SharedReportsSheet
+          consultationId={reportsFor.consultationId}
+          patientLabel={reportsFor.patientName?.trim() || 'this patient'}
+          onClose={() => setReportsFor(null)}
         />
       ) : null}
 

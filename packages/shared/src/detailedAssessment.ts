@@ -738,6 +738,12 @@ export type DetailedAssessmentStateResponse = z.infer<typeof detailedAssessmentS
  * lenses server-side — the client filters nothing, so a UI mistake cannot widen access.
  */
 export const doctorDetailedAssessmentResponseSchema = z.object({
+  /**
+   * Whether she has shared her assessment with this consultation. Until she does, the doctor gets
+   * nothing: `status` is `not_started` and `answers` is empty.
+   */
+  shared: z.boolean(),
+  sharedAt: z.string().nullable(),
   status: detailedAssessmentStatusSchema,
   completedAt: z.string().nullable(),
   lenses: z.array(z.enum(detailedPractitioners)),

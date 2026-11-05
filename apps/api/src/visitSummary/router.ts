@@ -23,7 +23,7 @@ import {
 } from '@anuva/shared';
 import { notifyDoctorVisitSummaryShared } from '../doctorNotifications.js';
 import { fill } from '../i18n/index.js';
-import { canRevoke } from '../healthNotes/router.js';
+import { beforeConsultationBegins, canRevoke } from '../healthNotes/router.js';
 import { shareNotesWithConsultation } from '../healthNotes/lifecycle.js';
 import { buildVisitSummary } from './build.js';
 import { SUMMARY_ERRORS } from './copy.js';
@@ -141,7 +141,6 @@ function serializeForHer(
   row: SummaryRow,
   consultation: ConsultationRow,
   notes: VisitSummaryNoteOption[],
-  now = new Date(),
 ): VisitSummary {
   const data = row.data as VisitSummaryData;
   return visitSummarySchema.parse({
@@ -156,7 +155,8 @@ function serializeForHer(
     patientNote: row.patientNote,
     notes,
     sharedAt: row.sharedAt?.toISOString() ?? null,
-    canRevoke: row.status === 'shared' && canRevoke(consultation, now),
+    canRevoke: row.status === 'shared' && canRevoke(consultation),
+    canShare: isOpen(consultation),
     createdAt: row.createdAt.toISOString(),
   });
 }
@@ -287,7 +287,7 @@ export function createVisitSummaryRouter(deps: VisitSummaryRouterDeps): Router {
           consultationId: consultation.id,
           noteIds: body.noteIds,
           consentTextVersion: body.consentTextVersion,
-          updatable: canRevoke(consultation, new Date()),
+          updatable: beforeConsultationBegins(consultation, new Date()),
         });
         if (!outcome.ok) {
           if (outcome.reason === 'not_found') {
@@ -355,17 +355,13 @@ export function createVisitSummaryRouter(deps: VisitSummaryRouterDeps): Router {
     }
   });
 
-  /** Takes the shared summary back, until the consultation begins. Notes are taken back from Notes. */
+  /** Takes the shared summary back, at any time. Notes are taken back from Notes. */
   router.delete('/share', async (req, res, next) => {
     try {
       const userId = await deps.resolveUserId(req);
       const consultation = await herConsultation(req, userId);
       if (!consultation) {
         notFound(res, SUMMARY_ERRORS.consultationNotFound);
-        return;
-      }
-      if (!canRevoke(consultation, new Date())) {
-        res.status(409).json({ error: SUMMARY_ERRORS.cannotRevoke });
         return;
       }
       const revoked = await prisma.visitSummary.updateMany({

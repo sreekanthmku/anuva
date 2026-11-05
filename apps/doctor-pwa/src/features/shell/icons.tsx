@@ -110,6 +110,15 @@ export function SummaryIcon({ size = 18, className, strokeWidth = 1.7 }: IconPro
   );
 }
 
+export function ReportIcon({ size = 18, className, strokeWidth = 1.7 }: IconProps) {
+  return (
+    <svg {...base(size, className)} strokeWidth={strokeWidth}>
+      <path d="M4 20h16" />
+      <path d="M7 16.5V12M12 16.5V7.5M17 16.5v-6" />
+    </svg>
+  );
+}
+
 export function ChevronRightIcon({ size = 18, className, strokeWidth = 1.8 }: IconProps) {
   return (
     <svg {...base(size, className)} strokeWidth={strokeWidth}>

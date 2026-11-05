@@ -194,14 +194,14 @@ const CATEGORY_TEXT = copy('privacy.categories', {
     purpose:
       'Notes you typed, recorded or photographed, and which doctor you shared each one with. Only the notes you choose to share are seen by a doctor.',
     retention:
-      'A recording is deleted once you save its text. A note you shared stays in that consultation’s record, which is kept {{years}} years.',
+      'A recording is deleted once you save its text. A note you shared stays in that consultation’s record, which is kept {{years}} years, unless you take it back.',
   },
   visitSummaries: {
     label: 'Summaries shared with doctors',
     purpose:
       'Summaries of your logs that you chose to share with a doctor before a consultation, and which parts you left out.',
     retention:
-      'A summary you did not share is deleted after a day. One you shared stays in that consultation’s record, which is kept {{years}} years.',
+      'A summary you did not share is deleted after a day. One you shared stays in that consultation’s record, which is kept {{years}} years, unless you take it back.',
   },
   assessments: {
     label: 'Assessments',

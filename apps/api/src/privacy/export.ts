@@ -87,6 +87,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     visitSummaries,
     familyShareConsents,
     familySafetyAlerts,
+    reportShares,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -321,6 +322,22 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
       orderBy: { createdAt: 'desc' },
       take: MAX_ROWS_PER_COLLECTION,
     }),
+    // Reports she shared with a doctor, with the copy each doctor holds. One she took back has no
+    // copy left — only the record that it was shared, and when she took it back.
+    prisma.consultationReportShare.findMany({
+      where: { consultation: { userId } },
+      select: {
+        consultationId: true,
+        kind: true,
+        periodStart: true,
+        snapshot: true,
+        consentTextVersion: true,
+        consentedAt: true,
+        revokedAt: true,
+      },
+      orderBy: { consentedAt: 'desc' },
+      take: MAX_ROWS_PER_COLLECTION,
+    }),
   ]);
 
   return {
@@ -362,6 +379,7 @@ async function buildExportPayload(userId: string, generatedAt: Date) {
     consentsGiven: { callRecording: callConsents, other: consentRecords, familySharing: familyShareConsents },
     notes: healthNotes,
     visitSummaries,
+    reportsShared: reportShares,
     chat: { threads: chatThreads, anuTurns, familyAlerts: familySafetyAlerts },
     anonymousQuestions: questions,
     supportRequests: tickets,

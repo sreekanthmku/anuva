@@ -19,5 +19,4 @@ export const NOTE_TEXT = copy('healthNotes.errors', {
   shareConsentOutdated: 'The sharing notice has changed. Please read it again.',
   consultationClosed: 'Notes can only be shared before or during a consultation.',
   tooManyShared: 'Up to {{count}} notes can be shared with one consultation.',
-  cannotRevoke: 'This consultation has started, so the doctor keeps the notes you shared.',
 });

@@ -497,13 +497,19 @@ describe('taking it back, and who can read it', () => {
     expect(mine.body.summary).toBeNull();
   });
 
-  it('stays with the doctor once the call has begun', async () => {
+  it('can be taken back even after the call has begun, and then no fresh one can be made', async () => {
     seedConsultation();
     await share((await draft()).id).expect(201);
     db.consultationCall!.push({ id: 'call-1', consultationId: 'consult-1', doctorStartedAt: new Date() });
-    await request(app).delete('/consultations/consult-1/summary/share').set('x-user', 'priya').expect(409);
+    db.consultation![0]!.status = 'completed';
     const mine = await request(app).get('/consultations/consult-1/summary').set('x-user', 'priya').expect(200);
-    expect(mine.body.summary.canRevoke).toBe(false);
+    expect(mine.body.summary.canRevoke).toBe(true);
+    expect(mine.body.summary.canShare).toBe(false);
+
+    await request(app).delete('/consultations/consult-1/summary/share').set('x-user', 'priya').expect(200);
+    const doctor = await request(app).get('/doctor/consultations/consult-1/summary').set('x-doctor', 'doc-1').expect(200);
+    expect(doctor.body.summary).toBeNull();
+    await request(app).post('/consultations/consult-1/summary/draft').set('x-user', 'priya').expect(409);
   });
 
   it('is never shown to another doctor', async () => {

@@ -1113,6 +1113,7 @@ model Consultation {
   documents    ConsultationDocument[]
   doctorNotes  ConsultationNote[]
   noteShares   HealthNoteShare[]
+  reportShares ConsultationReportShare[]
   visitSummaries VisitSummary[]
   feedback     ConsultationFeedback?
 
@@ -2309,4 +2310,39 @@ model FamilySafetyAlert {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Reports shared with a consultation's doctor
+// ─────────────────────────────────────────────
+
+enum ReportShareKind {
+  detailed_assessment
+  assessment_14day
+  weekly
+  monthly
+}
+
+/// One report she chose to share with one consultation's doctor: her detailed assessment, her
+/// 14-day report, or a completed week or month. `snapshot` is the report frozen as it was when she
+/// shared it — the doctor reads only that, never her live data. She can take it back at any time;
+/// that sets `revokedAt` and clears `snapshot`, so the row is left as a bare record of what was
+/// shared and when, holding none of her health data. Purged with the consultation.
+model ConsultationReportShare {
+  id                 String          @id @default(cuid())
+  consultationId     String
+  consultation       Consultation    @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  kind               ReportShareKind
+  /// "detailed_assessment" | "assessment_14day" | "weekly:2026-10-26" | "monthly:2026-10-01".
+  reportKey          String
+  /// First day of the week or month. Null for the two assessments.
+  periodStart        DateTime?       @db.Date
+  /// The frozen report. Null once she takes it back.
+  snapshot           Json?
+  consentTextVersion String
+  consentedAt        DateTime        @default(now())
+  revokedAt          DateTime?
+
+  @@unique([consultationId, reportKey])
+  @@index([consultationId, revokedAt])
 }

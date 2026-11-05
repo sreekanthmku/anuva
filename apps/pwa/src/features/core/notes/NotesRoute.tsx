@@ -158,7 +158,7 @@ export default function NotesRoute() {
                   <p id={`note-delete-${note.id}`} className="text-[13px] text-on-surface">
                     {t('notes.deleteConfirm')}
                   </p>
-                  {note.shares.some((share) => !share.canRevoke) ? (
+                  {note.shares.length > 0 ? (
                     <p className="mt-1 text-[12px] text-on-surface-variant">{t('notes.deleteKeptByDoctor')}</p>
                   ) : null}
                   <div className="mt-2 flex gap-2">

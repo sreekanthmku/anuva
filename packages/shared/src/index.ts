@@ -836,3 +836,24 @@ export {
   type DoctorVisitSummary,
   type DoctorVisitSummaryResponse,
 } from './visitSummary.js';
+
+export {
+  REPORT_SHARE_CONSENT_VERSION,
+  REPORT_SHARE_WEEKS_OFFERED,
+  REPORT_SHARE_MONTHS_OFFERED,
+  reportShareKindSchema,
+  shareableReportSchema,
+  consultationSharedReportSchema,
+  consultationReportsResponseSchema,
+  shareReportsBodySchema,
+  revokeReportShareResponseSchema,
+  doctorSharedReportSchema,
+  doctorSharedReportsResponseSchema,
+  type ReportShareKind,
+  type ShareableReport,
+  type ConsultationSharedReport,
+  type ConsultationReportsResponse,
+  type ShareReportsBody,
+  type DoctorSharedReport,
+  type DoctorSharedReportsResponse,
+} from './reportShares.js';

@@ -1,5 +1,6 @@
 // Notes for the doctor — her notes (/health-notes), sharing them with a consultation
 // (/consultations/:id/notes), and the doctor's read-only view (/doctor/consultations/:id/notes).
+// She can take a shared note back at any time.
 //
 // Self-contained like medication and family: auth is injected, so this module carries no dependency
 // on index.ts. Validation errors go to the app's error handler through next().
@@ -107,10 +108,19 @@ type NoteRow = {
 };
 
 /**
- * She can take a shared note back until the doctor could have read it in the consultation: before
- * its start time, and before the doctor opened the call.
+ * She can take anything she shared back at any time — before, during or after the consultation.
+ * Only a cancelled consultation has nothing to take back: no doctor sees its shares.
  */
-export function canRevoke(consultation: ConsultationForShare, now: Date): boolean {
+export function canRevoke(consultation: { status: string }): boolean {
+  return consultation.status !== 'cancelled';
+}
+
+/**
+ * Before the doctor could have read it in the consultation: before its start time, and before the
+ * doctor opened the call. Sharing a note again updates the doctor's copy only until then — after
+ * that the copy the doctor read stands, and she can still take it back.
+ */
+export function beforeConsultationBegins(consultation: ConsultationForShare, now: Date): boolean {
   return (
     (consultation.status === 'pending' || consultation.status === 'confirmed') &&
     consultation.scheduledAt > now &&
@@ -118,7 +128,7 @@ export function canRevoke(consultation: ConsultationForShare, now: Date): boolea
   );
 }
 
-function serializeNote(row: NoteRow, now = new Date()): HealthNote {
+function serializeNote(row: NoteRow): HealthNote {
   return healthNoteSchema.parse({
     id: row.id,
     source: row.source,
@@ -133,7 +143,7 @@ function serializeNote(row: NoteRow, now = new Date()): HealthNote {
         specialistName: share.consultation.specialist.name,
         scheduledAt: share.consultation.scheduledAt.toISOString(),
         sharedAt: share.consentedAt.toISOString(),
-        canRevoke: canRevoke(share.consultation, now),
+        canRevoke: canRevoke(share.consultation),
       })),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -217,8 +227,7 @@ export function createHealthNotesRouter(deps: HealthNotesRouterDeps): Router {
         orderBy: { createdAt: 'desc' },
         take: MAX_NOTES_LISTED,
       })) as unknown as NoteRow[];
-      const now = new Date();
-      res.json(healthNotesResponseSchema.parse({ notes: rows.map((row) => serializeNote(row, now)) }));
+      res.json(healthNotesResponseSchema.parse({ notes: rows.map((row) => serializeNote(row)) }));
     } catch (e) {
       next(e);
     }
@@ -555,7 +564,7 @@ export function createConsultationNotesRouter(deps: HealthNotesRouterDeps): Rout
       select: { noteId: true, snapshotBody: true, consentedAt: true, note: { select: { source: true } } },
       orderBy: { consentedAt: 'asc' },
     });
-    const revocable = canRevoke(consultation, new Date());
+    const revocable = canRevoke(consultation);
     return consultationSharedNotesResponseSchema.parse({
       notes: shares.map((share) => ({
         noteId: share.noteId,
@@ -610,7 +619,7 @@ export function createConsultationNotesRouter(deps: HealthNotesRouterDeps): Rout
         consultationId: consultation.id,
         noteIds: body.noteIds,
         consentTextVersion: body.consentTextVersion,
-        updatable: canRevoke(consultation, new Date()),
+        updatable: beforeConsultationBegins(consultation, new Date()),
       });
       if (!outcome.ok) {
         if (outcome.reason === 'not_found') {
@@ -643,13 +652,10 @@ export function createConsultationNotesRouter(deps: HealthNotesRouterDeps): Rout
         notFound(res, NOTE_TEXT.consultationNotFound);
         return;
       }
-      if (!canRevoke(consultation, new Date())) {
-        res.status(409).json({ error: NOTE_TEXT.cannotRevoke });
-        return;
-      }
+      // At any time. The frozen text is cleared with it: once taken back, the doctor's copy is gone.
       const revoked = await prisma.healthNoteShare.updateMany({
         where: { consultationId: consultation.id, noteId: req.params.noteId, revokedAt: null },
-        data: { revokedAt: new Date() },
+        data: { revokedAt: new Date(), snapshotBody: '' },
       });
       if (revoked.count === 0) {
         notFound(res, NOTE_TEXT.noteNotFound);

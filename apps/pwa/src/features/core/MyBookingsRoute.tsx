@@ -15,6 +15,8 @@ import { announce } from '../../lib/a11y/announce';
 import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { fetchSharedNotes } from './notes/api';
 import { ShareNotesSheet } from './notes/ShareNotesSheet';
+import { fetchConsultationReports } from './reportShares/api';
+import { ShareReportsSheet } from './reportShares/ShareReportsSheet';
 import { fetchSharedSummary } from './visitSummary/api';
 import { VisitSummarySheet } from './visitSummary/VisitSummarySheet';
 import {
@@ -646,8 +648,11 @@ function RescheduleSheet({ booking, specialists, onClose, onDone }: RescheduleSh
   );
 }
 
-/** Which of her notes this doctor will see, and the way to choose them. */
-function NotesForBooking({ booking }: { booking: MyConsultation }) {
+/**
+ * Which of her notes this doctor will see, and the way to choose them. On a consultation that is
+ * over (`closed`) the row is there only while something is shared, so she can take it back.
+ */
+function NotesForBooking({ booking, closed = false }: { booking: MyConsultation; closed?: boolean }) {
   const { t } = useTranslation();
   const [count, setCount] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
@@ -663,6 +668,8 @@ function NotesForBooking({ booking }: { booking: MyConsultation }) {
       cancelled = true;
     };
   }, [booking.consultationId]);
+
+  if (closed && !count && !open) return null;
 
   return (
     <>
@@ -681,6 +688,7 @@ function NotesForBooking({ booking }: { booking: MyConsultation }) {
         <ShareNotesSheet
           consultationId={booking.consultationId}
           specialistName={booking.specialistName}
+          canShareMore={!closed}
           onClose={() => setOpen(false)}
           onChanged={setCount}
         />
@@ -689,8 +697,59 @@ function NotesForBooking({ booking }: { booking: MyConsultation }) {
   );
 }
 
-/** The summary of her logs this doctor has, or the way to make one. */
-function SummaryForBooking({ booking }: { booking: MyConsultation }) {
+/**
+ * Her reports this doctor can open — assessment, 14-day, weekly and monthly — and the way to choose
+ * them. Shown on a consultation that is over only while something is shared, so she can take it back.
+ */
+function ReportsForBooking({ booking, closed = false }: { booking: MyConsultation; closed?: boolean }) {
+  const { t } = useTranslation();
+  const [count, setCount] = useState<number | null>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchConsultationReports(booking.consultationId)
+      .then((reports) => {
+        if (!cancelled) setCount(reports.shared.length);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [booking.consultationId]);
+
+  if (closed && !count && !open) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        className="mt-2 flex min-h-11 w-full items-center justify-between rounded-[14px] bg-surface-container-low px-3 py-2.5 text-left text-[13px]"
+      >
+        <span className="font-semibold text-on-surface">{t('reports.forThisDoctor')}</span>
+        <span className="text-primary">
+          {count ? t('reports.sharedCount', { count }) : t('reports.addShort')} <span aria-hidden="true">→</span>
+        </span>
+      </button>
+      {open ? (
+        <ShareReportsSheet
+          consultationId={booking.consultationId}
+          specialistName={booking.specialistName}
+          onClose={() => setOpen(false)}
+          onChanged={setCount}
+        />
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * The summary of her logs this doctor has, or the way to make one. On a consultation that is over
+ * it is shown only while a summary is shared, so she can take it back.
+ */
+function SummaryForBooking({ booking, closed = false }: { booking: MyConsultation; closed?: boolean }) {
   const { t } = useTranslation();
   const [shared, setShared] = useState<boolean | null>(null);
   const [open, setOpen] = useState(false);
@@ -706,6 +765,8 @@ function SummaryForBooking({ booking }: { booking: MyConsultation }) {
       cancelled = true;
     };
   }, [booking.consultationId]);
+
+  if (closed && !shared && !open) return null;
 
   return (
     <>
@@ -924,10 +985,11 @@ export default function MyBookingsRoute() {
                 </div>
               ) : null}
 
-              {tab === 'upcoming' && booking.status !== 'cancelled' ? (
+              {booking.status !== 'cancelled' ? (
                 <>
-                  <NotesForBooking booking={booking} />
-                  <SummaryForBooking booking={booking} />
+                  <NotesForBooking booking={booking} closed={tab === 'past'} />
+                  <ReportsForBooking booking={booking} closed={tab === 'past'} />
+                  <SummaryForBooking booking={booking} closed={tab === 'past'} />
                 </>
               ) : null}
 
