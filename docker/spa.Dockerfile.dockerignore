@@ -1,0 +1,27 @@
+# Used instead of the repo-root .dockerignore when building docker/spa.Dockerfile (BuildKit picks
+# up <Dockerfile>.dockerignore). The root one excludes apps/pwa and apps/admin because it is
+# written for the API image.
+**/node_modules
+**/dist
+**/.turbo
+**/coverage
+.git
+.github
+.claude
+.env
+.env.*
+**/*.md
+**/.DS_Store
+
+apps/api
+apps/landing
+apps/livekit
+packages/database
+audit-oct-16
+feature-docs
+docs
+scripts
+Claude outputs
+*.docx
+*.csv
+firebase-service-account.json

@@ -10,17 +10,31 @@ hypotheticals.
 
 ## 0. What runs where
 
-| Service | Where | Notes |
-|---|---|---|
-| API (`@anuva/api`) | Coolify resource, repo-root `Dockerfile` | Needs ffmpeg + recordings mount |
-| Postgres | Coolify database, or managed | |
-| LiveKit + Egress + Redis | Coolify **Docker Compose** resource | `apps/livekit/docker-compose.prod.yml` |
-| Patient PWA | Vercel | build-time env only |
-| Doctor PWA | Vercel | build-time env only |
+Everything runs on one VPS under one Coolify instance. Nothing is on Vercel.
+
+| Service | Coolify resource | Built from | Domain |
+|---|---|---|---|
+| Postgres | **Database → PostgreSQL** | Coolify image | none (internal only) |
+| LiveKit + Egress + Redis | **Docker Compose** | `apps/livekit/docker-compose.prod.yml` | `livekit.<domain>` |
+| API (`@anuva/api`) | **Dockerfile** | `/Dockerfile` | `api.<domain>` |
+| Patient PWA | **Dockerfile** | `/docker/spa.Dockerfile`, `APP=pwa` | `app.<domain>` |
+| Doctor PWA | **Dockerfile** | `/docker/spa.Dockerfile`, `APP=doctor-pwa` | `doctor.<domain>` |
+| Family PWA | **Dockerfile** | `/docker/spa.Dockerfile`, `APP=family-pwa` | `family.<domain>` |
+| Admin panel | **Dockerfile** | `/docker/spa.Dockerfile`, `APP=admin` | `admin.<domain>` |
+| Landing site | **Dockerfile** | `/docker/landing.Dockerfile` | `<domain>`, `www.<domain>` |
+
+Deploy in this order: §1 DNS → §2 firewall → §3 host directories → §3a Postgres → §4–5 call
+stack → §6 API → §7 frontends → §7a data from the old server (only if you are keeping it) → §8
+test call.
 
 **The API and Egress must be on the same host.** The ffmpeg mixdown reads the recording files
 off local disk. Split them and the per-speaker files still work, but the combined track is never
 produced.
+
+**Server size.** 4 vCPU / 16 GB runs all of this. Steady state is ~4–5 GB RAM and well under one
+core; the spike is a Docker build during a deploy (2–4 GB, all cores for a few minutes), which
+competes with a live call. Set **Watch Paths** (§7) so a push only rebuilds what changed, and
+avoid deploying during consultation hours.
 
 ---
 
@@ -33,8 +47,17 @@ the name does not resolve yet.
 |---|---|
 | `api.<domain>` | API |
 | `livekit.<domain>` | LiveKit signaling (WebSocket) |
-| `app.<domain>` | Patient PWA (or Vercel domain) |
+| `app.<domain>` | Patient PWA |
 | `doctor.<domain>` | Doctor PWA |
+| `family.<domain>` | Family PWA |
+| `admin.<domain>` | Admin panel |
+| `<domain>` and `www.<domain>` | Landing site |
+
+All of them are A records to the new VPS IP. If a name is currently attached to a Vercel project,
+**remove the domain from that Vercel project** as well as changing DNS. Otherwise Vercel keeps
+answering on its own IP for anyone with cached DNS, and nobody can tell which copy they got.
+
+Lower the TTL on the old records to 300 a day before the switch so the cutover is quick.
 
 Verify before moving on:
 
@@ -91,22 +114,52 @@ Never leave a bare `nc -ulp 7882` running. See troubleshooting: *address already
 
 ---
 
-## 3. Recordings directory
+## 3. Host directories
 
-Create it before deploying, so Docker does not create it root-owned:
+Nothing to do by hand. The `host-dirs` service in `apps/livekit/docker-compose.prod.yml` runs
+once, before Egress starts, and creates:
 
-```bash
-sudo mkdir -p /data/anuva/recordings
-sudo chmod 777 /data/anuva/recordings
-ls -ld /data/anuva/recordings
-```
+| Host directory | Mode | Used by |
+|---|---|---|
+| `/data/anuva/recordings` | 777 | Egress writes (uid 1001), API reads for the mixdown |
+| `/data/anuva/consultation-documents` | 700 | API |
+| `/data/anuva/health-notes` | 700 | API |
+| `/data/anuva/data-exports` | 700 | API |
 
-Expected: `drwxrwxrwx ... /data/anuva/recordings`
+So **deploy the call stack (§5) before the API (§6)**. Otherwise Docker creates the API's mount
+sources itself, as root:root 755. For the API's 700 directories that's harmless, but for
+`recordings` it means Egress can't write. If that happens, redeploy the call stack: `host-dirs`
+re-applies the modes.
 
-777 is deliberate. The Egress container writes as **uid 1001** and the API container reads as a
-different user; both need access. Tighten to a shared group later if you care.
+777 on `recordings` is deliberate. The Egress container writes as **uid 1001** and the API
+container reads as a different user, so both need access. Tighten it to a shared group later if
+you care.
 
 > These are medical recordings. This directory is staging, not storage — see §9.
+
+The API also writes three kinds of files that **must outlive a redeploy**. Without a mount they
+land inside the container (`.data/` next to the code) and are deleted the next time you push to
+`main`:
+
+| API env var | What it holds | Host directory |
+|---|---|---|
+| `CONSULTATION_DOC_DIR` | Prescriptions, diet plans uploaded by doctors | `/data/anuva/consultation-documents` |
+| `HEALTH_NOTE_DIR` | Patients' health-note uploads | `/data/anuva/health-notes` |
+| `DATA_EXPORT_DIR` | DPDP data-export bundles | `/data/anuva/data-exports` |
+
+---
+
+## 3a. Postgres
+
+Coolify → **+ New Resource → Database → PostgreSQL** (16 or 17).
+
+- Leave **Make it publicly available** off. Only the API connects, over Coolify's internal network.
+- Copy the **Postgres URL (internal)**. It looks like
+  `postgres://postgres:<pw>@<uuid>:5432/postgres` and becomes the API's `DATABASE_URL` in §6.
+- **Backups → add a schedule** (daily) to S3-compatible storage *off this server*, such as OVH
+  Object Storage or Backblaze B2. A backup on the same disk is lost with the disk.
+
+You don't need to create a schema. The API runs `prisma migrate deploy` every time it starts (§6).
 
 ---
 
@@ -233,18 +286,26 @@ Coolify → **+ New Resource → Dockerfile**, same repo, `/Dockerfile`.
 - Domain: `https://api.<domain>`
 - Port: `3001`
 
-**Storages → add a Directory Mount** (a bind mount — *not* "Volume Mount", which creates a named
-volume Egress cannot share):
+**Storages → add a Directory Mount** for each of these (a bind mount, *not* "Volume Mount",
+which creates a named volume that Egress cannot share):
 
 ```
-/data/anuva/recordings   →   /recordings
+/data/anuva/recordings                →   /recordings
+/data/anuva/consultation-documents    →   /data/consultation-documents
+/data/anuva/health-notes              →   /data/health-notes
+/data/anuva/data-exports              →   /data/data-exports
 ```
 
 Environment:
 
 ```bash
-DATABASE_URL=postgres://...
+DATABASE_URL=<Postgres URL (internal) from §3a>
 PORT=3001
+TRUST_PROXY=1                             # behind Coolify's proxy: real client IPs for rate limits
+
+CONSULTATION_DOC_DIR=/data/consultation-documents
+HEALTH_NOTE_DIR=/data/health-notes
+DATA_EXPORT_DIR=/data/data-exports
 
 LIVEKIT_URL=wss://livekit.<domain>
 LIVEKIT_API_KEY=<same as step 4>
@@ -265,6 +326,9 @@ SESSION_COOKIE_DOMAIN=.<domain>
 
 TWOFACTOR_API_KEY=...
 FIREBASE_SERVICE_ACCOUNT_JSON=<service account JSON, single line>
+PUSH_PROVIDER=webpush
+VAPID_PUBLIC_KEY=<copy from the old server — do NOT generate new ones>
+VAPID_PRIVATE_KEY=<copy from the old server>
 PUSH_BROADCAST_SECRET=<random>
 NUDGE_TIMEZONE=Asia/Kolkata
 OPENAI_API_KEY=...                        # omit and /anu/chat returns 503
@@ -312,48 +376,122 @@ ffmpeg means no combined recording — the image must be built from a commit tha
 
 ---
 
-## 7. Deploy the PWAs (Vercel)
+## 7. Deploy the frontends
 
-Two projects, each with **Root Directory** set:
+Five **Dockerfile** resources from the same repo, each with Base Directory `/` and port `80`.
+They are plain nginx serving static files, about 10 MB of RAM each.
 
-| Project | Root Directory |
-|---|---|
-| Patient | `apps/pwa` |
-| Doctor | `apps/doctor-pwa` |
+| Resource | Dockerfile Location | Build variable `APP` | Domain |
+|---|---|---|---|
+| Patient | `/docker/spa.Dockerfile` | `pwa` | `https://app.<domain>` |
+| Doctor | `/docker/spa.Dockerfile` | `doctor-pwa` | `https://doctor.<domain>` |
+| Family | `/docker/spa.Dockerfile` | `family-pwa` | `https://family.<domain>` |
+| Admin | `/docker/spa.Dockerfile` | `admin` | `https://admin.<domain>` |
+| Landing | `/docker/landing.Dockerfile` | none | `https://<domain>,https://www.<domain>` |
 
-Enable **"Include files outside of the Root Directory"** — both apps import the `@anuva/shared`
-workspace package, and the doctor app's Vite `publicDir` points at `apps/pwa/public`.
-
-Build-time environment (`VITE_*` values are inlined at build, so **changing one needs a rebuild,
-not a restart**):
+Environment for the four SPAs. Tick **Build Variable** on every one, because Vite inlines them
+when it builds and never reads them at runtime. So **changing one needs a redeploy, not a
+restart**:
 
 ```bash
-VITE_API_URL=https://api.<domain>
-VITE_FIREBASE_API_KEY=...
+APP=pwa                                   # per the table
+VITE_API_URL=https://api.<domain>         # the build refuses to run without it
+VITE_FIREBASE_API_KEY=...                 # patient, doctor, family: same Firebase project
 VITE_FIREBASE_AUTH_DOMAIN=...
 VITE_FIREBASE_PROJECT_ID=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 VITE_FIREBASE_VAPID_KEY=...
-VITE_FREE_TRIAL_DAYS=14
+VITE_FREE_TRIAL_DAYS=14                   # patient only
+VITE_SENTRY_DSN=...                       # optional
+SENTRY_AUTH_TOKEN= SENTRY_ORG= SENTRY_PROJECT=   # optional: source-map upload
 ```
 
-Two traps, both of which produce a *successful build* that misbehaves at runtime:
+The admin panel needs only `APP` and `VITE_API_URL`. The family app **refuses to build** if
+any Firebase value is missing or malformed. That check is on purpose, because without them
+push to family members dies silently. Set `ALLOW_MISSING_FIREBASE=1` only for a build that
+should genuinely have no push.
 
-1. **In `vercel.json`, build variables go under `build.env`, not top-level `env`.** Top-level
-   `env` declares runtime variables for Serverless Functions; a static Vite build never reads it.
-2. **`turbo.json` must declare the variables.** Turborepo filters task environments and strips
-   anything undeclared. The `build` task carries `"env": ["VITE_*"]` for this reason.
+Landing: one build variable, `WEB3FORMS_ACCESS_KEY` (contact form). It publishes only the pages
+listed in `apps/landing/build.sh`; add a new page there or it won't ship.
 
-If either is wrong, `VITE_API_URL` is `undefined`, `API_BASE_URL` falls back to `''`, and the app
-calls **its own origin** — the SPA rewrite then serves `index.html`, so requests return `200`/`304`
-HTML instead of failing loudly. Verify the value actually shipped:
+`docker/spa.Dockerfile` builds with `pnpm --filter "@anuva/<app>..."`, not turbo, because turbo
+drops undeclared env vars (it only knows `VITE_*`). The nginx config gives hashed `/assets/*` a
+one-year cache, and sends `no-cache` on `index.html`, the service workers, `firebase-config.js`
+and the manifest, so a deploy reaches already-installed apps.
+
+### Watch Paths
+
+Every resource deploys on every push to `main` unless you limit it. Set **Watch Paths** on each
+one so that, for example, a landing copy change doesn't rebuild the API in the middle of a call:
+
+| Resource | Watch Paths |
+|---|---|
+| API | `apps/api/**` `packages/**` `Dockerfile` `pnpm-lock.yaml` |
+| Call stack | `apps/livekit/docker-compose.prod.yml` |
+| Patient | `apps/pwa/**` `packages/shared/**` `docker/spa.*` `docker/nginx-spa.conf` `pnpm-lock.yaml` |
+| Doctor | `apps/doctor-pwa/**` `apps/pwa/public/**` `packages/shared/**` `docker/spa.*` `docker/nginx-spa.conf` `pnpm-lock.yaml` |
+| Family | `apps/family-pwa/**` `packages/shared/**` `docker/spa.*` `docker/nginx-spa.conf` `pnpm-lock.yaml` |
+| Admin | `apps/admin/**` `packages/shared/**` `docker/spa.*` `docker/nginx-spa.conf` `pnpm-lock.yaml` |
+| Landing | `apps/landing/**` `docker/landing.*` `docker/nginx-landing.conf` |
+
+The doctor app's Vite `publicDir` is `apps/pwa/public`, which is why that path is in its row.
+
+### Verify each SPA shipped the API URL
 
 ```bash
-JS=$(curl -s https://doctor.<domain>/ | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' | head -1)
-curl -s "https://doctor.<domain>$JS" | grep -c "api\.<domain>"
+for h in app doctor family admin; do
+  JS=$(curl -s https://$h.<domain>/ | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+  echo "$h: $(curl -s "https://$h.<domain>$JS" | grep -c "api\.<domain>")"
+done
 ```
-Expected: `1` or more. `0` means the variable was stripped.
+Expected: `1` or more for each. A `0` means `VITE_API_URL` was not a *build* variable. When that
+happens the app calls its own origin, nginx serves `index.html`, and requests return `200` HTML
+instead of failing loudly.
+
+```bash
+curl -sI https://app.<domain>/sw.js | grep -i cache-control          # no-cache
+curl -sI https://<domain>/about.html | grep -i '^location'           # /about
+```
+
+---
+
+## 7a. Data from the old server (skip for a clean start)
+
+Skip this section if the new server is starting empty. If the old one has real users, move
+everything **in one maintenance window**. Stop the old API first so nothing is written halfway
+through.
+
+```bash
+# on the OLD server: database
+pg_dump -Fc --no-owner --no-acl "$OLD_DATABASE_URL" > anuva.dump
+
+# on the NEW server, with the API resource stopped:
+pg_restore --no-owner --no-acl -d "<Postgres URL (internal)>" anuva.dump
+#   (run it inside the Postgres container: docker exec -i <pg-container> pg_restore ... < anuva.dump)
+```
+
+Files: copy recordings, consultation documents, health notes and data exports into the matching
+`/data/anuva/*` directories (`rsync -a old:/path/ /data/anuva/<dir>/`). Find where the old server
+kept them from its env vars. If one was never set on the old server, those files lived inside
+the old API container and are lost when it is recreated, so copy them out with `docker cp`
+**before** you tear it down.
+
+Carry these over **unchanged**. A new value breaks something that already exists:
+
+| Value | What a new one breaks |
+|---|---|
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Every existing push subscription: no patient or family member gets a notification until they re-subscribe |
+| `FAMILY_INVITE_SECRET` | Every outstanding family invite link |
+| `LIVEKIT_API_KEY` / `SECRET` | Nothing lasting (tokens last 2h), so these can be fresh |
+| Session cookie names / domain | Everyone is signed out (survivable, but avoidable) |
+
+Then start the API. `prisma migrate deploy` applies any migrations the dump doesn't have yet.
+
+```bash
+# row counts should match the old server
+docker exec <pg-container> psql -U postgres -c 'SELECT count(*) FROM "User";'
+```
 
 ---
 
@@ -428,9 +566,12 @@ Finally, in the patient app: **Profile → Your consultations → Past → Play 
 | `Local upload failed: ... permission denied` | `/out` is a named volume, not a bind mount | See §5 mount verification |
 | Two speaker files, **no `-mixed.ogg`** | API cannot read the files, or ffmpeg missing | Check the API's `/recordings` mount and `ffmpeg -version` |
 | Nothing records and no consent row exists | Consent gates **every** recording, the doctor's included | Patient must pass the consent screen |
-| PWA calls its own domain instead of the API | `VITE_API_URL` stripped | See §7 — `build.env` and `turbo.json` |
+| PWA calls its own domain instead of the API | `VITE_API_URL` not set as a **Build Variable** in Coolify | Tick *Build Variable*, redeploy (§7) |
 | Patient login fails on the PWA | Cross-subdomain cookies | `SESSION_COOKIE_SAME_SITE=none`, `SECURE=true`, `DOMAIN=.<domain>` |
-| Vercel build fails `ERR_PNPM_OUTDATED_LOCKFILE` | `pnpm-lock.yaml` out of sync with a `package.json` | `pnpm install` locally, commit the lockfile |
+| Build fails `ERR_PNPM_OUTDATED_LOCKFILE` | `pnpm-lock.yaml` out of sync with a `package.json` | `pnpm install` locally, commit the lockfile |
+| Uploaded prescriptions / health notes vanish after a deploy | `CONSULTATION_DOC_DIR` / `HEALTH_NOTE_DIR` unset or not mounted | §3 and §6 directory mounts |
+| Doctor recording starts, patient's never does | Egress refusing the second job on CPU reservation | Check `participant_cpu_cost: 0.5` is in the egress config; `docker logs <egress> \| grep -i cpu` |
+| `https://` page redirects to `http://` | nginx built an absolute redirect | `absolute_redirect off` in `docker/nginx-*.conf` |
 
 ### Useful one-liners
 

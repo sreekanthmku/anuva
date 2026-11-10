@@ -1,0 +1,6 @@
+# Only the landing site goes into this image.
+*
+!apps/landing
+apps/landing/_snapshots
+apps/landing/**/*.bak
+!docker/nginx-landing.conf

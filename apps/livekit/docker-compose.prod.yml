@@ -19,6 +19,27 @@
 #   (recordings bind-mount path is literal in the egress service, see comment there)
 
 services:
+  # One-shot: creates the host directories before anything uses them, so no one has to SSH in.
+  # Docker would otherwise create a missing bind-mount source as root:root 755, and Egress (uid
+  # 1001) could not write a single recording. The API's own data directories are made here too,
+  # 700 because only the API (root) reads them. Exits 0 and stays stopped; Coolify is told to
+  # leave it out of the resource's health status.
+  host-dirs:
+    image: alpine:3.20
+    restart: 'no'
+    exclude_from_hc: true
+    command:
+      - sh
+      - -c
+      - >-
+        mkdir -p /data/anuva/recordings /data/anuva/consultation-documents
+        /data/anuva/health-notes /data/anuva/data-exports &&
+        chmod 777 /data/anuva/recordings &&
+        chmod 700 /data/anuva/consultation-documents /data/anuva/health-notes /data/anuva/data-exports &&
+        ls -ld /data/anuva/*
+    volumes:
+      - /data/anuva:/data/anuva
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -70,6 +91,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      host-dirs:
+        condition: service_completed_successfully
     # Egress needs elevated privileges for its media pipeline.
     cap_add:
       - SYS_ADMIN
@@ -82,8 +105,14 @@ services:
         log_level: info
         redis:
           address: redis:6379
-    # Egress runs as uid 1001, so the host directory must be writable by it:
-    #   sudo mkdir -p /data/anuva/recordings && sudo chmod 777 /data/anuva/recordings
+        # Egress reserves CPU per job before accepting it, and stops at 80% of the host's cores.
+        # The participant default is 2 cores, so on a 4-vCPU box one call's two speaker
+        # recordings (4 cores) can never both start — the second is refused. Audio-only
+        # participant egress really uses a fraction of a core, so reserve 0.5.
+        cpu_cost:
+          participant_cpu_cost: 0.5
+    # Egress runs as uid 1001, so the host directory must be writable by it. The host-dirs
+    # service above creates it 777 before Egress starts.
     #
     # The path is written literally on purpose. Coolify does not interpolate variables inside
     # `volumes:` — it reads `${RECORDINGS_HOST_DIR}` as a volume *name* and silently creates a
