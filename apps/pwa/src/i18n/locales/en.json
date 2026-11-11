@@ -1399,7 +1399,7 @@
     }
   },
   "booking": {
-    "freeBadge": "★ Included free · first consult",
+    "freeBadge": "★ Subscribers only",
     "title": "Book with a <1>specialist</1>",
     "subtitle": "30-minute call · reschedule anytime",
     "loadingSpecialists": "Loading specialists...",
@@ -1442,7 +1442,7 @@
     "confirmFailed": "Unable to confirm your booking right now.",
     "locked": {
       "title": "Subscribe for consultations",
-      "body": "Booking a doctor comes with a subscription. Until then, keep tracking with ANU.",
+      "body": "Booking a doctor comes with a subscription. Until then, keep tracking.",
       "tag": "Subscribe to book"
     }
   },
