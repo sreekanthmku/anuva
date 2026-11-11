@@ -778,7 +778,8 @@
     "menu": {
       "assessmentReport": {
         "label": "View my assessment report",
-        "hint": "Your personalised report · save as PDF"
+        "hint": "Your personalised report · save as PDF",
+        "availableOn": "Ready on {{date}}, after your first 14 days"
       },
       "bookings": {
         "label": "Your consultations",
@@ -1955,7 +1956,9 @@
     "backToProfile": "← Profile",
     "eyebrow": "Your assessment report",
     "preparing": "Preparing your report…",
-    "additionalFocus": "Additional focus"
+    "additionalFocus": "Additional focus",
+    "notReadyTitle": "Your report is on its way",
+    "notReadyBody": "It will be ready on {{date}}, once your first 14 days of tracking are in."
   },
   "datePicker": {
     "close": "Close date picker",

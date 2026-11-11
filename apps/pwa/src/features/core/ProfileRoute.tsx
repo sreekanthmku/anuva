@@ -7,6 +7,7 @@ import { FamilyConnectionSection } from '../family/FamilyConnectionSection';
 import { DATE_OF_BIRTH_KEY, ageFromDateOfBirth } from './ageFromDateOfBirth';
 import { BottomNav } from './components/BottomNav';
 import { useDetailedAssessment } from './hooks/useDetailedAssessment';
+import { isReport14Available, report14ReadyDate } from './report14Guide';
 
 /** Order and destination only. Label and hint are `profile.menu.<key>`. */
 const menuRows: { key: string; to?: string }[] = [
@@ -35,6 +36,9 @@ export default function ProfileRoute() {
   // against today, and never stored. No line until she has given it.
   const { data: detailedAssessment } = useDetailedAssessment();
   const age = ageFromDateOfBirth(detailedAssessment?.answers[DATE_OF_BIRTH_KEY]);
+  // The assessment report opens once her first 14 days are over; until then the row says when.
+  const reportReadyOn = isReport14Available(user) ? null : report14ReadyDate(user);
+  const rowLocked = (key: string) => key === 'assessmentReport' && reportReadyOn !== null;
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
@@ -102,8 +106,11 @@ export default function ProfileRoute() {
               <li key={row.key}>
                 <button
                   type="button"
-                  onClick={row.to ? () => navigate(row.to as string) : undefined}
-                  className="flex w-full flex-col items-start gap-0.5 px-5 py-4 text-left transition-colors hover:bg-primary-container/60"
+                  onClick={
+                    row.to && !rowLocked(row.key) ? () => navigate(row.to as string) : undefined
+                  }
+                  disabled={rowLocked(row.key)}
+                  className="flex w-full flex-col items-start gap-0.5 px-5 py-4 text-left transition-colors hover:bg-primary-container/60 disabled:cursor-default disabled:opacity-60 disabled:hover:bg-transparent"
                 >
                   <span
                     className="text-[15px] text-on-surface"
@@ -115,7 +122,14 @@ export default function ProfileRoute() {
                     className="text-[12px] text-on-surface-variant"
                     style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                   >
-                    {t(`profile.menu.${row.key}.hint`)}
+                    {rowLocked(row.key) && reportReadyOn
+                      ? t('profile.menu.assessmentReport.availableOn', {
+                          date: reportReadyOn.toLocaleDateString(i18n.language, {
+                            day: 'numeric',
+                            month: 'short',
+                          }),
+                        })
+                      : t(`profile.menu.${row.key}.hint`)}
                   </span>
                 </button>
               </li>

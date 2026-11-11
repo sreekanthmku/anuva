@@ -9,6 +9,7 @@ import { ApiError, apiFetch, apiUrl } from '../../shared/lib/api';
 import { useAuth } from '../auth/auth-context';
 import { markReport14Opened } from '../auth/session';
 import { BottomNav } from './components/BottomNav';
+import { isReport14Available, report14ReadyDate } from './report14Guide';
 
 /**
  * Your Assessment Report.
@@ -109,7 +110,51 @@ function Recommendations({ blocks }: { blocks: RecommendationBlock[] }) {
   );
 }
 
+/**
+ * The report opens once her first 14 days are over (`isReport14Available`, the same rule as the
+ * Profile row and Home's guide). Before that this says when, without asking the API for a report.
+ */
 export default function AssessmentReportRoute() {
+  const { user } = useAuth();
+  const readyOn = isReport14Available(user) ? null : report14ReadyDate(user);
+  return readyOn ? <ReportNotReady readyOn={readyOn} /> : <AssessmentReport />;
+}
+
+function ReportNotReady({ readyOn }: { readyOn: Date }) {
+  const { t, i18n: i18next } = useTranslation();
+  const navigate = useNavigate();
+  const date = readyOn.toLocaleDateString(i18next.language, { day: 'numeric', month: 'long' });
+
+  return (
+    <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
+      <header className="sticky top-0 z-30 bg-surface px-3 pb-4 pt-[max(0.875rem,env(safe-area-inset-top))]">
+        <button
+          type="button"
+          onClick={() => navigate('/profile')}
+          aria-label={t('a11y.summary.backTo', { place: t('nav.profile') })}
+          className="bg-transparent p-0 text-[13px] text-on-surface-variant"
+          style={{ fontFamily: MULISH }}
+        >
+          {t('assessmentReport.backToProfile')}
+        </button>
+      </header>
+      <section className="px-3 pb-6 pt-2">
+        <Eyebrow>{t('assessmentReport.eyebrow')}</Eyebrow>
+        <div className="rounded-[20px] border border-border-default bg-surface-raised px-5 py-6">
+          <h1 className="mb-2 font-display text-[21px] leading-tight text-on-surface">
+            {t('assessmentReport.notReadyTitle')}
+          </h1>
+          <p className="text-[14px] leading-relaxed text-on-surface-variant" style={{ fontFamily: MULISH }}>
+            {t('assessmentReport.notReadyBody', { date })}
+          </p>
+        </div>
+      </section>
+      <BottomNav />
+    </main>
+  );
+}
+
+function AssessmentReport() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
