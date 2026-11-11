@@ -403,7 +403,8 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 VITE_FIREBASE_VAPID_KEY=...
 VITE_FREE_TRIAL_DAYS=14                   # patient only
-VITE_SENTRY_DSN=...                       # optional
+VITE_SENTRY_DSN=...                       # optional; the beta bug reporter sends to Sentry, so it needs this
+VITE_BETA_MODE=true                       # patient, doctor, family: shows the beta bug-report tab (off: hidden)
 SENTRY_AUTH_TOKEN= SENTRY_ORG= SENTRY_PROJECT=   # optional: source-map upload
 ```
 
