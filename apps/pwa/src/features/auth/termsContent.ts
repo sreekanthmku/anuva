@@ -10,7 +10,13 @@
  * documents, not string by string.
  */
 
-export type LegalSection = { heading: string; body: string[] };
+/** A link inside a paragraph. `http(s)` links open in a new tab; `mailto:` opens the mail app. */
+export type LegalLink = { text: string; href: string };
+
+/** Plain text, or text with links in it, as a list of runs. */
+export type LegalParagraph = string | (string | LegalLink)[];
+
+export type LegalSection = { heading: string; body: LegalParagraph[] };
 
 export type LegalDocument = {
   title: string;
@@ -68,7 +74,7 @@ export const TERMS_OF_USE: LegalDocument = {
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: 'Privacy Policy',
-  updated: 'Draft · October 2026',
+  updated: 'Draft · November 2026',
   sections: [
     {
       heading: '1. What we collect',
@@ -85,25 +91,38 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: '3. Who we share it with',
       body: [
-        'Doctors see only what you choose to share with them for a consultation. Family members you invite see only what the app tells you they will see, and you can disconnect them at any time.',
+        'Doctors see only what you choose to share with them for a consultation. Family members you invite see only what you have shared with them, and you can disconnect them at any time.',
         'Service providers that help us run the app (for example, hosting, SMS and AI providers) process data on our behalf. The full list is in Privacy in the app.',
       ],
     },
     {
       heading: '4. How long we keep it',
       body: [
-        'We keep your data while your account is open. Consultation records are kept for the period medical rules require, even if you delete your account.',
+        'We keep your data for as long as your account is active, or until you delete it.',
+        [
+          'Consultations and other medical records will be kept as per the rules mentioned at ',
+          { text: 'www.nrces.in', href: 'https://www.nrces.in' },
+          ', even if you delete your account.',
+        ],
       ],
     },
     {
       heading: '5. Your choices',
       body: [
         'You can download your data, delete parts of it, or delete your account from Privacy in the app.',
+        'Once you have deleted something, we will not be able to retrieve it.',
       ],
     },
     {
-      heading: '6. Contact',
-      body: ['Questions about your privacy? Write to us from Help in the app.'],
+      heading: '6. Contact and grievances',
+      body: [
+        'Questions about your privacy? Write to us from Help in the app.',
+        [
+          'For grievances, write to ',
+          { text: 'hello@phasewellhealth.com', href: 'mailto:hello@phasewellhealth.com' },
+          '.',
+        ],
+      ],
     },
   ],
 };

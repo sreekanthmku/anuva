@@ -7,9 +7,16 @@ import { TERMS_CONSENT_VERSION } from '@anuva/shared';
 export const TERMS_REQUIRED_MESSAGE =
   'Please accept the latest Terms of Use and Privacy Policy to create an account.';
 
-/** A missing or stale version is not an agreement to the documents as they stand today. */
+/**
+ * The version before the current one, still accepted for now: an installed app that has not yet
+ * picked up the new text shows the old documents, and someone signing up from it agreed to exactly
+ * those, so that is the version recorded. Drop it once installed apps have updated.
+ */
+export const PREVIOUS_TERMS_CONSENT_VERSION = 'terms-privacy-v1';
+
+/** A missing or older version is not an agreement to the documents as they stand today. */
 export function hasAcceptedCurrentTerms(termsVersion: string | undefined): termsVersion is string {
-  return termsVersion === TERMS_CONSENT_VERSION;
+  return termsVersion === TERMS_CONSENT_VERSION || termsVersion === PREVIOUS_TERMS_CONSENT_VERSION;
 }
 
 /** Nested `consentRecords` create for `prisma.user.create`. */

@@ -6,8 +6,10 @@ import { TERMS_REQUIRED_MESSAGE, hasAcceptedCurrentTerms, termsConsentCreate } f
 // stored with the account. These pin the rule and the record it writes.
 
 describe('hasAcceptedCurrentTerms', () => {
-  it('accepts only the current version', () => {
+  it('accepts the current version, and the previous one while installed apps update', () => {
     expect(hasAcceptedCurrentTerms(TERMS_CONSENT_VERSION)).toBe(true);
+    expect(TERMS_CONSENT_VERSION).toBe('terms-privacy-v2');
+    expect(hasAcceptedCurrentTerms('terms-privacy-v1')).toBe(true);
   });
 
   it('refuses a missing, empty or stale version', () => {

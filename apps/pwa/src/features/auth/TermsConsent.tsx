@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
-import { PRIVACY_POLICY, TERMS_OF_USE, type LegalDocument } from './termsContent';
+import { PRIVACY_POLICY, TERMS_OF_USE, type LegalDocument, type LegalParagraph } from './termsContent';
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 
@@ -95,9 +95,9 @@ function TermsDialog({
           {doc.sections.map((section) => (
             <section key={section.heading} className="mt-3">
               <h3 className="text-[14px] font-semibold text-on-surface">{section.heading}</h3>
-              {section.body.map((paragraph) => (
-                <p key={paragraph} className="mt-1.5 text-[13.5px] leading-[1.6] text-on-surface-variant">
-                  {paragraph}
+              {section.body.map((paragraph, index) => (
+                <p key={index} className="mt-1.5 text-[13.5px] leading-[1.6] text-on-surface-variant">
+                  <LegalText paragraph={paragraph} />
                 </p>
               ))}
             </section>
@@ -175,6 +175,29 @@ export function TermsConsent({ accepted, onChange }: { accepted: boolean; onChan
         </span>
       </label>
       {open ? <TermsDialog initial={open} onClose={() => setOpen(null)} onAgree={() => onChange(true)} /> : null}
+    </>
+  );
+}
+
+/** A paragraph's text, with its links. Web links open in a new tab so the sign-up form stays put. */
+function LegalText({ paragraph }: { paragraph: LegalParagraph }) {
+  if (typeof paragraph === 'string') return <>{paragraph}</>;
+  return (
+    <>
+      {paragraph.map((run, index) => {
+        if (typeof run === 'string') return <span key={index}>{run}</span>;
+        const external = /^https?:/.test(run.href);
+        return (
+          <a
+            key={index}
+            href={run.href}
+            {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            className="font-semibold text-primary underline underline-offset-2"
+          >
+            {run.text}
+          </a>
+        );
+      })}
     </>
   );
 }

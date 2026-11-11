@@ -7,7 +7,7 @@ export const authPurposeSchema = z.enum(['login', 'signup']);
  * refused by the API when missing or stale, and stored as a ConsentRecord with the account. Bump it
  * whenever either document changes materially.
  */
-export const TERMS_CONSENT_VERSION = 'terms-privacy-v1';
+export const TERMS_CONSENT_VERSION = 'terms-privacy-v2';
 
 /** The version of the Terms and Privacy Policy she ticked. Required to create an account. */
 const termsVersion = z.string().trim().min(1).max(40).optional();
