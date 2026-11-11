@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Night Sweats in Perimenopause | ANUVA Wellness</title>
 <meta name="description" content="Night Sweats during perimenopause: what it can feel like, why it may happen, support options to explore, and what Indian research says about how common it is.">
 <meta name="theme-color" content="#F7F0E8">
@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Mulish:wght@300..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/page.css">
-<link rel="stylesheet" href="/symptom.css">
-<link rel="stylesheet" href="/bg-lighter.css"><!-- EXPERIMENT: bg-lighter; remove this line to revert -->
+<link rel="stylesheet" href="/page.css?v=20261107e">
+<link rel="stylesheet" href="/symptom.css?v=20261107e">
+<link rel="stylesheet" href="/bg-lighter.css?v=20261107e"><!-- EXPERIMENT: bg-lighter; remove this line to revert -->
 </head>
 <body>
 
@@ -25,7 +25,7 @@
   <div class="bar">
     <a class="brand" href="/" aria-label="ANUVA WELLNESS - home">
       <img src="/anuva-logo-mark.png" width="206" height="144" alt="" decoding="async">
-      <span class="wordmark">ANUVA <span>WELLNESS</span></span>
+      <span class="brand-text"><span class="wordmark">ANUVA <span>WELLNESS</span></span><span class="tagline">Wellness for her, Understanding for all</span></span>
     </a>
     <nav class="site-nav" aria-label="Primary">
         <a href="/">Home</a>
@@ -176,7 +176,7 @@
     <div class="about">
       <img src="/anuva-logo-mark.png" width="206" height="144" alt="" decoding="async">
       <div class="wordmark">ANUVA <span>WELLNESS</span></div>
-      <p>Research-backed perimenopause care, personalized for you. Nutrition, expert
+      <p>Research-backed perimenopause care, personalised for you. Nutrition, expert
          consultations, daily tracking and someone to ask at any hour.</p>
       <div class="socials">
         <a href="https://www.instagram.com/anuvawellness/" target="_blank" rel="noopener noreferrer" aria-label="ANUVA WELLNESS on Instagram"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.5"></rect><circle cx="12" cy="12" r="4.2"></circle><circle cx="17.4" cy="6.6" r="1.15" fill="currentColor" stroke="none"></circle></svg></a>
@@ -195,18 +195,8 @@
         <li><a href="/#symptoms">Symptoms</a></li>
         <li><a href="/#how-it-works">How It Works</a></li>
         <li><a href="/#included">What&#39;s Included</a></li>
-        <li><a href="/#pricing">Pricing</a></li>
         <li><a href="/#faqs">FAQs</a></li>
-      </ul>
-    </div>
-
-    <div>
-      <h2>Company</h2>
-      <ul>
-        <li><a href="/about">About Us</a></li>
         <li><a href="/contact">Contact Us</a></li>
-        <li><a href="https://open.spotify.com/show/6mHEkv3QAvV6bsFXPOseb7" target="_blank" rel="noopener noreferrer">Our Podcast <span class="ext" aria-hidden="true">&#8599;</span></a></li>
-        <li><a href="https://app.anuvawellness.com">Start Free Trial</a></li>
       </ul>
     </div>
 
@@ -221,10 +211,72 @@
   </div>
 
   <div class="base">
-    <span>&copy; 2026 ANUVA Wellness. All rights reserved.</span>
+    <span>&copy; 2026 Phasewell Health Pvt Ltd. All rights reserved.</span>
     <span>Made with care in India &middot; <a href="/contact">Get in touch</a></span>
   </div>
 </footer>
+
+<script>
+// Header tagline: sized and nudged so its visible ink starts and ends exactly
+// where the ink of "ANUVA WELLNESS" does, on every device. The first and last
+// letters of each line are drawn on a canvas in the page's own font and their
+// pixels scanned, so the edges are the real letter tips (the foot of the "A",
+// the top of the italic "W"), not the text boxes. Re-run when fonts arrive
+// and on resize.
+(function () {
+  var wm = document.querySelector('.site-header .wordmark');
+  var tg = document.querySelector('.site-header .tagline');
+  if (!wm || !tg) return;
+  var S = 6, cv = document.createElement('canvas'), ctx = cv.getContext('2d', { willReadFrequently: true });
+  function texts(el) { var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), n, out = []; while ((n = w.nextNode())) if (n.nodeValue.trim()) out.push(n); return out; }
+  // ink extent of one character drawn at x=0: [left, right] in CSS px,
+  // measured against its own advance box
+  function glyph(ch, node) {
+    var cs = getComputedStyle(node.parentNode), size = parseFloat(cs.fontSize);
+    // drawn at the real font size and scaled up (not at a bigger font size):
+    // Fraunces changes its letter shapes with size (optical sizing)
+    var font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + size + 'px ' + cs.fontFamily;
+    var pad = Math.ceil(size * S), w = Math.ceil(size * S * 3), h = Math.ceil(size * S * 2);
+    cv.width = w; cv.height = h; ctx.setTransform(S, 0, 0, S, 0, 0); ctx.font = font; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000';
+    ctx.clearRect(0, 0, w, h); ctx.fillText(ch, pad / S, h / 2 / S);
+    var d = ctx.getImageData(0, 0, w, h).data, minX = w, maxX = -1;
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 30) { if (x < minX) minX = x; if (x > maxX) maxX = x; }
+    if (maxX < 0) return { left: 0, right: 0 };
+    return { left: (minX - pad) / S, right: (maxX + 1 - pad) / S };
+  }
+  function ink(el) {
+    var t = texts(el), first = t[0], last = t[t.length - 1];
+    var fr = document.createRange(); fr.setStart(first, first.nodeValue.search(/\S/)); fr.setEnd(first, first.nodeValue.search(/\S/) + 1);
+    var li = last.nodeValue.replace(/\s+$/, '').length - 1;
+    var lr = document.createRange(); lr.setStart(last, li); lr.setEnd(last, li + 1);
+    var a = fr.getBoundingClientRect(), b = lr.getBoundingClientRect();
+    var g1 = glyph(first.nodeValue.trim()[0], first), g2 = glyph(last.nodeValue.trim().slice(-1), last);
+    return { left: a.left + g1.left, right: b.left + g2.right };
+  }
+  function fit() {
+    tg.style.fontSize = ''; tg.style.position = 'relative'; tg.style.left = '0px';
+    var want = ink(wm);
+    for (var i = 0; i < 4; i++) {
+      var have = ink(tg), size = parseFloat(getComputedStyle(tg).fontSize);
+      if (!(have.right - have.left)) return;
+      tg.style.fontSize = (size * (want.right - want.left) / (have.right - have.left)).toFixed(3) + 'px';
+    }
+    tg.style.left = (want.left - ink(tg).left).toFixed(2) + 'px';
+  }
+  fit();
+  // the italic face loads separately and late on phones: wait for both faces
+  // the two lines use, then fit again; and once more after the page settles
+  if (document.fonts && document.fonts.load) {
+    Promise.all([
+      document.fonts.load('italic 400 12px Fraunces'),
+      document.fonts.load('700 20px Fraunces'),
+      document.fonts.load('500 20px Fraunces')
+    ]).then(fit, fit);
+  }
+  window.addEventListener('load', function () { fit(); setTimeout(fit, 600); });
+  var t; window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(fit, 100); });
+})();
+</script>
 
 </body>
 </html>

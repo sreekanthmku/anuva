@@ -1,0 +1,1173 @@
+/* REDESIGN TRIAL (2026-11-05)
+   Gives three sections their own layout instead of the shared
+   "eyebrow, centred heading, grid of bordered cards" pattern:
+     - Why Anuva is different  -> editorial split, 2x2 that rises in; a lotus that rises and blooms on scroll (round 18)
+     - What is included        -> a membership card carrying the price, beside the list (round 21)
+     - Real stories            -> sticky notes scattered on a dotted board (round 4)
+     - Do you relate to these? -> tinted symptom tiles (round 2); clock-face ring around a centre line (round 7); a spine of pills on phones (round 8)
+     - How it works            -> circles joined by a line, flat (round 17)
+     - Who is behind your plan -> a circle of care around her (round 11)
+     - FAQ                     -> numbered questions, plum toggle, lavender open panel (round 13)
+     - Pricing                 -> a pass-style card (round 19)
+     - Hero                    -> italic accent, label-style offer line (round 20)
+     - Closing                 -> a full-width band, Anu in a halo beside the words (round 26)
+     - Meet Anu                -> dark spotlight band, glowing mascot (round 3)
+   Loaded last by index.html. To revert everything, restore index.html and
+   landing.css from _snapshots/2026-11-05-before-redesign/ and delete this
+   file. To undo only round 2 or round 3, restore all three files from
+   _snapshots/2026-11-05-round2-before/ or _snapshots/2026-11-05-round3-before/. */
+
+/* ── Why Anuva is different ─────────────────────────────────────────────── */
+/* overflow:clip keeps decorations inside the section; overflow:hidden comes
+   first for browsers without clip (Safari before iOS 16, some in-app
+   browsers), where they would otherwise spill past the screen edge and let
+   the whole page scroll sideways. */
+.why{background:#F7F0E8;position:relative;overflow:hidden;overflow:clip}
+.why > .wrap-wide{position:relative;z-index:1}
+/* The lotus sits behind the heading column, bleeding off the bottom-left. */
+.why-mark{
+  position:absolute;left:max(5px,calc((100% - 1180px) / 2 + 20px - min(440px,34vw) * .034));bottom:30px;width:min(440px,34vw);height:auto;
+  color:#C98A6B;opacity:.16;pointer-events:none;z-index:0
+}
+.why-grid{display:grid;grid-template-columns:5fr 7fr;gap:64px;align-items:start}
+.why-intro{position:sticky;top:110px}
+.why-intro h2{
+  font-family:var(--serif);font-weight:600;color:var(--ink);
+  font-size:clamp(36px,4.6vw,58px);line-height:1.05;letter-spacing:-.01em;margin:10px 0 0
+}
+.why-intro h2 em{font-style:italic;color:var(--plum)}
+.why-rule{display:block;width:72px;height:2px;background:var(--gold);margin-top:28px}
+.why-list{list-style:none;margin:0;padding:0}
+.why-list li{
+  display:grid;grid-template-columns:72px 1fr;gap:20px;align-items:baseline;
+  padding:26px 0;border-top:1px solid rgba(94,53,102,.14)
+}
+.why-list li:last-child{border-bottom:1px solid rgba(94,53,102,.14)}
+.why-n{
+  font-family:var(--serif);font-size:44px;font-weight:500;line-height:1;
+  color:var(--gold);font-variant-numeric:lining-nums
+}
+.why-list h3{font-family:var(--serif);font-size:24px;font-weight:600;color:var(--ink);margin:0 0 6px}
+.why-list p{font-size:15.5px;line-height:1.65;color:var(--ink-body);margin:0;max-width:52ch}
+
+/* ── What is included: one panel, hairline grid ─────────────────────────── */
+#included .section-head h2 em{font-style:italic;color:var(--plum)}
+.inc-panel{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;
+  background:rgba(94,53,102,.12);border:1px solid rgba(94,53,102,.12);
+  border-radius:32px;overflow:hidden;
+  box-shadow:0 30px 60px -30px rgba(94,53,102,.25)
+}
+.inc{
+  position:relative;background:#FFFCF8;padding:36px 34px 34px;
+  transition:background .25s
+}
+.inc:hover{background:#FBF4F6}
+.inc-n{
+  position:absolute;top:30px;right:32px;font-family:var(--mono);font-size:12px;
+  font-weight:700;letter-spacing:.08em;color:var(--gold)
+}
+.inc-icon{
+  width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(150deg,#F4DCE0,#E7DCEC);margin-bottom:22px
+}
+.inc-icon svg{stroke:var(--plum);width:22px;height:22px}
+.inc h3{font-family:var(--serif);font-size:21px;font-weight:600;color:var(--ink);margin:0 0 8px}
+.inc p{font-size:14.5px;line-height:1.65;color:var(--ink-body);margin:0;max-width:34ch}
+
+/* ── Real stories: sticky notes on a board (round 4) ─────────────────────
+   Each quote is a paper note, pinned at a slight angle, scattered rather
+   than lined up. All notes are the same size. The pattern of colours, tilts
+   and offsets repeats every four notes, so more real quotes can be added
+   as plain <figure class="story"> elements with no CSS changes. */
+.stories-band{
+  position:relative;color:var(--ink);
+  background:
+    radial-gradient(rgba(94,53,102,.13) 1.2px,transparent 1.4px) 0 0/22px 22px,
+    linear-gradient(180deg,#FBF3EE,#F5EAF0);
+}
+.stories-head{text-align:center;margin:0 auto 48px}
+.stories-head .eyebrow{color:var(--gold)}
+.stories-head h2{
+  font-family:var(--serif);font-weight:600;color:var(--ink);
+  font-size:clamp(32px,4vw,48px);margin:8px 0 0
+}
+.stories-head h2 em{font-style:italic;color:var(--plum)}
+
+.stories-row{
+  display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;
+  gap:40px 34px;max-width:1080px;margin:0 auto;padding:6px 0 18px
+}
+.story{
+  --paper:#FFF4C9;--tilt:-2.5deg;--drop:0px;
+  position:relative;margin:var(--drop) 0 0;flex:0 1 320px;min-height:300px;
+  display:flex;flex-direction:column;padding:36px 28px 24px;
+  background:var(--paper);border-radius:4px 4px 18px 4px;
+  transform:rotate(var(--tilt));transform-origin:50% 0;
+  box-shadow:
+    0 1px 1px rgba(62,37,66,.06),
+    0 14px 22px -10px rgba(62,37,66,.28),
+    0 28px 40px -28px rgba(62,37,66,.35);
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s
+}
+/* paper-ish fold shading in the bottom-right corner */
+.story::after{
+  content:'';position:absolute;right:0;bottom:0;width:38px;height:38px;border-radius:0 0 18px 0;
+  background:linear-gradient(135deg,transparent 50%,rgba(62,37,66,.07) 50%);pointer-events:none
+}
+/* a strip of tape holding it to the board */
+.story::before{
+  content:'';position:absolute;top:-13px;left:50%;width:96px;height:26px;
+  transform:translateX(-50%) rotate(calc(var(--tilt) * -1.4));
+  background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);
+  box-shadow:0 2px 4px rgba(62,37,66,.08);backdrop-filter:blur(1px)
+}
+.stories-row .story:nth-child(4n+1){--paper:#FFF1C2;--tilt:-2.6deg;--drop:6px}
+.stories-row .story:nth-child(4n+2){--paper:#FBE0E6;--tilt:1.8deg;--drop:34px}
+.stories-row .story:nth-child(4n+3){--paper:#E9E0F3;--tilt:-1.2deg;--drop:0px}
+.stories-row .story:nth-child(4n+4){--paper:#DDF0E4;--tilt:2.4deg;--drop:22px}
+.story:hover{
+  transform:rotate(0deg) translateY(-6px) scale(1.02);z-index:2;
+  box-shadow:0 2px 2px rgba(62,37,66,.06),0 26px 40px -16px rgba(62,37,66,.35)
+}
+.story-mark{
+  font-family:var(--serif);font-size:70px;line-height:.7;height:34px;display:block;color:rgba(94,53,102,.28)
+}
+.story .stars{position:absolute;top:34px;right:26px;color:#B8923C;letter-spacing:2px;font-size:12px;margin:0}
+.story blockquote{
+  margin:10px 0 22px;font-family:var(--serif);font-style:italic;font-weight:400;
+  font-size:18px;line-height:1.55;color:var(--ink)
+}
+.story figcaption{display:flex;align-items:center;gap:12px;margin-top:auto}
+.story .av{
+  width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-family:var(--serif);font-size:16px;font-weight:600;color:#FBF6F0;background:var(--plum)
+}
+/* Signed, not typed: the name is written in a different hand on each note
+   (Kalam, Caveat, Shadows Into Light, repeating), the quote stays in the
+   serif so it is easy to read. The initial circle is dropped; a signature
+   does the same job on a note. */
+.story .av{display:none}
+.story .who{
+  display:inline-block;font-weight:400;color:var(--plum);font-size:25px;line-height:1.1;
+  transform:rotate(-2deg);transform-origin:left center
+}
+.story .who::before{content:'\2014\00a0'}
+.stories-row .story:nth-child(3n+1) .who{font-family:'Kalam',cursive;font-size:22px}
+.stories-row .story:nth-child(3n+2) .who{font-family:'Caveat',cursive;font-size:28px;font-weight:500}
+.stories-row .story:nth-child(3n+3) .who{font-family:'Shadows Into Light',cursive;font-size:25px}
+.story .where{display:inline-block;margin-top:4px;font-size:12px;letter-spacing:.04em;color:var(--ink-body)}
+
+/* ── tablets ───────────────────────────────────────────────────────────── */
+@media (max-width:900px){
+  .why-grid{grid-template-columns:1fr;gap:28px}
+  .why-intro{position:static}
+  .inc-panel{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .why-mark{width:70vw;left:auto;right:-60px;bottom:0}
+  .stories-row{gap:34px 26px}
+  .story{flex-basis:300px}
+}
+
+/* ── phones (DESIGN.md "Mobile") ───────────────────────────────────────── */
+@media (max-width:620px){
+  .why-intro h2{font-size:34px}
+  .why-rule{margin-top:18px}
+  .why-list li{grid-template-columns:44px 1fr;gap:12px;padding:16px 0}
+  .why-n{font-size:30px}
+  .why-list h3{font-size:19px;margin-bottom:4px}
+  .why-list p{font-size:14px;line-height:1.55}
+
+  .why-mark{width:300px;right:-80px;bottom:10px;opacity:.12}
+  .inc-panel{grid-template-columns:1fr;border-radius:24px}
+  .inc{
+    display:grid;grid-template-columns:44px 1fr;column-gap:14px;padding:18px 16px
+  }
+  .inc-icon{width:44px;height:44px;margin:0;grid-row:span 2}
+  .inc-icon svg{width:19px;height:19px}
+  .inc-n{top:18px;right:16px;font-size:11px}
+  .inc h3{font-size:17px;margin:0 0 4px;padding-right:28px}
+  .inc p{font-size:13.5px;line-height:1.5}
+
+  .stories-head{margin-bottom:20px}
+  .stories-head h2{font-size:28px}
+  /* the notes swipe sideways, still tilted, with room for the tape and tilt */
+  .stories-row{
+    flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;scroll-snap-type:x mandatory;
+    gap:16px;margin:0 -20px;padding:22px 24px 26px;scrollbar-width:none
+  }
+  .stories-row::-webkit-scrollbar{display:none}
+  .stories-row .story{flex:0 0 78%;min-height:0;scroll-snap-align:center;padding:30px 20px 20px}
+  .stories-row .story:nth-child(n){--drop:0px}
+  .story-mark{font-size:56px;height:26px}
+  .story .stars{top:28px;right:18px}
+  .story blockquote{font-size:16px;margin:8px 0 16px}
+  .story:hover{transform:rotate(var(--tilt))}
+}
+
+/* ── Do you relate to these? (round 2) ────────────────────────────────────
+   Same icons and colours as the /symptoms pages, but each tile is now tinted
+   by its own colour (--c on the card), the icon sits in a soft halo, and an
+   arrow shows it opens something. */
+.sym{
+  position:relative;overflow:hidden;
+  background:#FFFDFB;
+  background:linear-gradient(170deg,color-mix(in srgb,var(--c) 11%,#fff) 0%,#FFFDFB 62%);
+  border:1px solid rgba(94,53,102,.1);
+  border-color:color-mix(in srgb,var(--c) 20%,transparent);
+  border-radius:24px;padding:30px 14px 24px;gap:16px;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s,border-color .3s
+}
+.sym::before{
+  /* a soft glow of the tile colour behind the icon */
+  content:'';position:absolute;left:50%;top:-30px;width:150px;height:150px;
+  transform:translateX(-50%);border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--c) 9%,transparent),transparent);
+}
+.sym::after{
+  content:'\2192';position:absolute;right:14px;bottom:12px;font-size:14px;line-height:1;
+  color:var(--c);opacity:0;transform:translateX(-4px);transition:opacity .3s,transform .3s
+}
+.sym:hover,.sym:focus-visible{
+  transform:translateY(-6px);background:linear-gradient(170deg,color-mix(in srgb,var(--c) 16%,#fff) 0%,#FFFDFB 70%);
+  border-color:color-mix(in srgb,var(--c) 38%,transparent);
+  box-shadow:0 22px 40px -18px color-mix(in srgb,var(--c) 55%,transparent)
+}
+.sym:hover::after,.sym:focus-visible::after{opacity:1;transform:none}
+.sym-icon{
+  position:relative;width:58px;height:58px;
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--c) 13%,transparent),
+             0 12px 22px -10px color-mix(in srgb,var(--c) 75%,transparent);
+  transition:transform .3s cubic-bezier(.2,.8,.2,1)
+}
+.sym:hover .sym-icon{transform:scale(1.07)}
+.sym-name{position:relative;font-weight:700;letter-spacing:.005em}
+@media (max-width:620px){
+  .sym{padding:20px 6px 16px;gap:12px;border-radius:20px}
+  .sym-icon{width:48px;height:48px;box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 13%,transparent)}
+  .sym::after{display:none}
+}
+@media (prefers-reduced-motion:reduce){.sym,.sym-icon,.sym::after{transition:none}}
+
+/* ── Meet Anu: spotlight (round 3) ────────────────────────────────────────
+   The one section on the page that is dark and lit from inside, because Anu
+   is the thing to remember: the mascot floats in glowing rings beside the
+   heading. Style only; the copy is unchanged. */
+.anu-spot{
+  position:relative;overflow:hidden;overflow:clip;color:rgba(247,240,232,.82);
+  background:
+    radial-gradient(60% 80% at 22% 50%,rgba(201,126,146,.38),transparent 70%),
+    radial-gradient(50% 60% at 90% 10%,rgba(184,146,60,.16),transparent 70%),
+    linear-gradient(160deg,#2F1A33 0%,#4A2A52 55%,#5E3566 100%);
+  padding:110px 0
+}
+.anu-glow{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none}
+.anu-glow-1{width:420px;height:420px;left:-120px;bottom:-160px;background:rgba(201,126,146,.35)}
+.anu-glow-2{width:320px;height:320px;right:-80px;top:-120px;background:rgba(231,220,236,.18)}
+.anu-spot-grid{position:relative;display:grid;grid-template-columns:1fr 1.1fr;gap:72px;align-items:center}
+
+.anu-stage{position:relative;aspect-ratio:1;max-width:520px;width:100%;margin:0 auto;display:grid;place-items:center}
+.anu-ring{position:absolute;inset:0;margin:auto;border-radius:50%;border:1px solid rgba(244,220,224,.22)}
+.anu-ring-1{width:100%;height:100%;border-style:dashed;border-color:rgba(244,220,224,.16);animation:anu-spin 60s linear infinite}
+.anu-ring-2{width:80%;height:80%;background:radial-gradient(closest-side,rgba(244,220,224,.10),transparent)}
+.anu-ring-3{
+  width:60%;height:60%;border-color:rgba(244,220,224,.35);
+  background:radial-gradient(closest-side,rgba(255,236,240,.55),rgba(201,126,146,.18) 70%,transparent);
+  box-shadow:0 0 80px 10px rgba(201,126,146,.35)
+}
+@keyframes anu-spin{to{transform:rotate(360deg)}}
+.anu-figure{position:relative;width:72%;height:auto;filter:drop-shadow(0 24px 40px rgba(20,8,24,.45));animation:anu-float 6s ease-in-out infinite}
+@keyframes anu-float{50%{transform:translateY(-10px)}}
+
+.anu-text .eyebrow{color:var(--gold-soft)}
+.anu-text h2{
+  font-family:var(--serif);font-weight:600;color:#FBF6F0;
+  font-size:clamp(34px,4.2vw,54px);line-height:1.08;letter-spacing:-.01em;margin:10px 0 18px
+}
+.anu-text h2 em{font-style:italic;color:#F4C9D3}
+.anu-lede{font-size:16.5px;line-height:1.7;color:rgba(247,240,232,.78);margin:0 0 28px;max-width:54ch}
+
+
+
+@media (max-width:900px){
+  .anu-spot{padding:72px 0}
+  .anu-spot-grid{grid-template-columns:1fr;gap:36px}
+  .anu-stage{max-width:380px}
+}
+@media (max-width:620px){
+  .anu-spot{padding:44px 0}
+  .anu-spot-grid{gap:20px}
+  .anu-stage{max-width:270px}
+  .anu-text h2{font-size:30px;margin-bottom:12px}
+  .anu-lede{font-size:15px;line-height:1.6;margin-bottom:18px}
+}
+@media (prefers-reduced-motion:reduce){
+  .anu-ring-1,.anu-figure,.anu-body{animation:none}
+}
+
+/* ── Closing banner: Anu bottom-right ────────────────────────────────── */
+.closing-cta .lotus{
+  position:absolute;top:auto;bottom:-6px;right:-1%;left:auto;transform:none;
+  width:clamp(220px,24vw,340px);height:auto;pointer-events:none
+}
+@media (max-width:620px){
+  .closing-cta .lotus{width:170px;right:-30px;bottom:-10px;opacity:.22}
+}
+
+/* ── How it works: circles on a line, toned down (round 17) ───────────────
+   Three numbered circles joined 1 -> 2 -> 3 by a thin line, kept flat:
+   outlined circles in each step's colour, no glow, no gradient fill, no
+   arrows, and the day as plain small caps above. Vertical on narrow
+   screens. */
+.journey{--cy:60px;background:#FFFCF9}
+.journey .section-head h2 em{font-style:italic;color:var(--plum)}
+.journey-track{
+  list-style:none;margin:10px auto 0;padding:0;max-width:1080px;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 28px
+}
+.jstep{--c:#5E3566;position:relative;display:flex;flex-direction:column;align-items:center;text-align:center}
+.jstep:nth-child(2){--c:#C97E92}
+.jstep:nth-child(3){--c:#B8923C}
+.jstep:not(:last-child)::before{
+  content:'';position:absolute;top:var(--cy);left:calc(50% + 34px);width:calc(100% + 28px - 68px);height:1px;
+  background:rgba(94,53,102,.25)
+}
+.jwhen{
+  height:18px;margin:0 0 14px;
+  font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;line-height:18px;
+  color:var(--c)
+}
+.jnum{
+  width:56px;height:56px;border-radius:50%;flex:none;display:grid;place-items:center;margin-bottom:22px;
+  font-family:var(--serif);font-size:24px;font-weight:600;color:var(--c);
+  background:#FFFCF9;border:1.5px solid var(--c)
+}
+.jstep h3{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--ink);margin:0 0 8px}
+.jstep p{font-size:15px;line-height:1.65;color:var(--ink-body);margin:0;max-width:32ch}
+
+@media (max-width:760px){
+  .journey-track{grid-template-columns:1fr;gap:0;max-width:520px}
+  .jstep{
+    display:grid;grid-template-columns:52px 1fr;column-gap:16px;align-items:start;text-align:left;padding-bottom:26px
+  }
+  .jstep:last-child{padding-bottom:0}
+  .jnum{grid-column:1;grid-row:1/span 3;width:44px;height:44px;font-size:19px;margin:0}
+  .jwhen{grid-column:2;margin:0 0 6px;height:auto;line-height:1.4;font-size:11px}
+  .jstep h3{grid-column:2;font-size:19px;margin-bottom:5px}
+  .jstep p{grid-column:2;font-size:14px;line-height:1.55;max-width:none}
+  .jstep:not(:last-child)::before{top:48px;left:22px;width:1px;height:calc(100% - 48px)}
+}
+
+/* ── Do you relate to these?: the ring (round 7) ─────────────────────────
+   The twelve symptoms sit around a centre disc like the hours of a clock,
+   each joined to it by a faint spoke. The disc holds the section's own line,
+   "These can feel like twelve unrelated problems. In midlife, they usually
+   are not.", so the layout shows what the sentence says. Each card's
+   position comes from --i (0-11) set in the HTML. Phones keep the tile grid,
+   with the line underneath. */
+.sym-orbit{display:flex;flex-direction:column}
+@media (min-width:761px){
+  .sym-orbit{
+    --size:min(740px,92vw);--r:calc(var(--size) * .4);
+    position:relative;width:var(--size);height:var(--size);margin:6px auto 0;display:block
+  }
+  /* spokes + orbit ring, drawn once behind everything */
+  .sym-orbit::before{
+    content:'';position:absolute;inset:0;border-radius:50%;
+    background:repeating-conic-gradient(from -.35deg,rgba(94,53,102,.16) 0 .7deg,transparent .7deg 30deg);
+    -webkit-mask:radial-gradient(circle,transparent 0 calc(var(--size) * .2),#000 calc(var(--size) * .2) calc(var(--r) - 36px),transparent calc(var(--r) - 36px));
+            mask:radial-gradient(circle,transparent 0 calc(var(--size) * .2),#000 calc(var(--size) * .2) calc(var(--r) - 36px),transparent calc(var(--r) - 36px))
+  }
+  .sym-orbit::after{
+    content:'';position:absolute;left:50%;top:50%;width:calc(var(--r) * 2);height:calc(var(--r) * 2);
+    transform:translate(-50%,-50%);border-radius:50%;border:1px dashed rgba(94,53,102,.18);pointer-events:none
+  }
+  .sym-orbit .sym-grid{display:block;position:absolute;inset:0;max-width:none;margin:0}
+  .sym-orbit .sym-core{
+    position:absolute;left:50%;top:50%;z-index:1;
+    width:calc(var(--size) * .38);height:calc(var(--size) * .38);transform:translate(-50%,-50%);
+    border-radius:50%;display:grid;place-items:center;padding:0 calc(var(--size) * .045);
+    background:radial-gradient(circle at 35% 30%,#FFFFFF,#F7EEF3 60%,#EFE2EC);
+    box-shadow:0 0 0 12px rgba(231,220,236,.45),0 30px 60px -30px rgba(94,53,102,.45)
+  }
+  .sym-orbit .chips-note{margin:0;max-width:none;font-size:clamp(17px,1.9vw,21px);line-height:1.4}
+
+  /* each symptom: an icon bubble with its name under it, placed on the ring */
+  .sym-orbit .sym{
+    --a:calc(var(--i) * 30deg);
+    position:absolute;left:50%;top:50%;width:128px;min-height:0;padding:6px;gap:10px;
+    transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(var(--r) * -1)) rotate(calc(var(--a) * -1));
+    background:none;border:0;box-shadow:none;border-radius:16px;overflow:visible;
+    font-size:14px;transition:color .25s
+  }
+  .sym-orbit .sym::before,.sym-orbit .sym::after{display:none}
+  .sym-orbit .sym:hover,.sym-orbit .sym:focus-visible{
+    transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(var(--r) * -1)) rotate(calc(var(--a) * -1));
+    background:none;box-shadow:none;color:var(--c)
+  }
+  .sym-orbit .sym-icon{
+    width:62px;height:62px;
+    box-shadow:0 0 0 6px #FFFDFB,0 0 0 7px color-mix(in srgb,var(--c) 25%,transparent),
+               0 14px 26px -12px color-mix(in srgb,var(--c) 80%,transparent)
+  }
+  .sym-orbit .sym:hover .sym-icon,.sym-orbit .sym:focus-visible .sym-icon{transform:translateY(-4px) scale(1.08)}
+}
+
+/* ── Do you relate to these? on phones: the spine (round 8) ──────────────
+   Same idea as the desktop ring at a size a phone can read: the centre disc
+   on top, a line running down from it, and the twelve symptoms as pills
+   branching off left and right, two per row. */
+@media (max-width:760px){
+  .sym-orbit{align-items:center}
+  .sym-orbit .sym-core{
+    position:relative;z-index:1;width:236px;height:236px;border-radius:50%;
+    display:grid;place-items:center;padding:0 30px;margin:4px auto 0;
+    background:radial-gradient(circle at 35% 30%,#FFFFFF,#F7EEF3 60%,#EFE2EC);
+    box-shadow:0 0 0 9px rgba(231,220,236,.45),0 24px 44px -26px rgba(94,53,102,.45)
+  }
+  .sym-orbit .chips-note{margin:0;font-size:16.5px;line-height:1.4}
+
+  .sym-orbit .sym-grid{
+    position:relative;width:100%;max-width:440px;margin:0 auto;padding-top:34px;
+    display:grid;grid-template-columns:1fr 1fr;column-gap:34px;row-gap:12px
+  }
+  /* the spine, from under the disc to the last row */
+  .sym-orbit .sym-grid::before{
+    content:'';position:absolute;left:50%;top:0;bottom:24px;width:2px;transform:translateX(-50%);
+    background:linear-gradient(180deg,rgba(94,53,102,.35),rgba(201,126,146,.35) 50%,rgba(184,146,60,.35))
+  }
+
+  .sym-orbit .sym{
+    position:relative;overflow:visible;flex-direction:row;justify-content:flex-start;gap:10px;
+    min-height:48px;padding:6px 12px 6px 6px;border-radius:9999px;text-align:left;
+    font-size:13.5px;line-height:1.25;
+    background:linear-gradient(100deg,color-mix(in srgb,var(--c) 12%,#fff),#FFFDFB 80%);
+    border:1px solid color-mix(in srgb,var(--c) 22%,transparent);
+    box-shadow:0 6px 14px -10px color-mix(in srgb,var(--c) 70%,transparent)
+  }
+  .sym-orbit .sym:hover,.sym-orbit .sym:focus-visible{transform:none}
+  .sym-orbit .sym::before{display:none}
+  /* the branch from each pill to the spine, with a dot where it joins */
+  .sym-orbit .sym::after{
+    display:block;content:'';position:absolute;top:50%;width:17px;height:2px;opacity:1;
+    transform:translateY(-50%);background:color-mix(in srgb,var(--c) 40%,transparent);
+    font-size:0;color:transparent
+  }
+  .sym-orbit .sym:nth-child(odd)::after{left:100%}
+  .sym-orbit .sym:nth-child(even)::after{right:100%;left:auto}
+  .sym-orbit .sym-icon{
+    width:36px;height:36px;box-shadow:0 0 0 3px #fff;
+  }
+  .sym-orbit .sym-icon svg{width:18px;height:18px}
+  .sym-orbit .sym-name{font-weight:700}
+}
+
+/* ── Who is actually behind your plan: a circle of care (round 11) ───────
+   The four disciplines sit around her (the Anuva lotus in a glowing disc at
+   the centre) as one rounded shape, each card's outer corner curved so the
+   four together read as an embrace. Text is centred in every card and sits
+   at the outer edge (top pair at the top, bottom pair at the bottom) so the
+   disc never covers it. No photos, by choice. */
+#trust{
+  background:
+    radial-gradient(40% 45% at 50% 62%,rgba(244,201,211,.45),transparent 70%),
+    #FFFCF9
+}
+#trust .section-head h2 em{font-style:italic;color:var(--plum)}
+.care{--core:130px;--round:150px;position:relative;max-width:980px;margin:0 auto}
+.care::before{
+  /* a faint ring drawn around the whole circle */
+  content:'';position:absolute;inset:-18px;border-radius:calc(var(--round) + 18px);
+  border:1px dashed rgba(94,53,102,.18);pointer-events:none
+}
+#trust .care .disciplines{
+  display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:16px;
+  margin:0;padding:0;overflow:visible
+}
+#trust .care .disc{
+  --c:#5E3566;
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  min-height:300px;padding:42px 48px;margin:0;border:1px solid color-mix(in srgb,var(--c) 18%,transparent);
+  background:linear-gradient(var(--tint-dir,135deg),color-mix(in srgb,var(--c) 13%,#fff),#FFFDFB 75%);
+  box-shadow:0 2px 6px -4px rgba(94,53,102,.18);
+  transition:border-color .3s
+}
+#trust .care .disc::before,#trust .care .disc::after{display:none}
+#trust .care .disc:nth-child(1){--c:#5E3566;--tint-dir:135deg;border-radius:var(--round) 28px 28px 28px;justify-content:flex-start}
+#trust .care .disc:nth-child(2){--c:#C97E92;--tint-dir:225deg;border-radius:28px var(--round) 28px 28px;justify-content:flex-start}
+#trust .care .disc:nth-child(3){--c:#B8923C;--tint-dir:45deg;border-radius:28px 28px 28px var(--round);justify-content:flex-end}
+#trust .care .disc:nth-child(4){--c:#472852;--tint-dir:315deg;border-radius:28px 28px var(--round) 28px;justify-content:flex-end}
+#trust .care .disc:hover{transform:none;border-color:color-mix(in srgb,var(--c) 35%,transparent)}
+#trust .care .disc .ring{
+  width:58px;height:58px;margin:0 0 18px;border-radius:50%;display:grid;place-items:center;
+  box-shadow:0 0 0 6px color-mix(in srgb,var(--c) 14%,transparent)
+}
+#trust .care .disc .ring::before,#trust .care .disc .ring::after{display:none}
+#trust .care .disc .ring svg{width:26px;height:26px}
+#trust .care .disc h3{font-size:24px;margin:0 0 8px;padding:0}
+#trust .care .disc p{font-size:15px;line-height:1.6;padding:0;margin:0;max-width:29ch}
+
+.care-core{
+  position:absolute;left:50%;top:50%;width:var(--core);height:var(--core);transform:translate(-50%,-50%);
+  border-radius:50%;display:grid;place-items:center;z-index:2;
+  background:radial-gradient(circle at 35% 30%,#E7A9BA,#C97E92 45%,#8E4E77 100%);
+  box-shadow:0 0 0 14px #FFFCF9,0 0 0 15px rgba(94,53,102,.12),0 0 60px 30px rgba(244,201,211,.55)
+}
+.care-core svg{width:52%;height:auto;filter:drop-shadow(0 6px 10px rgba(62,37,66,.35))}
+
+@media (max-width:900px){
+  .care{--core:110px;--round:110px}
+  #trust .care .disc{padding:30px 30px;min-height:290px}
+  #trust .care .disc h3{font-size:20px}
+  #trust .care .disc p{font-size:14px}
+}
+@media (max-width:620px){
+  .care{--core:92px;--round:64px}
+  .care::before{inset:-10px;border-radius:calc(var(--round) + 10px)}
+  #trust .care .disciplines{gap:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));scroll-snap-type:none}
+  #trust .care .disc{flex:none;min-height:0;padding:22px 16px 62px;box-shadow:none}
+  #trust .care .disc:nth-child(3),#trust .care .disc:nth-child(4){padding:62px 16px 22px}
+  #trust .care .disc:hover{transform:none}
+  #trust .care .disc .ring{width:40px;height:40px;margin-bottom:10px;box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 14%,transparent)}
+  #trust .care .disc .ring svg{width:19px;height:19px}
+  #trust .care .disc h3{font-size:16.5px;margin-bottom:5px}
+  #trust .care .disc p{font-size:13px;line-height:1.45}
+  .care-core{box-shadow:0 0 0 8px #FFFCF9,0 0 0 9px rgba(94,53,102,.12),0 0 30px 14px rgba(244,201,211,.55)}
+}
+
+/* ── FAQ (round 13) ───────────────────────────────────────────────────────
+   Still two columns. Each question is numbered (a CSS counter, so the
+   markup stays plain <details>), set in the serif, with a round toggle;
+   an open question becomes a soft lavender panel. A large faint question mark sits behind the heading. */
+#faqs{
+  position:relative;overflow:hidden;overflow:clip;
+  background:
+    radial-gradient(40% 50% at 0% 0%,rgba(231,220,236,.6),transparent 70%),
+    radial-gradient(35% 45% at 100% 100%,rgba(244,220,224,.55),transparent 70%),
+    #FFFCF9
+}
+#faqs::before{
+  content:'?';position:absolute;left:4%;top:-60px;transform:rotate(-8deg);pointer-events:none;
+  font-family:var(--serif);font-style:italic;font-weight:600;font-size:340px;line-height:1;
+  color:rgba(94,53,102,.045)
+}
+#faqs .wrap{position:relative}
+#faqs .section-head h2 em{font-style:italic;color:var(--plum)}
+#faqs .faq{counter-reset:faq;gap:14px 20px}
+#faqs .faq-col{gap:14px}
+#faqs .faq details{
+  counter-increment:faq;position:relative;overflow:hidden;padding:0 22px 0 24px;
+  background:#FFFFFF;border:1px solid rgba(94,53,102,.1);border-radius:20px;
+  box-shadow:0 10px 24px -22px rgba(94,53,102,.5);
+  transition:background .3s,border-color .3s,box-shadow .3s
+}
+#faqs .faq details:hover{border-color:rgba(94,53,102,.22)}
+#faqs .faq details[open]{
+  background:linear-gradient(135deg,#F6EEF6,#FFFFFF 70%);border-color:rgba(94,53,102,.2);
+  box-shadow:0 22px 40px -28px rgba(94,53,102,.55)
+}
+#faqs .faq summary{
+  display:grid;grid-template-columns:30px 1fr 34px;align-items:center;gap:14px;
+  padding:20px 0;font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.3;color:var(--ink)
+}
+#faqs .faq summary::before{
+  content:counter(faq,decimal-leading-zero);font-family:var(--mono);font-size:12px;font-weight:700;
+  letter-spacing:.06em;color:var(--gold)
+}
+#faqs .faq summary::after{
+  content:'+';width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  font-family:var(--sans);font-size:20px;font-weight:400;line-height:1;color:var(--plum);
+  background:var(--lavender);transition:transform .3s,background .3s,color .3s
+}
+#faqs .faq details[open] summary::after{transform:rotate(45deg);background:var(--plum);color:#fff}
+#faqs .faq p{margin:0 0 22px;padding-left:44px;font-size:15px;line-height:1.7;color:var(--ink-body)}
+
+@media (max-width:620px){
+  #faqs::before{font-size:200px;top:-30px;left:-2%}
+  #faqs .faq details{padding:0 14px 0 16px;border-radius:16px}
+  #faqs .faq summary{grid-template-columns:24px 1fr 30px;gap:10px;padding:15px 0;font-size:16px}
+  #faqs .faq summary::after{width:30px;height:30px;font-size:18px}
+  #faqs .faq p{padding-left:34px;font-size:14px;margin-bottom:16px}
+}
+@media (prefers-reduced-motion:reduce){#faqs .faq summary::after,#faqs .faq details{transition:none}}
+
+/* ── What is included: the membership card (round 14) ────────────────────
+   "One membership" made literal: the heading sits on a plum card with a
+   gold edge, an embossed lotus and a gold chip, and a sheen that crosses it
+   on hover. The six items sit beside it as an open two-column list split by
+   hairlines, instead of a boxed panel. Same words. */
+#included{
+  background:
+    radial-gradient(40% 60% at 0% 50%,rgba(231,220,236,.55),transparent 70%),
+    #FFFCF9
+}
+.inc-layout{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:64px;align-items:center}
+
+#included .inc-card{
+  position:relative;overflow:hidden;text-align:left;max-width:none;margin:0;
+  aspect-ratio:1.58;padding:38px 38px 34px;border-radius:26px;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  color:#FBF6F0;
+  background:
+    radial-gradient(90% 70% at 100% 0%,rgba(201,126,146,.55),transparent 60%),
+    radial-gradient(70% 60% at 0% 100%,rgba(184,146,60,.28),transparent 60%),
+    linear-gradient(150deg,#4A2A52,#3A2140 55%,#2E1A33);
+  box-shadow:
+    inset 0 0 0 1px rgba(240,228,200,.35),inset 0 0 0 7px rgba(255,255,255,.03),
+    0 40px 70px -34px rgba(46,26,51,.75),0 12px 24px -16px rgba(46,26,51,.5);
+  transform:rotate(-2.5deg);transition:transform .5s cubic-bezier(.2,.8,.2,1)
+}
+#included .inc-card:hover{transform:rotate(0deg) translateY(-6px)}
+#included .inc-card::after{
+  /* the sheen */
+  content:'';position:absolute;top:-40%;bottom:-40%;width:40%;left:-60%;pointer-events:none;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.16),transparent);
+  transform:rotate(12deg);transition:left .9s ease
+}
+#included .inc-card:hover::after{left:120%}
+.inc-chip{
+  position:absolute;top:34px;left:38px;width:52px;height:40px;border-radius:9px;
+  background:
+    linear-gradient(90deg,transparent 48%,rgba(90,71,22,.35) 48% 52%,transparent 52%),
+    linear-gradient(0deg,transparent 30%,rgba(90,71,22,.3) 30% 34%,transparent 34% 66%,rgba(90,71,22,.3) 66% 70%,transparent 70%),
+    linear-gradient(135deg,#F3DFA6,#C9A24E 55%,#9C7A2C);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)
+}
+.inc-card-lotus{
+  position:absolute;right:-30px;top:18px;width:62%;height:auto;color:rgba(240,228,200,.16);pointer-events:none
+}
+#included .inc-card .eyebrow{color:var(--gold-soft);margin:0 0 8px;position:relative}
+#included .inc-card h2{
+  position:relative;color:#FBF6F0;margin:0 0 10px;text-align:left;
+  font-size:clamp(32px,3.6vw,46px);line-height:1.05
+}
+#included .inc-card h2 em{color:#F4C9D3}
+#included .inc-card .lede{position:relative;color:rgba(247,240,232,.78);font-size:15.5px;text-align:left;max-width:30ch;margin:0}
+
+/* the list */
+#included .inc-panel{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px;
+  background:none;border:0;border-radius:0;box-shadow:none;overflow:visible
+}
+#included .inc{
+  background:none;padding:24px 0 24px 66px;border-top:1px solid rgba(94,53,102,.14);min-height:0
+}
+#included .inc:nth-child(-n+2){border-top:0}
+#included .inc:hover{background:none}
+#included .inc:hover .inc-icon{transform:translateY(-3px)}
+#included .inc-icon{
+  position:absolute;left:0;top:24px;margin:0;width:48px;height:48px;transition:transform .3s;
+  background:linear-gradient(150deg,#F4DCE0,#E7DCEC)
+}
+#included .inc-n{top:24px;right:0}
+#included .inc h3{font-size:19px;margin:2px 0 6px;padding-right:28px}
+#included .inc p{font-size:14px;line-height:1.6;max-width:none}
+
+@media (max-width:1040px){
+  .inc-layout{grid-template-columns:1fr;gap:44px}
+  #included .inc-card{max-width:520px;width:100%;margin:0 auto}
+  .inc-cta{max-width:520px;margin-left:auto;margin-right:auto}
+}
+@media (max-width:620px){
+  .inc-layout{gap:26px}
+  #included .inc-card{padding:24px 22px 22px;border-radius:20px;transform:rotate(-1.5deg)}
+  .inc-chip{top:22px;left:22px;width:40px;height:30px;border-radius:7px}
+  #included .inc-card h2{font-size:28px}
+  #included .inc-card .lede{font-size:14px}
+  #included .inc-panel{grid-template-columns:1fr;gap:0}
+  #included .inc{padding:16px 0 16px 56px;display:block;border-top:1px solid rgba(94,53,102,.14)}
+  #included .inc:nth-child(-n+2){border-top:1px solid rgba(94,53,102,.14)}
+  #included .inc:first-child{border-top:0}
+  #included .inc-icon{top:16px;width:42px;height:42px}
+  #included .inc-n{top:16px}
+  #included .inc h3{font-size:17px}
+  #included .inc p{font-size:13.5px}
+}
+@media (prefers-reduced-motion:reduce){#included .inc-card,#included .inc-card::after{transition:none}}
+
+/* ── Why Anuva is different: 2x2 that rises in (round 15) ────────────────
+   The four steps sit in a 2x2 grid beside the heading, each with a medium
+   outlined numeral that fills with gold on hover. The first time the
+   section comes into view the steps rise into place one after another
+   (the script adds .will-rise, then .has-risen). */
+.why{
+  background:
+    radial-gradient(55% 70% at 100% 0%,rgba(244,220,224,.7),transparent 70%),
+    radial-gradient(45% 60% at 0% 100%,rgba(240,228,200,.6),transparent 70%),
+    #F7EFE7
+}
+.why-grid{align-items:start}
+.why-intro{position:static}
+.why-list{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
+.why-list li{
+  grid-template-columns:1fr;gap:6px;padding:24px 0;
+  border-top:1px solid rgba(94,53,102,.14);border-bottom:0
+}
+.why-list li:last-child{border-bottom:0}
+.why-n{
+  font-size:54px;font-weight:600;line-height:.9;letter-spacing:-.01em;
+  color:transparent;-webkit-text-fill-color:transparent;-webkit-text-stroke:1.2px rgba(184,146,60,.85);
+  background:linear-gradient(180deg,#E2C27A,#B8923C 60%,#8E6E26);
+  -webkit-background-clip:text;background-clip:text;background-size:100% 0%;background-repeat:no-repeat;
+  background-position:0 100%;transition:background-size .45s ease
+}
+.why-list li:hover .why-n{background-size:100% 100%}
+.why-list li h3{font-size:22px;margin:4px 0 6px;transition:color .3s}
+.why-list li:hover h3{color:var(--plum)}
+.why-list li p{font-size:15px;line-height:1.6;max-width:none}
+/* the rise */
+.why-list.will-rise li{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
+.why-list.will-rise.has-risen li{opacity:1;transform:none}
+.why-list.will-rise li:nth-child(2){transition-delay:.12s}
+.why-list.will-rise li:nth-child(3){transition-delay:.24s}
+.why-list.will-rise li:nth-child(4){transition-delay:.36s}
+/* the lotus is moved by the scroll script (translateY), so give it a short
+   easing to smooth out the steps between scroll events */
+.why-mark{will-change:transform;transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+
+@media (max-width:900px){.why-list{gap:0 28px}}
+@media (max-width:620px){
+  .why-list{grid-template-columns:1fr 1fr;gap:0 16px}
+  .why-list li{padding:16px 0}
+  .why-n{font-size:40px}
+  .why-list li h3{font-size:17px}
+  .why-list li p{font-size:13.5px;line-height:1.5}
+}
+@media (prefers-reduced-motion:reduce){.why-n{transition:none}}
+
+/* ── Why Anuva is different: the blooming lotus (round 18) ────────────────
+   A shaded vector lotus (petal gradients, faint veins, a golden heart and a
+   sage lily pad) replaces the flat line lotus. It rises as a bud and opens as
+   the section scrolls in; the script drives the petal angles. Full colour,
+   not a watermark. On narrow screens it sits above the heading instead. */
+.why-bloom{
+  color:inherit;opacity:1;width:min(380px,30vw);bottom:24px;
+  left:max(5px,calc((100% - 1180px) / 2 + 10px));
+  filter:drop-shadow(0 18px 28px rgba(185,102,126,.22))
+}
+.why-bloom .lp path:first-child{stroke:rgba(255,255,255,.65);stroke-width:1.2}
+.why-bloom .lp-vein{fill:none;stroke:rgba(185,102,126,.28);stroke-width:1.1;stroke-linecap:round}
+.why-bloom .lp-pad{opacity:.9}
+@media (max-width:900px){
+  .why-bloom{
+    position:relative;display:block;left:auto;right:auto;bottom:auto;
+    width:230px;margin:0 auto -6px;opacity:1
+  }
+}
+@media (max-width:620px){
+  .why-bloom{width:190px;opacity:1}
+}
+
+/* ── Pricing: the pass (round 19) ─────────────────────────────────────────
+   One wide card: a plum panel with the price, the trial tag, the value line
+   and the button, and a white panel listing the year's inclusions as a
+   two-column checklist with gold ticks. Same words. */
+#pricing .section-head{margin-bottom:34px}
+.pass{
+  display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);max-width:1040px;margin:0 auto;
+  border-radius:30px;overflow:hidden;background:#fff;border:1px solid rgba(94,53,102,.12);
+  box-shadow:0 40px 80px -50px rgba(62,37,66,.6)
+}
+.pass-price{
+  position:relative;padding:40px 38px 34px;color:#FBF6F0;display:flex;flex-direction:column;
+  background:
+    radial-gradient(80% 60% at 100% 0%,rgba(201,126,146,.5),transparent 60%),
+    radial-gradient(60% 50% at 0% 100%,rgba(184,146,60,.22),transparent 60%),
+    linear-gradient(160deg,#4A2A52,#3A2140 60%,#2E1A33)
+}
+.pass-price .tag{
+  align-self:flex-start;display:inline-block;margin-bottom:22px;padding:6px 13px;border-radius:9999px;
+  font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:#3E2542;background:linear-gradient(135deg,#F3DFA6,#D9B465)
+}
+.pass-price .amount{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.pass-price .amount b{font-family:var(--serif);font-size:clamp(48px,5.6vw,66px);font-weight:600;line-height:1;color:#FBF6F0}
+.pass-price .amount span{font-size:15px;font-weight:600;color:rgba(247,240,232,.75)}
+.pass-price .per{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:rgba(240,228,200,.75);margin:0 0 14px}
+.pass-price .equiv{font-size:14.5px;font-weight:700;line-height:1.5;color:#F0E4C8;margin:0 0 28px;
+  padding-top:14px;border-top:1px solid rgba(247,240,232,.14)}
+.pass-price .btn{width:100%;margin-top:auto}
+.pass-price .fineprint{font-size:12.5px;line-height:1.5;color:rgba(247,240,232,.65);margin:12px 0 0;text-align:center}
+
+.pass-list{padding:40px 40px 36px;display:flex;align-items:center}
+.pass-list ul{
+  list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:22px 30px;width:100%
+}
+.pass-list li{position:relative;padding-left:34px;font-size:14.5px;line-height:1.55;color:var(--ink-body)}
+/* the comma after a bold lead-in reads fine aloud but not at the start of a
+   line, so it is kept in the text and hidden from view */
+.pass-list .pass-sep{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pass-list li b{display:block;font-family:var(--serif);font-size:17px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.pass-list li::before{
+  content:'\2713';position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;
+  display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,#D9B465,#B8923C)
+}
+
+@media (max-width:900px){
+  .pass{grid-template-columns:1fr;max-width:560px}
+}
+@media (max-width:620px){
+  .pass{border-radius:22px}
+  .pass-price{padding:26px 22px 22px}
+  .pass-price .tag{margin-bottom:14px}
+  .pass-price .equiv{margin-bottom:18px}
+  .pass-list{padding:24px 20px 22px}
+  .pass-list ul{grid-template-columns:1fr;gap:14px}
+  .pass-list li{font-size:14px}
+  .pass-list li b{font-size:16px}
+}
+
+/* ── Hero (round 20) ──────────────────────────────────────────────────────
+   Light touches so the first screen matches the rest: "experts" in plum
+   serif italic like every other heading (it was the script face), the offer line in the
+   page's small-caps label style instead of the typewriter face, and gold
+   icons in the plum strip. */
+.lp-hero h1 em{font-family:var(--serif);font-style:italic;font-weight:600;font-size:1em;line-height:inherit;color:var(--plum)}
+.offer-line b{font-family:var(--sans);font-size:12.5px;font-weight:800;letter-spacing:.12em;color:var(--plum)}
+.trust-strip svg{color:#E2C27A}
+
+/* ── What is included: the price on the card (round 21) ───────────────────
+   The membership card now carries the price, the trial tag, the value line
+   and the button; the section heading moves above the list beside it. */
+#included .inc-card{aspect-ratio:auto;min-height:280px;padding:34px 34px 28px;justify-content:flex-end;color:#FBF6F0}
+#included .inc-card .amount{position:relative;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:56px 0 4px}
+#included .inc-card .amount b{font-family:var(--serif);font-size:clamp(46px,5vw,60px);font-weight:600;line-height:1;color:#FBF6F0}
+#included .inc-card .amount span{font-size:14.5px;font-weight:600;color:rgba(247,240,232,.75)}
+#included .inc-card .per{position:relative;font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(240,228,200,.8);margin:0 0 12px}
+#included .inc-card .equiv{position:relative;font-size:14px;font-weight:700;line-height:1.5;color:#F0E4C8;margin:0 0 18px;padding-top:12px;border-top:1px solid rgba(247,240,232,.14)}
+#included .inc-card .equiv{margin-bottom:0}
+.inc-cta{margin-top:30px}
+.inc-cta .btn{width:100%}
+.inc-cta .fineprint{font-size:13px;line-height:1.5;color:var(--mauve);margin:12px 0 0;text-align:center}
+.inc-side .section-head{text-align:left;max-width:none;margin:0 0 18px}
+.inc-side .section-head h2{text-align:left;margin:0}
+.inc-side .section-head h2 em{font-style:italic;color:var(--plum)}
+@media (max-width:620px){
+  #included .inc-card{min-height:0;padding:22px 20px 20px}
+  .inc-cta{margin-top:22px}
+  #included .inc-card .amount{margin-top:46px}
+  #included .inc-card .amount b{font-size:44px}
+  .inc-side .section-head{text-align:center}
+  .inc-side .section-head h2{text-align:center}
+}
+
+/* ── Meet Anu: the lotus on her chest glows (round 23) ────────────────────
+   The image and its glow move together inside .anu-body (the float moved
+   from the image to the wrapper). The glow sits on the small lotus at about
+   50% across, 58% down the illustration and breathes slowly. */
+.anu-body{position:relative;width:72%;display:block;animation:anu-float 6s ease-in-out infinite;z-index:1}
+/* No filter or blend mode on Anu: iPhone Safari draws a drop-shadow filter
+   (and a blended glow) on a moving image as a faint rectangle around it. The
+   shadow is a plain soft oval underneath her instead. */
+.anu-body .anu-figure{width:100%;animation:none;filter:none}
+.anu-body::before{
+  content:'';position:absolute;left:14%;right:14%;bottom:-2%;height:12%;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(20,8,24,.45),rgba(20,8,24,0));pointer-events:none
+}
+.anu-heart{
+  position:absolute;left:50%;top:58%;width:40%;aspect-ratio:1;transform:translate(-50%,-50%);
+  border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(255,226,150,.26),rgba(255,200,125,.3) 30%,rgba(240,160,170,.15) 58%,rgba(240,160,170,0));
+  animation:anu-glow 4.5s ease-in-out infinite
+}
+@keyframes anu-glow{
+  0%,100%{opacity:.5;transform:translate(-50%,-50%) scale(.9)}
+  50%{opacity:.85;transform:translate(-50%,-50%) scale(1.08)}
+}
+@media (prefers-reduced-motion:reduce){.anu-body,.anu-heart{animation:none}.anu-heart{opacity:.8}}
+
+/* the smallest phones (320-360px): long names like "Gynaecologists" need a
+   little less padding and type to fit their quarter */
+@media (max-width:360px){
+  #trust .care .disc{padding-left:10px;padding-right:10px}
+  #trust .care .disc h3{font-size:15px}
+  #trust .care .disc p{font-size:12.5px}
+}
+
+/* landing.css sets .wrap-wide's padding after page.css, so repeat the notch
+   clearance here (see page.css) */
+.wrap-wide{
+  padding-left:max(20px,env(safe-area-inset-left,0px));
+  padding-right:max(20px,env(safe-area-inset-right,0px))
+}
+
+/* ── Meet Anu: a halo on the second ring ──────────────────────────────────
+   The middle ring gets a bright pink-gold glow on both sides of its line that
+   breathes slowly, out of step with the lotus glow on her chest. */
+.anu-ring-2{
+  border:1.5px solid rgba(255,232,220,.75);
+  box-shadow:
+    0 0 22px 4px rgba(250,206,216,.6),
+    0 0 60px 16px rgba(236,190,130,.28),
+    inset 0 0 28px 4px rgba(250,206,216,.45);
+  animation:anu-halo 7s ease-in-out infinite
+}
+@keyframes anu-halo{
+  0%,100%{box-shadow:0 0 18px 3px rgba(250,206,216,.5),0 0 50px 12px rgba(236,190,130,.22),inset 0 0 22px 3px rgba(250,206,216,.38)}
+  50%{box-shadow:0 0 32px 7px rgba(250,206,216,.75),0 0 80px 22px rgba(236,190,130,.36),inset 0 0 36px 6px rgba(250,206,216,.55)}
+}
+@media (prefers-reduced-motion:reduce){.anu-ring-2{animation:none}}
+
+/* ── Who is behind your plan on phones: tightened (round 25) ──────────────
+   Smaller centre disc, less empty space kept clear for it, and the text
+   left-aligned across the full width of each card, so descriptions run 3-4
+   lines instead of 5-6 and the section is shorter. */
+@media (max-width:620px){
+  .care{--core:64px;--round:48px}
+  #trust .care .disciplines{gap:8px}
+  #trust .care .disc{align-items:flex-start;text-align:left;padding:16px 14px 40px}
+  /* bottom pair: start from the top (just below the disc) so both icons line
+     up even when one name wraps to two lines */
+  #trust .care .disc:nth-child(3),#trust .care .disc:nth-child(4){padding:40px 14px 16px;justify-content:flex-start}
+  #trust .care .disc .ring{width:34px;height:34px;margin-bottom:8px;align-self:center;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 14%,transparent)}
+  #trust .care .disc .ring svg{width:16px;height:16px}
+  #trust .care .disc h3{font-size:15.5px;line-height:1.2;margin-bottom:4px}
+  #trust .care .disc p{font-size:13px;line-height:1.45;max-width:none}
+  .care-core{box-shadow:0 0 0 6px #FFFCF9,0 0 0 7px rgba(94,53,102,.12),0 0 22px 10px rgba(244,201,211,.5)}
+}
+@media (max-width:360px){
+  #trust .care .disc{padding-left:11px;padding-right:11px}
+  #trust .care .disc h3{font-size:14.5px}
+  #trust .care .disc p{font-size:12.5px}
+}
+
+
+/* ── Meet Anu: the outer ring as a fine gold dotted line ──────────────────
+   The outer ring was too faint next to the glowing middle ring; it is now a
+   gold dotted line ("dotted", not "dashed": Chrome draws a thin dashed
+   circle as dots but Safari draws real dashes), still slowly turning, no glow. */
+.anu-ring-1{border:2px dotted rgba(226,194,122,.7)}
+
+/* ── You do not have to figure this out alone (round 26) ──────────────────
+   A full-width soft wash: the words on the left with a gold rule above them, Anu on the right in a
+   floating on the soft wash. Same words. */
+/* Full-width band, not a card: the soft wash fills the section edge to edge,
+   and the words and Anu sit inside the usual page width. */
+.closing-cta{
+  padding:80px 20px;text-align:left;
+  background:
+    radial-gradient(rgba(94,53,102,.07) 1.1px,transparent 1.3px) 0 0/20px 20px,
+    radial-gradient(45% 90% at 78% 50%,rgba(244,201,211,.75),transparent 70%),
+    radial-gradient(40% 70% at 0% 0%,rgba(240,228,200,.6),transparent 70%),
+    linear-gradient(135deg,#F7EEF4,#EFE3EE)
+}
+.closing-panel{
+  position:relative;max-width:1080px;margin:0 auto;
+  display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);align-items:center;gap:40px
+}
+.closing-rule{display:block;width:64px;height:2px;background:var(--gold);margin-bottom:22px}
+.closing-text h2{text-align:left;font-size:clamp(32px,4.2vw,50px);line-height:1.1;margin:0 0 18px}
+.closing-text p{text-align:left;max-width:46ch}
+.closing-text .fineprint{text-align:left;margin-top:18px}
+.closing-art{position:relative;display:grid;place-items:center;aspect-ratio:1;max-width:340px;width:100%;justify-self:center}
+.closing-anu{position:relative;width:82%;height:auto;animation:anu-float 6s ease-in-out infinite}
+
+@media (max-width:900px){
+  .closing-panel{grid-template-columns:1fr;gap:20px;text-align:center}
+  .closing-art{order:-1;max-width:220px}
+  .closing-rule{margin:0 auto 18px}
+  .closing-text h2,.closing-text p,.closing-text .fineprint{text-align:center;margin-left:auto;margin-right:auto}
+}
+@media (max-width:620px){
+  .closing-cta{padding:44px 20px}
+  .closing-art{max-width:180px}
+  .closing-text h2{font-size:30px}
+  .closing-text .btn{width:100%}
+}
+@media (prefers-reduced-motion:reduce){.closing-anu{animation:none}}
+
+/* "figure this out alone" always starts on its own line */
+.closing-text h2 em{display:block}
+
+/* the brand line on the membership card, beside the chip */
+.inc-brand{
+  position:absolute;top:44px;left:104px;
+  font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(240,228,200,.85)
+}
+.inc-brand b{font-weight:700;color:#E2C27A}
+@media (max-width:620px){.inc-brand{top:31px;left:72px;font-size:9.5px;letter-spacing:.16em}}
+
+/* Brand line across the top beside the chip. */
+#included .inc-card .amount{margin-top:0}
+.inc-brand{top:42px;left:106px;right:28px;line-height:1.5}
+.inc-brand b{display:block}
+@media (max-width:620px){
+  #included .inc-card{min-height:250px}
+  #included .inc-card .amount{margin-top:0}
+  .inc-brand{top:24px;left:74px;right:18px}
+}
+
+/* brand line top-right, aligned to the right edge (chip stays top-left) */
+.inc-brand{left:auto;right:34px;top:40px;text-align:right}
+@media (max-width:620px){.inc-brand{left:auto;right:20px;top:24px}}
+
+
+/* ===== Round 27 (2026-11-06): Family Inclusiveness, right after Meet Anu.
+   Light where Meet Anu is dark; text left, illustration right, so the two
+   feature bands read as a pair. Revert: _snapshots/2026-11-06-round27-before/ */
+.fam{position:relative;background:linear-gradient(180deg,#FFF8F5 0%,#FBEFF2 100%);overflow:hidden}
+.fam::before{content:"";position:absolute;right:-12%;top:50%;width:62vw;max-width:820px;aspect-ratio:1;
+  transform:translateY(-50%);border-radius:50%;
+  background:radial-gradient(closest-side,rgba(233,175,192,.28),rgba(233,175,192,0));pointer-events:none}
+.fam-grid{position:relative;display:grid;grid-template-columns:1.1fr 1fr;gap:72px;align-items:center}
+.fam-text .eyebrow{color:var(--gold)}
+.fam-text h2{font-family:var(--serif);font-weight:600;color:var(--ink);
+  font-size:clamp(32px,3.8vw,50px);line-height:1.1;letter-spacing:-.01em;margin:10px 0 22px}
+.fam-text h2 em{display:block;font-style:italic;color:var(--plum)}
+.fam-text p{font-size:16.5px;line-height:1.7;color:var(--ink-body);margin:0 0 16px;max-width:56ch}
+.fam-text .fam-quote{margin:26px 0 22px;padding-left:20px;border-left:2px solid var(--gold);
+  font-family:var(--serif);font-size:19px;line-height:1.5;color:var(--ink)}
+.fam-quote span{font-style:italic;color:var(--plum);white-space:nowrap}
+.fam-text .fam-sign{font-family:var(--serif);font-style:italic;font-size:17px;color:var(--rose);margin:0}
+.fam-art{margin:0;justify-self:center;width:100%;max-width:560px}
+.fam-art img{display:block;width:100%;height:auto}
+@media (max-width:900px){
+  .fam{padding:72px 0}
+  .fam-grid{grid-template-columns:1fr;gap:36px}
+  .fam-art{order:-1;max-width:520px}
+}
+@media (max-width:620px){
+  .fam{padding:44px 0}
+  .fam::before{display:none}
+  .fam-grid{gap:22px}
+  .fam-art{max-width:none}
+  .fam-text p{font-size:15.5px}
+  .fam-text .fam-quote{font-size:17px}
+  .fam-quote span{white-space:normal}
+}
+
+/* ===== Round 28 (2026-11-07): family illustration supplied by the team (family.webp / family.jpg, 3:2).
+   Wider art column for a landscape image; edges fade into the section instead of a hard rectangle.
+   Revert: _snapshots/2026-11-07-round28-before/ */
+.fam-grid{grid-template-columns:1fr 1.15fr;gap:56px}
+.fam-art{max-width:680px}
+.fam-art img{
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%),linear-gradient(to bottom,transparent 0,#000 9%,#000 86%,transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%),linear-gradient(to bottom,transparent 0,#000 9%,#000 86%,transparent 100%);
+  mask-composite:intersect
+}
+@media (max-width:900px){ .fam-grid{grid-template-columns:1fr;gap:28px} .fam-art{max-width:640px} }
+@media (max-width:620px){ .fam-grid{grid-template-columns:minmax(0,1fr)} .fam-art{margin:0 -20px;width:auto;justify-self:stretch} }
+.fam-text .fam-quote{border-left:0;padding-left:0}
+.fam-cap{margin:6px 0 0;text-align:center;font-family:var(--serif);font-style:italic;font-weight:600;color:var(--plum);font-size:clamp(24px,2.6vw,34px);line-height:1.2;letter-spacing:-.01em}
+@media (max-width:620px){ .fam-cap{padding:0 20px;font-size:24px} }
+.fam-text h2{font-size:clamp(26px,2.75vw,40px);text-wrap:balance}
+@media (max-width:620px){ .fam-text h2{font-size:clamp(24px,7.4vw,30px)} }
+.fam-text h2{max-width:14em}
+@media (min-width:621px) and (max-width:900px){ .fam-text h2{font-size:34px} }
+/* Round 28b: square family portrait on white. multiply drops the white into the pink section;
+   the figures are cut at the left, right and bottom edges, so only those edges fade. */
+.fam-art{max-width:540px}
+.fam-art img{
+  mix-blend-mode:multiply;
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 6%,#000 94%,transparent 100%),linear-gradient(to bottom,#000 0,#000 84%,transparent 100%);
+  mask-image:linear-gradient(to right,transparent 0,#000 6%,#000 94%,transparent 100%),linear-gradient(to bottom,#000 0,#000 84%,transparent 100%)
+}
+@media (max-width:900px){ .fam-art{max-width:480px} }
+@media (max-width:620px){ .fam-art{margin:0 auto;width:100%;max-width:360px;justify-self:center} }
+
+/* ===== Round 29 (2026-11-07): Family, how sharing works. The second half of
+   Family Inclusiveness, so it carries on the family band's blush instead of
+   starting a new colour: three steps, then what she logs beside what they see.
+   Revert: _snapshots/2026-11-07-round29-before/ */
+.fam-how{background:linear-gradient(180deg,#FBEFF2 0%,#FFF8F5 100%);padding-top:24px}
+.fam-how .section-head{max-width:720px}
+.fam-how .section-head h2{font-family:var(--serif);font-weight:600;color:var(--ink);text-wrap:balance}
+.fam-how .section-head h2 em{font-style:italic;color:var(--plum)}
+
+/* her view, an arrow, their view */
+.fh-views{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:28px;align-items:end;max-width:1000px;margin:56px auto 0}
+.fh-view{margin:0;display:flex;flex-direction:column;height:100%}
+.fh-label{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mauve);margin:0 0 12px}
+.fh-card{flex:1;border-radius:26px;padding:30px 30px 28px}
+.fh-her{background:#fff;box-shadow:var(--shadow);border:1px solid var(--line)}
+.fh-ask{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--ink);margin:0 0 16px}
+.fh-chips{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-wrap:wrap;gap:10px}
+.fh-chips li{padding:9px 16px;border-radius:9999px;background:var(--blush);color:var(--plum);font-size:14.5px;font-weight:600}
+.fh-meta{margin:0;padding-top:14px;border-top:1px solid var(--line);font-size:14px;color:var(--mauve)}
+.fh-family{
+  color:rgba(247,240,232,.82);
+  background:
+    radial-gradient(90% 70% at 100% 0%,rgba(201,126,146,.5),transparent 60%),
+    radial-gradient(70% 60% at 0% 100%,rgba(184,146,60,.22),transparent 60%),
+    linear-gradient(150deg,#4A2A52,#3A2140 55%,#2E1A33);
+  box-shadow:var(--shadow-lift)
+}
+.fh-tag{font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft);margin:0 0 14px}
+.fh-soft{font-size:15px;line-height:1.5;margin:0 0 8px}
+.fh-tip{font-family:var(--serif);font-size:21px;font-weight:600;line-height:1.35;color:#FBF6F0;margin:0 0 22px}
+.fh-actions{display:flex;flex-wrap:wrap;gap:10px}
+.fh-btn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:9999px;font-size:14px;font-weight:700}
+.fh-btn-main{background:var(--rose);color:#fff}
+.fh-btn-ghost{border:1.5px solid rgba(247,240,232,.35);color:#FBF6F0}
+.fh-arrow{align-self:center;display:grid;place-items:center;width:46px;height:46px;margin-top:26px;border-radius:50%;
+  background:#fff;color:var(--rose);box-shadow:var(--shadow)}
+
+/* the three steps; the last one is the payoff, so it is the dark one */
+.fh-steps{list-style:none;margin:0 auto;padding:0;max-width:1000px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.fh-step{border-radius:26px;padding:28px 26px 30px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}
+.fh-num{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;margin-bottom:18px;
+  background:var(--lavender);color:var(--plum);font-family:var(--serif);font-size:20px;font-weight:600}
+.fh-step h3{font-family:var(--serif);font-size:21px;font-weight:600;color:var(--ink);margin:0 0 8px}
+.fh-step p{font-size:15.5px;line-height:1.6;color:var(--ink-body);margin:0}
+.fh-step-dark{border-color:transparent;background:linear-gradient(150deg,#4A2A52,#3A2140 60%,#2E1A33);box-shadow:var(--shadow-lift)}
+.fh-step-dark .fh-num{background:var(--rose);color:#fff}
+.fh-step-dark h3{color:#FBF6F0}
+.fh-step-dark p{color:rgba(247,240,232,.82)}
+
+.fh-note{max-width:1000px;margin:28px auto 0;text-align:center;font-size:15px;line-height:1.6;color:var(--mauve)}
+
+@media (max-width:900px){
+  .fh-views{grid-template-columns:minmax(0,1fr);max-width:560px;gap:14px;margin-top:40px}
+  .fh-arrow{margin:0;justify-self:center;transform:rotate(90deg)}
+  .fh-steps{grid-template-columns:minmax(0,1fr);max-width:560px;gap:14px}
+}
+@media (max-width:620px){
+  .fam-how{padding-top:8px}
+  .fh-card{padding:24px 22px 22px;border-radius:22px}
+  .fh-ask{font-size:18px}
+  .fh-tip{font-size:19px}
+  .fh-step{padding:22px 22px 24px;border-radius:22px;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:16px}
+  .fh-num{grid-row:span 2;margin:0;width:40px;height:40px;font-size:18px}
+  .fh-note{text-align:left;font-size:14.5px}
+}
+
+/* Round 30 (2026-11-07): the value figure on the membership card stands out from its sentence. */
+#included .inc-card .equiv-amt{font-size:1.4em;font-weight:800;color:#FBF6F0;white-space:nowrap}
+/* Round 30: What is included lost its 01–06 numbers, so the headings no longer keep room for them. */
+#included .inc h3{padding-right:0}
+/* The hero has no bottom padding so the photo sits on the strip; the languages line made the
+   text column the taller one, so give that column the same breathing room as the top. */
+@media (min-width:901px){ .lp-hero .wrap-wide > div:first-child{padding-bottom:44px} }
+/* Round 30: the lotus sits higher, just under the gold rule, instead of on the section floor (wide screens only;
+   below 900px it already sits above the heading). */
+@media (min-width:901px){ .why-bloom{bottom:72px} }
+/* ...and on phones and tablets, where it sits above the heading, pull it up into the empty top of the section. */
+@media (max-width:900px){ .why-bloom{margin-top:-72px} }
+/* Phones: the lotus sits to the right of the "Why Anuva is different" heading instead of above it.
+   It stays behind the text (the grid is z-index 1) in case a narrow phone brings them close. */
+@media (max-width:620px){
+  .why-bloom{position:absolute;margin:0;left:auto;right:max(10px,env(safe-area-inset-right,0px));top:26px;bottom:auto;width:min(140px,34vw)}
+}
+/* Trust strip: the languages item leads; on phones it gets its own full-width line with a little room under it. */
+@media (max-width:620px){ .trust-strip .ts-lang{flex-basis:100%;justify-content:center;padding-bottom:8px} }
+/* The languages item reads a step larger than the rest of the strip. */
+.trust-strip .ts-lang{font-size:15px}
+.trust-strip .ts-lang svg{width:19px;height:19px}
+@media (max-width:620px){ .trust-strip .ts-lang{font-size:13.5px} .trust-strip .ts-lang svg{width:17px;height:17px} }
+/* Family illustration toned down a touch so its pinks sit with the site's dusty rose and plum. */
+.fam-art img{filter:saturate(.58)}
+/* Hero question: a little smaller, with the answer on its own line. */
+.lp-hero h1{font-size:clamp(30px,4vw,50px);text-wrap:balance}
+.lp-hero h1 em{display:block;margin-top:.12em}
+/* The answer in two lines, "You may be in" / "perimenopause…", each kept whole. */
+.lp-hero h1 .nw{white-space:nowrap}
+/* A clear pause between the question and the answer. */
+.lp-hero h1 em{margin-top:.5em}
+/* The question sits 2pt below the answer, which keeps the full heading size. */
+.lp-hero h1{font-size:calc(clamp(30px,4vw,50px) - 8pt)}
+.lp-hero h1 em{font-size:clamp(30px,4vw,50px)}
+/* Hero subtitle a touch smaller. */
+.lp-hero .sub{font-size:16px}

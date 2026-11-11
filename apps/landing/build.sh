@@ -6,12 +6,12 @@ set -eu
 rm -rf dist
 mkdir -p dist
 
-for f in coming-soon:index contact:contact; do
-  sed "s|__WEB3FORMS_ACCESS_KEY__|${WEB3FORMS_ACCESS_KEY:-}|" "${f%%:*}.html" > "dist/${f##*:}.html"
-done
+# The home page is the full site (index.html); the waitlist (coming-soon.html) is no longer published.
+sed "s|__WEB3FORMS_ACCESS_KEY__|${WEB3FORMS_ACCESS_KEY:-}|" contact.html > dist/contact.html
 
-cp about.html privacy.html terms.html page.css symptom.css \
-  anuva-logo-mark.png anuva-logo-icon.png anu-mascot.png dist/
+cp index.html about.html privacy.html terms.html \
+  page.css symptom.css landing.css landing-white.css bg-lighter.css redesign.css \
+  anuva-logo-mark.png anuva-logo-icon.png anu-mascot.png family.jpg family.webp dist/
 
 mkdir -p dist/symptoms dist/uploads/founders
 cp symptoms/*.html dist/symptoms/

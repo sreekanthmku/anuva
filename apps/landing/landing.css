@@ -102,21 +102,66 @@
 }
 .trust-strip svg{flex:none;color:var(--gold-soft)}
 
-/* ── symptom chips ─────────────────────────────────────────────────────── */
-.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:940px;margin:0 auto}
-.chip{
-  display:inline-flex;align-items:center;gap:9px;min-height:44px;
-  padding:10px 20px 10px 14px;border-radius:9999px;
-  background:var(--surface-low);border:1px solid var(--line);
-  font-size:14.5px;font-weight:600;color:var(--ink);
-  box-shadow:0 3px 10px rgba(94,53,102,.06);
-  transition:transform .18s,box-shadow .18s,border-color .18s,background .18s
+/* ── symptom cards ─────────────────────────────────────────────────────── */
+/* Icons and colours are the same as the tiles on the /symptoms pages (plum, rose,
+   gold in turn). Each colour is set per card in the HTML as --c. */
+.sym-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:18px;max-width:1080px;margin:0 auto}
+.sym{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  min-height:44px;padding:26px 14px;border-radius:20px;text-align:center;
+  /* #F3E9DD is --surface-container on the symptom pages; written out because
+     landing-white.css turns that token white here, which would hide the card. */
+  background:#F3E9DD;border:1px solid transparent;
+  font-size:14.5px;font-weight:600;line-height:1.3;color:var(--ink);
+  transition:transform .25s,box-shadow .25s,background .25s
 }
-.chip:hover{transform:translateY(-3px);background:var(--lavender);
-  border-color:var(--plum);color:var(--plum);box-shadow:var(--shadow)}
-.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--rose);flex:none}
-.chip:nth-child(3n) .dot{background:var(--gold)}
-.chip:nth-child(3n+2) .dot{background:var(--plum)}
+.sym:hover,.sym:focus-visible{transform:translateY(-6px);box-shadow:var(--shadow-lift);background:var(--surface-low)}
+.sym-icon{
+  width:54px;height:54px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--c)
+}
+
+/* ── symptom popup ─────────────────────────────────────────────────────── */
+.sym-modal{
+  padding:0;border:0;background:transparent;width:min(560px,calc(100% - 32px));
+  max-height:calc(100dvh - 48px);overflow:visible;color:var(--ink)
+}
+.sym-modal::backdrop{background:rgba(62,37,66,.45);backdrop-filter:blur(2px)}
+.sym-modal[open]{animation:sym-in .22s ease-out}
+@keyframes sym-in{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.sym-modal-card{
+  position:relative;background:var(--surface-low);border-radius:28px;padding:30px 30px 26px;
+  max-height:calc(100dvh - 48px);overflow-y:auto;box-shadow:var(--shadow-lift)
+}
+.sym-modal-close{
+  position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:9999px;border:0;
+  background:transparent;color:var(--mauve);font-size:28px;line-height:1;cursor:pointer
+}
+.sym-modal-close:hover{background:var(--lavender);color:var(--plum)}
+.sym-modal-head{display:flex;align-items:center;gap:16px;margin:0 40px 20px 0}
+.sym-modal-icon{
+  width:56px;height:56px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--c)
+}
+.sym-modal-icon svg{width:26px;height:26px}
+.sym-modal-head h2{font-family:var(--serif);font-size:clamp(24px,4vw,30px);font-weight:600;margin:0;line-height:1.15}
+.sym-modal-label{
+  font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);
+  margin:18px 0 6px
+}
+.sym-modal-body > p:not(.sym-modal-label){font-size:15.5px;line-height:1.7;color:var(--ink-body);margin:0}
+.sym-modal-body .sym-modal-lede{font-size:17px;color:var(--ink)}
+.sym-modal-stat{margin-top:22px;padding:18px 20px;border-radius:20px;background:var(--lavender)}
+.sym-modal-stat p.sym-modal-label{margin-top:0;font-size:12px;color:var(--plum)}
+.sym-modal-stat .n{font-family:var(--serif);font-size:34px;font-weight:600;color:var(--plum);margin:0 0 4px;line-height:1.1}
+.sym-modal-stat p{font-size:14.5px;line-height:1.6;color:var(--ink-body);margin:0}
+.sym-modal-stat a{color:var(--plum);font-weight:700;white-space:nowrap}
+body:has(.sym-modal[open]){overflow:hidden}
+@media (max-width:620px){
+  .sym-modal{width:100%;max-width:none;margin:auto 0 0;max-height:92dvh}
+  .sym-modal-card{border-radius:24px 24px 0 0;padding:26px 20px 22px;max-height:92dvh}
+  .sym-modal[open]{animation:sym-up .25s ease-out}
+  @keyframes sym-up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+}
+@media (prefers-reduced-motion:reduce){.sym-modal[open]{animation:none}}
 .chips-note{
   text-align:center;line-height:1.5;color:var(--ink);
   max-width:620px;margin:32px auto 0;font-family:var(--serif);font-weight:500;
@@ -341,7 +386,10 @@
 /* ── FAQ ───────────────────────────────────────────────────────────────── */
 /* Native <details>, so the answers are in the HTML a crawler sees and the page
    needs no JavaScript to open them. */
-.faq{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+/* Two independent columns rather than one grid, so opening a question only pushes
+   down the questions under it in the same column. */
+.faq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;align-items:start}
+.faq-col{display:flex;flex-direction:column;gap:10px}
 .faq details{
   background:var(--surface-low);border:1px solid var(--line);border-radius:16px;
   padding:0 22px;transition:border-color .2s,box-shadow .2s
@@ -364,7 +412,7 @@
   position:relative;overflow:hidden;text-align:center;padding:76px 0;
   background:radial-gradient(120% 110% at 50% 0%,var(--blush),var(--lavender) 45%,var(--lavender-dim))
 }
-.closing-cta .lotus{position:absolute;right:-40px;bottom:-40px;width:260px;opacity:.28;
+.closing-cta .lotus{position:absolute;right:-1%;bottom:-6px;width:clamp(168px,18.9vw,280px);height:auto;opacity:.32;
   pointer-events:none}
 .closing-cta .wrap{position:relative;max-width:720px}
 .closing-cta h2{font-size:clamp(28px,4.6vw,44px);font-weight:600;line-height:1.14;margin:0 0 16px}
@@ -375,15 +423,16 @@
 /* ── mobile sticky CTA ─────────────────────────────────────────────────── */
 /* Hidden by default; only mobile gets it, where the header CTA is dropped at
    400px and the page is long enough to strand the visitor. */
-.sticky-cta{display:none}
 
 /* ── responsive ────────────────────────────────────────────────────────── */
 @media (max-width:1040px){
+  .sym-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
   .pillars{grid-template-columns:repeat(2,minmax(0,1fr))}
   .disciplines{grid-template-columns:repeat(2,minmax(0,1fr))}
   .included{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:900px){
+  .faq{grid-template-columns:1fr;max-width:780px;margin:0 auto}
   .section{padding:52px 0}
   .lp-hero .wrap-wide{grid-template-columns:1fr;gap:8px;padding-top:32px;text-align:center}
   .lp-hero .sub{margin-left:auto;margin-right:auto}
@@ -399,18 +448,12 @@
   .assurances{grid-template-columns:1fr}
   .closing-cta{padding:60px 0}
 
-  /* Bottom bar, clear of the iOS home indicator. Body gets matching padding
-     so the footer's last row is never trapped underneath it. */
-  .sticky-cta{
-    display:block;position:fixed;left:0;right:0;bottom:0;z-index:120;
-    background:rgba(247,240,232,.94);backdrop-filter:blur(10px);
-    -webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);
-    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))
-  }
-  .sticky-cta .btn{width:100%;box-shadow:none}
-  body{padding-bottom:76px}
 }
 @media (max-width:620px){
+  .sym-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .sym{padding:18px 8px 16px;gap:10px;font-size:13.5px}
+  .sym-icon{width:48px;height:48px}
+  .sym-icon svg{width:23px;height:23px}
   .pillars,.included,.disciplines{grid-template-columns:1fr}
   .can-cant{grid-template-columns:1fr}
   .price-card,.timeline{padding:26px 22px}
@@ -419,3 +462,88 @@
   .trust-strip .wrap-wide{gap:9px 20px}
   .trust-strip span{font-size:11.5px;letter-spacing:.06em}
 }
+
+/* ── phones ────────────────────────────────────────────────────────────────
+   DESIGN.md "Mobile". The page was ~15 phone screens tall, mostly from
+   desktop-sized padding and every grid collapsing to one card per row. Here:
+   tighter section rhythm, small cards two to a row, repeated cards (pillars,
+   specialists, stories) as a sideways swipe row, "What is included" as a
+   compact list, and the pricing timeline down to its headlines. */
+@media (max-width:620px){
+  .closing-cta .lotus{width:200px;right:-50px;bottom:-20px;opacity:.22}
+  .section{padding:36px 0}
+  .section-head{margin-bottom:20px}
+  .section-head h2{font-size:26px;margin-bottom:10px}
+  .lede,.section-head p{font-size:15.5px;line-height:1.55}
+  .closing-cta{padding:44px 0}
+
+  /* Swipe rows. The row bleeds to the screen edge so the next card peeks in,
+     which is what tells you there is more. */
+  .pillars,.disciplines,.quotes{
+    display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;
+    margin:0 -20px;padding:4px 20px 14px;scroll-padding:0 20px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;max-width:none
+  }
+  .pillars::-webkit-scrollbar,.disciplines::-webkit-scrollbar,.quotes::-webkit-scrollbar{display:none}
+  .pillar,.disc,.quote{flex:0 0 78%;scroll-snap-align:start;box-shadow:none}
+  .disc{flex-basis:62%}
+  .pillar,.disc{padding:18px 18px}
+  .quote{padding:20px 18px}
+  .disciplines{margin-bottom:0}
+
+  /* How it works: still a sequence, so it stays stacked, just tighter. */
+  .steps{gap:12px}
+  .step{padding:20px 18px;box-shadow:none}
+  .step .num{font-size:56px}
+  .step h3{font-size:19px;margin-bottom:6px}
+  .step p{font-size:14px;line-height:1.55;margin-bottom:10px}
+
+  /* What is included: icon beside the text instead of above it. */
+  .included{display:flex;flex-direction:column;gap:10px}
+  .included .card{
+    display:grid;grid-template-columns:40px 1fr;column-gap:14px;align-items:start;
+    padding:16px;box-shadow:none
+  }
+  .included .icon-tile{width:40px;height:40px;margin:0;grid-row:span 2}
+  .included .card h3{font-size:16.5px;margin:0 0 4px}
+  .included .card p{font-size:13.5px;line-height:1.5}
+
+  /* Pricing: the card keeps everything; the timeline keeps its four steps
+     (when, and whether you pay) and drops the explanations, which the price
+     card and the FAQ already carry. */
+  .price-grid{gap:14px}
+  .price-card,.timeline{padding:22px 18px}
+  .price-card .tag{margin-bottom:12px}
+  .price-card .equiv{margin-bottom:14px}
+  .price-card ul{gap:8px;margin-bottom:18px}
+  .price-card li{font-size:14px}
+  .timeline h3{font-size:19px;margin-bottom:14px}
+  .timeline li{padding-bottom:14px}
+  .timeline li p{display:none}
+
+  .faq details{padding:0 16px}
+  .faq summary{padding:15px 0}
+
+  .anu-art img{max-width:170px}
+  .anu-band .wrap-wide{gap:16px}
+
+  /* Footer: link groups fold up (see the script at the end of index.html). */
+  .site-footer{padding-top:36px}
+  .site-footer .cols{gap:0;padding-bottom:20px}
+  .site-footer .about{margin-bottom:16px}
+  .site-footer .about p{margin:8px 0 14px}
+  .foot-group{border-top:1px solid rgba(247,240,232,.14)}
+  .foot-group summary{padding:14px 0;margin:0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:44px}
+  .foot-group summary::after{content:'+';font-size:20px;font-weight:400;color:var(--gold-soft);letter-spacing:0}
+  .foot-group[open] summary::after{content:'\2212'}
+  .foot-group ul{padding-bottom:14px}
+}
+
+/* Footer groups are <details> so they can fold on phones; on wider screens
+   they are always open and the heading is not a toggle. */
+.foot-group summary{
+  list-style:none;font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gold-soft);margin:0 0 16px
+}
+.foot-group summary::-webkit-details-marker{display:none}
+@media (min-width:621px){.foot-group summary{pointer-events:none}}
