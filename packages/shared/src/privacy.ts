@@ -294,7 +294,7 @@ export const DATA_RECIPIENTS: {
   },
   {
     name: '2Factor',
-    purpose: 'Sending the one-time codes you sign in with',
+    purpose: 'Sending the one-time codes you sign in with, by phone call',
     dataShared: 'Your phone number.',
     reachesDeletion: false,
   },
