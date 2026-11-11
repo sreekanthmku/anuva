@@ -726,14 +726,14 @@ type UserWithSubscription = {
   preferredLanguage?: string | null;
   report14OpenedAt: Date | null;
   createdAt: Date;
-  subscription?: {
+  subscription: {
     plan: 'monthly' | 'annual' | null;
     status: 'trialing' | 'active' | 'past_due' | 'canceled';
     startedAt: Date;
     trialEndsAt: Date | null;
     renewsAt: Date | null;
   } | null;
-  detailedAssessment?: {
+  detailedAssessment: {
     status: 'in_progress' | 'completed';
   } | null;
 };
@@ -784,8 +784,11 @@ function serializeUser(user: {
   phoneVerifiedAt: Date | null;
   report14OpenedAt: Date | null;
   createdAt: Date;
-  subscription?: UserWithSubscription['subscription'];
-  detailedAssessment?: UserWithSubscription['detailedAssessment'];
+  // Required, not optional: a bare `prisma.user` row has neither, and serialising one reports "no
+  // trial" — which sent every returning user to the activate-trial screen after signing in. Pass a
+  // row from loadUserWithSubscription.
+  subscription: UserWithSubscription['subscription'];
+  detailedAssessment: UserWithSubscription['detailedAssessment'];
 }): AuthUser {
   const access = getSubscriptionAccessState(user.subscription ?? null);
 
@@ -4106,7 +4109,7 @@ app.post('/auth/verify-otp', async (req, res, next) => {
     setSessionCookie(res, sessionToken, expiresAt);
     res.json(
       authSessionResponseSchema.parse({
-        user: serializeUser(user),
+        user: serializeUser(await loadUserWithSubscription(user.id)),
         isNewUser,
       })
     );
@@ -4177,7 +4180,7 @@ app.post('/auth/beta-login', async (req, res, next) => {
     setSessionCookie(res, sessionToken, expiresAt);
     res.json(
       authSessionResponseSchema.parse({
-        user: serializeUser(user),
+        user: serializeUser(await loadUserWithSubscription(user.id)),
         isNewUser,
       })
     );
