@@ -6,7 +6,8 @@ import { getCalibrationAnchor } from '../core/wellnessCalibration';
 import { useAuth } from '../auth/auth-context';
 import { assessmentPath } from './config/assessmentView';
 
-const BENCHMARK_DAY_OFFSET = 7;
+// The first benchmark is the 14-day report (report14), so the plan points at day 14.
+const BENCHMARK_DAY_OFFSET = 14;
 const CARE_PATH_DAY_OFFSET = 14;
 
 function startOfDay(date: Date): Date {
@@ -27,11 +28,6 @@ function addCalendarDays(from: Date, days: number): Date {
  * "Next …" frame around the weekday is a translated string, because not every language puts it
  * in front.
  */
-function formatBenchmarkDay(date: Date, language: string): string {
-  const weekday = date.toLocaleDateString(language, { weekday: 'short' });
-  return i18n.t('greeting.nextWeekday', { weekday });
-}
-
 /** Month + day, e.g. May 12 */
 function formatCarePathDate(date: Date, language: string): string {
   return date.toLocaleDateString(language, { month: 'short', day: 'numeric' });
@@ -42,10 +38,11 @@ function buildSevenDayPlan(language: string, trialStartedAt?: string) {
 
   return [
     { key: 'today', eta: i18n.t('greeting.plan.today.eta') },
-    { key: 'days2to6', eta: i18n.t('greeting.plan.days2to6.eta') },
+    { key: 'days2to13', eta: i18n.t('greeting.plan.days2to13.eta') },
     {
-      key: 'day7',
-      eta: formatBenchmarkDay(addCalendarDays(start, BENCHMARK_DAY_OFFSET), language),
+      key: 'day14',
+      // A date, not "next <weekday>": two weeks out, a weekday alone points at the wrong week.
+      eta: formatCarePathDate(addCalendarDays(start, BENCHMARK_DAY_OFFSET), language),
     },
     {
       key: 'week2',

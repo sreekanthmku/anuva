@@ -2,22 +2,25 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
+import { useAuth } from '../../auth/auth-context';
 
 export type MoreMenuItem = {
-  num: string;
   to: string;
   /** Resolved through `t()` at render; see `nav.*`. */
   labelKey: string;
 };
 
 const items: MoreMenuItem[] = [
-  { num: '08', to: '/profile', labelKey: 'nav.profile' },
-  { num: '09', to: '/care', labelKey: 'nav.careDirection' },
-  { num: '10', to: '/library', labelKey: 'nav.library' },
-  { num: '11', to: '/qa', labelKey: 'nav.anonymousQa' },
-  { num: '12', to: '/booking', labelKey: 'nav.consultationBooking' },
-  { num: '13', to: '/notes', labelKey: 'nav.notes' },
+  { to: '/profile', labelKey: 'nav.profile' },
+  { to: '/care', labelKey: 'nav.careDirection' },
+  { to: '/library', labelKey: 'nav.library' },
+  { to: '/qa', labelKey: 'nav.anonymousQa' },
+  { to: '/booking', labelKey: 'nav.consultationBooking' },
+  { to: '/notes', labelKey: 'nav.notes' },
 ];
+
+/** Items are numbered from 08, as they always were; hiding one closes the gap. */
+const FIRST_NUMBER = 8;
 
 type MoreMenuSheetProps = {
   open: boolean;
@@ -27,6 +30,9 @@ type MoreMenuSheetProps = {
 export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // Care Direction leads to a consultation, which an alpha account not on a paid plan cannot book.
+  const locked = useAuth().user?.consultationBookingLocked ?? false;
+  const visible = locked ? items.filter((item) => item.to !== '/care') : items;
   // Focus in, Tab trap, focus back to More. Escape is the listener below.
   const dialogRef = useDialogA11y<HTMLDivElement>(open);
 
@@ -66,7 +72,7 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
           {t('nav.moreDestinations')}
         </h2>
         <ul className="flex flex-col gap-1">
-          {items.map((item) => (
+          {visible.map((item, index) => (
             <li key={item.to}>
               <button
                 type="button"
@@ -78,7 +84,7 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-[12px] text-primary"
                   style={{ fontFamily: '"Mulish", sans-serif' }}
                 >
-                  {item.num}
+                  {String(FIRST_NUMBER + index).padStart(2, '0')}
                 </span>
                 <span
                   className="text-[15px] text-on-surface"

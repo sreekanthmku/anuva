@@ -244,7 +244,13 @@ import { consultationPublishGrant, consultationVideoEnabled } from './consultati
 import { createDoctorVisitSummaryRouter, createVisitSummaryRouter } from './visitSummary/router.js';
 import { getCycleData, serializePeriodFlowLog, serializePeriodLog } from './cycleData.js';
 import { TERMS_REQUIRED_MESSAGE, hasAcceptedCurrentTerms, termsConsentCreate } from './termsConsent.js';
-import { ALPHA_CODE_REQUIRED_MESSAGE, readAlphaAccessConfig, resolveAlphaCode } from './alphaAccess.js';
+import {
+  ALPHA_CODE_REQUIRED_MESSAGE,
+  CONSULTATION_BOOKING_LOCKED_MESSAGE,
+  isConsultationBookingLocked,
+  readAlphaAccessConfig,
+  resolveAlphaCode,
+} from './alphaAccess.js';
 import { startMedicationReminderJob } from './medication/jobs.js';
 import { startSupportRetentionJob } from './supportRetention.js';
 import { eraseScope } from './privacy/erasure.js';
@@ -710,6 +716,7 @@ function setNoStoreHeaders(res: Response): void {
 
 type UserWithSubscription = {
   id: string;
+  alphaCode: string | null;
   phone: string;
   name: string | null;
   email: string | null;
@@ -768,6 +775,8 @@ function getSubscriptionAccessState(subscription: UserWithSubscription['subscrip
 
 function serializeUser(user: {
   id: string;
+  /** The alpha access code the account signed up with; drives `consultationBookingLocked`. */
+  alphaCode: string | null;
   phone: string;
   name: string | null;
   email: string | null;
@@ -795,6 +804,10 @@ function serializeUser(user: {
     hasActiveAccess: access.hasActiveAccess,
     trialAvailable: access.trialAvailable,
     requiresPayment: access.requiresPayment,
+    consultationBookingLocked: isConsultationBookingLocked({
+      alphaCode: user.alphaCode,
+      subscriptionStatus: user.subscription?.status ?? null,
+    }),
     phoneVerifiedAt: user.phoneVerifiedAt?.toISOString() ?? null,
     report14OpenedAt: user.report14OpenedAt?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
@@ -2971,6 +2984,14 @@ app.post('/consultations/book', async (req, res, next) => {
     await readyBookingCatalog();
 
     const user = await requireCurrentUser(req);
+    if (
+      isConsultationBookingLocked({
+        alphaCode: user.alphaCode,
+        subscriptionStatus: user.subscription?.status ?? null,
+      })
+    ) {
+      throw new HttpError(403, CONSULTATION_BOOKING_LOCKED_MESSAGE);
+    }
     const parsed = createConsultationBookingBodySchema.parse(req.body);
 
     const booked = await prisma.$transaction(async (tx: any) => {

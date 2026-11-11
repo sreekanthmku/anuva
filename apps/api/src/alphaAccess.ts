@@ -49,3 +49,18 @@ export function resolveAlphaCode(config: AlphaAccessConfig, raw: string | undefi
   const code = normalizeAlphaCode(raw);
   return code !== null && config.codes.includes(code) ? { ok: true, code } : { ok: false };
 }
+
+// Alpha accounts cannot book a consultation until they are on a paid plan. Everyone starts on a
+// 14-day trial (status 'trialing'), and a lapsed trial is not paid either, so in practice: booking
+// opens once the subscription is 'active'. Enforced at POST /consultations/book, the one door every
+// booking goes through (the booking screen and ANU's booking card alike); the app reads
+// `consultationBookingLocked` off the user to grey the doctors out and say why.
+
+export const CONSULTATION_BOOKING_LOCKED_MESSAGE = 'Subscribe to book a consultation.';
+
+export function isConsultationBookingLocked(user: {
+  alphaCode: string | null;
+  subscriptionStatus: string | null;
+}): boolean {
+  return user.alphaCode !== null && user.subscriptionStatus !== 'active';
+}

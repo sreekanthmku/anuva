@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { betaLoginBodySchema, requestOtpBodySchema, verifyOtpBodySchema } from '@anuva/shared';
 import {
   DEFAULT_ALPHA_CODES,
+  isConsultationBookingLocked,
   normalizeAlphaCode,
   readAlphaAccessConfig,
   resolveAlphaCode,
@@ -85,5 +86,20 @@ describe('auth request bodies', () => {
 
   it('keep the code optional, so sign-in and alpha-off sign-up are unchanged', () => {
     expect(requestOtpBodySchema.parse({ purpose: 'login', phone: '+919876543210' }).alphaCode).toBeUndefined();
+  });
+});
+
+describe('isConsultationBookingLocked', () => {
+  it('locks an alpha account until it is on a paid plan', () => {
+    expect(isConsultationBookingLocked({ alphaCode: 'ALPHASM', subscriptionStatus: null })).toBe(true);
+    expect(isConsultationBookingLocked({ alphaCode: 'ALPHASM', subscriptionStatus: 'trialing' })).toBe(true);
+    expect(isConsultationBookingLocked({ alphaCode: 'ALPHASM', subscriptionStatus: 'past_due' })).toBe(true);
+    expect(isConsultationBookingLocked({ alphaCode: 'ALPHASM', subscriptionStatus: 'canceled' })).toBe(true);
+    expect(isConsultationBookingLocked({ alphaCode: 'ALPHASM', subscriptionStatus: 'active' })).toBe(false);
+  });
+
+  it('never locks an account that did not sign up with an alpha code', () => {
+    expect(isConsultationBookingLocked({ alphaCode: null, subscriptionStatus: 'trialing' })).toBe(false);
+    expect(isConsultationBookingLocked({ alphaCode: null, subscriptionStatus: null })).toBe(false);
   });
 });

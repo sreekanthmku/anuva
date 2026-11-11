@@ -118,6 +118,11 @@ export const authUserSchema = z.object({
   hasActiveAccess: z.boolean(),
   trialAvailable: z.boolean(),
   requiresPayment: z.boolean(),
+  /**
+   * An alpha account not yet on a paid plan: consultations cannot be booked. Defaulted so a user
+   * cached on the device before this field existed still parses (it is refreshed from the API).
+   */
+  consultationBookingLocked: z.boolean().default(false),
   phoneVerifiedAt: z.string().datetime().nullable(),
   /** When she first opened her 14-day report; null until then. */
   report14OpenedAt: z.string().datetime().nullable(),

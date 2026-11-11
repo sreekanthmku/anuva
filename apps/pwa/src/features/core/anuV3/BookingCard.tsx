@@ -13,6 +13,7 @@ import { bookConsultation } from '../booking/api';
 import { formatBookingDateLong, formatBookingTimeLabel } from '../booking/dateTime';
 import { useSlotsRefresh } from '../booking/slotsChanged';
 import { confirmBookingWithAnu, fetchBookingOptions } from './api';
+import { useAuth } from '../../auth/auth-context';
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 
@@ -52,6 +53,8 @@ export function BookingCard({
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  // Alpha accounts not on a paid plan cannot book; the card says so instead of offering times.
+  const locked = useAuth().user?.consultationBookingLocked ?? false;
   const [doctors, setDoctors] = useState<AnuV3BookingDoctor[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [doctorKey, setDoctorKey] = useState<string | null>(offer.specialistKey);
@@ -186,6 +189,19 @@ export function BookingCard({
     setShowAll(false);
     setError(null);
   };
+
+  if (locked) {
+    return (
+      <div
+        role="status"
+        className="flex w-full flex-col gap-1 rounded-[18px] border border-primary/25 bg-surface p-3.5"
+        style={{ fontFamily: FONT_BODY }}
+      >
+        <p className="text-[14px] font-semibold text-primary">{t('booking.locked.title')}</p>
+        <p className="text-[13px] text-on-surface-variant">{t('booking.locked.body')}</p>
+      </div>
+    );
+  }
 
   let body: ReactNode;
   if (doctors === null && !loadFailed) {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BottomNav } from './components/BottomNav';
@@ -9,12 +9,26 @@ import { SpecialistPicker } from './booking/components/SpecialistPicker';
 import { TimeSlotSection } from './booking/components/TimeSlotSection';
 import { useConsultationBooking } from './booking/hooks/useConsultationBooking';
 import { ShareNotesSheet } from './notes/ShareNotesSheet';
+import { useAuth } from '../auth/auth-context';
 
 export default function ConsultationBookingRoute() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const booking = useConsultationBooking();
   const [sharingNotes, setSharingNotes] = useState(false);
+  // Alpha accounts not on a paid plan cannot book (the API refuses too): every doctor is shown, greyed
+  // out, with a note to subscribe in place of the date and time pickers.
+  const { user } = useAuth();
+  const locked = user?.consultationBookingLocked ?? false;
+  const lockedSpecialists = useMemo(
+    () =>
+      booking.specialists.map((s) => ({
+        ...s,
+        bookable: false,
+        bookingDisabledReason: t('booking.locked.tag'),
+      })),
+    [booking.specialists, t]
+  );
 
   if (booking.phase === 'confirmed' && booking.confirmedDateYmd) {
     const consultationId = booking.confirmedConsultationId;
@@ -44,98 +58,121 @@ export default function ConsultationBookingRoute() {
       <BookingFormHeader />
 
       <SpecialistPicker
-        specialists={booking.specialists}
-        value={booking.specialistKey}
+        specialists={locked ? lockedSpecialists : booking.specialists}
+        value={locked ? null : booking.specialistKey}
         onChange={booking.setSpecialistKey}
       />
 
-      <section className="px-3 pt-[18px]">
-        {booking.loadingSpecialists ? (
-          <p
+      {locked ? (
+        <section className="px-3 pt-[18px]">
+          <div
             role="status"
-            className="text-[12px] text-on-surface-variant"
+            className="rounded-[20px] border border-primary/25 bg-primary/10 px-4 py-4"
             style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
           >
-            {t('booking.loadingSpecialists')}
-          </p>
-        ) : booking.selectedSpecialist ? (
-          <>
-            {booking.isSelectedSpecialistBookable ? (
-              <>
-                <DateSlotSection
-                  slots={booking.dateSlots}
-                  pickedDateId={booking.pickedDateId}
-                  canGoPrev={booking.canGoPrevDates}
-                  onPrevPage={booking.goPrevDatePage}
-                  onNextPage={booking.goNextDatePage}
-                  onSelectDate={booking.selectDate}
-                />
-                {booking.loadingSlots ? (
-                  <p
-                    role="status"
-                    className="mt-4 text-[12px] text-on-surface-variant"
-                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-                  >
-                    {t('booking.loadingSlots')}
-                  </p>
-                ) : booking.dateSlots.length === 0 ? (
-                  <div
-                    className="mt-4 rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-3 text-[12px] text-on-surface-variant"
-                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-                  >
-                    {t('booking.noSlotsInWindow', { window: booking.windowLabel })}
-                  </div>
-                ) : booking.pickedDateId ? (
-                  <TimeSlotSection
-                    slots={booking.timeSlots}
-                    pickedTimeId={booking.pickedTimeId}
-                    onSelectTime={booking.setPickedTimeId}
-                    emptyMessage={t('booking.noMoreTimes')}
-                  />
-                ) : null}
-              </>
-            ) : (
-              <div
-                className="rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-3 text-[12px] text-on-surface-variant"
+            <p
+              className="text-[15px] font-semibold text-primary"
+              style={{ fontFamily: '"Fraunces", serif' }}
+            >
+              {t('booking.locked.title')}
+            </p>
+            <p className="mt-1 text-[13px] leading-[1.5] text-on-surface-variant">
+              {t('booking.locked.body')}
+            </p>
+          </div>
+        </section>
+      ) : (
+        <>
+          <section className="px-3 pt-[18px]">
+            {booking.loadingSpecialists ? (
+              <p
+                role="status"
+                className="text-[12px] text-on-surface-variant"
                 style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               >
-                {booking.selectedSpecialist.bookingDisabledReason ?? t('booking.bookingDisabled')}
-              </div>
+                {t('booking.loadingSpecialists')}
+              </p>
+            ) : booking.selectedSpecialist ? (
+              <>
+                {booking.isSelectedSpecialistBookable ? (
+                  <>
+                    <DateSlotSection
+                      slots={booking.dateSlots}
+                      pickedDateId={booking.pickedDateId}
+                      canGoPrev={booking.canGoPrevDates}
+                      onPrevPage={booking.goPrevDatePage}
+                      onNextPage={booking.goNextDatePage}
+                      onSelectDate={booking.selectDate}
+                    />
+                    {booking.loadingSlots ? (
+                      <p
+                        role="status"
+                        className="mt-4 text-[12px] text-on-surface-variant"
+                        style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                      >
+                        {t('booking.loadingSlots')}
+                      </p>
+                    ) : booking.dateSlots.length === 0 ? (
+                      <div
+                        className="mt-4 rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-3 text-[12px] text-on-surface-variant"
+                        style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                      >
+                        {t('booking.noSlotsInWindow', { window: booking.windowLabel })}
+                      </div>
+                    ) : booking.pickedDateId ? (
+                      <TimeSlotSection
+                        slots={booking.timeSlots}
+                        pickedTimeId={booking.pickedTimeId}
+                        onSelectTime={booking.setPickedTimeId}
+                        emptyMessage={t('booking.noMoreTimes')}
+                      />
+                    ) : null}
+                  </>
+                ) : (
+                  <div
+                    className="rounded-[20px] border border-dashed border-border-default bg-surface-container-low px-4 py-3 text-[12px] text-on-surface-variant"
+                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  >
+                    {booking.selectedSpecialist.bookingDisabledReason ??
+                      t('booking.bookingDisabled')}
+                  </div>
+                )}
+              </>
+            ) : null}
+
+            {booking.error && (
+              <p
+                role="alert"
+                className="mt-4 text-[12px] text-red-300"
+                style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+              >
+                {booking.error}
+              </p>
             )}
-          </>
-        ) : null}
+          </section>
 
-        {booking.error && (
-          <p
-            role="alert"
-            className="mt-4 text-[12px] text-red-300"
-            style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-          >
-            {booking.error}
-          </p>
-        )}
-      </section>
-
-      <section className="px-3 py-5">
-        <button
-          type="button"
-          disabled={!booking.pickedDateId || !booking.pickedTimeId || booking.submitting}
-          onClick={booking.confirmBooking}
-          className="inline-flex w-full items-center justify-center rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
-          style={{
-            fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
-            letterSpacing: '-0.005em',
-          }}
-        >
-          {booking.submitting ? t('booking.confirming') : t('booking.confirmCta')}
-        </button>
-        <p
-          className="mt-3 text-center text-[10.5px] leading-[1.5] text-outline"
-          style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-        >
-          {t('booking.privacyNote')}
-        </p>
-      </section>
+          <section className="px-3 py-5">
+            <button
+              type="button"
+              disabled={!booking.pickedDateId || !booking.pickedTimeId || booking.submitting}
+              onClick={booking.confirmBooking}
+              className="inline-flex w-full items-center justify-center rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+              style={{
+                fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
+                letterSpacing: '-0.005em',
+              }}
+            >
+              {booking.submitting ? t('booking.confirming') : t('booking.confirmCta')}
+            </button>
+            <p
+              className="mt-3 text-center text-[10.5px] leading-[1.5] text-outline"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+            >
+              {t('booking.privacyNote')}
+            </p>
+          </section>
+        </>
+      )}
 
       <BottomNav />
     </main>

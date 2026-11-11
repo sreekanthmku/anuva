@@ -185,13 +185,13 @@
         "action": "ANU learns about you",
         "eta": "Today"
       },
-      "days2to6": {
-        "phase": "Days 2-6",
+      "days2to13": {
+        "phase": "Days 2-13",
         "action": "Daily symptom tracking",
-        "eta": "This week"
+        "eta": "Next 2 weeks"
       },
-      "day7": {
-        "phase": "Day 7",
+      "day14": {
+        "phase": "Day 14",
         "action": "Your first benchmark report"
       },
       "week2": {
@@ -1439,7 +1439,12 @@
     "loadSpecialistsFailed": "Unable to load specialists right now.",
     "loadSlotsFailed": "Unable to load appointment slots right now.",
     "slotTaken": "That slot was just booked. Please choose another time.",
-    "confirmFailed": "Unable to confirm your booking right now."
+    "confirmFailed": "Unable to confirm your booking right now.",
+    "locked": {
+      "title": "Subscribe for consultations",
+      "body": "Booking a doctor comes with a subscription. Until then, keep tracking with ANU.",
+      "tag": "Subscribe to book"
+    }
   },
   "call": {
     "home": "Home",
