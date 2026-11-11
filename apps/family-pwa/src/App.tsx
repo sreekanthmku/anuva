@@ -5,6 +5,7 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigat
 import { AppErrorBoundary } from './lib/AppErrorBoundary';
 import { RouteFocus } from './lib/a11y/RouteFocus';
 import { BetaReporter } from './features/beta/BetaReporter';
+import { AppUpdateBar } from './lib/pwa/AppUpdateBar';
 import { AppShell } from './features/shell/AppShell';
 import { TodayRoute } from './features/today/TodayRoute';
 import { LearnRoute } from './features/learn/LearnRoute';
@@ -206,6 +207,7 @@ export default function App() {
         </FamilyAuthProvider>
         {/* Outside the auth provider: the join and sign-in screens need reporting too. */}
         <BetaReporter app="family-pwa" />
+        <AppUpdateBar />
       </BrowserRouter>
     </AppErrorBoundary>
   );

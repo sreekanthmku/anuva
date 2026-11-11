@@ -16,9 +16,12 @@ import '@fontsource/dancing-script/500.css';
 import '@fontsource/dancing-script/600.css';
 import '@fontsource/dancing-script/700.css';
 import App from './App';
+import { startAppUpdates } from './lib/pwa/appUpdate';
 import './index.css';
 
 initSentry();
+// Registers the service worker and gets new deploys onto the device; see appUpdate.ts.
+startAppUpdates();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

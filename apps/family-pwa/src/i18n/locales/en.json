@@ -246,5 +246,10 @@
     "loading": "Loading…",
     "daysLogged": "Logged on {{logged}} of {{total}} days",
     "languageChanged": "Language changed to {{language}}"
+  },
+  "appUpdate": {
+    "ready": "A new version is ready.",
+    "update": "Update",
+    "notNow": "Not now"
   }
 }

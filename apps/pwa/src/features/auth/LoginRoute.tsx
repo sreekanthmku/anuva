@@ -9,6 +9,7 @@ import { useAuth } from './auth-context';
 import { getPostAuthPath } from './postAuthPath';
 import { betaLogin, fetchSignupConfig, requestOtp, verifyOtp } from './session';
 import { TermsConsent } from './TermsConsent';
+import { useHoldAppUpdate } from '../../lib/pwa/appUpdate';
 
 type AuthMode = 'login' | 'signup';
 
@@ -33,6 +34,9 @@ export default function LoginRoute() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [otp, setOtp] = useState('');
   const [challengeId, setChallengeId] = useState<string | null>(null);
+  // The code arrives as a voice call: she leaves the app to answer it, and a reload on her way back
+  // would drop the challenge she is about to enter it against.
+  useHoldAppUpdate(challengeId !== null);
   const [maskedPhone, setMaskedPhone] = useState('');
   const [resendAvailableAt, setResendAvailableAt] = useState<number | null>(null);
   const [clock, setClock] = useState(Date.now());

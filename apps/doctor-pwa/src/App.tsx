@@ -11,6 +11,7 @@ import { AppShell } from './features/shell/AppShell';
 import { AppErrorBoundary } from './lib/AppErrorBoundary';
 import { RouteFocus } from './lib/a11y/RouteFocus';
 import { BetaReporter } from './features/beta/BetaReporter';
+import { AppUpdateBar } from './lib/pwa/AppUpdateBar';
 
 /**
  * A tapped push is handled by the shared FCM service worker. When the portal is already open it
@@ -72,6 +73,7 @@ export default function App() {
       </DoctorLoginGate>
       {/* Outside the login gate, so the sign-in screen is reportable too. */}
       <BetaReporter app="doctor-pwa" />
+      <AppUpdateBar />
     </BrowserRouter>
     </AppErrorBoundary>
   );

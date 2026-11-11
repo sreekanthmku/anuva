@@ -6,6 +6,7 @@ import { ApiError } from '../../shared/lib/api';
 import { AuthShell } from './AuthShell';
 import { authMulish as mulish } from './authStyles';
 import { useFamilyAuth } from './family-auth-context';
+import { useHoldAppUpdate } from '../../lib/pwa/appUpdate';
 import {
   fetchInvitePreview,
   readInviteTokenFromHash,
@@ -50,6 +51,8 @@ export default function JoinRoute() {
   const [phone, setPhone] = useState('');
 
   const [challengeId, setChallengeId] = useState<string | null>(null);
+  // The code arrives as a voice call; a reload while they answer it would lose this step.
+  useHoldAppUpdate(challengeId !== null);
   const [maskedPhone, setMaskedPhone] = useState('');
   const [code, setCode] = useState('');
   const [resendIn, setResendIn] = useState(0);

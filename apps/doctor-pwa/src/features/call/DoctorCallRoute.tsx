@@ -5,6 +5,7 @@ import type { ConsultationCallState } from '@anuva/shared';
 import { endDoctorCall, startDoctorCall } from '../bookings/api';
 import { announce } from '../../lib/a11y/announce';
 import { VoiceAvatar } from './VoiceAvatar';
+import { useHoldAppUpdate } from '../../lib/pwa/appUpdate';
 
 type ConnectState = 'connecting' | 'connected' | 'ended' | 'error';
 
@@ -26,6 +27,8 @@ export function DoctorCallRoute() {
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const [state, setState] = useState<ConnectState>('connecting');
+  // A reload ends the call, and the call carries on while the doctor switches to another app.
+  useHoldAppUpdate();
   const [call, setCall] = useState<ConsultationCallState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [micOn, setMicOn] = useState(true);

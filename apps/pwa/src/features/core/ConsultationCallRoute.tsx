@@ -14,6 +14,7 @@ import {
   joinConsultationCall,
 } from './call/api';
 import { VoiceAvatar } from './call/VoiceAvatar';
+import { useHoldAppUpdate } from '../../lib/pwa/appUpdate';
 
 type ScreenState = 'loading' | 'waiting' | 'consent' | 'connecting' | 'connected' | 'ended' | 'error';
 
@@ -35,6 +36,8 @@ export default function ConsultationCallRoute() {
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const [screen, setScreen] = useState<ScreenState>('loading');
+  // A reload ends the call, and the call carries on while she switches to another app.
+  useHoldAppUpdate();
   const [call, setCall] = useState<ConsultationCallState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [micOn, setMicOn] = useState(true);

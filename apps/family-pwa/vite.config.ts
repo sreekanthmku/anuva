@@ -164,7 +164,10 @@ export default defineConfig(({ mode }) => {
       firebaseWebConfigPlugin(),
       react(),
       VitePWA({
-        registerType: 'autoUpdate',
+        // The worker downloads a new deploy and waits; src/lib/pwa/appUpdate.ts registers it and
+        // decides when to switch (reload, or offer a bar), so nothing is reloaded mid-call or mid-code.
+        registerType: 'prompt',
+        injectRegister: false,
         includeAssets: [
           'favicon.png',
           'apple-touch-icon.png',

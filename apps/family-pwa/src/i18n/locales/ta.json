@@ -246,5 +246,10 @@
     "loading": "ஏற்றுகிறது…",
     "daysLogged": "{{total}} நாட்களில் {{logged}} நாட்கள் பதிவு செய்தார்",
     "languageChanged": "மொழி {{language}} ஆக மாற்றப்பட்டது"
+  },
+  "appUpdate": {
+    "ready": "புதிய பதிப்பு தயார்.",
+    "update": "புதுப்பி",
+    "notNow": "இப்போது வேண்டாம்"
   }
 }

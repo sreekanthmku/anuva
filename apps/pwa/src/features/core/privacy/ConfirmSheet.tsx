@@ -5,6 +5,7 @@ import { announce } from '../../../lib/a11y/announce';
 import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 import { ApiError } from '../../../shared/lib/api';
 import { requestPrivacyOtp } from './api';
+import { useHoldAppUpdate } from '../../../lib/pwa/appUpdate';
 
 const MULISH = '"Mulish", -apple-system, system-ui, sans-serif';
 
@@ -48,6 +49,8 @@ export function ConfirmSheet({
   const { t } = useTranslation();
   const [otp, setOtp] = useState('');
   const [challengeId, setChallengeId] = useState<string | null>(null);
+  // The code arrives as a voice call; a reload while she answers it would lose this step.
+  useHoldAppUpdate(challengeId !== null);
   const [maskedPhone, setMaskedPhone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

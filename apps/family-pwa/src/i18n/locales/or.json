@@ -246,5 +246,10 @@
     "loading": "ଲୋଡ୍ ହେଉଛି…",
     "daysLogged": "{{total}} ଦିନ ମଧ୍ୟରୁ {{logged}} ଦିନ ଲଗ୍ କରିଛନ୍ତି",
     "languageChanged": "ଭାଷା {{language}}କୁ ବଦଳାଗଲା"
+  },
+  "appUpdate": {
+    "ready": "ନୂଆ ସଂସ୍କରଣ ପ୍ରସ୍ତୁତ।",
+    "update": "ଅପଡେଟ୍ କରନ୍ତୁ",
+    "notNow": "ଏବେ ନୁହେଁ"
   }
 }

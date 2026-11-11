@@ -859,3 +859,11 @@ export {
   type DoctorSharedReport,
   type DoctorSharedReportsResponse,
 } from './reportShares.js';
+export {
+  APP_UPDATE_CHECK_INTERVAL_MS,
+  APP_UPDATE_FRESH_AFTER_AWAY_MS,
+  decideAppUpdate,
+  isFreshReturn,
+  type AppUpdateDecision,
+  type AppUpdateMoment,
+} from './appUpdate.js';

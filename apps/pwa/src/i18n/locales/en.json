@@ -2290,5 +2290,10 @@
       "cta_other": "Share {{count}} reports",
       "cta_zero": "Choose reports to share"
     }
+  },
+  "appUpdate": {
+    "ready": "A new version is ready.",
+    "update": "Update",
+    "notNow": "Not now"
   }
 }

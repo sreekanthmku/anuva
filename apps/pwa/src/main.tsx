@@ -23,12 +23,15 @@ import '@fontsource/space-mono/700.css';
 // init would render raw keys for a frame.
 import './i18n';
 import App from './App';
+import { startAppUpdates } from './lib/pwa/appUpdate';
 // Imported for its side effect: `beforeinstallprompt` can fire before React
 // mounts, and the event is only usable if it was captured when it fired.
 import './lib/pwa/installPrompt';
 import './index.css';
 
 initSentry();
+// Registers the service worker and gets new deploys onto the device; see appUpdate.ts.
+startAppUpdates();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
