@@ -5,8 +5,11 @@ describe('BOOKABLE_DOCTOR_KEYS', () => {
   it('contains the expected bookable doctor keys', () => {
     expect(BOOKABLE_DOCTOR_KEYS).toBeInstanceOf(Set);
     expect(BOOKABLE_DOCTOR_KEYS.has('kekin-gala')).toBe(true);
-    expect(BOOKABLE_DOCTOR_KEYS.has('rizwana-sayed')).toBe(true);
-    expect(BOOKABLE_DOCTOR_KEYS.size).toBe(2);
+    expect(BOOKABLE_DOCTOR_KEYS.size).toBe(1);
+  });
+
+  it('does not include a specialist who has left', () => {
+    expect(BOOKABLE_DOCTOR_KEYS.has('rizwana-sayed')).toBe(false);
   });
 
   it('does not include non-bookable specialist keys', () => {

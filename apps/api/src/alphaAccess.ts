@@ -8,7 +8,8 @@
 // Both are read once at startup, so changing either needs an API restart, not a rebuild: the PWA
 // asks GET /auth/signup-config whether to show the field.
 
-export const ALPHA_CODE_REQUIRED_MESSAGE = 'Please enter a valid alpha access code to sign up.';
+// Testers know it as a referral code, so that is what the message calls it.
+export const ALPHA_CODE_REQUIRED_MESSAGE = 'Please enter a valid referral code to sign up.';
 
 /** The codes handed out for the first alpha round. ALPHA_CODES replaces the whole list. */
 export const DEFAULT_ALPHA_CODES = ['ALPHASM', 'ALPHAWM', 'ALPHARD', 'ALPHAHM'] as const;

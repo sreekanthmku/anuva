@@ -66,7 +66,7 @@
     "phoneInvalid": "Enter a valid 10-digit mobile number.",
     "loginHint": "Use the phone number linked to your account.",
     "signupHint": "We'll verify this number with a one-time password, sent by phone call.",
-    "alphaCodeLabel": "Alpha access code",
+    "alphaCodeLabel": "Referral code",
     "alphaCodePlaceholder": "Enter your referral code",
     "sendingOtp": "Calling you...",
     "signupCta": "Begin My Wellness Journey",

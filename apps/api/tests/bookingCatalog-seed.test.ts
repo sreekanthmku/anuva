@@ -2,8 +2,8 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 type BookingCatalogModule = typeof import('../src/bookingCatalog.js');
 
-const BOOKABLE_KEYS = ['kekin-gala', 'rizwana-sayed'] as const;
-const ALL_KEYS = ['kekin-gala', 'rizwana-sayed', 'jai-bapat', 'jigna-shah'] as const;
+const BOOKABLE_KEYS = ['kekin-gala'] as const;
+const ALL_KEYS = ['kekin-gala', 'jai-bapat', 'jigna-shah'] as const;
 
 function makeMockPrisma() {
   let idSeq = 0;
@@ -11,12 +11,13 @@ function makeMockPrisma() {
     idSeq += 1;
     return { id: `spec-${where.key}-${idSeq}` };
   });
+  const updateMany = vi.fn(async () => ({ count: 1 }));
   const deleteMany = vi.fn(async () => ({ count: 0 }));
   const createManyQual = vi.fn(async () => ({ count: 0 }));
   const createManySlots = vi.fn(async () => ({ count: 0 }));
 
   return {
-    specialist: { upsert },
+    specialist: { upsert, updateMany },
     specialistQualification: {
       deleteMany,
       createMany: createManyQual,
@@ -24,7 +25,7 @@ function makeMockPrisma() {
     consultationSlot: {
       createMany: createManySlots,
     },
-    _spies: { upsert, deleteMany, createManyQual, createManySlots },
+    _spies: { upsert, updateMany, deleteMany, createManyQual, createManySlots },
   };
 }
 
@@ -59,13 +60,12 @@ describe('ensureBookingCatalog', () => {
     expect(mock._spies.deleteMany).toHaveBeenCalledTimes(ALL_KEYS.length);
 
     // Only specialists with non-empty qualification lists get createMany.
-    expect(mock._spies.createManyQual).toHaveBeenCalledTimes(2);
+    expect(mock._spies.createManyQual).toHaveBeenCalledTimes(1);
 
     const qualPayloads = mock._spies.createManyQual.mock.calls.map(
       (call) => (call[0] as { data: { label: string }[] }).data.map((row) => row.label),
     );
     expect(qualPayloads).toContainEqual(['M.D.', 'F.C.P.S.', 'D.F.P.', 'D.G.O.', 'M.B.B.S.']);
-    expect(qualPayloads).toContainEqual(['MD', 'DGO', 'DFP']);
 
     // Bookable doctors get slot rows; non-bookable are skipped.
     expect(mock._spies.createManySlots).toHaveBeenCalledTimes(1);
@@ -98,7 +98,7 @@ describe('ensureBookingCatalog', () => {
       BOOKABLE_KEYS.includes((call[0] as { where: { key: string } }).where.key as (typeof BOOKABLE_KEYS)[number]),
     );
 
-    expect(bookableCalls).toHaveLength(2);
+    expect(bookableCalls).toHaveLength(1);
 
     for (const call of bookableCalls) {
       const arg = call[0] as {
@@ -110,5 +110,16 @@ describe('ensureBookingCatalog', () => {
       expect(arg.update.active).toBe(true);
       expect(arg.create.name.length).toBeGreaterThan(0);
     }
+  });
+
+  it('switches off specialists who have left, so a database that already has them stops listing them', () => {
+    expect(mock._spies.updateMany).toHaveBeenCalledWith({
+      where: { key: { in: ['rizwana-sayed'] }, active: true },
+      data: { active: false },
+    });
+    const upsertedKeys = mock._spies.upsert.mock.calls.map(
+      (call) => (call[0] as { where: { key: string } }).where.key,
+    );
+    expect(upsertedKeys).not.toContain('rizwana-sayed');
   });
 });

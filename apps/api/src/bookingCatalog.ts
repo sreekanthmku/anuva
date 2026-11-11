@@ -16,7 +16,15 @@ type SeedSpecialist = {
   bookable: boolean;
 };
 
-export const BOOKABLE_DOCTOR_KEYS = new Set(['kekin-gala', 'rizwana-sayed']);
+export const BOOKABLE_DOCTOR_KEYS = new Set(['kekin-gala']);
+
+/**
+ * Specialists who have left. The catalog below is re-seeded on every start and always sets
+ * `active: true`, so dropping someone from it is not enough on a database that already has them:
+ * they are switched off here instead. An inactive specialist is not listed, cannot be booked, has no
+ * assessment lens, and cannot sign in to the doctor portal. Their past consultations are kept.
+ */
+export const RETIRED_SPECIALIST_KEYS = ['rizwana-sayed'] as const;
 
 /**
  * Which detailed-assessment sections each specialist may read, by lens. This is an access-control
@@ -28,7 +36,6 @@ export const BOOKABLE_DOCTOR_KEYS = new Set(['kekin-gala', 'rizwana-sayed']);
  */
 export const SPECIALIST_LENSES: Record<string, readonly DetailedPractitioner[]> = {
   'kekin-gala': ['gynaecologist'],
-  'rizwana-sayed': ['gynaecologist'],
   'jai-bapat': ['psychologist'],
   'jigna-shah': ['dietician', 'coach'],
 };
@@ -43,7 +50,7 @@ const seedSpecialists: SeedSpecialist[] = [
     key: 'kekin-gala',
     name: 'Dr. Kekin C. Gala',
     subtitle: 'Obstetrician · Gynecologist · Fertility Specialist · Laparoscopic Surgeon',
-    tag: 'Clinical',
+    tag: 'Gynecologist',
     role: 'Obstetrician | Gynecologist | Fertility Specialist | Laparoscopic Surgeon',
     specialization:
       'Highly experienced in advanced gynecological treatments and patient-focused care, with expertise in fertility treatment, high-risk pregnancy management, and laparoscopic surgeries.',
@@ -52,21 +59,6 @@ const seedSpecialists: SeedSpecialist[] = [
     experience: 'Over a decade of medical experience',
     imageUrl: '/kekin.jpeg',
     qualifications: ['M.D.', 'F.C.P.S.', 'D.F.P.', 'D.G.O.', 'M.B.B.S.'],
-    bookable: true,
-  },
-  {
-    key: 'rizwana-sayed',
-    name: 'Dr. Rizwana Sayed',
-    subtitle: 'MD, DGO, DFP',
-    tag: 'Gynecologist',
-    role: 'Director of CARNATION Medical Centre, Juhu, Mumbai',
-    specialization:
-      'Practicing obstetrician and gynecologist for more than 18 years, with international experience and special interest in gynec endoscopy and sonology.',
-    summary:
-      'Organised cervical cancer awareness, adolescent health, and menopause care campaigns. She is also a keen academician, faculty at regional and national conferences, a consultant doctor on WIN TV Channel, and founder-trustee of Kidhmat Foundation.',
-    experience: '18+ years',
-    imageUrl: '/rizwana.jpeg',
-    qualifications: ['MD', 'DGO', 'DFP'],
     bookable: true,
   },
   {
@@ -144,6 +136,11 @@ export function ensureBookingCatalog(prisma: PrismaClientLike): Promise<void> {
 }
 
 async function seedBookingCatalog(prisma: PrismaClientLike): Promise<void> {
+  await prisma.specialist.updateMany({
+    where: { key: { in: [...RETIRED_SPECIALIST_KEYS] }, active: true },
+    data: { active: false },
+  });
+
   const specialistIdsByKey = new Map<string, string>();
 
   for (const specialist of seedSpecialists) {
