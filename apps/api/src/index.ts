@@ -102,6 +102,7 @@ import {
   unregisterFcmBodySchema,
   unregisterFcmResponseSchema,
   requestOtpResponseSchema,
+  signupConfigResponseSchema,
   verifyOtpBodySchema,
   toIndianMobile,
   cycleSetupBodySchema,
@@ -243,6 +244,7 @@ import { consultationPublishGrant, consultationVideoEnabled } from './consultati
 import { createDoctorVisitSummaryRouter, createVisitSummaryRouter } from './visitSummary/router.js';
 import { getCycleData, serializePeriodFlowLog, serializePeriodLog } from './cycleData.js';
 import { TERMS_REQUIRED_MESSAGE, hasAcceptedCurrentTerms, termsConsentCreate } from './termsConsent.js';
+import { ALPHA_CODE_REQUIRED_MESSAGE, readAlphaAccessConfig, resolveAlphaCode } from './alphaAccess.js';
 import { startMedicationReminderJob } from './medication/jobs.js';
 import { startSupportRetentionJob } from './supportRetention.js';
 import { eraseScope } from './privacy/erasure.js';
@@ -342,6 +344,8 @@ const FREE_TRIAL_DAYS = Math.max(1, Number(process.env.FREE_TRIAL_DAYS || 14));
  * OTP with. Off by default; only meant to be flipped on for the beta environment.
  */
 const BETA_EMAIL_LOGIN_ENABLED = process.env.BETA_EMAIL_LOGIN_ENABLED === 'true';
+/** ALPHA_TESTING_ENABLED / ALPHA_CODES — see alphaAccess.ts. Read once; a change needs a restart. */
+const ALPHA_ACCESS = readAlphaAccessConfig();
 const SESSION_COOKIE_SECURE = process.env.SESSION_COOKIE_SECURE === 'true';
 const SESSION_COOKIE_DOMAIN = process.env.SESSION_COOKIE_DOMAIN?.trim() || undefined;
 const SESSION_COOKIE_SAME_SITE = (process.env.SESSION_COOKIE_SAME_SITE?.trim().toLowerCase() || 'lax') as
@@ -3860,6 +3864,25 @@ function assertTermsAccepted(termsVersion: string | undefined): asserts termsVer
   }
 }
 
+/**
+ * The alpha access code to store on a new account: null while alpha testing is off, otherwise one
+ * of the configured codes or a 403. Called wherever an account can be created, and on the OTP
+ * request too so a wrong code is caught before an SMS is sent.
+ */
+function alphaCodeForNewAccount(raw: string | undefined): string | null {
+  const result = resolveAlphaCode(ALPHA_ACCESS, raw);
+  if (!result.ok) {
+    throw new HttpError(403, ALPHA_CODE_REQUIRED_MESSAGE);
+  }
+  return result.code;
+}
+
+/** Whether the sign-up form should ask for an alpha access code. Public; read on every visit. */
+app.get('/auth/signup-config', (_req, res) => {
+  setNoStoreHeaders(res);
+  res.json(signupConfigResponseSchema.parse({ alphaCodeRequired: ALPHA_ACCESS.enabled }));
+});
+
 app.post('/auth/request-otp', async (req, res, next) => {
   try {
     setNoStoreHeaders(res);
@@ -3898,6 +3921,7 @@ app.post('/auth/request-otp', async (req, res, next) => {
     // Checked before an SMS goes out, not only when the account is created.
     if (parsed.purpose === 'signup') {
       assertTermsAccepted(parsed.termsVersion);
+      alphaCodeForNewAccount(parsed.alphaCode);
     }
 
     if (recentSendCount >= OTP_MAX_SENDS_PER_15_MINUTES) {
@@ -3993,8 +4017,11 @@ app.post('/auth/verify-otp', async (req, res, next) => {
       throw new HttpError(409, 'An account already exists for this phone number.');
     }
 
+    // Resolved before the OTP is spent, so a bad code leaves the challenge usable once fixed.
+    let alphaCode: string | null = null;
     if (validated.purpose === 'signup') {
       assertTermsAccepted(validated.termsVersion);
+      alphaCode = alphaCodeForNewAccount(validated.alphaCode);
     }
 
     try {
@@ -4021,6 +4048,7 @@ app.post('/auth/verify-otp', async (req, res, next) => {
           phone,
           name: validated.name?.trim(),
           phoneVerifiedAt: now,
+          alphaCode,
           consentRecords: termsConsentCreate(validated.termsVersion),
         },
       });
@@ -4052,7 +4080,7 @@ app.post('/auth/verify-otp', async (req, res, next) => {
     });
 
     req.log = req.log.child({ userId: user.id });
-    req.log.info({ isNewUser, phone: maskPhone(phone) }, 'Session created');
+    req.log.info({ isNewUser, phone: maskPhone(phone), alphaCode: isNewUser ? user.alphaCode : undefined }, 'Session created');
 
     setSessionCookie(res, sessionToken, expiresAt);
     res.json(
@@ -4093,11 +4121,13 @@ app.post('/auth/beta-login', async (req, res, next) => {
 
     if (!user) {
       assertTermsAccepted(parsed.termsVersion);
+      const alphaCode = alphaCodeForNewAccount(parsed.alphaCode);
       user = await prisma.user.create({
         data: {
           phone: `beta:${crypto.randomUUID()}`,
           email: parsed.email,
           name: parsed.name?.trim(),
+          alphaCode,
           consentRecords: termsConsentCreate(parsed.termsVersion),
         },
       });

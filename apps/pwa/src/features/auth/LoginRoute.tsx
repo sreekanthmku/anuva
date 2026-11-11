@@ -7,7 +7,7 @@ import { announce } from '../../lib/a11y/announce';
 import { TrustStrip } from '../onboarding/components/TrustStrip';
 import { useAuth } from './auth-context';
 import { getPostAuthPath } from './postAuthPath';
-import { betaLogin, requestOtp, verifyOtp } from './session';
+import { betaLogin, fetchSignupConfig, requestOtp, verifyOtp } from './session';
 import { TermsConsent } from './TermsConsent';
 
 type AuthMode = 'login' | 'signup';
@@ -45,6 +45,24 @@ export default function LoginRoute() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   /** Sent with every request that can create an account; the API refuses one without it. */
   const termsVersion = acceptedTerms ? TERMS_CONSENT_VERSION : undefined;
+  /** Alpha testing (ALPHA_TESTING_ENABLED on the API): a new account needs an access code. */
+  const [alphaCodeRequired, setAlphaCodeRequired] = useState(false);
+  const [alphaCode, setAlphaCode] = useState('');
+  /** Only sent while it is asked for, so a stale value never travels once alpha testing ends. */
+  const alphaCodeToSend = alphaCodeRequired ? alphaCode.trim() || undefined : undefined;
+
+  useEffect(() => {
+    let cancelled = false;
+    // On failure the field stays hidden; if a code is in fact required, the API's refusal says so.
+    fetchSignupConfig()
+      .then((config) => {
+        if (!cancelled) setAlphaCodeRequired(config.alphaCodeRequired);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (status === 'authenticated' && user) {
@@ -101,6 +119,7 @@ export default function LoginRoute() {
         phone,
         name: mode === 'signup' ? name : undefined,
         termsVersion: mode === 'signup' ? termsVersion : undefined,
+        alphaCode: mode === 'signup' ? alphaCodeToSend : undefined,
       });
 
       setChallengeId(response.challengeId);
@@ -133,6 +152,7 @@ export default function LoginRoute() {
         otp,
         name: mode === 'signup' ? name : undefined,
         termsVersion: mode === 'signup' ? termsVersion : undefined,
+        alphaCode: mode === 'signup' ? alphaCodeToSend : undefined,
       });
 
       setAuthenticatedSession(session);
@@ -154,6 +174,7 @@ export default function LoginRoute() {
         email: betaEmail,
         name: betaName.trim() || undefined,
         termsVersion,
+        alphaCode: alphaCodeToSend,
       });
 
       setAuthenticatedSession(session);
@@ -264,6 +285,32 @@ export default function LoginRoute() {
               style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
               placeholder={t('login.namePlaceholder')}
             />
+
+            {alphaCodeRequired && (
+              <>
+                <label
+                  htmlFor="login-beta-alpha-code"
+                  className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
+                  {t('login.alphaCodeLabel')}
+                </label>
+                <input
+                  id="login-beta-alpha-code"
+                  type="text"
+                  name="alphaCode"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={alphaCode}
+                  onChange={(event) => setAlphaCode(event.target.value.toUpperCase())}
+                  className="mb-4 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] tracking-[0.08em] text-on-surface outline-none ring-primary/40 placeholder:tracking-normal placeholder:text-outline focus:ring-2"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                  placeholder={t('login.alphaCodePlaceholder')}
+                />
+              </>
+            )}
 
             <TermsConsent accepted={acceptedTerms} onChange={setAcceptedTerms} />
 
@@ -414,6 +461,7 @@ export default function LoginRoute() {
                       phone,
                       name: mode === 'signup' ? name : undefined,
                       termsVersion: mode === 'signup' ? termsVersion : undefined,
+                      alphaCode: mode === 'signup' ? alphaCodeToSend : undefined,
                     })
                       .then((response) => {
                         setChallengeId(response.challengeId);
@@ -458,6 +506,31 @@ export default function LoginRoute() {
                       style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
                       placeholder={t('login.namePlaceholder')}
                     />
+                    {alphaCodeRequired && (
+                      <>
+                        <label
+                          htmlFor="login-alpha-code"
+                          className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-outline"
+                          style={{ fontFamily: '"Mulish", sans-serif' }}
+                        >
+                          {t('login.alphaCodeLabel')}
+                        </label>
+                        <input
+                          id="login-alpha-code"
+                          type="text"
+                          name="alphaCode"
+                          autoComplete="off"
+                          autoCapitalize="characters"
+                          autoCorrect="off"
+                          spellCheck={false}
+                          value={alphaCode}
+                          onChange={(event) => setAlphaCode(event.target.value.toUpperCase())}
+                          className="mb-4 w-full rounded-[20px] border border-border-default bg-surface-container-low px-4 py-3.5 text-[15px] tracking-[0.08em] text-on-surface outline-none ring-primary/40 placeholder:tracking-normal placeholder:text-outline focus:ring-2"
+                          style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                          placeholder={t('login.alphaCodePlaceholder')}
+                        />
+                      </>
+                    )}
                   </>
                 )}
 
@@ -518,7 +591,10 @@ export default function LoginRoute() {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || (mode === 'signup' && !acceptedTerms)}
+                  disabled={
+                    isSubmitting ||
+                    (mode === 'signup' && (!acceptedTerms || (alphaCodeRequired && !alphaCode.trim())))
+                  }
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
                   style={{
                     fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',

@@ -7,6 +7,7 @@ import { adminErrorHandler } from '../middleware/errorHandler.js';
 import { PrismaEntityRepository } from '../repositories/prisma.repository.js';
 import { AdminAuthService } from '../services/auth.service.js';
 import { EntityService } from '../services/entity.service.js';
+import { createAlphaRoutes } from './alpha.routes.js';
 import { createAuthRoutes } from './auth.routes.js';
 import { createEntityRoutes } from './entity.routes.js';
 
@@ -42,6 +43,11 @@ export function createAdminRouter(deps: AdminDeps): Router {
   protectedEntities.use(createRequireAdminAuth(authService));
   protectedEntities.use(createEntityRoutes(entityController));
   router.use('/entities', protectedEntities);
+
+  const protectedAlpha = Router();
+  protectedAlpha.use(createRequireAdminAuth(authService));
+  protectedAlpha.use(createAlphaRoutes(deps.prisma));
+  router.use('/alpha', protectedAlpha);
 
   router.use(adminErrorHandler);
 

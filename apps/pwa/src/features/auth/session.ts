@@ -5,11 +5,17 @@ import type {
   BetaLoginBody,
   RequestOtpBody,
   RequestOtpResponse,
+  SignupConfigResponse,
   StartTrialResponse,
   VerifyOtpBody,
 } from '@anuva/shared';
 import { apiFetch } from '../../shared/lib/api';
 import { getOrCreateDeviceId } from '../../lib/notifications/deviceId';
+
+/** Whether sign-up needs an alpha access code. Asked on every visit: the API's env decides. */
+export async function fetchSignupConfig(): Promise<SignupConfigResponse> {
+  return apiFetch<SignupConfigResponse>('/api/auth/signup-config', { cache: 'no-store' });
+}
 
 export async function requestOtp(body: RequestOtpBody): Promise<RequestOtpResponse> {
   return apiFetch<RequestOtpResponse>('/api/auth/request-otp', {

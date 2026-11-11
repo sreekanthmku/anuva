@@ -32,6 +32,10 @@ model User {
   /// When she first opened her 14-day report. Null until then; while null and her first 14 days are
   /// over, Home guides her to it once per launch. Opening it from Profile counts too.
   report14OpenedAt    DateTime?
+  /// The alpha access code she signed up with (ALPHASM, …), upper-cased. Null for anyone who
+  /// signed up while ALPHA_TESTING_ENABLED was off. Kept through erasure: it names the invite, not
+  /// her, and is what the per-code sign-up counts are made of.
+  alphaCode           String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -95,6 +99,8 @@ model User {
   visitSummaries       VisitSummary[]
   familyShareConsents  FamilyShareConsent[]
   familySafetyAlerts   FamilySafetyAlert[]
+
+  @@index([alphaCode])
 }
 
 // ─────────────────────────────────────────────

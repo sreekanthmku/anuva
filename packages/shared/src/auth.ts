@@ -11,6 +11,13 @@ export const TERMS_CONSENT_VERSION = 'terms-privacy-v1';
 
 /** The version of the Terms and Privacy Policy she ticked. Required to create an account. */
 const termsVersion = z.string().trim().min(1).max(40).optional();
+
+/**
+ * The alpha access code she was given (ALPHA_TESTING_ENABLED on the API). Required to create an
+ * account only while alpha testing is on, and recorded on the account so each code's sign-ups can
+ * be counted. Case and spaces are forgiven; the API decides whether it is valid.
+ */
+const alphaCode = z.string().trim().max(40).optional();
 export const subscriptionPlanSchema = z.enum(['monthly', 'annual']);
 export const subscriptionStatusSchema = z.enum(['trialing', 'active', 'past_due', 'canceled']);
 export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>;
@@ -33,6 +40,7 @@ export const requestOtpBodySchema = z
     phone: z.string().trim().max(20),
     name: z.string().trim().min(2).max(80).optional(),
     termsVersion,
+    alphaCode,
   })
   .superRefine((value, ctx) => {
     if (value.purpose === 'signup' && !value.name) {
@@ -63,6 +71,7 @@ export const verifyOtpBodySchema = z
     otp: z.string().trim().length(6),
     name: z.string().trim().min(2).max(80).optional(),
     termsVersion,
+    alphaCode,
   })
   .superRefine((value, ctx) => {
     if (value.purpose === 'signup' && !value.name) {
@@ -81,9 +90,18 @@ export const betaLoginBodySchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
   /** Required only when this email has no account yet, since that call creates one. */
   termsVersion,
+  /** Checked, like termsVersion, only when this call creates the account. */
+  alphaCode,
 });
 
 export type BetaLoginBody = z.infer<typeof betaLoginBodySchema>;
+
+/** What the sign-up form needs to know before it is shown. Read at runtime, so no rebuild. */
+export const signupConfigResponseSchema = z.object({
+  alphaCodeRequired: z.boolean(),
+});
+
+export type SignupConfigResponse = z.infer<typeof signupConfigResponseSchema>;
 
 export const authUserSchema = z.object({
   id: z.string(),

@@ -7,6 +7,7 @@ import {
   type EntityMeta,
 } from '../../atoms';
 import { adminFetch, setStoredToken, type AdminApiError } from '../../lib/api';
+import { AlphaSignupsPanel } from '../alpha/AlphaSignupsPanel';
 import { SpecialistLoginsPanel } from '../doctors/SpecialistLoginsPanel';
 import { EntityBrowser } from '../entities/EntityBrowser';
 
@@ -15,6 +16,8 @@ import { EntityBrowser } from '../entities/EntityBrowser';
  * a view over `specialists` with its own credential handling.
  */
 const SPECIALIST_LOGINS_VIEW = '__specialist-logins';
+/** Sign-ups per alpha access code — a summary over `users`, not an entity of its own. */
+const ALPHA_SIGNUPS_VIEW = '__alpha-signups';
 
 export function AdminShell() {
   const [token, setToken] = useAtom(adminTokenAtom);
@@ -119,6 +122,13 @@ export function AdminShell() {
             >
               Specialist Logins
             </button>
+            <button
+              type="button"
+              className={selected === ALPHA_SIGNUPS_VIEW ? 'nav-item active' : 'nav-item'}
+              onClick={() => setSelected(ALPHA_SIGNUPS_VIEW)}
+            >
+              Alpha Sign-ups
+            </button>
           </div>
         </nav>
       </aside>
@@ -126,6 +136,8 @@ export function AdminShell() {
         {error && <p className="error">{error}</p>}
         {selected === SPECIALIST_LOGINS_VIEW ? (
           <SpecialistLoginsPanel />
+        ) : selected === ALPHA_SIGNUPS_VIEW ? (
+          <AlphaSignupsPanel />
         ) : current ? (
           <EntityBrowser key={current.resource} entity={current} />
         ) : (

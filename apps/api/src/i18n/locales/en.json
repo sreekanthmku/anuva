@@ -150,6 +150,7 @@
       "DATE_OF_BIRTH_MISSING": "Your report PDF is locked with your date of birth. Add it to your assessment to download it."
     },
     "pleaseAcceptTheLatestTermsOfUse": "Please accept the latest Terms of Use and Privacy Policy to create an account.",
+    "pleaseEnterAValidAlphaAccessCode": "Please enter a valid alpha access code to sign up.",
     "trackingDayOutOfRange": "You can add entries for today or yesterday only."
   },
   "anu": {
