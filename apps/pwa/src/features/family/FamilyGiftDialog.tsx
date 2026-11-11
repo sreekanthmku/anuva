@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useHoldAppUpdate } from '../../lib/pwa/appUpdate';
 import { announce } from '../../lib/a11y/announce';
 import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { twemojiUrl } from '../../shared/lib/twemoji';
@@ -72,6 +73,12 @@ export function FamilyGiftDialog({
 }) {
   const { t } = useTranslation();
   const [thanking, setThanking] = useState(false);
+  // The dialog stays mounted between gifts (it renders nothing while there is none), so the guard
+  // against a double tap must be reset for each new gift. Left set, every later gift's button
+  // returned early: nothing sent, and the card would not close.
+  useEffect(() => {
+    setThanking(false);
+  }, [gift]);
 
   // Hooks before the early return: the dialog mounts and unmounts as the gift arrives.
   const lanes = useMemo(
@@ -84,6 +91,8 @@ export function FamilyGiftDialog({
         : [],
     [gift],
   );
+  // No reload onto a new version while the card is up: it would vanish before she read it.
+  useHoldAppUpdate(gift !== null);
   const dialogRef = useDialogA11y<HTMLDivElement>(gift !== null, onDismiss);
 
   if (!gift) return null;

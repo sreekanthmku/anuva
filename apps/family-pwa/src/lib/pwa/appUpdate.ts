@@ -17,6 +17,12 @@ import { APP_UPDATE_CHECK_INTERVAL_MS, decideAppUpdate, isFreshReturn } from '@a
 
 /** Waiting longer than this for the new worker to take over means it never will; reload anyway. */
 const TAKEOVER_TIMEOUT_MS = 4_000;
+/**
+ * On coming back, how long to let a notification tap land before deciding. A tap brings the app
+ * forward and hands it a destination (a gift, a note) a moment later; deciding at once could reload
+ * over it, losing the card it was about to open. Once the card is up, it holds the update itself.
+ */
+const RESUME_SETTLE_MS = 1_500;
 const TEXT_INPUT_TYPES = new Set(['text', 'email', 'tel', 'number', 'search', 'url', 'password']);
 
 let started = false;
@@ -95,7 +101,7 @@ function onVisibilityChange(): void {
   hiddenAt = null;
   dismissed = false;
   checkForUpdate();
-  evaluate();
+  window.setTimeout(evaluate, RESUME_SETTLE_MS);
 }
 
 async function register(): Promise<void> {

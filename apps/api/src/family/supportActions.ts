@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { copy, fill, withLanguage } from '../i18n/index.js';
 import { languageForUser } from '../i18n/recipients.js';
 import { prisma } from '@anuva/database';
@@ -66,7 +67,10 @@ async function deliverGift(input: {
 }): Promise<boolean> {
 
   const first = firstNameOf(input.memberName);
-  const deepLink = `/home#familyGift=${input.kind}&familyFrom=${encodeURIComponent(first)}`;
+  // `familySend` is unique per send. Without it, two chocolates from the same person were the same
+  // link, and the app — which drops a link it handled in the last minute, so one tap arriving by two
+  // routes opens one card — dropped the second gift. The app reads only the params it knows.
+  const deepLink = `/home#familyGift=${input.kind}&familyFrom=${encodeURIComponent(first)}&familySend=${randomUUID().slice(0, 8)}`;
 
   // Her lock screen, so her language — not the language of the family member who sent it.
   const notification = withLanguage(await languageForUser(input.userId), () => ({

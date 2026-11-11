@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useHoldAppUpdate } from '../../lib/pwa/appUpdate';
 import { announce } from '../../lib/a11y/announce';
 import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { sendFamilyThanks } from './api';
@@ -19,6 +20,14 @@ export function FamilyMessageDialog({
 }) {
   const { t } = useTranslation();
   const [thanking, setThanking] = useState(false);
+  // The dialog stays mounted between notes (it renders nothing while there is none), so the guard
+  // against a double tap must be reset for each new note. Left set, every later note's button
+  // returned early: nothing sent, and the card would not close.
+  useEffect(() => {
+    setThanking(false);
+  }, [message]);
+  // No reload onto a new version while the card is up: it would vanish before she read it.
+  useHoldAppUpdate(message !== null);
   const dialogRef = useDialogA11y<HTMLDivElement>(message !== null, onDismiss);
 
   if (!message) return null;

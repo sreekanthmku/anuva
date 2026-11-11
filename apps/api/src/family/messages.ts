@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { copy, fill, withLanguage } from '../i18n/index.js';
 import { languageForUser } from '../i18n/recipients.js';
 import { prisma } from '@anuva/database';
@@ -79,7 +80,8 @@ export async function sendFamilyMessage(input: {
   }
 
   // encodeURIComponent, then into the fragment. The app decodes it and strips the hash on read.
-  const deepLink = `/home#familyMessage=${encodeURIComponent(input.text)}&familyFrom=${encodeURIComponent(first)}`;
+  // Unique per send, like a gift's: the same words sent twice must still open twice.
+  const deepLink = `/home#familyMessage=${encodeURIComponent(input.text)}&familyFrom=${encodeURIComponent(first)}&familySend=${randomUUID().slice(0, 8)}`;
 
   // The title is on her lock screen, so it is worded in her language; the note itself goes as written.
   const title = withLanguage(await languageForUser(input.userId), () =>

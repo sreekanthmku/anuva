@@ -65,3 +65,18 @@ describe('family gift deep link', () => {
     expect(readFamilyMessageFromHash('#familyGift=flowers&familyFrom=Wilfred')).toBeNull();
   });
 });
+
+describe('per-send id in the link', () => {
+  // The API adds `familySend` so two identical gifts or notes are two links; the readers must not mind it.
+  it('still reads a gift and a note that carry it', () => {
+    expect(readFamilyGiftFromHash('#familyGift=chocolates&familyFrom=Wilfred&familySend=1a2b3c4d')).toEqual({
+      kind: 'chocolates',
+      from: 'Wilfred',
+    });
+    expect(readFamilyMessageFromHash('#familyMessage=hello&familyFrom=Wilfred&familySend=1a2b3c4d')).toEqual({
+      text: 'hello',
+      from: 'Wilfred',
+    });
+  });
+});
+
