@@ -41,6 +41,9 @@ export {
   authUserSchema,
   betaLoginBodySchema,
   TERMS_CONSENT_VERSION,
+  AGE_CONFIRMATION_VERSION,
+  HEALTH_DATA_CONSENT_VERSION,
+  healthDataConsentBodySchema,
   logoutResponseSchema,
   loginEndReasonSchema,
   loginSessionSummarySchema,
@@ -59,6 +62,7 @@ export {
   type ActivateOneDaySubscriptionResponse,
   type CompleteOnboardingResponse,
   type BetaLoginBody,
+  type HealthDataConsentBody,
   type SignupConfigResponse,
   type LogoutResponse,
   type LoginEndReason,
@@ -867,3 +871,5 @@ export {
   type AppUpdateDecision,
   type AppUpdateMoment,
 } from './appUpdate.js';
+
+export { grievanceOfficerSchema, type GrievanceOfficer } from './legal.js';

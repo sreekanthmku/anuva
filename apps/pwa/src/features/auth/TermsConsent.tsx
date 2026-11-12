@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useDialogA11y } from '../../lib/a11y/useDialogA11y';
 import { PRIVACY_POLICY, TERMS_OF_USE, type LegalDocument, type LegalParagraph } from './termsContent';
+import { useGrievanceOfficer } from '../../shared/lib/grievanceOfficer';
+import { GrievanceOfficerDetails } from '../../shared/components/GrievanceOfficerDetails';
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
 
@@ -28,6 +30,7 @@ function TermsDialog({
   // Focus in, Tab trap, focus back to the link that opened it. Escape is the listener below.
   const dialogRef = useDialogA11y<HTMLDivElement>(true);
   const doc = DOCUMENTS[tab];
+  const grievanceOfficer = useGrievanceOfficer();
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -100,6 +103,11 @@ function TermsDialog({
                   <LegalText paragraph={paragraph} />
                 </p>
               ))}
+              {section.grievance && grievanceOfficer.name ? (
+                <p className="mt-1.5 text-[13.5px] leading-[1.6] text-on-surface-variant">
+                  <GrievanceOfficerDetails officer={grievanceOfficer} />
+                </p>
+              ) : null}
             </section>
           ))}
         </div>
@@ -176,6 +184,25 @@ export function TermsConsent({ accepted, onChange }: { accepted: boolean; onChan
       </label>
       {open ? <TermsDialog initial={open} onClose={() => setOpen(null)} onAgree={() => onChange(true)} /> : null}
     </>
+  );
+}
+
+/**
+ * "I am 18 or older". Its own box, not folded into the Terms one: Anuva accounts are for adults only,
+ * and the API refuses a sign-up without it and records it separately (legal and compliance review).
+ */
+export function AgeConfirmation({ confirmed, onChange }: { confirmed: boolean; onChange: (confirmed: boolean) => void }) {
+  const { t } = useTranslation();
+  return (
+    <label className="mb-4 flex cursor-pointer items-start gap-3" style={{ fontFamily: FONT_BODY }}>
+      <input
+        type="checkbox"
+        checked={confirmed}
+        onChange={(event) => onChange(event.target.checked)}
+        className="mt-0.5 h-5 w-5 shrink-0 accent-[#5E3566]"
+      />
+      <span className="text-[13px] leading-[1.5] text-on-surface-variant">{t('login.ageConfirm')}</span>
+    </label>
   );
 }
 

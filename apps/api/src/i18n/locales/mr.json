@@ -235,7 +235,10 @@
     "pleaseAcceptTheLatestTermsOfUse": "खातं तयार करण्यासाठी कृपया नवीन वापराच्या अटी आणि गोपनीयता धोरण स्वीकारा.",
     "pleaseEnterAValidReferralCode": "साइन अप करण्यासाठी वैध रेफरल कोड टाका.",
     "subscribeToBookAConsultation": "सल्ला बुक करण्यासाठी सबस्क्राइब करा.",
-    "trackingDayOutOfRange": "तुम्ही फक्त आजच्या किंवा कालच्या नोंदी जोडू शकता."
+    "trackingDayOutOfRange": "तुम्ही फक्त आजच्या किंवा कालच्या नोंदी जोडू शकता.",
+    "pleaseConfirmYouAre18OrOlder": "खातं तयार करण्यासाठी कृपया तुम्ही 18 वर्षांच्या किंवा त्याहून मोठ्या असल्याची खात्री करा.",
+    "pleaseAgreeToHealthDataConsent": "सुरू ठेवण्यासाठी कृपया Anuva तुमची आरोग्य माहिती कशी वापरतं याला मान्यता द्या.",
+    "healthDataConsentUpdated": "ही संमती स्क्रीन अपडेट केली गेली आहे. कृपया अ‍ॅप पुन्हा उघडा आणि नवीनतम आवृत्तीला मान्यता द्या."
   },
   "family": {
     "activityPhrases": {

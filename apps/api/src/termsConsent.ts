@@ -2,7 +2,7 @@
 // the rule is testable on its own: an account is created only with the current version, and the
 // agreement is written in the same insert as the account, so one never exists without the other.
 
-import { TERMS_CONSENT_VERSION } from '@anuva/shared';
+import { AGE_CONFIRMATION_VERSION, TERMS_CONSENT_VERSION } from '@anuva/shared';
 
 export const TERMS_REQUIRED_MESSAGE =
   'Please accept the latest Terms of Use and Privacy Policy to create an account.';
@@ -19,7 +19,23 @@ export function hasAcceptedCurrentTerms(termsVersion: string | undefined): terms
   return termsVersion === TERMS_CONSENT_VERSION || termsVersion === PREVIOUS_TERMS_CONSENT_VERSION;
 }
 
-/** Nested `consentRecords` create for `prisma.user.create`. */
-export function termsConsentCreate(termsVersion: string) {
-  return { create: { purpose: 'terms_and_privacy' as const, textVersion: termsVersion } };
+/** Anuva accounts are for adults only (Terms of Use §3). */
+export const AGE_REQUIRED_MESSAGE = 'Please confirm you are 18 or older to create an account.';
+
+/** She ticked "I am 18 or older". Anything else is not a confirmation. */
+export function hasConfirmedAge(ageConfirmed: boolean | undefined): ageConfirmed is true {
+  return ageConfirmed === true;
+}
+
+/**
+ * Nested `consentRecords` create for `prisma.user.create`: the Terms and Privacy Policy version she
+ * agreed to, and her 18+ confirmation, written in the same insert as the account.
+ */
+export function signupConsentsCreate(termsVersion: string) {
+  return {
+    create: [
+      { purpose: 'terms_and_privacy' as const, textVersion: termsVersion },
+      { purpose: 'age_18_plus' as const, textVersion: AGE_CONFIRMATION_VERSION },
+    ],
+  };
 }

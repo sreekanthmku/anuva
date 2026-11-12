@@ -292,6 +292,28 @@ function SpecialistDetailsModal({ specialist, onClose }: SpecialistDetailsModalP
                 </div>
               </div>
             ) : null}
+            {/* Registration, as the Telemedicine Practice Guidelines expect a patient to be able to see. */}
+            {specialist.registrationNumber ? (
+              <div className="mt-3 rounded-[20px] border border-border-default bg-surface/70 px-4 py-3">
+                <div
+                  className="text-[9.5px] uppercase tracking-[0.14em] text-outline"
+                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                >
+                  {t('booking.registration')}
+                </div>
+                <p
+                  className="mt-1.5 text-[12.5px] text-on-surface"
+                  style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                >
+                  {specialist.registrationCouncil
+                    ? t('booking.registrationWithCouncil', {
+                        number: specialist.registrationNumber,
+                        council: specialist.registrationCouncil,
+                      })
+                    : specialist.registrationNumber}
+                </p>
+              </div>
+            ) : null}
           </div>
 
           <button

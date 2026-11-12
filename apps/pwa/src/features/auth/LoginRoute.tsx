@@ -8,7 +8,7 @@ import { TrustStrip } from '../onboarding/components/TrustStrip';
 import { useAuth } from './auth-context';
 import { getPostAuthPath } from './postAuthPath';
 import { betaLogin, fetchSignupConfig, requestOtp, verifyOtp } from './session';
-import { TermsConsent } from './TermsConsent';
+import { AgeConfirmation, TermsConsent } from './TermsConsent';
 import { useHoldAppUpdate } from '../../lib/pwa/appUpdate';
 
 type AuthMode = 'login' | 'signup';
@@ -49,6 +49,9 @@ export default function LoginRoute() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   /** Sent with every request that can create an account; the API refuses one without it. */
   const termsVersion = acceptedTerms ? TERMS_CONSENT_VERSION : undefined;
+  /** "I am 18 or older", ticked by her. Required, like the terms, to create an account. */
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const ageConfirmedToSend = ageConfirmed ? (true as const) : undefined;
   /** Alpha testing (ALPHA_TESTING_ENABLED on the API): a new account needs an access code. */
   const [alphaCodeRequired, setAlphaCodeRequired] = useState(false);
   const [alphaCode, setAlphaCode] = useState('');
@@ -124,6 +127,7 @@ export default function LoginRoute() {
         name: mode === 'signup' ? name : undefined,
         termsVersion: mode === 'signup' ? termsVersion : undefined,
         alphaCode: mode === 'signup' ? alphaCodeToSend : undefined,
+        ageConfirmed: mode === 'signup' ? ageConfirmedToSend : undefined,
       });
 
       setChallengeId(response.challengeId);
@@ -157,6 +161,7 @@ export default function LoginRoute() {
         name: mode === 'signup' ? name : undefined,
         termsVersion: mode === 'signup' ? termsVersion : undefined,
         alphaCode: mode === 'signup' ? alphaCodeToSend : undefined,
+        ageConfirmed: mode === 'signup' ? ageConfirmedToSend : undefined,
       });
 
       setAuthenticatedSession(session);
@@ -179,6 +184,7 @@ export default function LoginRoute() {
         name: betaName.trim() || undefined,
         termsVersion,
         alphaCode: alphaCodeToSend,
+        ageConfirmed: ageConfirmedToSend,
       });
 
       setAuthenticatedSession(session);
@@ -316,6 +322,7 @@ export default function LoginRoute() {
               </>
             )}
 
+            <AgeConfirmation confirmed={ageConfirmed} onChange={setAgeConfirmed} />
             <TermsConsent accepted={acceptedTerms} onChange={setAcceptedTerms} />
 
             {errorMessage && (
@@ -331,7 +338,7 @@ export default function LoginRoute() {
 
             <button
               type="submit"
-              disabled={isSubmitting || !betaEmail || !acceptedTerms}
+              disabled={isSubmitting || !betaEmail || !acceptedTerms || !ageConfirmed}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
               style={{
                 fontFamily: '"Mulish", -apple-system, system-ui, sans-serif',
@@ -466,6 +473,7 @@ export default function LoginRoute() {
                       name: mode === 'signup' ? name : undefined,
                       termsVersion: mode === 'signup' ? termsVersion : undefined,
                       alphaCode: mode === 'signup' ? alphaCodeToSend : undefined,
+                      ageConfirmed: mode === 'signup' ? ageConfirmedToSend : undefined,
                     })
                       .then((response) => {
                         setChallengeId(response.challengeId);
@@ -580,6 +588,7 @@ export default function LoginRoute() {
                   {mode === 'login' ? t('login.loginHint') : t('login.signupHint')}
                 </p>
 
+                {mode === 'signup' && <AgeConfirmation confirmed={ageConfirmed} onChange={setAgeConfirmed} />}
                 {mode === 'signup' && <TermsConsent accepted={acceptedTerms} onChange={setAcceptedTerms} />}
 
                 {errorMessage && (
@@ -597,7 +606,7 @@ export default function LoginRoute() {
                   type="submit"
                   disabled={
                     isSubmitting ||
-                    (mode === 'signup' && (!acceptedTerms || (alphaCodeRequired && !alphaCode.trim())))
+                    (mode === 'signup' && (!acceptedTerms || !ageConfirmed || (alphaCodeRequired && !alphaCode.trim())))
                   }
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary px-2 py-[14px] text-[14px] font-semibold text-on-secondary disabled:opacity-60"
                   style={{

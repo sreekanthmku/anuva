@@ -235,7 +235,10 @@
     "pleaseAcceptTheLatestTermsOfUse": "অ্যাকাউন্ট তৈরি করতে সর্বশেষ ব্যবহারের শর্তাবলি ও প্রাইভেসি পলিসি মেনে নিন।",
     "pleaseEnterAValidReferralCode": "সাইন আপ করতে একটি সঠিক রেফারেল কোড লিখুন।",
     "subscribeToBookAConsultation": "পরামর্শ বুক করতে সাবস্ক্রাইব করুন।",
-    "trackingDayOutOfRange": "আপনি শুধু আজ বা গতকালের এন্ট্রি যোগ করতে পারেন।"
+    "trackingDayOutOfRange": "আপনি শুধু আজ বা গতকালের এন্ট্রি যোগ করতে পারেন।",
+    "pleaseConfirmYouAre18OrOlder": "অ্যাকাউন্ট তৈরি করতে অনুগ্রহ করে নিশ্চিত করুন যে আপনার বয়স ১৮ বছর বা তার বেশি।",
+    "pleaseAgreeToHealthDataConsent": "চালিয়ে যেতে অনুগ্রহ করে Anuva কীভাবে আপনার স্বাস্থ্য তথ্য ব্যবহার করে তাতে সম্মতি দিন।",
+    "healthDataConsentUpdated": "এই সম্মতি স্ক্রিন আপডেট করা হয়েছে। অনুগ্রহ করে অ্যাপ আবার খুলুন এবং সর্বশেষ সংস্করণে সম্মতি দিন।"
   },
   "family": {
     "activityPhrases": {

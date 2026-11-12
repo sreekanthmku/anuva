@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { TERMS_CONSENT_VERSION, betaLoginBodySchema, requestOtpBodySchema, verifyOtpBodySchema } from '@anuva/shared';
-import { TERMS_REQUIRED_MESSAGE, hasAcceptedCurrentTerms, termsConsentCreate } from '../src/termsConsent.js';
+import {
+  AGE_CONFIRMATION_VERSION,
+  TERMS_CONSENT_VERSION,
+  betaLoginBodySchema,
+  requestOtpBodySchema,
+  verifyOtpBodySchema,
+} from '@anuva/shared';
+import {
+  AGE_REQUIRED_MESSAGE,
+  TERMS_REQUIRED_MESSAGE,
+  hasAcceptedCurrentTerms,
+  hasConfirmedAge,
+  signupConsentsCreate,
+} from '../src/termsConsent.js';
 
 // Sign-up requires agreeing to the current Terms of Use and Privacy Policy, and the agreement is
 // stored with the account. These pin the rule and the record it writes.
@@ -19,11 +31,35 @@ describe('hasAcceptedCurrentTerms', () => {
   });
 });
 
-describe('termsConsentCreate', () => {
-  it('records the purpose and the version she agreed to', () => {
-    expect(termsConsentCreate(TERMS_CONSENT_VERSION)).toEqual({
-      create: { purpose: 'terms_and_privacy', textVersion: TERMS_CONSENT_VERSION },
+describe('signupConsentsCreate', () => {
+  it('records the terms version she agreed to and her 18+ confirmation, with the account', () => {
+    expect(signupConsentsCreate(TERMS_CONSENT_VERSION)).toEqual({
+      create: [
+        { purpose: 'terms_and_privacy', textVersion: TERMS_CONSENT_VERSION },
+        { purpose: 'age_18_plus', textVersion: AGE_CONFIRMATION_VERSION },
+      ],
     });
+  });
+});
+
+describe('hasConfirmedAge', () => {
+  it('accepts only an explicit true', () => {
+    expect(hasConfirmedAge(true)).toBe(true);
+    expect(hasConfirmedAge(false)).toBe(false);
+    expect(hasConfirmedAge(undefined)).toBe(false);
+  });
+
+  it('is carried by every sign-up body, and refused as anything but true', () => {
+    const phone = '+919876543210';
+    expect(
+      requestOtpBodySchema.parse({ purpose: 'signup', phone, name: 'Priya', ageConfirmed: true }).ageConfirmed,
+    ).toBe(true);
+    expect(() => requestOtpBodySchema.parse({ purpose: 'signup', phone, name: 'Priya', ageConfirmed: false })).toThrow();
+    expect(betaLoginBodySchema.parse({ email: 'a@b.co', ageConfirmed: true }).ageConfirmed).toBe(true);
+  });
+
+  it('has a refusal message the error bundle can translate', () => {
+    expect(AGE_REQUIRED_MESSAGE).toMatch(/18 or older/);
   });
 });
 

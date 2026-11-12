@@ -235,7 +235,10 @@
     "pleaseAcceptTheLatestTermsOfUse": "ખાતું બનાવવા માટે કૃપા કરી નવી ઉપયોગની શરતો અને ગોપનીયતા નીતિ સ્વીકારો.",
     "pleaseEnterAValidReferralCode": "સાઇન અપ કરવા માટે માન્ય રેફરલ કોડ દાખલ કરો.",
     "subscribeToBookAConsultation": "કન્સલ્ટેશન બુક કરવા માટે સબ્સ્ક્રાઇબ કરો.",
-    "trackingDayOutOfRange": "તમે ફક્ત આજની કે ગઈકાલની એન્ટ્રી ઉમેરી શકો છો."
+    "trackingDayOutOfRange": "તમે ફક્ત આજની કે ગઈકાલની એન્ટ્રી ઉમેરી શકો છો.",
+    "pleaseConfirmYouAre18OrOlder": "ખાતું બનાવવા માટે કૃપા કરીને ખાતરી કરો કે તમારી ઉંમર 18 વર્ષ કે તેથી વધુ છે.",
+    "pleaseAgreeToHealthDataConsent": "ચાલુ રાખવા માટે કૃપા કરીને Anuva તમારી આરોગ્ય માહિતીનો ઉપયોગ કેવી રીતે કરે છે તેની સાથે સંમત થાઓ.",
+    "healthDataConsentUpdated": "આ સંમતિ સ્ક્રીન અપડેટ કરવામાં આવી છે. કૃપા કરીને એપ ફરીથી ખોલો અને નવીનતમ આવૃત્તિ સાથે સંમત થાઓ."
   },
   "family": {
     "activityPhrases": {

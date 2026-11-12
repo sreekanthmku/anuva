@@ -55,6 +55,8 @@ import {
   authSessionResponseSchema,
   authUserSchema,
   betaLoginBodySchema,
+  healthDataConsentBodySchema,
+  grievanceOfficerSchema,
   consultationBookingResponseSchema,
   consultationCallConsentBodySchema,
   consultationCallConsentResponseSchema,
@@ -243,7 +245,21 @@ import {
 import { consultationPublishGrant, consultationVideoEnabled } from './consultationCallMedia.js';
 import { createDoctorVisitSummaryRouter, createVisitSummaryRouter } from './visitSummary/router.js';
 import { getCycleData, serializePeriodFlowLog, serializePeriodLog } from './cycleData.js';
-import { TERMS_REQUIRED_MESSAGE, hasAcceptedCurrentTerms, termsConsentCreate } from './termsConsent.js';
+import {
+  AGE_REQUIRED_MESSAGE,
+  TERMS_REQUIRED_MESSAGE,
+  hasAcceptedCurrentTerms,
+  hasConfirmedAge,
+  signupConsentsCreate,
+} from './termsConsent.js';
+import {
+  HEALTH_DATA_CONSENT_REQUIRED_MESSAGE,
+  HEALTH_DATA_CONSENT_STALE_MESSAGE,
+  grantHealthDataConsent,
+  hasHealthDataConsent,
+  healthDataConsentInclude,
+} from './healthDataConsent.js';
+import { readGrievanceOfficer } from './grievanceOfficer.js';
 import {
   ALPHA_CODE_REQUIRED_MESSAGE,
   CONSULTATION_BOOKING_LOCKED_MESSAGE,
@@ -352,6 +368,8 @@ const FREE_TRIAL_DAYS = Math.max(1, Number(process.env.FREE_TRIAL_DAYS || 14));
 const BETA_EMAIL_LOGIN_ENABLED = process.env.BETA_EMAIL_LOGIN_ENABLED === 'true';
 /** ALPHA_TESTING_ENABLED / ALPHA_CODES — see alphaAccess.ts. Read once; a change needs a restart. */
 const ALPHA_ACCESS = readAlphaAccessConfig();
+/** Named in the Privacy Policy; GRIEVANCE_OFFICER_* on the API (see grievanceOfficer.ts). */
+const GRIEVANCE_OFFICER = grievanceOfficerSchema.parse(readGrievanceOfficer());
 const SESSION_COOKIE_SECURE = process.env.SESSION_COOKIE_SECURE === 'true';
 const SESSION_COOKIE_DOMAIN = process.env.SESSION_COOKIE_DOMAIN?.trim() || undefined;
 const SESSION_COOKIE_SAME_SITE = (process.env.SESSION_COOKIE_SAME_SITE?.trim().toLowerCase() || 'lax') as
@@ -736,6 +754,8 @@ type UserWithSubscription = {
   detailedAssessment: {
     status: 'in_progress' | 'completed';
   } | null;
+  /** Her open agreement to the current health-data consent, if any (healthDataConsentInclude). */
+  consentRecords: { id: string }[];
 };
 
 function getSubscriptionAccessState(subscription: UserWithSubscription['subscription']) {
@@ -789,6 +809,7 @@ function serializeUser(user: {
   // row from loadUserWithSubscription.
   subscription: UserWithSubscription['subscription'];
   detailedAssessment: UserWithSubscription['detailedAssessment'];
+  consentRecords: UserWithSubscription['consentRecords'];
 }): AuthUser {
   const access = getSubscriptionAccessState(user.subscription ?? null);
 
@@ -811,10 +832,18 @@ function serializeUser(user: {
       alphaCode: user.alphaCode,
       subscriptionStatus: user.subscription?.status ?? null,
     }),
+    healthDataConsent: hasHealthDataConsent(user.consentRecords),
     phoneVerifiedAt: user.phoneVerifiedAt?.toISOString() ?? null,
     report14OpenedAt: user.report14OpenedAt?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
   });
+}
+
+/** Health data is stored only once she has agreed to the current health-data consent. */
+function assertHealthDataConsent(user: Pick<UserWithSubscription, 'consentRecords'>): void {
+  if (!hasHealthDataConsent(user.consentRecords)) {
+    throw new HttpError(403, HEALTH_DATA_CONSENT_REQUIRED_MESSAGE);
+  }
 }
 
 async function loadUserWithSubscription(userId: string): Promise<UserWithSubscription> {
@@ -835,6 +864,7 @@ async function loadUserWithSubscription(userId: string): Promise<UserWithSubscri
           status: true,
         },
       },
+      consentRecords: healthDataConsentInclude,
     },
   });
 
@@ -1142,6 +1172,17 @@ async function requireDoctorAccess(req: Request, _res: Response, next: NextFunct
 function isBookableDoctorKey(key: string): boolean {
   return BOOKABLE_DOCTOR_KEYS.has(key);
 }
+
+/**
+ * Patients can book a specialist only when they are a bookable doctor AND an admin has verified
+ * their registration (legal and compliance review: verify practitioner credentials before
+ * consultations). Doctors can still set up their slots before that; nobody can book them.
+ */
+function isBookableSpecialist(specialist: { key: string; verifiedAt: Date | null }): boolean {
+  return isBookableDoctorKey(specialist.key) && specialist.verifiedAt !== null;
+}
+
+const SPECIALIST_NOT_VERIFIED_MESSAGE = 'Booking is not available for this specialist yet.';
 
 async function readyBookingCatalog() {
   await ensureBookingCatalog(prisma);
@@ -1963,8 +2004,11 @@ function serializeSpecialist(specialist: {
   tag: string | null;
   imageUrl: string | null;
   qualifications: { label: string }[];
+  registrationNumber: string | null;
+  registrationCouncil: string | null;
+  verifiedAt: Date | null;
 }) {
-  const bookable = isBookableDoctorKey(specialist.key);
+  const bookable = isBookableSpecialist(specialist);
 
   return {
     key: specialist.key,
@@ -1977,6 +2021,8 @@ function serializeSpecialist(specialist: {
     tag: localizeSpecialistField(specialist.key, 'tag', specialist.tag),
     imageUrl: specialist.imageUrl,
     qualifications: specialist.qualifications.map((qualification) => qualification.label),
+    registrationNumber: specialist.registrationNumber,
+    registrationCouncil: specialist.registrationCouncil,
     bookable,
     bookingDisabledReason: bookable ? null : PATIENT_TEXT.bookingComingSoon,
   };
@@ -2246,8 +2292,8 @@ app.post('/consultations/:id/reschedule', async (req, res, next) => {
       if (slot.consultationId === existing.id) {
         throw new HttpError(400, 'This is already your booked slot.');
       }
-      if (!isBookableDoctorKey(slot.specialist.key)) {
-        throw new HttpError(400, 'Booking is not available for this specialist yet.');
+      if (!isBookableSpecialist(slot.specialist)) {
+        throw new HttpError(400, SPECIALIST_NOT_VERIFIED_MESSAGE);
       }
       if (slot.isBooked || slot.consultationId) {
         throw new HttpError(409, 'This slot has already been booked.');
@@ -2931,15 +2977,15 @@ app.get('/consultations/slots', async (req, res, next) => {
     const parsed = consultationSlotsQuerySchema.parse(req.query);
     const specialist = await prisma.specialist.findUnique({
       where: { key: parsed.specialistKey },
-      select: { id: true, key: true, active: true },
+      select: { id: true, key: true, active: true, verifiedAt: true },
     });
 
     if (!specialist || !specialist.active) {
       throw new HttpError(404, 'Specialist not found.');
     }
 
-    if (!isBookableDoctorKey(specialist.key)) {
-      throw new HttpError(400, 'Booking is not available for this specialist yet.');
+    if (!isBookableSpecialist(specialist)) {
+      throw new HttpError(400, SPECIALIST_NOT_VERIFIED_MESSAGE);
     }
 
     const rangeStart = parseYmdAtLocalMidnight(parsed.from);
@@ -3009,8 +3055,8 @@ app.post('/consultations/book', async (req, res, next) => {
         throw new HttpError(404, 'Slot not found.');
       }
 
-      if (!isBookableDoctorKey(slot.specialist.key)) {
-        throw new HttpError(400, 'Booking is not available for this specialist yet.');
+      if (!isBookableSpecialist(slot.specialist)) {
+        throw new HttpError(400, SPECIALIST_NOT_VERIFIED_MESSAGE);
       }
 
       if (slot.isBooked || slot.consultationId) {
@@ -3888,6 +3934,13 @@ function assertTermsAccepted(termsVersion: string | undefined): asserts termsVer
   }
 }
 
+/** Every path that creates an account checks this too: accounts are for adults only. */
+function assertAgeConfirmed(ageConfirmed: boolean | undefined): void {
+  if (!hasConfirmedAge(ageConfirmed)) {
+    throw new HttpError(400, AGE_REQUIRED_MESSAGE);
+  }
+}
+
 /**
  * The alpha access code to store on a new account: null while alpha testing is off, otherwise one
  * of the configured codes or a 403. Called wherever an account can be created, and on the OTP
@@ -3900,6 +3953,12 @@ function alphaCodeForNewAccount(raw: string | undefined): string | null {
   }
   return result.code;
 }
+
+/** Who handles privacy grievances, for the Privacy Policy. Public: shown before sign-up too. */
+app.get('/legal/grievance-officer', (_req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.json(GRIEVANCE_OFFICER);
+});
 
 /** Whether the sign-up form should ask for an alpha access code. Public; read on every visit. */
 app.get('/auth/signup-config', (_req, res) => {
@@ -3945,6 +4004,7 @@ app.post('/auth/request-otp', async (req, res, next) => {
     // Checked before an SMS goes out, not only when the account is created.
     if (parsed.purpose === 'signup') {
       assertTermsAccepted(parsed.termsVersion);
+      assertAgeConfirmed(parsed.ageConfirmed);
       alphaCodeForNewAccount(parsed.alphaCode);
     }
 
@@ -4045,6 +4105,7 @@ app.post('/auth/verify-otp', async (req, res, next) => {
     let alphaCode: string | null = null;
     if (validated.purpose === 'signup') {
       assertTermsAccepted(validated.termsVersion);
+      assertAgeConfirmed(validated.ageConfirmed);
       alphaCode = alphaCodeForNewAccount(validated.alphaCode);
     }
 
@@ -4067,13 +4128,14 @@ app.post('/auth/verify-otp', async (req, res, next) => {
       // Only a sign-up reaches here without an account (a login 404s above), so the terms were
       // checked; asserted again because this is the line that creates the account.
       assertTermsAccepted(validated.termsVersion);
+      assertAgeConfirmed(validated.ageConfirmed);
       user = await prisma.user.create({
         data: {
           phone,
           name: validated.name?.trim(),
           phoneVerifiedAt: now,
           alphaCode,
-          consentRecords: termsConsentCreate(validated.termsVersion),
+          consentRecords: signupConsentsCreate(validated.termsVersion),
         },
       });
     } else if (!user.phoneVerifiedAt) {
@@ -4145,6 +4207,7 @@ app.post('/auth/beta-login', async (req, res, next) => {
 
     if (!user) {
       assertTermsAccepted(parsed.termsVersion);
+      assertAgeConfirmed(parsed.ageConfirmed);
       const alphaCode = alphaCodeForNewAccount(parsed.alphaCode);
       user = await prisma.user.create({
         data: {
@@ -4152,7 +4215,7 @@ app.post('/auth/beta-login', async (req, res, next) => {
           email: parsed.email,
           name: parsed.name?.trim(),
           alphaCode,
-          consentRecords: termsConsentCreate(parsed.termsVersion),
+          consentRecords: signupConsentsCreate(parsed.termsVersion),
         },
       });
     }
@@ -4199,9 +4262,26 @@ app.get('/auth/me', async (req, res, next) => {
   }
 });
 
+// She agrees to how Anuva uses her health information (the screen before the assessment).
+app.post('/consents/health-data', async (req, res, next) => {
+  try {
+    setNoStoreHeaders(res);
+    const user = await requireCurrentUser(req);
+    const { version } = healthDataConsentBodySchema.parse(req.body);
+    if ((await grantHealthDataConsent(user.id, version)) === 'stale') {
+      throw new HttpError(409, HEALTH_DATA_CONSENT_STALE_MESSAGE);
+    }
+    req.log.info({ version }, 'Health-data consent granted');
+    res.json(authUserSchema.parse(serializeUser(await loadUserWithSubscription(user.id))));
+  } catch (e) {
+    next(e);
+  }
+});
+
 app.post('/onboarding/complete', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
+    assertHealthDataConsent(user);
 
     if (user.onboardingCompleted) {
       res.json(authUserSchema.parse(serializeUser(user)));
@@ -6024,6 +6104,7 @@ app.get('/detailed-assessment', async (req, res, next) => {
 app.put('/detailed-assessment', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
+    assertHealthDataConsent(user);
     const { answers } = saveDetailedAssessmentBodySchema.parse(req.body);
     await upsertDetailedAnswers(user.id, answers);
     res.json(serializeDetailedAssessment(await readDetailedAssessment(user.id)));
@@ -6041,6 +6122,7 @@ app.put('/detailed-assessment', async (req, res, next) => {
 app.post('/detailed-assessment/submit', async (req, res, next) => {
   try {
     const user = await requireCurrentUser(req);
+    assertHealthDataConsent(user);
     const { answers } = submitDetailedAssessmentBodySchema.parse(req.body);
     await upsertDetailedAnswers(user.id, answers);
 

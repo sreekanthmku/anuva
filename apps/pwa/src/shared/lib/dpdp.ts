@@ -4,9 +4,9 @@ export const DPDP_ACT_URL =
 /**
  * Published, not used to send anything — §13 of the DPDP Act requires the Grievance Officer's
  * contact to be reachable outside the app, so it cannot be the in-app support queue that a
- * grievance is usually about. Public information, hence a constant rather than an env var.
+ * grievance is usually about.
  *
- * TODO: confirm this mailbox exists before launch — a published contact that bounces is worse
- * than none.
+ * Only the fallback: the screens read the officer from the API (useGrievanceOfficer), which is set
+ * by GRIEVANCE_OFFICER_* there and defaults to this same address. It matches the Privacy Policy.
  */
-export const GRIEVANCE_OFFICER_EMAIL = 'privacy@anuvawellness.com';
+export const GRIEVANCE_OFFICER_EMAIL = 'hello@phasewellhealth.com';

@@ -89,6 +89,20 @@ export class EntityService {
       throw new ValidationError('Update body must include at least one field');
     }
     const data = await this.prepareWrite(entity, parsed.data);
+
+    // A verification is for a particular registration: a changed number or council voids it, and the
+    // specialist leaves the booking list until an admin verifies the new one.
+    if (entity.prismaModel === 'specialist' && ('registrationNumber' in data || 'registrationCouncil' in data)) {
+      const current = await this.repo.getById(entity, id);
+      const changed =
+        ('registrationNumber' in data && data.registrationNumber !== current.registrationNumber) ||
+        ('registrationCouncil' in data && data.registrationCouncil !== current.registrationCouncil);
+      if (changed) {
+        data.verifiedAt = null;
+        data.verifiedBy = null;
+      }
+    }
+
     const row = await this.repo.update(entity, id, data);
 
     // An admin resetting a doctor's password is nearly always responding to a lost or leaked one,
@@ -170,7 +184,7 @@ export class EntityService {
     }
 
     // Ensure exists
-    await this.repo.getById(entity, id);
+    const existing = await this.repo.getById(entity, id);
 
     switch (action) {
       case 'enable':
@@ -201,6 +215,27 @@ export class EntityService {
         return serializeRecord(
           await this.repo.update(entity, id, { [entity.softDeleteField]: null }),
         );
+      case 'verify': {
+        if (entity.prismaModel !== 'specialist') {
+          throw new ValidationError('verify is only for specialists');
+        }
+        const number = typeof existing.registrationNumber === 'string' ? existing.registrationNumber.trim() : '';
+        const council = typeof existing.registrationCouncil === 'string' ? existing.registrationCouncil.trim() : '';
+        if (!number || !council) {
+          throw new ValidationError(
+            'Fill in Registration number and Registration council, save, then verify.',
+          );
+        }
+        // The admin panel has one shared login, so there is no individual name to record.
+        return serializeRecord(
+          await this.repo.update(entity, id, { verifiedAt: new Date(), verifiedBy: 'admin panel' }),
+        );
+      }
+      case 'unverify':
+        if (entity.prismaModel !== 'specialist') {
+          throw new ValidationError('unverify is only for specialists');
+        }
+        return serializeRecord(await this.repo.update(entity, id, { verifiedAt: null, verifiedBy: null }));
       case 'revoke-sessions': {
         if (entity.prismaModel !== 'specialist') {
           throw new ValidationError('revoke-sessions is only for specialists');

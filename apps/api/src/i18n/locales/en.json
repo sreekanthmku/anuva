@@ -152,7 +152,10 @@
     "pleaseAcceptTheLatestTermsOfUse": "Please accept the latest Terms of Use and Privacy Policy to create an account.",
     "pleaseEnterAValidReferralCode": "Please enter a valid referral code to sign up.",
     "subscribeToBookAConsultation": "Subscribe to book a consultation.",
-    "trackingDayOutOfRange": "You can add entries for today or yesterday only."
+    "trackingDayOutOfRange": "You can add entries for today or yesterday only.",
+    "pleaseConfirmYouAre18OrOlder": "Please confirm you are 18 or older to create an account.",
+    "pleaseAgreeToHealthDataConsent": "Please agree to how Anuva uses your health information to continue.",
+    "healthDataConsentUpdated": "This consent screen has been updated. Please reopen the app and agree to the latest version."
   },
   "anu": {
     "redFlags": {

@@ -235,7 +235,10 @@
     "pleaseAcceptTheLatestTermsOfUse": "ଆକାଉଣ୍ଟ ତିଆରି କରିବାକୁ ଦୟାକରି ନୂଆ ବ୍ୟବହାର ସର୍ତ୍ତାବଳୀ ଓ ଗୋପନୀୟତା ନୀତି ଗ୍ରହଣ କରନ୍ତୁ।",
     "pleaseEnterAValidReferralCode": "ସାଇନ୍ ଅପ୍ କରିବାକୁ ଏକ ବୈଧ ରେଫରାଲ୍ କୋଡ୍ ଲେଖନ୍ତୁ।",
     "subscribeToBookAConsultation": "ପରାମର୍ଶ ବୁକ୍ କରିବାକୁ ସବସ୍କ୍ରାଇବ୍ କରନ୍ତୁ।",
-    "trackingDayOutOfRange": "ଆପଣ କେବଳ ଆଜି କିମ୍ବା ଗତକାଲିର ଏଣ୍ଟ୍ରି ଯୋଗ କରିପାରିବେ।"
+    "trackingDayOutOfRange": "ଆପଣ କେବଳ ଆଜି କିମ୍ବା ଗତକାଲିର ଏଣ୍ଟ୍ରି ଯୋଗ କରିପାରିବେ।",
+    "pleaseConfirmYouAre18OrOlder": "ଆକାଉଣ୍ଟ ତିଆରି କରିବାକୁ ଦୟାକରି ନିଶ୍ଚିତ କରନ୍ତୁ ଯେ ଆପଣଙ୍କ ବୟସ 18 ବର୍ଷ କିମ୍ବା ତା'ଠାରୁ ଅଧିକ।",
+    "pleaseAgreeToHealthDataConsent": "ଜାରି ରଖିବାକୁ ଦୟାକରି Anuva ଆପଣଙ୍କ ସ୍ୱାସ୍ଥ୍ୟ ତଥ୍ୟକୁ କିପରି ବ୍ୟବହାର କରେ ତାହା ସହ ରାଜି ହୁଅନ୍ତୁ।",
+    "healthDataConsentUpdated": "ଏହି ସମ୍ମତି ସ୍କ୍ରିନ୍ ଅପଡେଟ୍ ହୋଇଛି। ଦୟାକରି ଆପ୍ ପୁଣି ଖୋଲନ୍ତୁ ଏବଂ ନବୀନତମ ସଂସ୍କରଣ ସହ ରାଜି ହୁଅନ୍ତୁ।"
   },
   "family": {
     "activityPhrases": {

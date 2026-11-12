@@ -744,7 +744,7 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
     filterFields: ['active', 'portalRole'],
     sortableFields: ['name', 'key', 'lastLoginAt'],
     defaultSort: 'name',
-    listFields: ['name', 'key', 'role', 'username', 'active'],
+    listFields: ['name', 'key', 'role', 'username', 'verifiedAt', 'active'],
     activeField: 'active',
     readonlyFields: [
       ...RO,
@@ -753,10 +753,24 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
       'lastLoginAt',
       'failedLoginCount',
       'lockedUntil',
+      // Set only by the Verify / Remove verification actions, so the record of who checked stays honest.
+      'verifiedAt',
+      'verifiedBy',
     ],
     actions: [
       { key: 'enable', label: 'Enable' },
       { key: 'disable', label: 'Disable' },
+      {
+        key: 'verify',
+        label: 'Mark registration verified',
+        description:
+          'Only after checking the registration number with the council. Needs Registration number and Registration council filled in. Patients can book them only once verified.',
+      },
+      {
+        key: 'unverify',
+        label: 'Remove verification',
+        description: 'Takes them off the booking list until verified again',
+      },
       {
         key: 'revoke-sessions',
         label: 'Sign out everywhere',
@@ -776,6 +790,8 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
       experience: z.string().nullable().optional(),
       tag: z.string().nullable().optional(),
       imageUrl: z.string().nullable().optional(),
+      registrationNumber: z.string().trim().min(1).max(60).nullable().optional(),
+      registrationCouncil: z.string().trim().min(1).max(120).nullable().optional(),
       active: z.boolean().optional(),
     }),
     updateSchema: objectSchema(
@@ -792,6 +808,9 @@ export const ADMIN_ENTITIES: AdminEntityDefinition[] = [
         experience: z.string().nullable(),
         tag: z.string().nullable(),
         imageUrl: z.string().nullable(),
+        // Changing either one clears the verification (entity.service.ts): it was for the old number.
+        registrationNumber: z.string().trim().min(1).max(60).nullable(),
+        registrationCouncil: z.string().trim().min(1).max(120).nullable(),
         active: z.boolean(),
       },
       true,

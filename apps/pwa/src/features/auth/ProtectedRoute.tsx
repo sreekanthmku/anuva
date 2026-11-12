@@ -5,6 +5,7 @@ import { assessmentPath } from '../onboarding/config/assessmentView';
 import { FamilyInviteGate } from '../family/FamilyInviteGate';
 import { useFamilyGate } from '../family/useFamilyGate';
 import { useAuth } from './auth-context';
+import { HEALTH_DATA_CONSENT_PATH } from './postAuthPath';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
@@ -38,6 +39,12 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (status === 'anonymous') {
     return <Navigate to="/login" replace />;
+  }
+
+  // Existing accounts too: anyone without an agreement to the current health-data consent is
+  // asked once before going any further.
+  if (user && !user.healthDataConsent) {
+    return <Navigate to={HEALTH_DATA_CONSENT_PATH} replace />;
   }
 
   if (!user?.onboardingCompleted) {

@@ -5,6 +5,8 @@ import AssessmentPairedRoute from '../features/onboarding/AssessmentPairedRoute'
 import AssessmentRoute from '../features/onboarding/AssessmentRoute';
 import AssessmentResultRoute from '../features/onboarding/AssessmentResultRoute';
 import AnuGreetingRoute from '../features/onboarding/AnuGreetingRoute';
+import HealthDataConsentRoute from '../features/onboarding/HealthDataConsentRoute';
+import { HealthConsentGate } from '../features/auth/HealthConsentGate';
 import SubscriptionRoute from '../features/onboarding/SubscriptionRoute';
 import AnuDashboardRoute from '../features/core/AnuDashboardRoute';
 import NudgeCardRoute from '../features/core/NudgeCardRoute';
@@ -107,11 +109,12 @@ export function AppRouter() {
           <Routes>
             <Route path="/" element={<SplashRoute />} />
             <Route path="/login" element={<LoginRoute />} />
-            <Route path="/assessment" element={<AssessmentRoute />} />
-            <Route path="/assessment-paired" element={<AssessmentPairedRoute />} />
-            <Route path="/assessment-result" element={<AssessmentResultRoute />} />
-            <Route path="/subscription" element={<SubscriptionRoute />} />
-            <Route path="/anu-greeting" element={<AnuGreetingRoute />} />
+            <Route path="/assessment" element={<HealthConsentGate><AssessmentRoute /></HealthConsentGate>} />
+            <Route path="/assessment-paired" element={<HealthConsentGate><AssessmentPairedRoute /></HealthConsentGate>} />
+            <Route path="/assessment-result" element={<HealthConsentGate><AssessmentResultRoute /></HealthConsentGate>} />
+            <Route path="/subscription" element={<HealthConsentGate><SubscriptionRoute /></HealthConsentGate>} />
+            <Route path="/anu-greeting" element={<HealthConsentGate><AnuGreetingRoute /></HealthConsentGate>} />
+            <Route path="/health-data-consent" element={<HealthDataConsentRoute />} />
             <Route
               path="/home"
               element={

@@ -235,7 +235,10 @@
     "pleaseAcceptTheLatestTermsOfUse": "ಖಾತೆ ರಚಿಸಲು ದಯವಿಟ್ಟು ಹೊಸ ಬಳಕೆಯ ನಿಯಮಗಳು ಮತ್ತು ಗೌಪ್ಯತಾ ನೀತಿಯನ್ನು ಒಪ್ಪಿಕೊಳ್ಳಿ.",
     "pleaseEnterAValidReferralCode": "ಸೈನ್ ಅಪ್ ಮಾಡಲು ಮಾನ್ಯವಾದ ರೆಫರಲ್ ಕೋಡ್ ನಮೂದಿಸಿ.",
     "subscribeToBookAConsultation": "ಸಮಾಲೋಚನೆ ಬುಕ್ ಮಾಡಲು ಚಂದಾದಾರರಾಗಿ.",
-    "trackingDayOutOfRange": "ನೀವು ಇಂದಿನ ಅಥವಾ ನಿನ್ನೆಯ ಎಂಟ್ರಿಗಳನ್ನು ಮಾತ್ರ ಸೇರಿಸಬಹುದು."
+    "trackingDayOutOfRange": "ನೀವು ಇಂದಿನ ಅಥವಾ ನಿನ್ನೆಯ ಎಂಟ್ರಿಗಳನ್ನು ಮಾತ್ರ ಸೇರಿಸಬಹುದು.",
+    "pleaseConfirmYouAre18OrOlder": "ಖಾತೆ ರಚಿಸಲು ದಯವಿಟ್ಟು ನಿಮಗೆ 18 ವರ್ಷ ಅಥವಾ ಹೆಚ್ಚು ವಯಸ್ಸಾಗಿದೆ ಎಂದು ದೃಢೀಕರಿಸಿ.",
+    "pleaseAgreeToHealthDataConsent": "ಮುಂದುವರಿಯಲು ದಯವಿಟ್ಟು Anuva ನಿಮ್ಮ ಆರೋಗ್ಯ ಮಾಹಿತಿಯನ್ನು ಹೇಗೆ ಬಳಸುತ್ತದೆ ಎಂಬುದಕ್ಕೆ ಒಪ್ಪಿಗೆ ನೀಡಿ.",
+    "healthDataConsentUpdated": "ಈ ಒಪ್ಪಿಗೆ ಪರದೆಯನ್ನು ನವೀಕರಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಆ್ಯಪ್ ಅನ್ನು ಮತ್ತೆ ತೆರೆದು ಇತ್ತೀಚಿನ ಆವೃತ್ತಿಗೆ ಒಪ್ಪಿಗೆ ನೀಡಿ."
   },
   "family": {
     "activityPhrases": {

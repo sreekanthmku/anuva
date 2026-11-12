@@ -75,7 +75,8 @@
       "label": "I agree to the <1>Terms of Use</1> and <2>Privacy Policy</2>",
       "agree": "I agree",
       "close": "Close"
-    }
+    },
+    "ageConfirm": "I am 18 or older."
   },
   "assessment": {
     "eyebrow": "Pre-assessment · 2 min",
@@ -1457,7 +1458,9 @@
       "body": "Booking a doctor comes with a subscription. Until then, keep tracking.",
       "tag": "Subscribe to book"
     },
-    "providerNote": "Consultations and professional care plans available through Anuva Wellness are provided by the respective qualified professionals within their areas of competence. The professional is responsible for their clinical or professional recommendations. Anuva provides access to these services and the supporting technology and administration."
+    "providerNote": "Consultations and professional care plans available through Anuva Wellness are provided by the respective qualified professionals within their areas of competence. The professional is responsible for their clinical or professional recommendations. Anuva provides access to these services and the supporting technology and administration.",
+    "registration": "Registration",
+    "registrationWithCouncil": "{{number}} · {{council}}"
   },
   "call": {
     "home": "Home",
@@ -2315,5 +2318,42 @@
     "ready": "A new version is ready.",
     "update": "Update",
     "notNow": "Not now"
+  },
+  "healthConsent": {
+    "eyebrow": "Before your assessment",
+    "title": "Your health information",
+    "intro": "Here is what Anuva collects about your health, why, and who can see it. We need your agreement before you start.",
+    "sections": {
+      "collect": {
+        "title": "What we collect",
+        "body": "Your assessment answers, what you log (symptoms, periods, sleep, mood, medication and more), your notes, your conversations with ANU, and your consultations with Anuva Wellness professionals."
+      },
+      "why": {
+        "title": "Why",
+        "body": "To show you your patterns and reports, to personalise ANU's replies and your care, and to support the consultations you book. We do not sell your data or use it for advertising."
+      },
+      "who": {
+        "title": "Who can see it",
+        "body": "You. The professional you book, for your consultation. Family members, only what you choose to share. Service providers that run Anuva for us, such as hosting and our AI provider (OpenAI), process it on our behalf. Authorised Anuva staff only when needed for support, security or legal reasons."
+      },
+      "howLong": {
+        "title": "How long we keep it",
+        "body": "For as long as your account is active. Consultation and medical records are kept for as long as the law requires, even after you delete your account."
+      },
+      "choices": {
+        "title": "Your choices",
+        "body": "You can download or delete your data at any time from Profile → Privacy. To withdraw this consent, delete your account there; we then stop using your health information."
+      }
+    },
+    "agree": "I agree",
+    "saving": "Saving…",
+    "signOut": "Not now, sign out",
+    "declineNote": "Anuva cannot work without your health information, so you can't continue without agreeing."
+  },
+  "legal": {
+    "grievanceOfficer": "Grievance Officer: {{name}}",
+    "grievanceOfficerWithRole": "Grievance Officer: {{name}}, {{designation}}",
+    "grievancePhone": "Phone: {{phone}}",
+    "grievanceHours": "Hours: {{hours}}"
   }
 }

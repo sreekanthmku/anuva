@@ -977,6 +977,17 @@ model Specialist {
   experience     String?
   tag            String?
   imageUrl       String?
+  /// Professional registration, shown to patients when they book (Telemedicine Practice Guidelines
+  /// 2020 expect a doctor's registration number to be visible). The council is the body that issued
+  /// it: the National Medical Commission or a State Medical Council for doctors, RCI for clinical
+  /// psychologists, and so on.
+  registrationNumber  String?
+  registrationCouncil String?
+  /// Set by an admin after checking the registration with the council. Nobody can be booked until it
+  /// is set; clearing it (or changing either registration field) takes them off the booking list.
+  verifiedAt     DateTime?
+  /// Who verified it: the admin's username, kept as text so the record survives the admin account.
+  verifiedBy     String?
   active         Boolean                   @default(true)
   qualifications SpecialistQualification[]
   consultations  Consultation[]
@@ -2202,6 +2213,11 @@ enum ConsentPurpose {
   note_ai_processing
   /// The Terms of Use and Privacy Policy, agreed to when she created her account.
   terms_and_privacy
+  /// Collecting and processing her health information (assessment, logs, Anu, consultations).
+  /// Asked before the assessment, and of every existing account on its next visit.
+  health_data_processing
+  /// She confirmed she is 18 or older, when she created her account.
+  age_18_plus
 }
 
 /// Consent she gave for a purpose, and which wording she saw. Append-only: withdrawing stamps

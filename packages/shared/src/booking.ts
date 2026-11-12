@@ -29,6 +29,9 @@ export const consultationSpecialistSchema = z.object({
   tag: z.string().nullable(),
   imageUrl: z.string().nullable(),
   qualifications: z.array(z.string()),
+  /** Professional registration, shown when booking. Null until an admin has entered it. */
+  registrationNumber: z.string().nullable().default(null),
+  registrationCouncil: z.string().nullable().default(null),
   bookable: z.boolean(),
   bookingDisabledReason: z.string().nullable(),
 });

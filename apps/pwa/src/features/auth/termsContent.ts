@@ -16,7 +16,8 @@ export type LegalLink = { text: string; href: string };
 /** Plain text, or text with links in it, as a list of runs. */
 export type LegalParagraph = string | (string | LegalLink)[];
 
-export type LegalSection = { heading: string; body: LegalParagraph[] };
+/** `grievance`: the named Grievance Officer (from the API, once appointed) is shown under it. */
+export type LegalSection = { heading: string; body: LegalParagraph[]; grievance?: boolean };
 
 export type LegalDocument = {
   title: string;
@@ -115,6 +116,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     },
     {
       heading: '6. Contact and grievances',
+      grievance: true,
       body: [
         'Questions about your privacy? Write to us from Help in the app.',
         [

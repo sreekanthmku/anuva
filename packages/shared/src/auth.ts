@@ -9,6 +9,23 @@ export const authPurposeSchema = z.enum(['login', 'signup']);
  */
 export const TERMS_CONSENT_VERSION = 'terms-privacy-v2';
 
+/**
+ * Her confirmation that she is 18 or older. Anuva accounts are for adults only (Terms of Use §3);
+ * the API refuses to create an account without it and records it as a ConsentRecord. Bump when the
+ * wording of the confirmation changes.
+ */
+export const AGE_CONFIRMATION_VERSION = 'age-18-plus-v1';
+
+/**
+ * Consent to collecting and processing her health information, asked on its own screen before the
+ * assessment (and of existing accounts on their next visit). Bump whenever that screen's wording
+ * changes materially: everyone is asked again for the new version.
+ */
+export const HEALTH_DATA_CONSENT_VERSION = 'health-data-v1';
+
+/** Ticked "I am 18 or older". Required, like termsVersion, only by the call that creates the account. */
+const ageConfirmed = z.literal(true).optional();
+
 /** The version of the Terms and Privacy Policy she ticked. Required to create an account. */
 const termsVersion = z.string().trim().min(1).max(40).optional();
 
@@ -41,6 +58,7 @@ export const requestOtpBodySchema = z
     name: z.string().trim().min(2).max(80).optional(),
     termsVersion,
     alphaCode,
+    ageConfirmed,
   })
   .superRefine((value, ctx) => {
     if (value.purpose === 'signup' && !value.name) {
@@ -72,6 +90,7 @@ export const verifyOtpBodySchema = z
     name: z.string().trim().min(2).max(80).optional(),
     termsVersion,
     alphaCode,
+    ageConfirmed,
   })
   .superRefine((value, ctx) => {
     if (value.purpose === 'signup' && !value.name) {
@@ -92,6 +111,7 @@ export const betaLoginBodySchema = z.object({
   termsVersion,
   /** Checked, like termsVersion, only when this call creates the account. */
   alphaCode,
+  ageConfirmed,
 });
 
 export type BetaLoginBody = z.infer<typeof betaLoginBodySchema>;
@@ -123,6 +143,11 @@ export const authUserSchema = z.object({
    * cached on the device before this field existed still parses (it is refreshed from the API).
    */
   consultationBookingLocked: z.boolean().default(false),
+  /**
+   * She has agreed to the current health-data consent (HEALTH_DATA_CONSENT_VERSION). Until she has,
+   * the app shows that screen before anything else. Defaulted for a user cached before this field.
+   */
+  healthDataConsent: z.boolean().default(false),
   phoneVerifiedAt: z.string().datetime().nullable(),
   /** When she first opened her 14-day report; null until then. */
   report14OpenedAt: z.string().datetime().nullable(),
@@ -197,3 +222,10 @@ export type StartTrialResponse = z.infer<typeof startTrialResponseSchema>;
 export const activateOneDaySubscriptionResponseSchema = authUserSchema;
 
 export type ActivateOneDaySubscriptionResponse = z.infer<typeof activateOneDaySubscriptionResponseSchema>;
+
+/** POST /consents/health-data: the version of the health-data consent screen she agreed to. */
+export const healthDataConsentBodySchema = z.object({
+  version: z.string().trim().min(1).max(40),
+});
+
+export type HealthDataConsentBody = z.infer<typeof healthDataConsentBodySchema>;

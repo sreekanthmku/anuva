@@ -9,7 +9,9 @@ import {
   type PrivacySummaryResponse,
 } from '@anuva/shared';
 import { announce } from '../../lib/a11y/announce';
-import { DPDP_ACT_URL, GRIEVANCE_OFFICER_EMAIL } from '../../shared/lib/dpdp';
+import { DPDP_ACT_URL } from '../../shared/lib/dpdp';
+import { useGrievanceOfficer } from '../../shared/lib/grievanceOfficer';
+import { GrievanceOfficerDetails } from '../../shared/components/GrievanceOfficerDetails';
 import { Eyebrow } from '../../shared/components/Eyebrow';
 import { ApiError } from '../../shared/lib/api';
 import { BottomNav } from './components/BottomNav';
@@ -74,6 +76,7 @@ function SectionCard({ children }: { children: ReactNode }) {
  */
 export default function PrivacyRoute() {
   const { t } = useTranslation();
+  const grievanceOfficer = useGrievanceOfficer();
   const navigate = useNavigate();
   const [summary, setSummary] = useState<PrivacySummaryResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -473,11 +476,12 @@ export default function PrivacyRoute() {
               >
                 <Trans
                   i18nKey="privacy.grievance"
-                  values={{ email: GRIEVANCE_OFFICER_EMAIL }}
+                  values={{ email: grievanceOfficer.email }}
                   components={{
-                    1: <a href={`mailto:${GRIEVANCE_OFFICER_EMAIL}`} className="text-primary" />,
+                    1: <a href={`mailto:${grievanceOfficer.email}`} className="text-primary" />,
                   }}
                 />
+                <GrievanceOfficerDetails officer={grievanceOfficer} className="mt-1.5" />
               </p>
               <button
                 type="button"

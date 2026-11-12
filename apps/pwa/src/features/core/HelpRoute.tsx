@@ -11,7 +11,9 @@ import {
 // The instance for `ticketDate` and the catch blocks, which are not components.
 import i18n from '../../i18n';
 import { announce } from '../../lib/a11y/announce';
-import { DPDP_ACT_URL, GRIEVANCE_OFFICER_EMAIL } from '../../shared/lib/dpdp';
+import { DPDP_ACT_URL } from '../../shared/lib/dpdp';
+import { useGrievanceOfficer } from '../../shared/lib/grievanceOfficer';
+import { GrievanceOfficerDetails } from '../../shared/components/GrievanceOfficerDetails';
 import { BottomNav } from './components/BottomNav';
 import { createSupportTicket, fetchMySupportTickets } from './support/api';
 
@@ -145,6 +147,7 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
  */
 export default function HelpRoute() {
   const { t } = useTranslation();
+  const grievanceOfficer = useGrievanceOfficer();
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [remainingToday, setRemainingToday] = useState<number | null>(null);
@@ -436,13 +439,14 @@ export default function HelpRoute() {
         <p className="text-[11px] leading-[1.5] text-outline" style={{ fontFamily: MULISH }}>
           <Trans
             i18nKey="help.grievance"
-            values={{ email: GRIEVANCE_OFFICER_EMAIL }}
+            values={{ email: grievanceOfficer.email }}
             components={{
               1: (
-                <a href={`mailto:${GRIEVANCE_OFFICER_EMAIL}`} className="text-primary underline" />
+                <a href={`mailto:${grievanceOfficer.email}`} className="text-primary underline" />
               ),
             }}
           />
+          <GrievanceOfficerDetails officer={grievanceOfficer} className="mt-1" />
         </p>
       </section>
 

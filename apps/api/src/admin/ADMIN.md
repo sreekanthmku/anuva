@@ -104,7 +104,7 @@ Sensitive fields (`tokenHash`, `passwordHash`, `embedding`, `providerSessionId`)
 | `symptoms` | `enable`, `disable` |
 | `fcm-tokens` | `activate`, `deactivate` |
 | `consultation-documents` | `archive`, `restore` (soft delete via `deletedAt`) |
-| `specialists` | `enable`, `disable`, `revoke-sessions` (signs that specialist out everywhere) |
+| `specialists` | `enable`, `disable`, `verify` (registration checked with the council; needs Registration number and council; makes them bookable), `unverify`, `revoke-sessions` (signs that specialist out everywhere). Changing the registration number or council clears the verification. |
 
 ## Admin UI (`apps/admin`)
 

@@ -3,6 +3,7 @@ import type {
   AuthSessionResponse,
   AuthUser,
   BetaLoginBody,
+  HealthDataConsentBody,
   RequestOtpBody,
   RequestOtpResponse,
   SignupConfigResponse,
@@ -41,6 +42,15 @@ export async function betaLogin(body: BetaLoginBody): Promise<AuthSessionRespons
 export async function fetchCurrentUser(): Promise<AuthUser> {
   return apiFetch<AuthUser>('/api/auth/me', {
     cache: 'no-store',
+  });
+}
+
+/** She agrees to the health-data consent screen; returns her updated user. */
+export async function grantHealthDataConsent(version: string): Promise<AuthUser> {
+  const body: HealthDataConsentBody = { version };
+  return apiFetch<AuthUser>('/api/consents/health-data', {
+    method: 'POST',
+    body: JSON.stringify(body),
   });
 }
 
