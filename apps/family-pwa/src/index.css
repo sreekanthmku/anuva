@@ -168,11 +168,15 @@
  * Text fields are left out. A field you type into matches `:focus-visible` on a tap as well (the
  * browser can't tell a tap from the start of typing), so on iPhone and Android every tapped input
  * and textarea got this square ring 2px outside its rounded border. They keep their own focus style.
+ * `[tabindex='-1']` is left out here as well as by the rule below: this selector's `:not()` list
+ * makes it more specific than that rule, and with both `!important` the more specific one wins, so the
+ * headings that take focus when a screen opens (her name on Home, ANU in chat) got the ring.
  */
 :focus-visible:not(
     textarea,
     select,
     [contenteditable],
+    [tabindex='-1'],
     input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='reset'])
   ) {
   outline-style: solid !important;
