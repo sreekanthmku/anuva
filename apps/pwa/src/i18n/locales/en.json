@@ -2326,7 +2326,7 @@
     "sections": {
       "collect": {
         "title": "What we collect",
-        "body": "Your assessment answers, what you log (symptoms, periods, sleep, mood, medication and more), your notes, your conversations with ANU, and your consultations with Anuva Wellness professionals."
+        "body": "Your assessment answers, what you log (symptoms, periods, sleep, mood, medication and more), your notes, your conversations with ANU, and your consultations with Anuva Wellness signed up professionals."
       },
       "why": {
         "title": "Why",
@@ -2334,11 +2334,11 @@
       },
       "who": {
         "title": "Who can see it",
-        "body": "You. The professional you book, for your consultation. Family members, only what you choose to share. Service providers that run Anuva for us, such as hosting and our AI provider (OpenAI), process it on our behalf. Authorised Anuva staff only when needed for support, security or legal reasons."
+        "body": "YOU. The professional you book for your consultation upon your consent. Family members, only what you choose to share. Service providers that run Anuva for us, such as hosting and our AI provider (OpenAI), process it on our behalf. Authorised Anuva staff only when needed for support, security or legal reasons."
       },
       "howLong": {
         "title": "How long we keep it",
-        "body": "For as long as your account is active. Consultation and medical records are kept for as long as the law requires, even after you delete your account."
+        "body": "For as long as your account is active or unless you delete. Consultation and medical records are kept for as long as the law requires, even after you delete your account. Once you delete the data we will be unable to retrieve it."
       },
       "choices": {
         "title": "Your choices",
