@@ -1,6 +1,15 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import {
+  BookOpen,
+  CalendarHeart,
+  Compass,
+  MessageCircleQuestionMark,
+  NotebookPen,
+  UserRound,
+  type LucideIcon,
+} from 'lucide-react';
 import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 import { useAuth } from '../../auth/auth-context';
 
@@ -8,19 +17,17 @@ export type MoreMenuItem = {
   to: string;
   /** Resolved through `t()` at render; see `nav.*`. */
   labelKey: string;
+  icon: LucideIcon;
 };
 
 const items: MoreMenuItem[] = [
-  { to: '/profile', labelKey: 'nav.profile' },
-  { to: '/care', labelKey: 'nav.careDirection' },
-  { to: '/library', labelKey: 'nav.library' },
-  { to: '/qa', labelKey: 'nav.anonymousQa' },
-  { to: '/booking', labelKey: 'nav.consultationBooking' },
-  { to: '/notes', labelKey: 'nav.notes' },
+  { to: '/profile', labelKey: 'nav.profile', icon: UserRound },
+  { to: '/care', labelKey: 'nav.careDirection', icon: Compass },
+  { to: '/library', labelKey: 'nav.library', icon: BookOpen },
+  { to: '/qa', labelKey: 'nav.anonymousQa', icon: MessageCircleQuestionMark },
+  { to: '/booking', labelKey: 'nav.consultationBooking', icon: CalendarHeart },
+  { to: '/notes', labelKey: 'nav.notes', icon: NotebookPen },
 ];
-
-/** Items are numbered from 08, as they always were; hiding one closes the gap. */
-const FIRST_NUMBER = 8;
 
 type MoreMenuSheetProps = {
   open: boolean;
@@ -72,7 +79,7 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
           {t('nav.moreDestinations')}
         </h2>
         <ul className="flex flex-col gap-1">
-          {visible.map((item, index) => (
+          {visible.map((item) => (
             <li key={item.to}>
               <button
                 type="button"
@@ -81,10 +88,9 @@ export function MoreMenuSheet({ open, onClose }: MoreMenuSheetProps) {
               >
                 <span
                   aria-hidden="true"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-[12px] text-primary"
-                  style={{ fontFamily: '"Mulish", sans-serif' }}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary"
                 >
-                  {String(FIRST_NUMBER + index).padStart(2, '0')}
+                  <item.icon size={18} strokeWidth={1.8} />
                 </span>
                 <span
                   className="text-[15px] text-on-surface"

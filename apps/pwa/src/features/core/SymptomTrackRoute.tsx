@@ -418,7 +418,7 @@ export default function SymptomTrackRoute() {
 
   return (
     <main className="h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 text-on-surface">
-      <header className="sticky top-0 z-30 shrink-0 border-b border-border-default bg-primary-container">
+      <header className="shrink-0 border-b border-border-default bg-primary-container">
         <div className="px-3 pb-[20px] pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Eyebrow>
             {loading
