@@ -9,7 +9,7 @@ import {
   type PrivacySummaryResponse,
 } from '@anuva/shared';
 import { announce } from '../../lib/a11y/announce';
-import { DPDP_ACT_URL } from '../../shared/lib/dpdp';
+import { DPDP_ACT_URL, PRIVACY_POLICY_URL } from '../../shared/lib/dpdp';
 import { useGrievanceOfficer } from '../../shared/lib/grievanceOfficer';
 import { GrievanceOfficerDetails } from '../../shared/components/GrievanceOfficerDetails';
 import { Eyebrow } from '../../shared/components/Eyebrow';
@@ -216,6 +216,17 @@ export default function PrivacyRoute() {
             }}
           />
         </p>
+        {/* The full policy lives on the website; this screen is where she manages her data. */}
+        <a
+          href={PRIVACY_POLICY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="-mt-3 mb-6 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-semibold text-primary underline underline-offset-2"
+          style={{ fontFamily: MULISH }}
+        >
+          {t('privacy.fullPolicy')}
+          <span aria-hidden="true">↗</span>
+        </a>
 
         {notice ? (
           <div className="mb-5 rounded-[18px] border border-primary/25 bg-primary-container/50 px-4 py-3.5">

@@ -1798,7 +1798,8 @@
     "megabytes": "{{value}} MB",
     "accountScheduled": "আপনার অ্যাকাউন্ট {{date}}-এ মুছে ফেলার জন্য নির্ধারিত আছে। তার আগে যেকোনো সময় বাতিল করতে পারবেন।",
     "deletedItems_one": "{{count}}টি জিনিস মুছে ফেলা হয়েছে। {{scope}}: সম্পন্ন।",
-    "deletedItems_other": "{{count}}টি জিনিস মুছে ফেলা হয়েছে। {{scope}}: সম্পন্ন।"
+    "deletedItems_other": "{{count}}টি জিনিস মুছে ফেলা হয়েছে। {{scope}}: সম্পন্ন।",
+    "fullPolicy": "সম্পূর্ণ গোপনীয়তা নীতি পড়ুন"
   },
   "bookings": {
     "backHome": "← হোম",

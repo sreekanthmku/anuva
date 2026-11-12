@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HEALTH_DATA_CONSENT_VERSION, authUserSchema, consultationSpecialistSchema } from '@anuva/shared';
 import { hasHealthDataConsent, healthDataConsentInclude } from '../src/healthDataConsent.js';
-import { DEFAULT_GRIEVANCE_EMAIL, readGrievanceOfficer } from '../src/grievanceOfficer.js';
+import { DEFAULT_GRIEVANCE_EMAIL, DEFAULT_GRIEVANCE_OFFICER_NAME, readGrievanceOfficer } from '../src/grievanceOfficer.js';
 
 // The legal and compliance review: health-data consent, practitioner registration, grievance officer.
 
@@ -63,9 +63,9 @@ describe('specialist registration', () => {
 });
 
 describe('grievance officer', () => {
-  it('falls back to the published email, with no name until one is set', () => {
+  it('falls back to the appointed officer and the published email', () => {
     expect(readGrievanceOfficer({})).toEqual({
-      name: null,
+      name: DEFAULT_GRIEVANCE_OFFICER_NAME,
       designation: null,
       email: DEFAULT_GRIEVANCE_EMAIL,
       phone: null,

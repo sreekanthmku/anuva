@@ -10,3 +10,6 @@ export const DPDP_ACT_URL =
  * by GRIEVANCE_OFFICER_* there and defaults to this same address. It matches the Privacy Policy.
  */
 export const GRIEVANCE_OFFICER_EMAIL = 'hello@phasewellhealth.com';
+
+/** The full Privacy Policy, on the website. Opened from the Privacy screen in a new tab. */
+export const PRIVACY_POLICY_URL = 'https://anuvawellness.com/privacy';

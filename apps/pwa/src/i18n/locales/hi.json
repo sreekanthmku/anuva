@@ -1798,7 +1798,8 @@
     "megabytes": "{{value}} MB",
     "accountScheduled": "आपका अकाउंट {{date}} को डिलीट होने के लिए तय है। उससे पहले आप कभी भी इसे रद्द कर सकती हैं।",
     "deletedItems_one": "{{count}} चीज़ डिलीट हुई। {{scope}}: हो गया।",
-    "deletedItems_other": "{{count}} चीज़ें डिलीट हुईं। {{scope}}: हो गया।"
+    "deletedItems_other": "{{count}} चीज़ें डिलीट हुईं। {{scope}}: हो गया।",
+    "fullPolicy": "पूरी प्राइवेसी पॉलिसी पढ़ें"
   },
   "bookings": {
     "backHome": "← होम",

@@ -1798,7 +1798,8 @@
     "megabytes": "{{value}} MB",
     "accountScheduled": "உங்கள் கணக்கு {{date}} அன்று நீக்கப்பட உள்ளது. அதற்கு முன் எந்த நேரத்திலும் ரத்து செய்யலாம்.",
     "deletedItems_one": "{{count}} உருப்படி நீக்கப்பட்டது. {{scope}}: முடிந்தது.",
-    "deletedItems_other": "{{count}} உருப்படிகள் நீக்கப்பட்டன. {{scope}}: முடிந்தது."
+    "deletedItems_other": "{{count}} உருப்படிகள் நீக்கப்பட்டன. {{scope}}: முடிந்தது.",
+    "fullPolicy": "முழு தனியுரிமைக் கொள்கையைப் படிக்கவும்"
   },
   "bookings": {
     "backHome": "← முகப்பு",

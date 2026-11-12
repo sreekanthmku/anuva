@@ -1798,7 +1798,8 @@
     "megabytes": "{{value}} MB",
     "accountScheduled": "మీ ఖాతా {{date}}న తొలగింపు కోసం షెడ్యూల్ అయింది. అంతకుముందు ఎప్పుడైనా మీరు దీన్ని రద్దు చేసుకోవచ్చు.",
     "deletedItems_one": "{{count}} అంశం తొలగించబడింది. {{scope}}: పూర్తయింది.",
-    "deletedItems_other": "{{count}} అంశాలు తొలగించబడ్డాయి. {{scope}}: పూర్తయింది."
+    "deletedItems_other": "{{count}} అంశాలు తొలగించబడ్డాయి. {{scope}}: పూర్తయింది.",
+    "fullPolicy": "పూర్తి గోప్యతా విధానాన్ని చదవండి"
   },
   "bookings": {
     "backHome": "← హోమ్",

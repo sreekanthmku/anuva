@@ -1798,7 +1798,8 @@
     "megabytes": "{{value}} MB",
     "accountScheduled": "તમારું ખાતું {{date}}એ ડિલીટ કરવા માટે શેડ્યુલ થયેલું છે. તે પહેલાં તમે કોઈપણ સમયે રદ કરી શકો છો.",
     "deletedItems_one": "{{count}} વસ્તુ ડિલીટ થઈ. {{scope}}: થઈ ગયું.",
-    "deletedItems_other": "{{count}} વસ્તુઓ ડિલીટ થઈ. {{scope}}: થઈ ગયું."
+    "deletedItems_other": "{{count}} વસ્તુઓ ડિલીટ થઈ. {{scope}}: થઈ ગયું.",
+    "fullPolicy": "સંપૂર્ણ ગોપનીયતા નીતિ વાંચો"
   },
   "bookings": {
     "backHome": "← હોમ",

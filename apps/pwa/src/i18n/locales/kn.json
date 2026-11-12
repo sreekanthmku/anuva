@@ -1798,7 +1798,8 @@
     "megabytes": "{{value}} MB",
     "accountScheduled": "ನಿಮ್ಮ ಖಾತೆ {{date}} ರಂದು ಅಳಿಸಲು ನಿಗದಿಯಾಗಿದೆ. ಅದಕ್ಕೂ ಮೊದಲು ಯಾವಾಗ ಬೇಕಾದರೂ ನೀವು ಇದನ್ನು ರದ್ದುಮಾಡಬಹುದು.",
     "deletedItems_one": "{{count}} ಐಟಂ ಅಳಿಸಲಾಗಿದೆ. {{scope}}: ಮುಗಿದಿದೆ.",
-    "deletedItems_other": "{{count}} ಐಟಂಗಳನ್ನು ಅಳಿಸಲಾಗಿದೆ. {{scope}}: ಮುಗಿದಿದೆ."
+    "deletedItems_other": "{{count}} ಐಟಂಗಳನ್ನು ಅಳಿಸಲಾಗಿದೆ. {{scope}}: ಮುಗಿದಿದೆ.",
+    "fullPolicy": "ಪೂರ್ಣ ಗೌಪ್ಯತಾ ನೀತಿ ಓದಿ"
   },
   "bookings": {
     "backHome": "← ಹೋಮ್",

@@ -1798,7 +1798,8 @@
     "megabytes": "{{value}} MB",
     "accountScheduled": "तुमचं खातं {{date}} रोजी हटवण्याचं ठरलं आहे. त्याआधी कधीही तुम्ही हे रद्द करू शकता.",
     "deletedItems_one": "{{count}} गोष्ट हटवली. {{scope}}: झालं.",
-    "deletedItems_other": "{{count}} गोष्टी हटवल्या. {{scope}}: झालं."
+    "deletedItems_other": "{{count}} गोष्टी हटवल्या. {{scope}}: झालं.",
+    "fullPolicy": "संपूर्ण गोपनीयता धोरण वाचा"
   },
   "bookings": {
     "backHome": "← मुख्यपृष्ठ",

@@ -1798,7 +1798,8 @@
     "megabytes": "{{value}} MB",
     "accountScheduled": "ଆପଣଙ୍କ ଆକାଉଣ୍ଟ {{date}}ରେ ଡିଲିଟ୍ ହେବାକୁ ନିର୍ଧାରିତ। ତା ଆଗରୁ ଆପଣ ଯେକୌଣସି ସମୟରେ ବାତିଲ୍ କରିପାରିବେ।",
     "deletedItems_one": "{{count}}ଟି ଆଇଟମ୍ ଡିଲିଟ୍ ହେଲା। {{scope}}: ହୋଇଗଲା।",
-    "deletedItems_other": "{{count}}ଟି ଆଇଟମ୍ ଡିଲିଟ୍ ହେଲା। {{scope}}: ହୋଇଗଲା।"
+    "deletedItems_other": "{{count}}ଟି ଆଇଟମ୍ ଡିଲିଟ୍ ହେଲା। {{scope}}: ହୋଇଗଲା।",
+    "fullPolicy": "ସମ୍ପୂର୍ଣ୍ଣ ଗୋପନୀୟତା ନୀତି ପଢ଼ନ୍ତୁ"
   },
   "bookings": {
     "backHome": "← ହୋମ୍",

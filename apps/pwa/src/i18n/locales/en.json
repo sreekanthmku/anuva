@@ -1878,7 +1878,8 @@
     "megabytes": "{{value}} MB",
     "accountScheduled": "Your account is scheduled for deletion on {{date}}. You can cancel any time before then.",
     "deletedItems_one": "Deleted {{count}} item. {{scope}}: done.",
-    "deletedItems_other": "Deleted {{count}} items. {{scope}}: done."
+    "deletedItems_other": "Deleted {{count}} items. {{scope}}: done.",
+    "fullPolicy": "Read the full Privacy Policy"
   },
   "bookings": {
     "backHome": "← Home",
