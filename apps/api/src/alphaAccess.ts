@@ -12,7 +12,7 @@
 export const ALPHA_CODE_REQUIRED_MESSAGE = 'Please enter a valid referral code to sign up.';
 
 /** The codes handed out for the first alpha round. ALPHA_CODES replaces the whole list. */
-export const DEFAULT_ALPHA_CODES = ['ALPHASM', 'ALPHAWM', 'ALPHARD', 'ALPHAHM'] as const;
+export const DEFAULT_ALPHA_CODES = ['ALPHASM', 'ALPHAWM', 'ALPHARD', 'ALPHAHM', 'ALPHAGS'] as const;
 
 export type AlphaAccessConfig = {
   enabled: boolean;
