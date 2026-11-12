@@ -170,6 +170,13 @@ export default function ConsultationBookingRoute() {
             >
               {t('booking.privacyNote')}
             </p>
+            {/* Who is responsible for what in a consultation (legal and compliance review). */}
+            <p
+              className="mt-2 text-center text-[10.5px] leading-[1.5] text-outline"
+              style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+            >
+              {t('booking.providerNote')}
+            </p>
           </section>
         </>
       )}

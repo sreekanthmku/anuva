@@ -16,7 +16,9 @@ import { BookingCard } from './anuV3/BookingCard';
 import { LogOptions } from './anuV3/LogOptions';
 import { ReminderOffer } from './anuV3/ReminderOffer';
 import { SummaryOfferCard } from './anuV3/SummaryOfferCard';
+import { AnuAiNotice, hasSeenAnuAiNotice, markAnuAiNoticeSeen } from './components/AnuAiNotice';
 import { BottomNav } from './components/BottomNav';
+import { useAuth } from '../auth/auth-context';
 import { remainingDelay, replyDelay, wait } from './chatPacing';
 
 type ChatMessage = {
@@ -88,6 +90,13 @@ export default function AnuChatRoute() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [engine, setEngine] = useState<ChatEngine>(DEFAULT_ENGINE);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user } = useAuth();
+  // What ANU is and is not, before the first conversation on this device; reopened from the ⋯ menu.
+  const [aiNoticeOpen, setAiNoticeOpen] = useState(() => !hasSeenAnuAiNotice(user?.id));
+  const closeAiNotice = useCallback(() => {
+    markAnuAiNoticeSeen(user?.id);
+    setAiNoticeOpen(false);
+  }, [user?.id]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [input, setInput] = useState('');
@@ -375,6 +384,18 @@ export default function AnuChatRoute() {
                       {engine === option && <span aria-hidden="true">✓</span>}
                     </button>
                   ))}
+                  <div className="my-1 border-t border-border-default" aria-hidden="true" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setAiNoticeOpen(true);
+                    }}
+                    className="flex min-h-11 w-full items-center rounded-[12px] px-3 text-left text-[14px] text-on-surface"
+                  >
+                    {t('chat.aiNotice.menu')}
+                  </button>
                 </div>
               </>
             )}
@@ -582,6 +603,8 @@ export default function AnuChatRoute() {
           </button>
         </section>
       </section>
+
+      <AnuAiNotice open={aiNoticeOpen} onClose={closeAiNotice} />
 
       <BottomNav />
     </main>

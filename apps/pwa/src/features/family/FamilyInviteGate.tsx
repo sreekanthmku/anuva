@@ -144,6 +144,11 @@ export function FamilyInviteGate({ gate }: { gate: FamilyGateState }) {
           onChange={async (enabled) => updateInvite(await setInviteEmergencyAlerts(invite.id, enabled))}
         />
 
+        {/* The sharing promise, said plainly before the link goes out (legal and compliance review). */}
+        <p className="mt-4 text-[12px] leading-[1.55] text-on-surface-variant" style={mulish}>
+          {t('family.gate.privacy')}
+        </p>
+
         {error ? (
           <p className="mt-4 text-[12px] leading-relaxed text-error" style={mulish} role="alert">
             {error}

@@ -424,7 +424,14 @@
       "button": "Set a reminder",
       "set": "Reminder set · See my reminders"
     },
-    "familyAlerted": "We've let the people you chose for emergency alerts know you may need them."
+    "familyAlerted": "We've let the people you chose for emergency alerts know you may need them.",
+    "aiNotice": {
+      "title": "Before you talk to ANU",
+      "body": "ANU is an AI-powered wellness companion. She gives you educational information and helps you understand the health and lifestyle patterns you record. ANU is not a medical practitioner, and her replies are not a medical diagnosis, prescription or treatment plan. AI-generated information may be incomplete or inaccurate. Consult a qualified healthcare professional for medical decisions.",
+      "crisis": "ANU is not a crisis-support or emergency mental-health service. If you believe you may harm yourself or someone else, or you are in immediate danger, call 112, go to the nearest emergency department or get help from a qualified professional straight away.",
+      "ok": "I understand",
+      "menu": "About ANU"
+    }
   },
   "track": {
     "loading": "Loading…",
@@ -1060,7 +1067,8 @@
       "linkCopied": "✓ Link copied",
       "copyLink": "Copy link instead",
       "copyFailed": "Could not copy the link.",
-      "waiting": "Waiting for them to join. We will check on our own — you do not need to come back here."
+      "waiting": "Waiting for them to join. We will check on our own — you do not need to come back here.",
+      "privacy": "Your health journey is private. Family members can see only the information you choose to share, and you can change or remove their access at any time. Your medical records, private conversations and consultation details are never shared through the family feature without your permission."
     },
     "activity": {
       "today": "Today",
@@ -1357,7 +1365,8 @@
         "weekly": "A weekly report needs at least {{need}} days logged, and this week has {{logged}}. A quick check-in each day will get you next week’s.",
         "monthly": "A monthly report needs at least {{need}} days logged, and this month has {{logged}}. Keep checking in and next month’s will be ready."
       }
-    }
+    },
+    "dataNotice": "Your tracking and reports are based on the information you provide and the patterns Anuva finds in it. They are meant to support your health awareness and your conversations with professionals. They do not confirm or rule out perimenopause, menopause or any medical condition."
   },
   "wellness": {
     "groups": {
@@ -1447,7 +1456,8 @@
       "title": "Subscribe for consultations",
       "body": "Booking a doctor comes with a subscription. Until then, keep tracking.",
       "tag": "Subscribe to book"
-    }
+    },
+    "providerNote": "Consultations and professional care plans available through Anuva Wellness are provided by the respective qualified professionals within their areas of competence. The professional is responsible for their clinical or professional recommendations. Anuva provides access to these services and the supporting technology and administration."
   },
   "call": {
     "home": "Home",

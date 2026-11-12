@@ -954,6 +954,16 @@ export default function WeeklyReportRoute() {
         <ReportBody report={data} onSelectRing={openMetric} onStepBack={() => step(1)} />
       )}
 
+      {/* What the tracking and reports are, and are not (legal and compliance review). */}
+      {!loading && !error && data && (
+        <p
+          className="mx-4 mb-6 mt-2 border-t border-border-default pt-4 text-[11.5px] leading-relaxed text-on-surface-variant"
+          style={{ fontFamily: MULISH }}
+        >
+          {t('report.dataNotice')}
+        </p>
+      )}
+
       {pickerOpen && (
         <SummaryDatePickerSheet
           // `periodStart` is the selected day itself on the daily view.
