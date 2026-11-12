@@ -15,9 +15,9 @@ export function getPostAuthPath(
     return assessmentPath();
   }
 
-  if (!user.hasActiveAccess) {
-    return '/subscription';
-  }
+  // Alpha testing (Nov 2026): the subscription / activate-trial page is not shown to anyone, whatever
+  // the trial state. The API starts the trial itself when the assessment is completed. What to show
+  // when a trial ends is to be decided before the first trials run out.
 
   return '/home';
 }

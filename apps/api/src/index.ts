@@ -4252,10 +4252,34 @@ app.post('/auth/beta-login', async (req, res, next) => {
   }
 });
 
+/**
+ * Alpha testing (Nov 2026): the trial starts by itself once the assessment is done, instead of on the
+ * "Start trial" / activate page, which nobody is shown for now. Without this, someone who closed the
+ * app on the result screen had no trial at all — no Day 1, and (before the page was hidden) the
+ * activate page on every open. Creates only: an existing subscription, trial or not, is untouched.
+ * Returns whether one was created.
+ */
+async function startTrialIfMissing(user: Pick<UserWithSubscription, 'id' | 'onboardingCompleted' | 'subscription'>): Promise<boolean> {
+  if (!user.onboardingCompleted || user.subscription) return false;
+  const now = new Date();
+  await prisma.subscription.upsert({
+    where: { userId: user.id },
+    create: { userId: user.id, status: 'trialing', startedAt: now, trialEndsAt: addDays(now, FREE_TRIAL_DAYS) },
+    // Another request got there first: leave theirs as it is.
+    update: {},
+  });
+  return true;
+}
+
 app.get('/auth/me', async (req, res, next) => {
   try {
     setNoStoreHeaders(res);
-    const user = await requireCurrentUser(req);
+    let user = await requireCurrentUser(req);
+    // Accounts that finished the assessment before the trial started by itself get it on their next open.
+    if (await startTrialIfMissing(user)) {
+      req.log.info('Trial started on open (assessment done, no trial)');
+      user = await loadUserWithSubscription(user.id);
+    }
     res.json(authUserSchema.parse(serializeUser(user)));
   } catch (e) {
     next(e);
@@ -4292,6 +4316,7 @@ app.post('/onboarding/complete', async (req, res, next) => {
       where: { id: user.id },
       data: { onboardingCompleted: true },
     });
+    await startTrialIfMissing({ ...user, onboardingCompleted: true });
 
     res.json(authUserSchema.parse(serializeUser(await loadUserWithSubscription(updated.id))));
   } catch (e) {

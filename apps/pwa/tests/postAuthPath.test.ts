@@ -22,10 +22,10 @@ describe('getPostAuthPath', () => {
     ).toBe(assessmentPath());
   });
 
-  it('routes to subscription when onboarded without active access', () => {
+  it('never routes to the subscription page during alpha testing, even without active access', () => {
     expect(
       getPostAuthPath({ onboardingCompleted: true, hasActiveAccess: false, healthDataConsent: true }),
-    ).toBe('/subscription');
+    ).toBe('/home');
   });
 
   it('routes to home when onboarded with active access', () => {

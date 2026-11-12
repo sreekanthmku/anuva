@@ -71,8 +71,11 @@ export default function AssessmentResultRoute() {
       clearAssessmentProgress();
       navigate('/anu-greeting');
     } catch (error) {
+      // Not the subscription page (hidden during alpha testing): into the app anyway. The API also
+      // starts the trial when the assessment is completed, so this is only a belt-and-braces call.
       console.error(error);
-      navigate('/subscription');
+      clearAssessmentProgress();
+      navigate('/anu-greeting');
     } finally {
       setIsStartingTrial(false);
     }

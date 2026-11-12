@@ -51,9 +51,9 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to={assessmentPath()} replace />;
   }
 
-  if (!user?.hasActiveAccess) {
-    return <Navigate to="/subscription" replace />;
-  }
+  // Alpha testing (Nov 2026): the subscription / activate-trial page is not shown to anyone, whatever
+  // the trial state. The API starts the trial itself when the assessment is completed. What to show
+  // when a trial ends is to be decided before the first trials run out.
 
   return (
     <>
