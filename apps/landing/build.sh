@@ -10,7 +10,7 @@ mkdir -p dist
 sed "s|__WEB3FORMS_ACCESS_KEY__|${WEB3FORMS_ACCESS_KEY:-}|" contact.html > dist/contact.html
 
 cp index.html about.html privacy.html terms.html \
-  page.css symptom.css landing.css landing-white.css bg-lighter.css redesign.css \
+  page.css symptom.css landing.css landing-white.css bg-lighter.css redesign.css cookie-consent.js \
   anuva-logo-mark.png anuva-logo-icon.png anu-mascot.png family.jpg family.webp dist/
 
 mkdir -p dist/symptoms dist/uploads/founders

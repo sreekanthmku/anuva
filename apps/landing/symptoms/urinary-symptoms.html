@@ -2,13 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<!-- Google Tag Manager -->
-<script async src="https://www.googletagmanager.com/gtm.js?id=GTM-MW3BV4NS"></script>
+<!-- Google Tag Manager, with Google Consent Mode v2: everything is denied by default and
+     analytics is granted only after the visitor chooses "Allow analytics" (see /cookie-consent.js).
+     This inline script must stay BEFORE the gtm.js tag. -->
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    wait_for_update: 500
+  });
+  try {
+    if (localStorage.getItem('anuva.cookieConsent') === 'granted') {
+      gtag('consent', 'update', { analytics_storage: 'granted' });
+    }
+  } catch (e) {}
   gtag('js', new Date());
 </script>
+<script async src="https://www.googletagmanager.com/gtm.js?id=GTM-MW3BV4NS"></script>
+<script src="/cookie-consent.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Urinary Symptoms in Perimenopause | ANUVA Wellness</title>
 <meta name="description" content="Urinary Symptoms during perimenopause: what it can feel like, why it may happen, support options to explore, and what Indian research says about how common it is.">
@@ -212,6 +227,7 @@
       <ul>
         <li><a href="/privacy">Privacy Policy</a></li>
         <li><a href="/terms">Terms &amp; Conditions</a></li>
+        <li><a href="/privacy#cookies" data-cookie-settings>Cookie settings</a></li>
         <li><a href="https://www.meity.gov.in/data-protection-framework" target="_blank" rel="noopener noreferrer">DPDP Act, 2023 <span class="ext" aria-hidden="true">&#8599;</span></a></li>
       </ul>
     </div>
