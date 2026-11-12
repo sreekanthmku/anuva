@@ -34,6 +34,7 @@ import SplashRoute from '../features/auth/SplashRoute';
 import { subscribeToForegroundNotifications } from '../lib/firebase';
 import { InstallGuard } from '../features/install/InstallGuard';
 import { RouteFocus } from '../lib/a11y/RouteFocus';
+import { ScrollReset } from './ScrollReset';
 import {
   alreadyHandled,
   clearPendingNavigation,
@@ -101,6 +102,7 @@ function ForegroundNotificationListener() {
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <ScrollReset />
       <RouteFocus />
       <ServiceWorkerNavListener />
       <ForegroundNotificationListener />
