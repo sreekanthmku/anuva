@@ -340,7 +340,9 @@
       "anxiety": "You're held. Breathe.",
       "chills": "Warm up. You're okay.",
       "irritability": "Exhale. Let the tension out."
-    }
+    },
+    "askAnonymously": "Ask a specialist, anonymously",
+    "askQuestion": "Ask a question"
   },
   "chat": {
     "backToHome": "Back to home",

@@ -763,6 +763,38 @@ export default function AnuDashboardRoute() {
         </section>
       )}
 
+      {/* Once the detailed assessment is done its card goes, and this takes its place. */}
+      {detailedCompleted && (
+        <section className="px-3 pt-3">
+          <button
+            type="button"
+            onClick={() => navigate('/qa')}
+            className="w-full rounded-[20px] bg-secondary-container px-[18px] py-4 text-left transition-opacity active:opacity-90"
+          >
+            <Eyebrow>{t('qa.eyebrow')}</Eyebrow>
+            <p
+              className="text-[18px] leading-[1.35] text-on-surface"
+              style={{ fontFamily: SERIF, fontWeight: 500 }}
+            >
+              {t('home.askAnonymously')}
+            </p>
+            <p
+              className="mt-1.5 text-[13px] leading-[1.5] text-on-surface-variant"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
+              {t('qa.anonymousBody')}
+            </p>
+            <span
+              className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-on-secondary-container"
+              style={{ fontFamily: '"Mulish", sans-serif' }}
+            >
+              {t('home.askQuestion')}
+              <span aria-hidden="true">→</span>
+            </span>
+          </button>
+        </section>
+      )}
+
       {dailyInsight && (
         <section className="px-3 pb-5 pt-3">
           <button
