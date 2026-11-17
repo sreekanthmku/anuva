@@ -24,20 +24,16 @@ export const BOOKABLE_DOCTOR_KEYS = new Set(['kekin-gala']);
  * they are switched off here instead. An inactive specialist is not listed, cannot be booked, has no
  * assessment lens, and cannot sign in to the doctor portal. Their past consultations are kept.
  */
-export const RETIRED_SPECIALIST_KEYS = ['rizwana-sayed'] as const;
+export const RETIRED_SPECIALIST_KEYS = ['rizwana-sayed', 'jigna-shah'] as const;
 
 /**
  * Which detailed-assessment sections each specialist may read, by lens. This is an access-control
  * boundary, not a display hint: a specialist absent from this map reads nothing, so adding a
  * colleague to the catalog without a deliberate entry here denies rather than grants.
- *
- * Jigna Shah holds two lenses because she practises as both — the role is
- * "Menopause coach & Clinical Nutritionist (RD)".
  */
 export const SPECIALIST_LENSES: Record<string, readonly DetailedPractitioner[]> = {
   'kekin-gala': ['gynaecologist'],
   'jai-bapat': ['psychologist'],
-  'jigna-shah': ['dietician', 'coach'],
 };
 
 export function lensesForSpecialist(key: string | null): readonly DetailedPractitioner[] {
@@ -72,18 +68,6 @@ const seedSpecialists: SeedSpecialist[] = [
       'Has been working in the field of mental health for the last 13 years and has helped individuals navigate emotions and function better.',
     experience: '13 years',
     imageUrl: '/jai-bapat.jpeg',
-    qualifications: [],
-    bookable: false,
-  },
-  {
-    key: 'jigna-shah',
-    name: 'Jigna Shah',
-    subtitle: 'Menopause coach · Clinical Nutritionist (RD)',
-    tag: 'Recommended',
-    role: 'Menopause coach & Clinical Nutritionist (RD)',
-    specialization: 'Specialized in Metabolic disorders (Diabetes, Cardiac, PCOD, Thyroid, Hypertension)',
-    experience: '15 years',
-    imageUrl: '/jigna-shah.jpg.jpeg',
     qualifications: [],
     bookable: false,
   },

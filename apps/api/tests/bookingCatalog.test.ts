@@ -10,11 +10,11 @@ describe('BOOKABLE_DOCTOR_KEYS', () => {
 
   it('does not include a specialist who has left', () => {
     expect(BOOKABLE_DOCTOR_KEYS.has('rizwana-sayed')).toBe(false);
+    expect(BOOKABLE_DOCTOR_KEYS.has('jigna-shah')).toBe(false);
   });
 
   it('does not include non-bookable specialist keys', () => {
     expect(BOOKABLE_DOCTOR_KEYS.has('jai-bapat')).toBe(false);
-    expect(BOOKABLE_DOCTOR_KEYS.has('jigna-shah')).toBe(false);
   });
 });
 

@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 type BookingCatalogModule = typeof import('../src/bookingCatalog.js');
 
 const BOOKABLE_KEYS = ['kekin-gala'] as const;
-const ALL_KEYS = ['kekin-gala', 'jai-bapat', 'jigna-shah'] as const;
+const ALL_KEYS = ['kekin-gala', 'jai-bapat'] as const;
 
 function makeMockPrisma() {
   let idSeq = 0;
@@ -81,7 +81,7 @@ describe('ensureBookingCatalog', () => {
       const matching = [...slotSpecialistIds].some((id) => id.includes(key));
       expect(matching).toBe(true);
     }
-    for (const key of ['jai-bapat', 'jigna-shah'] as const) {
+    for (const key of ['jai-bapat'] as const) {
       const matching = [...slotSpecialistIds].some((id) => id.includes(key));
       expect(matching).toBe(false);
     }
@@ -114,12 +114,13 @@ describe('ensureBookingCatalog', () => {
 
   it('switches off specialists who have left, so a database that already has them stops listing them', () => {
     expect(mock._spies.updateMany).toHaveBeenCalledWith({
-      where: { key: { in: ['rizwana-sayed'] }, active: true },
+      where: { key: { in: ['rizwana-sayed', 'jigna-shah'] }, active: true },
       data: { active: false },
     });
     const upsertedKeys = mock._spies.upsert.mock.calls.map(
       (call) => (call[0] as { where: { key: string } }).where.key,
     );
     expect(upsertedKeys).not.toContain('rizwana-sayed');
+    expect(upsertedKeys).not.toContain('jigna-shah');
   });
 });
