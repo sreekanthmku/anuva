@@ -1,31 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { enablePushNotifications } from '../../../lib/firebase';
+import {
+  pushReadiness as readiness,
+  type PushReadiness as Readiness,
+} from '../../../lib/notifications/pushReadiness';
 
 const FONT_BODY = '"Mulish", -apple-system, system-ui, sans-serif';
-
-type Readiness = 'ready' | 'ask' | 'blocked' | 'iosInstall' | 'unsupported';
-
-function isIos(): boolean {
-  const nav = window.navigator;
-  return /iPad|iPhone|iPod/.test(nav.userAgent) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
-}
-
-function isStandalone(): boolean {
-  return (
-    window.matchMedia?.('(display-mode: standalone)').matches ||
-    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
-  );
-}
-
-function readiness(): Readiness {
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-    // iPhone only offers push to an app added to the Home Screen.
-    return isIos() && !isStandalone() ? 'iosInstall' : 'unsupported';
-  }
-  if (Notification.permission === 'granted') return 'ready';
-  return Notification.permission === 'denied' ? 'blocked' : 'ask';
-}
 
 /**
  * Reminders are notifications, so a reminder set up where none can arrive would fail silently. This

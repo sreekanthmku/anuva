@@ -2,13 +2,16 @@ import { useTranslation } from 'react-i18next';
 
 type NotificationSyncBannerProps = {
   message: string;
-  onRetry: () => void;
+  onRetry?: () => void;
+  /** A button in place of "Retry registration", e.g. "Open Profile". */
+  action?: { label: string; onClick: () => void };
   onDismiss?: () => void;
 };
 
 export function NotificationSyncBanner({
   message,
   onRetry,
+  action,
   onDismiss,
 }: NotificationSyncBannerProps) {
   const { t } = useTranslation();
@@ -25,14 +28,16 @@ export function NotificationSyncBanner({
         {message}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onRetry}
-          className="rounded-full bg-secondary px-4 py-2 text-[12px] font-semibold text-on-secondary"
-          style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-        >
-          {t('notificationPrompt.retryRegistration')}
-        </button>
+        {(action || onRetry) && (
+          <button
+            type="button"
+            onClick={action ? action.onClick : onRetry}
+            className="rounded-full bg-secondary px-4 py-2 text-[12px] font-semibold text-on-secondary"
+            style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+          >
+            {action ? action.label : t('notificationPrompt.retryRegistration')}
+          </button>
+        )}
         {onDismiss && (
           <button
             type="button"

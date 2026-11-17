@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { useDialogA11y } from '../../../lib/a11y/useDialogA11y';
 
 type NotificationPermissionDialogProps = {
@@ -47,7 +47,14 @@ export function NotificationPermissionDialog({
             borderColor: 'rgba(180, 159, 176, 0.35)',
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            focusable="false"
+          >
             <path
               d="M6 6l12 12M18 6L6 18"
               stroke="currentColor"
@@ -58,7 +65,14 @@ export function NotificationPermissionDialog({
         </button>
 
         <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            focusable="false"
+          >
             <path
               d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 0 1-6 0v-1m6 0H9"
               stroke="currentColor"
@@ -76,12 +90,22 @@ export function NotificationPermissionDialog({
         >
           {t('notificationPrompt.title')}
         </h2>
-        <p
+        <div
           id="notification-prompt-desc"
           className="mb-5 text-[13px] leading-relaxed text-on-surface-variant"
         >
-          {t('notificationPrompt.body')}
-        </p>
+          <p>{t('notificationPrompt.body')}</p>
+          <ul className="mt-2 list-disc space-y-0.5 pl-5">
+            {(['missMedication', 'missConsultation', 'missQa', 'missCheckIn'] as const).map(
+              (key) => (
+                <li key={key}>{t(`notificationPrompt.${key}`)}</li>
+              )
+            )}
+          </ul>
+          <p className="mt-3 text-on-surface">
+            <Trans i18nKey="notificationPrompt.allowHint" components={{ 1: <strong /> }} />
+          </p>
+        </div>
 
         <div className="flex flex-col gap-2">
           <button

@@ -20,6 +20,8 @@ export function useHomeNotificationPrompt() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  // After "Later" or a phone-level "Don't allow": a note that Profile → Notifications turns them on.
+  const [profileHint, setProfileHint] = useState<'later' | 'blocked' | null>(null);
   const hasShownDelayedPrompt = useRef(false);
 
   const runSync = useCallback(async () => {
@@ -58,10 +60,7 @@ export function useHomeNotificationPrompt() {
     setOpen(false);
 
     if (needsPushRegistrationRetry()) {
-      setSyncMessage(
-        (current) =>
-          current ?? i18n.t('errors.notificationsNotRegistered')
-      );
+      setSyncMessage((current) => current ?? i18n.t('errors.notificationsNotRegistered'));
     }
   }, [status, runSync]);
 
@@ -99,7 +98,7 @@ export function useHomeNotificationPrompt() {
       if (permission !== 'granted') {
         setOpen(false);
         if (permission === 'denied') {
-          setSyncMessage(i18n.t('errors.notificationsBlocked'));
+          setProfileHint('blocked');
         }
         return;
       }
@@ -120,6 +119,7 @@ export function useHomeNotificationPrompt() {
   const dismiss = () => {
     dismissNotificationPrompt();
     setOpen(false);
+    setProfileHint('later');
   };
 
   const retrySync = async () => {
@@ -140,5 +140,7 @@ export function useHomeNotificationPrompt() {
     isRetrying,
     isRegistering,
     clearSyncMessage: () => setSyncMessage(null),
+    profileHint,
+    clearProfileHint: () => setProfileHint(null),
   };
 }

@@ -21,6 +21,8 @@ import { NotificationSyncBanner } from './components/NotificationSyncBanner';
 import { FamilyCheckInCard } from '../family/FamilyCheckInCard';
 import { FamilyGiftDialog } from '../family/FamilyGiftDialog';
 import { FamilyMessageDialog } from '../family/FamilyMessageDialog';
+import { MissedFamilyDialog } from '../family/MissedFamilyDialog';
+import { useMissedFamilyNotice } from '../family/useMissedFamilyNotice';
 import { useFamilyActivity } from '../family/useFamilyActivity';
 import { useFamilyGift, useFamilyMessage } from '../family/useFamilyMessage';
 import { CycleTrackerSheet } from './components/CycleTrackerSheet';
@@ -109,6 +111,7 @@ export default function AnuDashboardRoute() {
   const detailedStatus = user?.detailedAssessmentStatus ?? 'not_started';
   const detailedCompleted = detailedStatus === 'completed';
   const notificationPrompt = useHomeNotificationPrompt();
+  const missedFamily = useMissedFamilyNotice();
   const [greetingSlot, setGreetingSlot] = useState(() => getGreetingSlot());
   // Same minute tick as the greeting: the flow prompt opens at noon, and a user
   // already sitting on this page must not have to reload to see it.
@@ -333,8 +336,15 @@ export default function AnuDashboardRoute() {
        AmbientWash's `-z-10` above the cream background and below the content. */
     <main className="isolate h-[100dvh] min-h-mobile overflow-x-hidden overflow-y-auto bg-surface pb-28 pt-8 text-on-surface">
       <AmbientWash band={dailySummary.data?.headline.band} />
+      <MissedFamilyDialog
+        open={missedFamily.open}
+        items={missedFamily.items}
+        readiness={missedFamily.readiness}
+        onClose={missedFamily.close}
+      />
+      {/* One popup per app open: when the "you missed" one has shown, the regular one waits. */}
       <NotificationPermissionDialog
-        open={notificationPrompt.open}
+        open={notificationPrompt.open && !missedFamily.shown}
         isRegistering={notificationPrompt.isRegistering}
         onAccept={notificationPrompt.accept}
         onDismiss={notificationPrompt.dismiss}
@@ -350,6 +360,21 @@ export default function AnuDashboardRoute() {
             message={notificationPrompt.syncMessage}
             onRetry={notificationPrompt.retrySync}
             onDismiss={notificationPrompt.clearSyncMessage}
+          />
+        )}
+
+        {notificationPrompt.profileHint && (
+          <NotificationSyncBanner
+            message={t(
+              notificationPrompt.profileHint === 'blocked'
+                ? 'notificationPrompt.blockedHint'
+                : 'notificationPrompt.laterHint'
+            )}
+            action={{
+              label: t('notificationPrompt.openProfile'),
+              onClick: () => navigate('/profile'),
+            }}
+            onDismiss={notificationPrompt.clearProfileHint}
           />
         )}
 
@@ -369,19 +394,19 @@ export default function AnuDashboardRoute() {
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle variant="compact" />
-          <NavLink
-            to="/profile"
-            aria-label={t('home.openProfile')}
-            className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border text-[14px] text-primary transition-opacity hover:opacity-90"
-            style={{
-              background: '#EFE4D8',
-              borderColor: 'rgba(180, 159, 176, 0.35)',
-              fontFamily: '"Fraunces", sans-serif',
-              fontWeight: 500,
-            }}
-          >
-            {profileInitial}
-          </NavLink>
+            <NavLink
+              to="/profile"
+              aria-label={t('home.openProfile')}
+              className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border text-[14px] text-primary transition-opacity hover:opacity-90"
+              style={{
+                background: '#EFE4D8',
+                borderColor: 'rgba(180, 159, 176, 0.35)',
+                fontFamily: '"Fraunces", sans-serif',
+                fontWeight: 500,
+              }}
+            >
+              {profileInitial}
+            </NavLink>
           </div>
         </header>
 
@@ -428,7 +453,10 @@ export default function AnuDashboardRoute() {
               role="img"
               aria-label={
                 calibration
-                  ? t('a11y.tracking.calibrationRing', { day: calibration.day, total: calibration.totalDays })
+                  ? t('a11y.tracking.calibrationRing', {
+                      day: calibration.day,
+                      total: calibration.totalDays,
+                    })
                   : t('home.calibrating')
               }
             >
@@ -763,37 +791,35 @@ export default function AnuDashboardRoute() {
         </section>
       )}
 
-      {/* Once the detailed assessment is done its card goes, and this takes its place. */}
-      {detailedCompleted && (
-        <section className="px-3 pt-3">
-          <button
-            type="button"
-            onClick={() => navigate('/qa')}
-            className="w-full rounded-[20px] bg-secondary-container px-[18px] py-4 text-left transition-opacity active:opacity-90"
+      {/* Always shown, right below the detailed-assessment card (or in its place once that is done). */}
+      <section className="px-3 pt-3">
+        <button
+          type="button"
+          onClick={() => navigate('/qa')}
+          className="w-full rounded-[20px] bg-secondary-container px-[18px] py-4 text-left transition-opacity active:opacity-90"
+        >
+          <Eyebrow>{t('qa.eyebrow')}</Eyebrow>
+          <p
+            className="text-[18px] leading-[1.35] text-on-surface"
+            style={{ fontFamily: SERIF, fontWeight: 500 }}
           >
-            <Eyebrow>{t('qa.eyebrow')}</Eyebrow>
-            <p
-              className="text-[18px] leading-[1.35] text-on-surface"
-              style={{ fontFamily: SERIF, fontWeight: 500 }}
-            >
-              {t('home.askAnonymously')}
-            </p>
-            <p
-              className="mt-1.5 text-[13px] leading-[1.5] text-on-surface-variant"
-              style={{ fontFamily: '"Mulish", sans-serif' }}
-            >
-              {t('qa.anonymousBody')}
-            </p>
-            <span
-              className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-on-secondary-container"
-              style={{ fontFamily: '"Mulish", sans-serif' }}
-            >
-              {t('home.askQuestion')}
-              <span aria-hidden="true">→</span>
-            </span>
-          </button>
-        </section>
-      )}
+            {t('home.askAnonymously')}
+          </p>
+          <p
+            className="mt-1.5 text-[13px] leading-[1.5] text-on-surface-variant"
+            style={{ fontFamily: '"Mulish", sans-serif' }}
+          >
+            {t('qa.anonymousBody')}
+          </p>
+          <span
+            className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-on-secondary-container"
+            style={{ fontFamily: '"Mulish", sans-serif' }}
+          >
+            {t('home.askQuestion')}
+            <span aria-hidden="true">→</span>
+          </span>
+        </button>
+      </section>
 
       {dailyInsight && (
         <section className="px-3 pb-5 pt-3">

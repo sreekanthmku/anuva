@@ -13,6 +13,7 @@ import { translateMessage } from '../i18n/index.js';
  *   POST   /family/invites/:id/shared     record that she sent it — the only thing that closes the gate
  *   POST   /family/invites/:id/revoke     kill a pending link
  *   GET    /family/activity               what her family actually did — her side of the loop
+ *   GET    /family/missed?since=          notes and gifts sent since then, for a phone without notifications
  *   POST   /family/thanks                 she says thank you; a smiley lands on their phone
  *   DELETE /family/members/:id            disconnect the family member, freeing the slot
  *
@@ -45,6 +46,8 @@ import {
   createFamilyInviteResponseSchema,
   dismissFamilyDepartureResponseSchema,
   familyActivityResponseSchema,
+  familyMissedQuerySchema,
+  familyMissedResponseSchema,
   familyArticleParamsSchema,
   familyArticleResponseSchema,
   familyConfirmActionResponseSchema,
@@ -110,7 +113,7 @@ import {
   setMemberEmergencyAlerts,
   rotateInvite,
 } from './invites.js';
-import { buildFamilyActivity } from './activity.js';
+import { buildFamilyActivity, buildMissedFamilyDeliveries } from './activity.js';
 import { buildFamilyLearn, buildFamilyPrivacy, buildFamilyToday } from './digest.js';
 import { familyArticle } from './articles.js';
 import { familyMeBody, previewInvite, requestJoinOtp, verifyJoinOtp, type OtpDeps } from './join.js';
@@ -185,6 +188,19 @@ export function createFamilyRouter({
       noStore(res);
       const userId = await resolveUserId(req);
       res.json(familyActivityResponseSchema.parse(await buildFamilyActivity(userId)));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.get('/missed', async (req, res, next) => {
+    try {
+      noStore(res);
+      const userId = await resolveUserId(req);
+      const { since } = familyMissedQuerySchema.parse(req.query);
+      res.json(
+        familyMissedResponseSchema.parse(await buildMissedFamilyDeliveries(userId, new Date(since))),
+      );
     } catch (e) {
       next(e);
     }

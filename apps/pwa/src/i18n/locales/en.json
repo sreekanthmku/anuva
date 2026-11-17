@@ -799,6 +799,20 @@
         "label": "Medication reminders",
         "hint": "Reminders at the times you choose"
       },
+      "notifications": {
+        "label": "Notifications",
+        "on": "Reminders and updates from Anuva will reach you",
+        "onBadge": "On",
+        "off": "Off · turn on to get reminders and updates",
+        "turnOn": "Turn on",
+        "blocked": "Blocked on this phone · tap to see how to turn them on",
+        "stepsIphone": "On iPhone: open Settings → Notifications → Anuva → turn on Allow Notifications. Then come back to Anuva.",
+        "stepsAndroid": "On Android: open Chrome → ⋮ menu → Settings → Site settings → Notifications → Anuva → Allow. Then come back to Anuva.",
+        "stepsOther": "Open your browser's site settings for Anuva and allow notifications. Then come back to Anuva.",
+        "iosInstall": "On iPhone, notifications only work once Anuva is on your Home Screen. Tap Share, then Add to Home Screen, and open Anuva from there.",
+        "unsupported": "This browser can't show notifications.",
+        "failed": "Couldn't turn on notifications. Please try again."
+      },
       "privacy": {
         "label": "Privacy & data",
         "hint": "DPDP · export or delete"
@@ -895,13 +909,21 @@
   },
   "notificationPrompt": {
     "dismiss": "Dismiss notification prompt",
-    "title": "Stay in the loop?",
-    "body": "Gentle reminders for symptom logging and your weekly summary. You can change this anytime in Profile.",
+    "title": "Turn on notifications",
+    "body": "Anuva works through reminders. Without them you won't get:",
+    "missMedication": "your medication reminders",
+    "missConsultation": "a reminder before your consultation",
+    "missQa": "a ping when your anonymous question is answered",
+    "missCheckIn": "your daily check-in nudge",
+    "allowHint": "Your phone will ask next. Tap <1>Allow</1>.",
     "registering": "Registering device…",
-    "enable": "Enable notifications",
-    "notNow": "Not now",
+    "enable": "Turn on notifications",
+    "notNow": "Later",
     "retryRegistration": "Retry registration",
-    "dismissBanner": "Dismiss"
+    "dismissBanner": "Dismiss",
+    "laterHint": "No problem. You can turn them on anytime in Profile → Notifications.",
+    "blockedHint": "Notifications are off, so reminders won't reach you. Turn them on in Profile → Notifications.",
+    "openProfile": "Open Profile"
   },
   "care": {
     "weekBadge": "Week 1 · Care path ready",
@@ -1118,6 +1140,15 @@
       "body": "They chose to stop on {{date}}. You can invite them again with a new link any time.",
       "emergency": "{{name}} was the person alerted if you need help urgently, so nobody is alerted now. Turn on alerts for someone below, or invite someone new.",
       "dismiss": "OK"
+    },
+    "missed": {
+      "titleOne": "You missed something from {{name}}",
+      "titleMany": "You missed something from your family",
+      "message": "{{name}} sent you a message",
+      "flowers": "{{name}} sent you flowers 🌻",
+      "chocolates": "{{name}} sent you chocolates 🍫",
+      "body": "Notifications are off on this phone, so it didn't reach you. Turn them on so you don't miss the next one.",
+      "showHow": "Show me how"
     }
   },
   "install": {

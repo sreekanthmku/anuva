@@ -3,6 +3,7 @@ import {
   FAMILY_EMERGENCY_ALERTS_CONSENT_VERSION,
   FAMILY_PERIOD_SHARING_CONSENT_VERSION,
   type FamilyInvite,
+  type FamilyMissedResponse,
   type FamilyMemberSummary,
   type SetInviteCoreSharingResponse,
   type SetInviteEmergencyAlertsResponse,
@@ -41,6 +42,14 @@ export function markFamilyInviteShared(
 
 export function fetchFamilyActivity(): Promise<FamilyActivityResponse> {
   return apiFetch<FamilyActivityResponse>('/api/family/activity', { cache: 'no-store' });
+}
+
+/** Notes and gifts sent since `since`, for a phone that could not show them as notifications. */
+export function fetchMissedFamily(since: Date): Promise<FamilyMissedResponse> {
+  return apiFetch<FamilyMissedResponse>(
+    `/api/family/missed?since=${encodeURIComponent(since.toISOString())}`,
+    { cache: 'no-store' },
+  );
 }
 
 export function removeFamilyMember(memberId: string): Promise<{ removed: true }> {

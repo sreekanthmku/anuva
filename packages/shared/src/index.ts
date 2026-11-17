@@ -621,6 +621,8 @@ export {
 export {
   createFamilyInviteResponseSchema,
   familyActivityResponseSchema,
+  familyMissedQuerySchema,
+  familyMissedResponseSchema,
   familyArticleActionSchema,
   familyArticleAudienceSchema,
   familyArticleParamsSchema,
@@ -695,6 +697,7 @@ export {
   type SetMemberPeriodSharingResponse,
   type CreateFamilyInviteResponse,
   type FamilyActivityResponse,
+  type FamilyMissedResponse,
   type FamilyArticle,
   type FamilyArticleAction,
   type FamilyArticleAudience,

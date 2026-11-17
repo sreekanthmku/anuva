@@ -192,7 +192,7 @@ export const familyActivityResponseSchema = z.object({
            * "Called you" without a name is a question rather than a reassurance.
            */
           memberFirstName: z.string(),
-        }),
+        })
       ),
       headline: z.string(),
       body: z.string(),
@@ -202,6 +202,25 @@ export const familyActivityResponseSchema = z.object({
   daysThisWeek: z.number().int().nonnegative(),
   /** Pre-built copy for the week line, e.g. "3 of 4 days this week". Null before anything happens. */
   weekLine: z.string().nullable(),
+});
+
+/**
+ * What her family sent that is delivered as a push (a note, flowers, chocolates), since a moment the
+ * app names. The app asks only when this phone cannot receive notifications, to tell her what she
+ * missed. Who and what kind only: a note's text is never stored, so it cannot be shown again.
+ */
+export const familyMissedQuerySchema = z.object({
+  since: z.string().datetime(),
+});
+
+export const familyMissedResponseSchema = z.object({
+  items: z.array(
+    z.object({
+      kind: z.enum(['message', 'flowers', 'chocolates']),
+      memberFirstName: z.string(),
+      at: z.string(),
+    })
+  ),
 });
 
 export const markFamilyInviteSharedBodySchema = z.object({
@@ -230,7 +249,9 @@ export const setMemberPeriodSharingResponseSchema = z.object({ member: familyMem
  * needs the version of the notice that was on her screen; turning it off needs nothing.
  */
 export const setFamilyEmergencyAlertsBodySchema = setFamilyPeriodSharingBodySchema;
-export const setMemberEmergencyAlertsResponseSchema = z.object({ member: familyMemberSummarySchema });
+export const setMemberEmergencyAlertsResponseSchema = z.object({
+  member: familyMemberSummarySchema,
+});
 export const setInviteEmergencyAlertsResponseSchema = z.object({ invite: familyInviteSchema });
 
 /** Her agreement to the minimum sharing on her pending link. Same shape as the optional switches. */
@@ -634,6 +655,7 @@ export type FamilyAccount = z.infer<typeof familyAccountSchema>;
 export type FamilySwitchAccountBody = z.infer<typeof familySwitchAccountBodySchema>;
 export type CreateFamilyInviteResponse = z.infer<typeof createFamilyInviteResponseSchema>;
 export type FamilyActivityResponse = z.infer<typeof familyActivityResponseSchema>;
+export type FamilyMissedResponse = z.infer<typeof familyMissedResponseSchema>;
 export type MarkFamilyInviteSharedBody = z.infer<typeof markFamilyInviteSharedBodySchema>;
 export type MarkFamilyInviteSharedResponse = z.infer<typeof markFamilyInviteSharedResponseSchema>;
 export type RevokeFamilyInviteResponse = z.infer<typeof revokeFamilyInviteResponseSchema>;
@@ -682,7 +704,11 @@ export type SetFamilyPeriodSharingBody = z.infer<typeof setFamilyPeriodSharingBo
 export type SetInvitePeriodSharingResponse = z.infer<typeof setInvitePeriodSharingResponseSchema>;
 export type SetMemberPeriodSharingResponse = z.infer<typeof setMemberPeriodSharingResponseSchema>;
 export type SetFamilyEmergencyAlertsBody = z.infer<typeof setFamilyEmergencyAlertsBodySchema>;
-export type SetMemberEmergencyAlertsResponse = z.infer<typeof setMemberEmergencyAlertsResponseSchema>;
-export type SetInviteEmergencyAlertsResponse = z.infer<typeof setInviteEmergencyAlertsResponseSchema>;
+export type SetMemberEmergencyAlertsResponse = z.infer<
+  typeof setMemberEmergencyAlertsResponseSchema
+>;
+export type SetInviteEmergencyAlertsResponse = z.infer<
+  typeof setInviteEmergencyAlertsResponseSchema
+>;
 export type SetFamilyCoreSharingBody = z.infer<typeof setFamilyCoreSharingBodySchema>;
 export type SetInviteCoreSharingResponse = z.infer<typeof setInviteCoreSharingResponseSchema>;

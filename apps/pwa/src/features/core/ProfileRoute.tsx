@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LanguageToggle } from '../../i18n/LanguageToggle';
@@ -6,6 +7,7 @@ import { useAuth } from '../auth/auth-context';
 import { FamilyConnectionSection } from '../family/FamilyConnectionSection';
 import { DATE_OF_BIRTH_KEY, ageFromDateOfBirth } from './ageFromDateOfBirth';
 import { BottomNav } from './components/BottomNav';
+import { NotificationsRow } from './components/NotificationsRow';
 import { useDetailedAssessment } from './hooks/useDetailedAssessment';
 import { isReport14Available, report14ReadyDate } from './report14Guide';
 
@@ -103,36 +105,40 @@ export default function ProfileRoute() {
         <article className="overflow-hidden rounded-[20px] border border-border-default bg-surface-raised">
           <ul className="divide-y divide-border-default">
             {menuRows.map((row) => (
-              <li key={row.key}>
-                <button
-                  type="button"
-                  onClick={
-                    row.to && !rowLocked(row.key) ? () => navigate(row.to as string) : undefined
-                  }
-                  disabled={rowLocked(row.key)}
-                  className="flex w-full flex-col items-start gap-0.5 px-5 py-4 text-left transition-colors hover:bg-primary-container/60 disabled:cursor-default disabled:opacity-60 disabled:hover:bg-transparent"
-                >
-                  <span
-                    className="text-[15px] text-on-surface"
-                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+              <Fragment key={row.key}>
+                <li>
+                  <button
+                    type="button"
+                    onClick={
+                      row.to && !rowLocked(row.key) ? () => navigate(row.to as string) : undefined
+                    }
+                    disabled={rowLocked(row.key)}
+                    className="flex w-full flex-col items-start gap-0.5 px-5 py-4 text-left transition-colors hover:bg-primary-container/60 disabled:cursor-default disabled:opacity-60 disabled:hover:bg-transparent"
                   >
-                    {t(`profile.menu.${row.key}.label`)}
-                  </span>
-                  <span
-                    className="text-[12px] text-on-surface-variant"
-                    style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
-                  >
-                    {rowLocked(row.key) && reportReadyOn
-                      ? t('profile.menu.assessmentReport.availableOn', {
-                          date: reportReadyOn.toLocaleDateString(i18n.language, {
-                            day: 'numeric',
-                            month: 'short',
-                          }),
-                        })
-                      : t(`profile.menu.${row.key}.hint`)}
-                  </span>
-                </button>
-              </li>
+                    <span
+                      className="text-[15px] text-on-surface"
+                      style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                    >
+                      {t(`profile.menu.${row.key}.label`)}
+                    </span>
+                    <span
+                      className="text-[12px] text-on-surface-variant"
+                      style={{ fontFamily: '"Mulish", -apple-system, system-ui, sans-serif' }}
+                    >
+                      {rowLocked(row.key) && reportReadyOn
+                        ? t('profile.menu.assessmentReport.availableOn', {
+                            date: reportReadyOn.toLocaleDateString(i18n.language, {
+                              day: 'numeric',
+                              month: 'short',
+                            }),
+                          })
+                        : t(`profile.menu.${row.key}.hint`)}
+                    </span>
+                  </button>
+                </li>
+                {/* Notifications sits right after medication reminders. */}
+                {row.key === 'reminders' && <NotificationsRow />}
+              </Fragment>
             ))}
           </ul>
         </article>

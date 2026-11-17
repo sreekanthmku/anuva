@@ -1,6 +1,10 @@
 import { copy, dateLocale, fill } from '../i18n/index.js';
 import { prisma } from '@anuva/database';
-import type { FamilyActivityResponse, FamilySupportActionKind } from '@anuva/shared';
+import type {
+  FamilyActivityResponse,
+  FamilyMissedResponse,
+  FamilySupportActionKind,
+} from '@anuva/shared';
 import { dayKey } from '../dayKey.js';
 
 /**
@@ -126,7 +130,7 @@ export async function buildFamilyActivity(userId: string): Promise<FamilyActivit
 
   // Deduplicated in first-action order, so the headline names people in the order they showed up.
   const actorsToday = [...new Set(todayActions.map((action) => action.familyMemberId))].map(
-    (id) => firstNames.get(id) ?? ACTIVITY_TEXT.someone,
+    (id) => firstNames.get(id) ?? ACTIVITY_TEXT.someone
   );
 
   const dayCount =
@@ -161,5 +165,40 @@ export async function buildFamilyActivity(userId: string): Promise<FamilyActivit
         ? fill(ACTIVITY_TEXT.familyWeek, { days: dayCount })
         : fill(ACTIVITY_TEXT.memberWeek, { name: firstNames.get(members[0]!.id), days: dayCount })
       : null,
+  };
+}
+
+/** Furthest back "you missed" looks, however long she has been away. */
+const MISSED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
+
+const DELIVERED_KINDS = ['message', 'flowers', 'chocolates'] as const;
+
+/**
+ * The notes and gifts her family sent after `since`: the kinds that arrive as a push, so the ones a
+ * phone without notifications never showed her. Who and what kind only: a note's text is not stored.
+ */
+export async function buildMissedFamilyDeliveries(
+  userId: string,
+  since: Date
+): Promise<FamilyMissedResponse> {
+  const floor = new Date(Date.now() - MISSED_LOOKBACK_MS);
+  const rows = await prisma.familySupportAction.findMany({
+    where: {
+      userId,
+      kind: { in: [...DELIVERED_KINDS] },
+      createdAt: { gt: since > floor ? since : floor },
+      member: { status: 'active' },
+    },
+    select: { kind: true, createdAt: true, member: { select: { name: true } } },
+    orderBy: { createdAt: 'asc' },
+    take: 20,
+  });
+
+  return {
+    items: rows.map((row) => ({
+      kind: row.kind as (typeof DELIVERED_KINDS)[number],
+      memberFirstName: firstNameOf(row.member.name),
+      at: row.createdAt.toISOString(),
+    })),
   };
 }
