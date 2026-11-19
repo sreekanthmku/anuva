@@ -17,6 +17,9 @@ import '@fontsource/dancing-script/600.css';
 import '@fontsource/dancing-script/700.css';
 import App from './App';
 import { startAppUpdates } from './lib/pwa/appUpdate';
+// Imported for its side effect: `beforeinstallprompt` can fire before React mounts, and the event
+// is only usable if it was captured when it fired. See installPrompt.ts.
+import './lib/pwa/installPrompt';
 import './index.css';
 
 initSentry();

@@ -3,6 +3,8 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes, useNavigate } from 'rea
 import { DoctorLoginGate } from './features/auth/DoctorLoginGate';
 import { DoctorBookingsRoute } from './features/bookings/DoctorBookingsRoute';
 import { DoctorCallRoute } from './features/call/DoctorCallRoute';
+import { InstallGuard } from './features/install/InstallGuard';
+import { NotificationPermissionSheet } from './features/notifications/NotificationPermissionSheet';
 import { NotificationsRoute } from './features/notifications/NotificationsRoute';
 import { NotificationsProvider } from './features/notifications/store';
 import { ProfileRoute } from './features/profile/ProfileRoute';
@@ -44,6 +46,8 @@ function ShellLayout() {
   return (
     <AppShell>
       <Outlet />
+      {/* In the shell, not on the call screen: nothing should pop up over a consultation. */}
+      <NotificationPermissionSheet />
     </AppShell>
   );
 }
@@ -52,6 +56,8 @@ export default function App() {
   return (
     // Outside the router and the login gate: a crash in either is what this exists to catch.
     <AppErrorBoundary>
+    {/* On a phone the portal only runs as the installed app; laptops pass straight through. */}
+    <InstallGuard>
     <BrowserRouter>
       <RouteFocus />
       <DoctorLoginGate>
@@ -75,6 +81,7 @@ export default function App() {
       <BetaReporter app="doctor-pwa" />
       <AppUpdateBar />
     </BrowserRouter>
+    </InstallGuard>
     </AppErrorBoundary>
   );
 }
