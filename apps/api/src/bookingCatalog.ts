@@ -71,6 +71,24 @@ const seedSpecialists: SeedSpecialist[] = [
     qualifications: [],
     bookable: false,
   },
+  {
+    key: 'priyanka-mahadik',
+    name: 'Priyanka Mahadik',
+    subtitle: 'Physiotherapist',
+    tag: 'Physiotherapy',
+    role: 'Physiotherapist',
+    qualifications: [],
+    bookable: false,
+  },
+  {
+    key: 'pooja-savla',
+    name: 'Pooja Keyur Savla',
+    subtitle: 'Dietitian & Nutritionist',
+    tag: 'Nutrition',
+    role: 'Dietitian & Nutritionist',
+    qualifications: ['PGD in Dietetics and Applied Nutrition'],
+    bookable: false,
+  },
 ];
 
 /** The profile fields a patient reads; names and qualification credentials stay as written. */

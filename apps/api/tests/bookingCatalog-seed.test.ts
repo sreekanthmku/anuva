@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 type BookingCatalogModule = typeof import('../src/bookingCatalog.js');
 
 const BOOKABLE_KEYS = ['kekin-gala'] as const;
-const ALL_KEYS = ['kekin-gala', 'jai-bapat'] as const;
+const ALL_KEYS = ['kekin-gala', 'jai-bapat', 'priyanka-mahadik', 'pooja-savla'] as const;
 
 function makeMockPrisma() {
   let idSeq = 0;
@@ -60,7 +60,7 @@ describe('ensureBookingCatalog', () => {
     expect(mock._spies.deleteMany).toHaveBeenCalledTimes(ALL_KEYS.length);
 
     // Only specialists with non-empty qualification lists get createMany.
-    expect(mock._spies.createManyQual).toHaveBeenCalledTimes(1);
+    expect(mock._spies.createManyQual).toHaveBeenCalledTimes(2);
 
     const qualPayloads = mock._spies.createManyQual.mock.calls.map(
       (call) => (call[0] as { data: { label: string }[] }).data.map((row) => row.label),
@@ -81,7 +81,7 @@ describe('ensureBookingCatalog', () => {
       const matching = [...slotSpecialistIds].some((id) => id.includes(key));
       expect(matching).toBe(true);
     }
-    for (const key of ['jai-bapat'] as const) {
+    for (const key of ['jai-bapat', 'priyanka-mahadik', 'pooja-savla'] as const) {
       const matching = [...slotSpecialistIds].some((id) => id.includes(key));
       expect(matching).toBe(false);
     }
